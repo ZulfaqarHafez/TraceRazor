@@ -135,7 +135,7 @@ impl TraceReport {
              Agent:     {}\n\
              Framework: {}\n\
              Steps:     {}   Tokens: {}   \n\
-             Analysed:  {}ms (structural)\n\
+             Analysed:  {}ms\n\
              {sep}\n",
             self.trace_id,
             self.agent_name,
@@ -188,46 +188,37 @@ impl TraceReport {
             ">85%",
             pass_str(s.tca.pass)
         );
+        // RDA — show actual value if Phase 2 computed it, else PENDING
+        let (rda_score_str, rda_status) = match &s.rda {
+            Some(r) => (format!("{:.3}", r.score), pass_str(r.pass).to_string()),
+            None => ("N/A".into(), "PENDING".into()),
+        };
+        out += &format!("{:<6} {:<30} {:<8} {:<8} {}\n", "RDA", "Reasoning Depth Approp.", rda_score_str, ">0.75", rda_status);
+
+        // ISR — available in both phases (Phase 1 uses BoW, Phase 2 uses embeddings)
+        let (isr_score_str, isr_status) = match &s.isr {
+            Some(r) => (format!("{:.1}%", r.score), pass_str(r.pass).to_string()),
+            None => ("N/A".into(), "PENDING".into()),
+        };
+        out += &format!("{:<6} {:<30} {:<8} {:<8} {}\n", "ISR", "Info Sufficiency Rate", isr_score_str, ">80%", isr_status);
+
         out += &format!(
             "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "RDA",
-            "Reasoning Depth Approp.",
-            "N/A",
-            ">0.75",
-            "PENDING"
+            "TUR", "Token Utilisation Ratio",
+            format!("{:.3}", s.tur.score), ">0.35", pass_str(s.tur.pass)
         );
         out += &format!(
             "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "ISR",
-            "Info Sufficiency Rate",
-            "N/A",
-            ">80%",
-            "PENDING"
+            "CCE", "Context Carry-over Eff.",
+            format!("{:.3}", s.cce.score), ">0.60", pass_str(s.cce.pass)
         );
-        out += &format!(
-            "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "TUR",
-            "Token Utilisation Ratio",
-            format!("{:.3}", s.tur.score),
-            ">0.35",
-            pass_str(s.tur.pass)
-        );
-        out += &format!(
-            "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "CCE",
-            "Context Carry-over Eff.",
-            format!("{:.3}", s.cce.score),
-            ">0.60",
-            pass_str(s.cce.pass)
-        );
-        out += &format!(
-            "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "DBO",
-            "Decision Branch Optimality",
-            "N/A",
-            ">0.70",
-            "PENDING"
-        );
+
+        // DBO — show actual value if Phase 2 computed it
+        let (dbo_score_str, dbo_status) = match &s.dbo {
+            Some(r) => (format!("{:.3}", r.score), pass_str(r.pass).to_string()),
+            None => ("N/A".into(), "PENDING".into()),
+        };
+        out += &format!("{:<6} {:<30} {:<8} {:<8} {}\n", "DBO", "Decision Branch Optimality", dbo_score_str, ">0.70", dbo_status);
 
         out += &format!("{sep}\n");
 

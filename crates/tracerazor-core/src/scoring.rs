@@ -2,7 +2,7 @@
 /// and computes the Value-Adjusted Efficiency (VAE) multiplier.
 use serde::{Deserialize, Serialize};
 
-use crate::metrics::{CceResult, LdiResult, SrrResult, TcaResult, TurResult};
+use crate::metrics::{CceResult, DboResult, IsrResult, LdiResult, RdaResult, SrrResult, TcaResult, TurResult};
 
 /// Grade bands for the composite TAS score (mirrors Google Lighthouse).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -96,10 +96,10 @@ pub struct TasScore {
     pub tca: TcaResult,
     pub tur: TurResult,
     pub cce: CceResult,
-    // Phase 2 metrics (None in Phase 1)
-    pub rda: Option<f64>,
-    pub isr: Option<f64>,
-    pub dbo: Option<f64>,
+    // Phase 2 metrics (None when run without API key)
+    pub rda: Option<RdaResult>,
+    pub isr: Option<IsrResult>,
+    pub dbo: Option<DboResult>,
 }
 
 /// Configuration for the scoring engine.
@@ -125,13 +125,17 @@ impl Default for ScoringConfig {
     }
 }
 
-/// Compute the composite TAS score from Phase 1 metrics.
+/// Compute the composite TAS score from structural (Phase 1) metrics
+/// plus optional semantic (Phase 2) metrics.
 pub fn compute(
     srr: SrrResult,
     ldi: LdiResult,
     tca: TcaResult,
     tur: TurResult,
     cce: CceResult,
+    rda: Option<RdaResult>,
+    isr: Option<IsrResult>,
+    dbo: Option<DboResult>,
     task_value_score: f64,
     total_tokens: u32,
     config: &ScoringConfig,
@@ -145,29 +149,37 @@ pub fn compute(
     let tur_n = tur.normalised();
     let cce_n = cce.normalised();
 
-    // Phase 1 uses 5 metrics. Re-normalise so they sum to the full weight space.
-    let phase1_weight_sum = w.srr + w.ldi + w.tca + w.tur + w.cce;
-
-    let raw_efficiency = (srr_n * w.srr
+    // Accumulate weighted scores over available metrics.
+    let mut weighted_sum = srr_n * w.srr
         + ldi_n * w.ldi
         + tca_n * w.tca
         + tur_n * w.tur
-        + cce_n * w.cce)
-        / phase1_weight_sum;
+        + cce_n * w.cce;
+    let mut weight_total = w.srr + w.ldi + w.tca + w.tur + w.cce;
+
+    // Add Phase 2 metrics when available.
+    if let Some(ref r) = rda {
+        weighted_sum += r.normalised() * w.rda;
+        weight_total += w.rda;
+    }
+    if let Some(ref i) = isr {
+        weighted_sum += i.normalised() * w.isr;
+        weight_total += w.isr;
+    }
+    if let Some(ref d) = dbo {
+        weighted_sum += d.normalised() * w.dbo;
+        weight_total += w.dbo;
+    }
+
+    let raw_efficiency = weighted_sum / weight_total;
 
     // TAS in 0–100
-    let tas = raw_efficiency * 100.0;
-    let tas = (tas * 10.0).round() / 10.0;
+    let tas = (raw_efficiency * 100.0 * 10.0).round() / 10.0;
 
     // VAE = (task_value_score * raw_efficiency) / normalised_token_cost
-    // normalised_token_cost = total_tokens / baseline_tokens (default 1.0 if no baseline)
-    let baseline = config
-        .baseline_tokens
-        .unwrap_or(total_tokens)
-        .max(1) as f64;
+    let baseline = config.baseline_tokens.unwrap_or(total_tokens).max(1) as f64;
     let normalised_cost = (total_tokens as f64 / baseline).max(0.001);
-    let vae = (task_value_score * raw_efficiency) / normalised_cost;
-    let vae = (vae * 100.0).round() / 100.0;
+    let vae = ((task_value_score * raw_efficiency) / normalised_cost * 100.0).round() / 100.0;
     let vae = vae.min(1.0);
 
     let grade = Grade::from_score(tas);
@@ -183,9 +195,9 @@ pub fn compute(
         tca,
         tur,
         cce,
-        rda: None,
-        isr: None,
-        dbo: None,
+        rda,
+        isr,
+        dbo,
     }
 }
 

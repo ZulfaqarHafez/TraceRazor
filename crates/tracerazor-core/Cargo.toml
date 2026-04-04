@@ -13,3 +13,4 @@ anyhow = { workspace = true }
 petgraph = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
+tokio = { workspace = true }

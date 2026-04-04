@@ -48,7 +48,11 @@ cargo build --release
 ### Audit a trace
 
 ```bash
+# Phase 1: structural analysis (no API key needed)
 tracerazor audit ./traces/support-agent-run-2847.json
+
+# Phase 2: full analysis with OpenAI embeddings + LLM metrics
+tracerazor audit ./traces/support-agent-run-2847.json --semantic
 ```
 
 ```
@@ -89,6 +93,34 @@ tracerazor audit trace.json --threshold 75
 # Exits non-zero if TAS < 75 — blocks the PR
 ```
 
+### LangGraph integration
+
+```python
+from tracerazor_langgraph import TraceRazorCallback
+
+callback = TraceRazorCallback(
+    agent_name="my-agent",
+    threshold=75,       # CI/CD gating
+    semantic=True,      # OpenAI embeddings + RDA/DBO
+)
+
+result = graph.invoke(inputs, config={"callbacks": [callback]})
+
+# Get the efficiency report
+report = callback.analyse()
+print(report.markdown())
+
+# Raise AssertionError if TAS < 75 (for tests/CI)
+callback.assert_passes()
+```
+
+Install the adapter:
+```bash
+pip install -e integrations/langgraph
+```
+
+See [integrations/langgraph/examples/customer_support.py](integrations/langgraph/examples/customer_support.py) for a full working example.
+
 ### Compare two traces
 
 ```bash
@@ -111,13 +143,15 @@ TraceRazor computes a composite efficiency score from eight component metrics ac
 | **TUR** | Token Utilisation Ratio | 10% | `useful_output_tokens / total_tokens` | > 0.35 |
 | **CCE** | Context Carry-over Efficiency | 10% | `1 − (duplicate_context_tokens / total_input_tokens)` | > 0.60 |
 
-### Phase 2: Semantic Metrics (planned)
+### Phase 2: Semantic Metrics (implemented)
 
 | Code | Metric | Weight | Detection |
 |------|--------|--------|-----------|
-| **RDA** | Reasoning Depth Appropriateness | 10% | LLM task complexity classifier |
-| **ISR** | Information Sufficiency Rate | 10% | Embedding drift / novelty |
-| **DBO** | Decision Branch Optimality | 10% | LLM retrospective judge |
+| **RDA** | Reasoning Depth Appropriateness | 10% | GPT-4o-mini task complexity classifier → expected vs actual steps |
+| **ISR** | Information Sufficiency Rate | 10% | Cosine distance between step embeddings; steps with < 10% novelty flagged |
+| **DBO** | Decision Branch Optimality | 10% | GPT-4o-mini retrospective judge evaluates each decision point |
+
+Phase 2 metrics activate automatically with `--semantic` flag when `OPENAI_API_KEY` is set.
 
 ### Composite Score (TAS)
 
@@ -278,7 +312,7 @@ Heuristic attribution: steps flagged as REDUNDANT or LOOP contribute 0 useful to
 
 ## Phasing
 
-### Phase 1: CLI Auditor (this release, Weeks 1–6)
+### Phase 1: CLI Auditor ✅
 
 - [x] Rust workspace with 5 crates
 - [x] LangSmith JSON + raw JSON + OTEL ingestion
@@ -286,19 +320,31 @@ Heuristic attribution: steps flagged as REDUNDANT or LOOP contribute 0 useful to
 - [x] TAS composite score + VAE multiplier
 - [x] JSON and Markdown report output
 - [x] CLI: `audit`, `list`, `compare` commands
-- [x] CI/CD gating via `--threshold` flag
+- [x] CI/CD gating via `--threshold` flag (exit code 1 on failure)
 - [x] SurrealDB in-memory store for within-session historical benchmarking
-- [x] 23 unit tests across all crates
+- [x] 28 unit tests across all crates
 - [x] Sample trace: `traces/support-agent-run-2847.json`
 
-### Phase 2: Semantic Analysis and Integrations (Weeks 7–12)
+### Phase 2: Semantic Analysis + LangGraph Integration ✅
 
-- [ ] ONNX Runtime (`ort`) + all-MiniLM-L6-v2 bundled embeddings for true SRR
-- [ ] LLM-powered metrics: RDA, ISR, DBO (Anthropic + OpenAI API)
-- [ ] Callback adapters: LangGraph, CrewAI, OpenAI Agents SDK
-- [ ] Real-time loop detection with configurable abort
+- [x] OpenAI `text-embedding-3-small` for accurate SRR/ISR (batched, single API call)
+- [x] RDA metric — GPT-4o-mini task complexity classifier
+- [x] ISR metric — embedding novelty detection per step
+- [x] DBO metric — GPT-4o-mini retrospective branch optimality judge
+- [x] `--semantic` flag activates full Phase 2 pipeline (auto-loads `.env`)
+- [x] LangGraph Python callback adapter (`integrations/langgraph/`)
+- [x] `TraceRazorCallback` captures LLM + tool events, calls CLI, returns structured report
+- [x] `.env` key management with `.gitignore` protection
+
+### Phase 3: Dashboard and Proxy (Weeks 13–20)
+
+- [ ] Web dashboard (React + Axum backend) with aggregate analytics
+- [ ] Proxy layer with active prompt rewriting and guardrail system
+- [ ] Known-good-paths knowledge base (SurrealDB graph storage)
+- [ ] Historical benchmarking and trend analysis
+- [ ] Team and project management features
+- [ ] WASM compilation target for browser/TypeScript usage
 - [ ] SurrealDB `kv-surrealkv` for persistent cross-session storage
-- [ ] GitHub Action for CI/CD gating
 - [ ] PyO3 Python bindings (`pip install tracerazor`)
 
 ### Phase 3: Dashboard and Proxy (Weeks 13–20)
@@ -312,16 +358,22 @@ Heuristic attribution: steps flagged as REDUNDANT or LOOP contribute 0 useful to
 
 ---
 
-## Questions to Address Before Phase 2
+## Environment variables
 
-**API keys needed for Phase 2:**
-- `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY`) for LLM-powered metrics (RDA, ISR, DBO)
-- No API key needed for Phase 1 — fully offline
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENAI_API_KEY` | — | Required for `--semantic` (Phase 2) |
+| `TRACERAZOR_LLM_MODEL` | `gpt-4o-mini` | Chat model for RDA / DBO |
+| `TRACERAZOR_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model for SRR / ISR |
+| `TRACERAZOR_BIN` | auto-detected | Path to `tracerazor` binary (Python adapter) |
 
-**Open questions:**
-- Should the Python SDK expose the full API or a simplified high-level interface?
-- What's the preferred deployment for the Phase 3 hosted dashboard (self-hosted Docker vs managed cloud)?
-- Should the GitHub Action produce PR comments with the report inline, or post to a separate status check?
+Store in `.env` at the repo root (already in `.gitignore`).
+
+## Open questions for Phase 3
+
+- Preferred deployment for the web dashboard — self-hosted Docker or managed cloud (TraceRazor Cloud)?
+- Should the GitHub Action post inline PR comments or a separate status check?
+- PyO3 Python SDK — full API surface or high-level simplified interface?
 
 ---
 
