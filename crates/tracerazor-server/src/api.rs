@@ -9,8 +9,8 @@
 ///   GET    /api/agents        — per-agent statistics
 ///   GET    /api/agents/:name  — stats for a single agent
 use axum::{
-    extract::{Path, State},
-    http::StatusCode,
+    extract::{Path, Query, State},
+    http::{header, StatusCode},
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
@@ -33,6 +33,8 @@ pub fn router() -> Router<AppState> {
         .route("/dashboard", get(dashboard))
         .route("/agents", get(list_agents))
         .route("/agents/:name", get(get_agent))
+        .route("/compare", get(compare))
+        .route("/metrics", get(metrics))
 }
 
 async fn index() -> impl IntoResponse {
@@ -206,6 +208,131 @@ impl IntoResponse for AppError {
     }
 }
 
+// ── Compare ───────────────────────────────────────────────────────────────────
+
+#[derive(Deserialize)]
+struct CompareParams {
+    a: String,
+    b: String,
+}
+
+#[derive(Serialize)]
+pub struct CompareResponse {
+    pub a: tracerazor_store::TraceSummary,
+    pub b: tracerazor_store::TraceSummary,
+    /// b.tas_score − a.tas_score (positive = b improved)
+    pub tas_diff: f64,
+    /// b.tokens_saved − a.tokens_saved
+    pub tokens_saved_diff: i64,
+    pub verdict: String,
+}
+
+/// GET /api/compare?a=trace-id-1&b=trace-id-2
+async fn compare(
+    Query(params): Query<CompareParams>,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    let sa = state
+        .store
+        .get_trace(&params.a)
+        .await
+        .map_err(AppError::internal)?
+        .ok_or_else(|| AppError::not_found(format!("Trace '{}' not found", params.a)))?;
+
+    let sb = state
+        .store
+        .get_trace(&params.b)
+        .await
+        .map_err(AppError::internal)?
+        .ok_or_else(|| AppError::not_found(format!("Trace '{}' not found", params.b)))?;
+
+    // Build summaries inline (mirrors store::to_summary logic).
+    let sum_a = tracerazor_store::TraceSummary {
+        trace_id: sa.trace.trace_id.clone(),
+        agent_name: sa.trace.agent_name.clone(),
+        framework: sa.trace.framework.clone(),
+        total_steps: sa.trace.steps.len(),
+        total_tokens: sa.trace.effective_total_tokens(),
+        tas_score: sa.report.as_ref().map(|r| r.score.score),
+        grade: sa.report.as_ref().map(|r| r.score.grade.to_string()),
+        stored_at: sa.stored_at.clone(),
+        tokens_saved: sa.report.as_ref().map(|r| r.savings.tokens_saved),
+    };
+
+    let sum_b = tracerazor_store::TraceSummary {
+        trace_id: sb.trace.trace_id.clone(),
+        agent_name: sb.trace.agent_name.clone(),
+        framework: sb.trace.framework.clone(),
+        total_steps: sb.trace.steps.len(),
+        total_tokens: sb.trace.effective_total_tokens(),
+        tas_score: sb.report.as_ref().map(|r| r.score.score),
+        grade: sb.report.as_ref().map(|r| r.score.grade.to_string()),
+        stored_at: sb.stored_at.clone(),
+        tokens_saved: sb.report.as_ref().map(|r| r.savings.tokens_saved),
+    };
+
+    let tas_a = sum_a.tas_score.unwrap_or(0.0);
+    let tas_b = sum_b.tas_score.unwrap_or(0.0);
+    let tas_diff = ((tas_b - tas_a) * 10.0).round() / 10.0;
+
+    let saved_a = sum_a.tokens_saved.unwrap_or(0) as i64;
+    let saved_b = sum_b.tokens_saved.unwrap_or(0) as i64;
+    let tokens_saved_diff = saved_b - saved_a;
+
+    let verdict = match tas_diff {
+        d if d > 5.0 => format!("B improved by {:.1} TAS points", d),
+        d if d < -5.0 => format!("B regressed by {:.1} TAS points", d.abs()),
+        d => format!("No significant change ({:+.1} TAS points)", d),
+    };
+
+    Ok(Json(CompareResponse { a: sum_a, b: sum_b, tas_diff, tokens_saved_diff, verdict }))
+}
+
+// ── Prometheus Metrics ────────────────────────────────────────────────────────
+
+/// GET /api/metrics  — Prometheus text exposition format (no external crate).
+async fn metrics(State(state): State<AppState>) -> impl IntoResponse {
+    let data = match state.store.dashboard_data().await {
+        Ok(d) => d,
+        Err(e) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                [(header::CONTENT_TYPE, "text/plain")],
+                format!("# error fetching metrics: {e}\n"),
+            );
+        }
+    };
+
+    let out = format!(
+        "# HELP tracerazor_traces_total Total number of traces stored\n\
+         # TYPE tracerazor_traces_total gauge\n\
+         tracerazor_traces_total {traces}\n\
+         # HELP tracerazor_agents_total Number of distinct agents seen\n\
+         # TYPE tracerazor_agents_total gauge\n\
+         tracerazor_agents_total {agents}\n\
+         # HELP tracerazor_avg_tas_score Average TAS score across all traces\n\
+         # TYPE tracerazor_avg_tas_score gauge\n\
+         tracerazor_avg_tas_score {avg_tas}\n\
+         # HELP tracerazor_tokens_saved_total Cumulative tokens saved across all traces\n\
+         # TYPE tracerazor_tokens_saved_total counter\n\
+         tracerazor_tokens_saved_total {tokens_saved}\n\
+         # HELP tracerazor_cost_saved_usd_total Cumulative USD saved (rough estimate at $3/M tokens)\n\
+         # TYPE tracerazor_cost_saved_usd_total counter\n\
+         tracerazor_cost_saved_usd_total {cost_saved}\n",
+        traces = data.total_traces,
+        agents = data.total_agents,
+        avg_tas = data.avg_tas,
+        tokens_saved = data.total_tokens_saved,
+        cost_saved = data.total_cost_saved_usd,
+    );
+
+    (
+        StatusCode::OK,
+        [(header::CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8")],
+        out,
+    )
+}
+
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -277,6 +404,23 @@ mod tests {
     async fn test_get_trace_not_found() {
         let server = test_app().await;
         let resp = server.get("/api/traces/nonexistent").await;
+        resp.assert_status(StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_metrics() {
+        let server = test_app().await;
+        let resp = server.get("/api/metrics").await;
+        resp.assert_status_ok();
+        let body = resp.text();
+        assert!(body.contains("tracerazor_traces_total"));
+        assert!(body.contains("tracerazor_avg_tas_score"));
+    }
+
+    #[tokio::test]
+    async fn test_compare_not_found() {
+        let server = test_app().await;
+        let resp = server.get("/api/compare?a=x&b=y").await;
         resp.assert_status(StatusCode::NOT_FOUND);
     }
 }

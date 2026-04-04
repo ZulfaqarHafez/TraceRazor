@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en" x-data="app()" x-init="boot()" :class="dark ? 'dark' : 'light'">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TraceRazor</title>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117; --surface: #1e293b; --surface2: #162032;
+      --border: #334155; --text: #e2e8f0; --muted: #64748b;
+      --accent: #3b82f6; --success: #22c55e; --warn: #f59e0b; --danger: #ef4444;
+      --radius: 10px;
+    }
+    .light {
+      --bg: #f1f5f9; --surface: #ffffff; --surface2: #f8fafc;
+      --border: #e2e8f0; --text: #0f172a; --muted: #94a3b8;
+      --accent: #2563eb;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; font-size: 14px; line-height: 1.5; }
+    a { color: var(--accent); text-decoration: none; }
+
+    /* Layout */
+    header { display: flex; align-items: center; gap: 12px; padding: 0 24px; height: 52px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+    .logo { font-weight: 700; font-size: 16px; color: var(--accent); margin-right: 8px; white-space: nowrap; }
+    nav { display: flex; gap: 2px; flex: 1; flex-wrap: wrap; }
+    .tab-btn { background: none; border: none; color: var(--muted); cursor: pointer; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-family: inherit; transition: background .15s, color .15s; }
+    .tab-btn:hover { background: var(--surface2); color: var(--text); }
+    .tab-btn.active { background: var(--surface2); color: var(--text); font-weight: 600; }
+    .header-right { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+    .theme-btn { background: none; border: 1px solid var(--border); color: var(--muted); cursor: pointer; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-family: inherit; }
+    .theme-btn:hover { color: var(--text); }
+    .live-dot { color: var(--success); font-size: 11px; font-weight: 700; }
+
+    main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+    h2 { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: var(--text); }
+
+    /* Cards */
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--surface); border-radius: var(--radius); padding: 16px; border: 1px solid var(--border); }
+    .stat-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+    .stat-value { font-size: 22px; font-weight: 700; }
+    .stat-sub { color: var(--success); font-size: 12px; margin-top: 4px; }
+
+    /* Chart */
+    .chart-box { background: var(--surface); border-radius: var(--radius); padding: 16px; margin-bottom: 24px; border: 1px solid var(--border); }
+
+    /* Table */
+    .table-wrap { overflow-x: auto; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 8px 12px; font-size: 11px; color: var(--muted); border-bottom: 1px solid var(--border); white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
+    td { padding: 9px 12px; font-size: 13px; border-bottom: 1px solid var(--border); }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover td { background: var(--surface2); }
+
+    /* Badges */
+    .badge { display: inline-block; border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 700; color: #fff; }
+    .badge-Excellent { background: #16a34a; }
+    .badge-Good      { background: #2563eb; }
+    .badge-Fair      { background: #d97706; }
+    .badge-Poor      { background: #dc2626; }
+
+    /* Forms */
+    textarea, input[type=text] { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 10px 12px; font-size: 13px; font-family: monospace; resize: vertical; outline: none; }
+    textarea:focus, input[type=text]:focus { border-color: var(--accent); }
+    .btn { border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; font-family: inherit; padding: 9px 18px; transition: opacity .15s; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled) { opacity: .85; }
+    .btn-danger  { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 13px; padding: 4px 8px; }
+    .btn-ghost   { background: var(--surface); border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 5px 12px; cursor: pointer; font-size: 13px; font-family: inherit; }
+    .btn-ghost:hover { color: var(--text); }
+
+    /* Alerts */
+    .error-box   { margin-top: 12px; background: color-mix(in srgb, var(--danger) 10%, transparent); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 12px; color: var(--danger); font-size: 13px; }
+    .success-box { margin-top: 12px; background: color-mix(in srgb, var(--success) 10%, transparent); border: 1px solid var(--success); border-radius: 8px; padding: 12px; }
+    .info-box    { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 13px; color: var(--muted); }
+
+    pre { background: var(--surface2); border-radius: 8px; padding: 14px; font-size: 12px; color: var(--muted); overflow: auto; white-space: pre-wrap; border: 1px solid var(--border); }
+    .mono { font-family: monospace; font-size: 12px; }
+
+    /* Compare diff */
+    .diff-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    @media (max-width: 640px) { .diff-row { grid-template-columns: 1fr; } nav { gap: 0; } .stat-row { grid-template-columns: 1fr 1fr; } }
+
+    /* Event feed */
+    .event-card { background: var(--surface); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; border-left: 3px solid var(--accent); font-size: 13px; }
+    .event-type { font-family: monospace; font-weight: 700; color: var(--accent); }
+
+    .empty { color: var(--muted); text-align: center; padding: 48px 0; font-size: 14px; }
+    .score-up   { color: var(--success); font-weight: 700; }
+    .score-down { color: var(--danger);  font-weight: 700; }
+    .score-same { color: var(--muted);   font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<header>
+  <span class="logo">⚡ TraceRazor</span>
+  <nav>
+    <template x-for="t in tabs" :key="t.id">
+      <button class="tab-btn" :class="{active: tab===t.id}" @click="tab=t.id" x-text="t.label"></button>
+    </template>
+  </nav>
+  <div class="header-right">
+    <span class="live-dot" x-show="liveEvents.length > 0" title="Live events streaming">● LIVE</span>
+    <button class="theme-btn" @click="toggleTheme()" x-text="dark ? '☀ Light' : '🌙 Dark'"></button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ── DASHBOARD ── -->
+  <div x-show="tab==='dashboard'">
+    <template x-if="!dashboard">
+      <p class="empty">Loading…</p>
+    </template>
+    <template x-if="dashboard">
+      <div>
+        <h2>Overview</h2>
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-label">Traces</div>
+            <div class="stat-value" x-text="dashboard.total_traces"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Agents</div>
+            <div class="stat-value" x-text="dashboard.total_agents"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avg TAS</div>
+            <div class="stat-value" x-text="(dashboard.avg_tas ?? 0).toFixed(1) + ' / 100'"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Tokens Saved</div>
+            <div class="stat-value" x-text="fmtNum(dashboard.total_tokens_saved)"></div>
+            <div class="stat-sub" x-text="'$' + (dashboard.total_cost_saved_usd ?? 0).toFixed(2) + ' saved'"></div>
+          </div>
+        </div>
+
+        <template x-if="dashboard.tas_trend && dashboard.tas_trend.length > 0">
+          <div>
+            <h2>TAS Score Trend</h2>
+            <div class="chart-box">
+              <canvas id="trendChart" height="180"></canvas>
+            </div>
+          </div>
+        </template>
+
+        <template x-if="dashboard.agent_rankings && dashboard.agent_rankings.length > 0">
+          <div>
+            <h2>Agent Rankings <span style="font-weight:400;color:var(--muted);font-size:12px;">(worst first)</span></h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Agent</th><th>Traces</th><th>Avg TAS</th><th>Min</th><th>Max</th><th>Tokens Saved</th></tr>
+                </thead>
+                <tbody>
+                  <template x-for="a in dashboard.agent_rankings" :key="a.agent_name">
+                    <tr>
+                      <td x-text="a.agent_name"></td>
+                      <td x-text="a.trace_count"></td>
+                      <td x-text="(a.avg_tas ?? 0).toFixed(1)"></td>
+                      <td x-text="(a.min_tas ?? 0).toFixed(1)"></td>
+                      <td x-text="(a.max_tas ?? 0).toFixed(1)"></td>
+                      <td x-text="fmtNum(a.total_tokens_saved)"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </template>
+
+        <template x-if="dashboard.recent_traces && dashboard.recent_traces.length > 0">
+          <div>
+            <h2>Recent Traces</h2>
+            <div x-data="" x-init="">
+              <div class="table-wrap" x-html="tracesTable(dashboard.recent_traces)"></div>
+            </div>
+          </div>
+        </template>
+      </div>
+    </template>
+  </div>
+
+  <!-- ── TRACES ── -->
+  <div x-show="tab==='traces'">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <h2 style="margin:0">All Traces</h2>
+      <button class="btn-ghost" @click="reload()">↻ Refresh</button>
+    </div>
+    <template x-if="traces.length === 0">
+      <p class="empty">No traces stored yet.</p>
+    </template>
+    <template x-if="traces.length > 0">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Trace ID</th><th>Agent</th><th>Framework</th><th>Steps</th><th>Tokens</th><th>TAS</th><th>Grade</th><th>Stored</th><th></th></tr>
+          </thead>
+          <tbody>
+            <template x-for="t in traces" :key="t.trace_id">
+              <tr class="clickable" @click="openTrace(t.trace_id)">
+                <td class="mono" x-text="t.trace_id"></td>
+                <td x-text="t.agent_name"></td>
+                <td x-text="t.framework"></td>
+                <td x-text="t.total_steps"></td>
+                <td x-text="fmtNum(t.total_tokens)"></td>
+                <td x-text="t.tas_score != null ? t.tas_score.toFixed(1) : '—'"></td>
+                <td><span x-show="t.grade" class="badge" :class="'badge-' + t.grade" x-text="t.grade"></span></td>
+                <td x-text="(t.stored_at || '').slice(0,10)"></td>
+                <td><button class="btn-danger" @click.stop="doDelete(t.trace_id)">✕</button></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
+  </div>
+
+  <!-- ── TRACE DETAIL ── -->
+  <div x-show="tab==='detail'">
+    <button class="btn-ghost" style="margin-bottom:16px" @click="tab='traces'">← Back</button>
+    <template x-if="selectedTrace">
+      <div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+          <h2 style="margin:0" class="mono" x-text="selectedTrace.trace.trace_id"></h2>
+          <button class="btn-danger" @click="doDelete(selectedTrace.trace.trace_id)">Delete</button>
+        </div>
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-label">Agent</div><div class="stat-value" style="font-size:16px" x-text="selectedTrace.trace.agent_name"></div></div>
+          <div class="stat-card"><div class="stat-label">Framework</div><div class="stat-value" style="font-size:16px" x-text="selectedTrace.trace.framework"></div></div>
+          <div class="stat-card"><div class="stat-label">Steps</div><div class="stat-value" x-text="selectedTrace.trace.steps && selectedTrace.trace.steps.length"></div></div>
+          <div class="stat-card"><div class="stat-label">Total Tokens</div><div class="stat-value" x-text="fmtNum(selectedTrace.trace.total_tokens)"></div></div>
+          <template x-if="selectedTrace.report">
+            <div class="stat-card"><div class="stat-label">TAS Score</div><div class="stat-value" x-text="(selectedTrace.report.score.score || 0).toFixed(1) + ' / 100'"></div></div>
+          </template>
+        </div>
+        <pre x-text="JSON.stringify(selectedTrace, null, 2)"></pre>
+      </div>
+    </template>
+  </div>
+
+  <!-- ── AUDIT ── -->
+  <div x-show="tab==='audit'" style="max-width:760px">
+    <h2>Audit a Trace</h2>
+    <p style="color:var(--muted);margin-bottom:12px;font-size:13px;">Paste raw trace JSON and click Analyse to get a TAS report.</p>
+    <textarea x-model="auditInput" rows="14" placeholder='{"trace_id":"run-001","agent_name":"my-agent","framework":"raw","total_tokens":2500,"task_value_score":1.0,"steps":[...]}'></textarea>
+    <div style="margin-top:10px">
+      <button class="btn btn-primary" @click="doAudit()" :disabled="auditLoading || !auditInput.trim()">
+        <span x-text="auditLoading ? 'Analysing…' : 'Analyse Trace'"></span>
+      </button>
+    </div>
+    <div class="error-box" x-show="auditError" x-text="auditError"></div>
+    <div class="success-box" x-show="auditResult">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <strong x-text="auditResult && auditResult.agent_name"></strong>
+        <span class="badge" :class="auditResult && 'badge-' + auditResult.grade" x-text="auditResult && auditResult.grade"></span>
+        <span x-text="auditResult && auditResult.tas_score.toFixed(1) + ' / 100'"></span>
+        <span style="color:var(--muted);font-size:12px" x-text="auditResult && fmtNum(auditResult.tokens_saved) + ' tokens saved'"></span>
+      </div>
+      <pre x-text="auditResult && auditResult.report_markdown"></pre>
+    </div>
+  </div>
+
+  <!-- ── COMPARE ── -->
+  <div x-show="tab==='compare'" style="max-width:760px">
+    <h2>Compare Two Traces</h2>
+    <p style="color:var(--muted);margin-bottom:14px;font-size:13px;">Enter two trace IDs to see a side-by-side TAS comparison.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div>
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Trace A (baseline)</label>
+        <input type="text" x-model="compareA" placeholder="trace-id-1">
+      </div>
+      <div>
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px">Trace B (new version)</label>
+        <input type="text" x-model="compareB" placeholder="trace-id-2">
+      </div>
+    </div>
+    <button class="btn btn-primary" @click="doCompare()" :disabled="compareLoading || !compareA.trim() || !compareB.trim()">
+      <span x-text="compareLoading ? 'Comparing…' : 'Compare'"></span>
+    </button>
+    <div class="error-box" x-show="compareError" x-text="compareError"></div>
+    <template x-if="compareResult">
+      <div style="margin-top:20px">
+        <div class="info-box" style="margin-bottom:16px">
+          <strong>Verdict: </strong>
+          <span :class="compareResult.tas_diff > 5 ? 'score-up' : compareResult.tas_diff < -5 ? 'score-down' : 'score-same'"
+                x-text="compareResult.verdict"></span>
+        </div>
+        <div class="diff-row">
+          <div>
+            <h2>A — Baseline</h2>
+            <div class="stat-card" style="margin-bottom:10px">
+              <div class="stat-label" x-text="compareResult.a.agent_name + ' · ' + compareResult.a.framework"></div>
+              <div class="stat-value" x-text="compareResult.a.tas_score != null ? compareResult.a.tas_score.toFixed(1) + ' / 100' : 'N/A'"></div>
+              <div style="margin-top:6px">
+                <span class="badge" :class="'badge-' + compareResult.a.grade" x-text="compareResult.a.grade || '—'"></span>
+                <span style="color:var(--muted);font-size:12px;margin-left:8px" x-text="fmtNum(compareResult.a.total_tokens) + ' tokens'"></span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h2>B — New Version</h2>
+            <div class="stat-card" style="margin-bottom:10px">
+              <div class="stat-label" x-text="compareResult.b.agent_name + ' · ' + compareResult.b.framework"></div>
+              <div class="stat-value" x-text="compareResult.b.tas_score != null ? compareResult.b.tas_score.toFixed(1) + ' / 100' : 'N/A'">
+              </div>
+              <div style="margin-top:6px">
+                <span class="badge" :class="'badge-' + compareResult.b.grade" x-text="compareResult.b.grade || '—'"></span>
+                <span style="color:var(--muted);font-size:12px;margin-left:8px" x-text="fmtNum(compareResult.b.total_tokens) + ' tokens'"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="stat-row" style="grid-template-columns:1fr 1fr">
+          <div class="stat-card">
+            <div class="stat-label">TAS Δ</div>
+            <div class="stat-value"
+              :class="compareResult.tas_diff > 0 ? 'score-up' : compareResult.tas_diff < 0 ? 'score-down' : 'score-same'"
+              x-text="(compareResult.tas_diff >= 0 ? '+' : '') + compareResult.tas_diff.toFixed(1)"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Tokens Saved Δ</div>
+            <div class="stat-value"
+              :class="compareResult.tokens_saved_diff > 0 ? 'score-up' : compareResult.tokens_saved_diff < 0 ? 'score-down' : 'score-same'"
+              x-text="(compareResult.tokens_saved_diff >= 0 ? '+' : '') + fmtNum(compareResult.tokens_saved_diff)"></div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- ── LIVE ── -->
+  <div x-show="tab==='live'">
+    <h2>Live Events</h2>
+    <template x-if="liveEvents.length === 0">
+      <p class="empty">Waiting for live events — audit a trace to see real-time updates here.</p>
+    </template>
+    <template x-for="(e, i) in liveEvents" :key="i">
+      <div class="event-card">
+        <span class="event-type" x-text="e.type"></span>
+        <template x-if="e.type === 'trace_analysed'">
+          <span>
+            — <strong x-text="e.agent_name"></strong> scored
+            <strong x-text="(e.tas_score || 0).toFixed(1)"></strong>
+            &nbsp;<span class="badge" :class="'badge-' + e.grade" x-text="e.grade"></span>
+            &nbsp;·&nbsp;<span x-text="fmtNum(e.tokens_saved) + ' tokens saved'"></span>
+          </span>
+        </template>
+        <template x-if="e.type === 'loop_detected'">
+          <span> — Loop at step <strong x-text="e.step_id"></strong>: <span class="mono" x-text="e.cycle"></span></span>
+        </template>
+      </div>
+    </template>
+  </div>
+
+</main>
+
+<script>
+function app() {
+  return {
+    dark: localStorage.getItem('tr-theme') !== 'light',
+    tab: 'dashboard',
+    tabs: [
+      {id:'dashboard', label:'Dashboard'},
+      {id:'traces',    label:'Traces'},
+      {id:'audit',     label:'Audit'},
+      {id:'compare',   label:'Compare'},
+      {id:'live',      label:'Live'},
+    ],
+    dashboard: null,
+    traces: [],
+    selectedTrace: null,
+    liveEvents: [],
+    auditInput: '',
+    auditResult: null,
+    auditError: null,
+    auditLoading: false,
+    compareA: '',
+    compareB: '',
+    compareResult: null,
+    compareError: null,
+    compareLoading: false,
+    _chart: null,
+    _ws: null,
+
+    async boot() {
+      await this.reload()
+      this.connectWs()
+    },
+
+    toggleTheme() {
+      this.dark = !this.dark
+      localStorage.setItem('tr-theme', this.dark ? 'dark' : 'light')
+      this.$nextTick(() => this.drawChart())
+    },
+
+    async reload() {
+      try {
+        const [d, t] = await Promise.all([
+          fetch('/api/dashboard').then(r => r.json()),
+          fetch('/api/traces').then(r => r.json()),
+        ])
+        this.dashboard = d
+        this.traces = t
+        this.$nextTick(() => this.drawChart())
+      } catch(e) { console.error(e) }
+    },
+
+    drawChart() {
+      const trend = this.dashboard?.tas_trend
+      if (!trend || trend.length === 0) return
+      const canvas = document.getElementById('trendChart')
+      if (!canvas) return
+      if (this._chart) { this._chart.destroy(); this._chart = null }
+      const isDark = this.dark
+      const gridColor  = isDark ? '#1e293b' : '#e2e8f0'
+      const tickColor  = isDark ? '#64748b' : '#94a3b8'
+      this._chart = new Chart(canvas, {
+        type: 'line',
+        data: {
+          labels: trend.map(p => (p.timestamp || '').slice(0,10)),
+          datasets: [{
+            label: 'TAS Score',
+            data: trend.map(p => p.tas_score),
+            borderColor: '#3b82f6',
+            backgroundColor: 'rgba(59,130,246,0.08)',
+            borderWidth: 2,
+            pointRadius: 3,
+            tension: 0.3,
+            fill: true,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: tickColor, maxTicksLimit: 10 } },
+            y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: tickColor } },
+          }
+        }
+      })
+    },
+
+    async openTrace(id) {
+      try {
+        this.selectedTrace = await fetch(`/api/traces/${id}`).then(r => r.json())
+        this.tab = 'detail'
+      } catch(e) { alert(e.message) }
+    },
+
+    async doDelete(id) {
+      if (!confirm(`Delete trace ${id}?`)) return
+      await fetch(`/api/traces/${id}`, {method:'DELETE'})
+      if (this.selectedTrace?.trace?.trace_id === id) { this.selectedTrace = null; this.tab = 'traces' }
+      await this.reload()
+    },
+
+    async doAudit() {
+      this.auditResult = null; this.auditError = null; this.auditLoading = true
+      try {
+        const trace = JSON.parse(this.auditInput)
+        const r = await fetch('/api/audit', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({trace}),
+        })
+        if (!r.ok) { const e = await r.json().catch(()=>({error:r.statusText})); throw new Error(e.error) }
+        this.auditResult = await r.json()
+        await this.reload()
+      } catch(e) { this.auditError = e.message }
+      finally { this.auditLoading = false }
+    },
+
+    async doCompare() {
+      this.compareResult = null; this.compareError = null; this.compareLoading = true
+      try {
+        const r = await fetch(`/api/compare?a=${encodeURIComponent(this.compareA)}&b=${encodeURIComponent(this.compareB)}`)
+        if (!r.ok) { const e = await r.json().catch(()=>({error:r.statusText})); throw new Error(e.error) }
+        this.compareResult = await r.json()
+      } catch(e) { this.compareError = e.message }
+      finally { this.compareLoading = false }
+    },
+
+    connectWs() {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+      const ws = new WebSocket(`${proto}://${location.host}/ws`)
+      ws.onmessage = (e) => {
+        try {
+          const ev = JSON.parse(e.data)
+          this.liveEvents = [ev, ...this.liveEvents].slice(0, 30)
+          if (ev.type === 'trace_analysed') this.reload()
+        } catch(_) {}
+      }
+      ws.onclose = () => setTimeout(() => this.connectWs(), 3000) // auto-reconnect
+      this._ws = ws
+    },
+
+    tracesTable(rows) {
+      // Lightweight table HTML for the dashboard recent traces section.
+      const ths = ['Trace ID','Agent','Steps','Tokens','TAS','Grade','Stored']
+        .map(h => `<th>${h}</th>`).join('')
+      const trs = rows.map(t => {
+        const badge = t.grade ? `<span class="badge badge-${t.grade}">${t.grade}</span>` : '—'
+        return `<tr class="clickable" onclick="document.dispatchEvent(new CustomEvent('open-trace',{detail:'${t.trace_id}'}))">
+          <td class="mono">${t.trace_id}</td>
+          <td>${t.agent_name}</td>
+          <td>${t.total_steps}</td>
+          <td>${this.fmtNum(t.total_tokens)}</td>
+          <td>${t.tas_score != null ? t.tas_score.toFixed(1) : '—'}</td>
+          <td>${badge}</td>
+          <td>${(t.stored_at||'').slice(0,10)}</td>
+        </tr>`
+      }).join('')
+      return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`
+    },
+
+    fmtNum: n => Number(n||0).toLocaleString(),
+  }
+}
+
+// Bridge for tracesTable click → Alpine tab change
+document.addEventListener('open-trace', e => {
+  // Walk up to find the Alpine component
+  const root = document.querySelector('[x-data]')
+  if (root && root._x_dataStack) {
+    const data = root._x_dataStack[0]
+    data.openTrace && data.openTrace(e.detail)
+  }
+})
+</script>
+</body>
+</html>
