@@ -1,0 +1,31 @@
+[package]
+name = "tracerazor-server"
+version = "0.1.0"
+edition = "2021"
+description = "TraceRazor Axum HTTP server — REST API and WebSocket for the dashboard"
+license = "Apache-2.0"
+
+[[bin]]
+name = "tracerazor-server"
+path = "src/main.rs"
+
+[dependencies]
+tracerazor-core = { path = "../tracerazor-core" }
+tracerazor-ingest = { path = "../tracerazor-ingest" }
+tracerazor-semantic = { path = "../tracerazor-semantic" }
+tracerazor-store = { path = "../tracerazor-store" }
+tracerazor-proxy = { path = "../tracerazor-proxy" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+axum = { workspace = true }
+tower-http = { workspace = true, features = ["cors", "fs"] }
+tower = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+futures-util = { workspace = true }
+dotenvy = "0.15"
+
+[dev-dependencies]
+axum-test = "15"

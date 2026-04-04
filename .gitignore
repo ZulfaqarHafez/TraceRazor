@@ -1,5 +1,15 @@
+# Rust build output
 /target
-Cargo.lock
+
+# Database files
 *.db
-tracerazor-reports/
+
+# Secrets
 .env
+
+# Report output directory
+tracerazor-reports/
+
+# Dashboard: dependencies and build output
+dashboard/node_modules/
+dashboard/dist/

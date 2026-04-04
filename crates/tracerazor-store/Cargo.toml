@@ -2,7 +2,7 @@
 name = "tracerazor-store"
 version = "0.1.0"
 edition = "2021"
-description = "Persistent trace storage for TraceRazor using SurrealDB embedded"
+description = "Persistent trace storage for TraceRazor using SurrealDB"
 license = "Apache-2.0"
 
 [dependencies]
@@ -14,4 +14,6 @@ anyhow = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
 tokio = { workspace = true }
-surrealdb = { version = "2", features = ["kv-mem"] }
+# kv-mem: in-memory (tests/CLI session)
+# kv-surrealkv: persistent embedded (server/production)
+surrealdb = { version = "2", features = ["kv-mem", "kv-surrealkv"] }
