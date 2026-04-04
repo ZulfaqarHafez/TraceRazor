@@ -12,14 +12,15 @@ use axum::{
     extract::{Path, Query, State},
     http::{header, StatusCode},
     response::IntoResponse,
-    routing::{get, post},
+    routing::{delete, get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracerazor_core::{analyse, scoring::ScoringConfig};
 use tracerazor_ingest::{parse, TraceFormat};
-use tracerazor_semantic::default_similarity_fn;
+use tracerazor_semantic::{default_similarity_fn, BowSimilarity, Similarity};
+use tracerazor_store::{KGP_CAPTURE_THRESHOLD, build_kb_entry};
 
 use crate::state::{AppState, WsEvent};
 
@@ -35,6 +36,9 @@ pub fn router() -> Router<AppState> {
         .route("/agents/:name", get(get_agent))
         .route("/compare", get(compare))
         .route("/metrics", get(metrics))
+        // Known-Good-Paths knowledge base
+        .route("/kb", get(list_kb))
+        .route("/kb/:id", get(get_kb_entry).delete(delete_kb_entry))
 }
 
 async fn index() -> impl IntoResponse {
@@ -67,6 +71,10 @@ pub struct AuditResponse {
     pub grade: String,
     pub tokens_saved: u32,
     pub report_markdown: String,
+    /// Whether this trace was auto-captured into the KB (TAS ≥ threshold).
+    pub captured_to_kb: bool,
+    /// Closest matching KB entry for this agent (if similarity ≥ 0.45).
+    pub kb_match: Option<tracerazor_store::KgpMatch>,
 }
 
 /// POST /api/audit
@@ -92,12 +100,26 @@ async fn audit(
         .map_err(AppError::internal)?;
 
     let tokens_saved = report.savings.tokens_saved;
+    let tas_score = report.score.score;
+    let grade = report.score.grade.to_string();
+
+    // ── KB: find similar prior runs before potentially adding this one ────────
+    let kb_match = find_kb_match(&state, &trace, &report).await;
+
+    // ── KB: auto-capture if this trace scores above the threshold ─────────────
+    let captured_to_kb = if tas_score >= KGP_CAPTURE_THRESHOLD {
+        let entry = build_kb_entry(&trace, &report);
+        state.store.save_kb_entry(&entry).await.map_err(AppError::internal)?;
+        true
+    } else {
+        false
+    };
 
     let _ = state.events.send(WsEvent::TraceAnalysed {
         trace_id: trace.trace_id.clone(),
         agent_name: trace.agent_name.clone(),
-        tas_score: report.score.score,
-        grade: report.score.grade.to_string(),
+        tas_score,
+        grade: grade.clone(),
         tokens_saved,
     });
 
@@ -106,12 +128,50 @@ async fn audit(
         Json(AuditResponse {
             trace_id: trace.trace_id.clone(),
             agent_name: trace.agent_name.clone(),
-            tas_score: report.score.score,
-            grade: report.score.grade.to_string(),
+            tas_score,
+            grade,
             tokens_saved,
             report_markdown: report.to_markdown(),
+            captured_to_kb,
+            kb_match,
         }),
     ))
+}
+
+/// Find the best matching KB entry for the incoming trace using BoW similarity.
+async fn find_kb_match(
+    state: &AppState,
+    trace: &tracerazor_core::types::Trace,
+    report: &tracerazor_core::report::TraceReport,
+) -> Option<tracerazor_store::KgpMatch> {
+    const MATCH_THRESHOLD: f64 = 0.45;
+
+    let kb_entries = state.store.list_kb_for_agent(&trace.agent_name).await.ok()?;
+    if kb_entries.is_empty() {
+        return None;
+    }
+
+    // Use the same task_hint derivation as build_kb_entry.
+    let incoming_hint = trace
+        .steps
+        .iter()
+        .find(|s| matches!(s.step_type, tracerazor_core::types::StepType::Reasoning))
+        .map(|s| s.content.chars().take(300).collect::<String>())
+        .unwrap_or_else(|| trace.agent_name.clone());
+
+    let bow = BowSimilarity::new();
+    let best = kb_entries
+        .into_iter()
+        // Don't match against the trace itself if it was just captured.
+        .filter(|e| e.source_trace_id != trace.trace_id)
+        .map(|e| {
+            let sim = bow.similarity(&incoming_hint, &e.task_hint);
+            (e, sim)
+        })
+        .filter(|(_, sim)| *sim >= MATCH_THRESHOLD)
+        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+
+    best.map(|(entry, similarity)| tracerazor_store::KgpMatch { entry, similarity })
 }
 
 /// GET /api/traces
@@ -206,6 +266,34 @@ impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         (self.status, Json(json!({ "error": self.message }))).into_response()
     }
+}
+
+// ── Known-Good-Paths KB ───────────────────────────────────────────────────────
+
+/// GET /api/kb
+async fn list_kb(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let entries = state.store.list_kb_entries().await.map_err(AppError::internal)?;
+    Ok(Json(entries))
+}
+
+/// GET /api/kb/:id
+async fn get_kb_entry(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    match state.store.get_kb_entry(&id).await.map_err(AppError::internal)? {
+        Some(e) => Ok(Json(e)),
+        None => Err(AppError::not_found(format!("KB entry '{id}' not found"))),
+    }
+}
+
+/// DELETE /api/kb/:id
+async fn delete_kb_entry(
+    Path(id): Path<String>,
+    State(state): State<AppState>,
+) -> Result<impl IntoResponse, AppError> {
+    state.store.delete_kb_entry(&id).await.map_err(AppError::internal)?;
+    Ok(StatusCode::NO_CONTENT)
 }
 
 // ── Compare ───────────────────────────────────────────────────────────────────

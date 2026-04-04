@@ -256,12 +256,32 @@
     </div>
     <div class="error-box" x-show="auditError" x-text="auditError"></div>
     <div class="success-box" x-show="auditResult">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap;">
         <strong x-text="auditResult && auditResult.agent_name"></strong>
         <span class="badge" :class="auditResult && 'badge-' + auditResult.grade" x-text="auditResult && auditResult.grade"></span>
         <span x-text="auditResult && auditResult.tas_score.toFixed(1) + ' / 100'"></span>
         <span style="color:var(--muted);font-size:12px" x-text="auditResult && fmtNum(auditResult.tokens_saved) + ' tokens saved'"></span>
+        <span x-show="auditResult && auditResult.captured_to_kb"
+              style="color:var(--success);font-size:11px;font-weight:700;margin-left:4px">★ Captured to KB</span>
       </div>
+      <!-- KB match hint -->
+      <template x-if="auditResult && auditResult.kb_match">
+        <div style="background:color-mix(in srgb,var(--accent) 8%,transparent);border:1px solid var(--accent);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:13px;">
+          <strong style="color:var(--accent)">KB Match</strong>
+          <span style="color:var(--muted);margin-left:6px"
+                x-text="'(' + ((auditResult.kb_match.similarity||0)*100).toFixed(0) + '% similar)'"></span>
+          — Similar to
+          <span class="mono" x-text="auditResult.kb_match.entry.source_trace_id"></span>
+          which scored
+          <strong x-text="(auditResult.kb_match.entry.tas_score||0).toFixed(1)"></strong>
+          <span class="badge" :class="'badge-' + auditResult.kb_match.entry.grade"
+                x-text="auditResult.kb_match.entry.grade" style="margin-left:4px"></span>.
+          Optimal path used
+          <strong x-text="fmtNum(auditResult.kb_match.entry.optimal_tokens)"></strong> tokens
+          (<span x-text="auditResult.kb_match.entry.optimal_steps"></span> steps).
+          <a href="#" style="margin-left:6px" @click.prevent="tab='kb'">View in KB →</a>
+        </div>
+      </template>
       <pre x-text="auditResult && auditResult.report_markdown"></pre>
     </div>
   </div>
@@ -334,6 +354,105 @@
     </template>
   </div>
 
+  <!-- ── KNOWN-GOOD-PATHS KB ── -->
+  <div x-show="tab==='kb'">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div>
+        <h2 style="margin:0">Known-Good-Paths</h2>
+        <p style="color:var(--muted);font-size:12px;margin-top:4px;">
+          Traces scoring ≥ 85 TAS are automatically captured here.
+          Future traces by the same agent are matched against these paths.
+        </p>
+      </div>
+      <button class="btn-ghost" @click="reload()">↻ Refresh</button>
+    </div>
+
+    <template x-if="kbEntries.length === 0">
+      <p class="empty">No KB entries yet — audit a trace that scores ≥ 85 to populate the KB.</p>
+    </template>
+
+    <template x-if="kbEntries.length > 0 && !kbSelected">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Agent</th><th>Source Trace</th><th>TAS</th><th>Grade</th><th>Steps (optimal/total)</th><th>Tokens (optimal/total)</th><th>Captured</th><th></th></tr>
+          </thead>
+          <tbody>
+            <template x-for="e in kbEntries" :key="e.kb_id">
+              <tr class="clickable" @click="kbSelected = e">
+                <td x-text="e.agent_name"></td>
+                <td class="mono" x-text="e.source_trace_id"></td>
+                <td x-text="(e.tas_score||0).toFixed(1)"></td>
+                <td><span class="badge" :class="'badge-' + e.grade" x-text="e.grade"></span></td>
+                <td x-text="e.optimal_steps + ' / ' + e.total_steps"></td>
+                <td x-text="fmtNum(e.optimal_tokens) + ' / ' + fmtNum(e.total_tokens)"></td>
+                <td x-text="(e.captured_at||'').slice(0,10)"></td>
+                <td><button class="btn-danger" @click.stop="deleteKb(e.kb_id)">✕</button></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </template>
+
+    <!-- KB Entry Detail -->
+    <template x-if="kbSelected">
+      <div>
+        <button class="btn-ghost" style="margin-bottom:16px" @click="kbSelected = null">← Back to KB list</button>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <h2 style="margin:0" x-text="kbSelected.agent_name"></h2>
+          <span class="badge" :class="'badge-' + kbSelected.grade" x-text="kbSelected.grade"></span>
+          <span style="color:var(--muted);font-size:12px" x-text="'TAS ' + (kbSelected.tas_score||0).toFixed(1)"></span>
+          <button class="btn-danger" style="margin-left:auto" @click="deleteKb(kbSelected.kb_id)">Delete</button>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-label">Source Trace</div>
+            <div class="stat-value" style="font-size:13px;font-family:monospace" x-text="kbSelected.source_trace_id"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Steps Saved</div>
+            <div class="stat-value" x-text="kbSelected.total_steps - kbSelected.optimal_steps"></div>
+            <div class="stat-sub" x-text="kbSelected.optimal_steps + ' of ' + kbSelected.total_steps + ' kept'"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Tokens in Optimal Path</div>
+            <div class="stat-value" x-text="fmtNum(kbSelected.optimal_tokens)"></div>
+            <div class="stat-sub" x-text="Math.round((1 - kbSelected.optimal_tokens/kbSelected.total_tokens)*100) + '% reduction'"></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Captured</div>
+            <div class="stat-value" style="font-size:14px" x-text="(kbSelected.captured_at||'').slice(0,10)"></div>
+          </div>
+        </div>
+
+        <h2>Optimal Path</h2>
+        <div class="info-box" style="margin-bottom:14px">
+          <strong>Task hint:</strong> <span style="color:var(--text)" x-text="kbSelected.task_hint"></span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>#</th><th>Type</th><th>Content</th><th>Tokens</th><th>Optimal Tokens</th></tr>
+            </thead>
+            <tbody>
+              <template x-for="s in kbSelected.path" :key="s.step_id">
+                <tr>
+                  <td x-text="s.step_id"></td>
+                  <td><span class="mono" x-text="s.step_type"></span></td>
+                  <td style="max-width:400px;word-break:break-word" x-text="s.content_summary"></td>
+                  <td x-text="fmtNum(s.tokens_actual)"></td>
+                  <td x-text="s.tokens_optimal != null ? fmtNum(s.tokens_optimal) : '—'"></td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </template>
+  </div>
+
   <!-- ── LIVE ── -->
   <div x-show="tab==='live'">
     <h2>Live Events</h2>
@@ -370,10 +489,13 @@ function app() {
       {id:'traces',    label:'Traces'},
       {id:'audit',     label:'Audit'},
       {id:'compare',   label:'Compare'},
+      {id:'kb',        label:'KB'},
       {id:'live',      label:'Live'},
     ],
     dashboard: null,
     traces: [],
+    kbEntries: [],
+    kbSelected: null,
     selectedTrace: null,
     liveEvents: [],
     auditInput: '',
@@ -401,12 +523,14 @@ function app() {
 
     async reload() {
       try {
-        const [d, t] = await Promise.all([
+        const [d, t, kb] = await Promise.all([
           fetch('/api/dashboard').then(r => r.json()),
           fetch('/api/traces').then(r => r.json()),
+          fetch('/api/kb').then(r => r.json()),
         ])
         this.dashboard = d
         this.traces = t
+        this.kbEntries = kb
         this.$nextTick(() => this.drawChart())
       } catch(e) { console.error(e) }
     },
@@ -452,6 +576,13 @@ function app() {
         this.selectedTrace = await fetch(`/api/traces/${id}`).then(r => r.json())
         this.tab = 'detail'
       } catch(e) { alert(e.message) }
+    },
+
+    async deleteKb(id) {
+      if (!confirm(`Remove KB entry ${id}?`)) return
+      await fetch(`/api/kb/${id}`, {method:'DELETE'})
+      if (this.kbSelected?.id === id) this.kbSelected = null
+      await this.reload()
     },
 
     async doDelete(id) {

@@ -1,0 +1,24 @@
+# Rust build output
+target/
+
+# Node dependencies and build output
+dashboard/node_modules/
+dashboard/dist/
+
+# Secrets — never bake into image
+.env
+
+# Git and IDE
+.git/
+.gitignore
+.github/
+.vscode/
+
+# Docs and misc
+*.md
+*.docx
+TraceRazor_PRD*
+
+# Test artifacts
+tracerazor-reports/
+*.db

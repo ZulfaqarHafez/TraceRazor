@@ -4,6 +4,9 @@
 ///   `TraceStore::connect_mem()`  — in-memory, for CLI sessions and tests.
 ///   `TraceStore::connect_file(path)` — persistent embedded (kv-surrealkv),
 ///                                      for the Phase 3 server.
+pub mod kb;
+pub use kb::{KgpEntry, KgpMatch, KgpStep, KGP_CAPTURE_THRESHOLD, build_kb_entry};
+
 use anyhow::Result;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};

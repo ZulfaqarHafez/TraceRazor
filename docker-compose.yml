@@ -1,0 +1,27 @@
+services:
+  tracerazor:
+    build: .
+    image: tracerazor:latest
+    ports:
+      - "${PORT:-8080}:8080"
+    volumes:
+      # Persistent database — survives container restarts.
+      - tracerazor-data:/app/data
+    environment:
+      TRACERAZOR_DB_PATH: /app/data/tracerazor.db
+      PORT: 8080
+    env_file:
+      # Loads OPENAI_API_KEY and other secrets from .env if it exists.
+      - path: .env
+        required: false
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  tracerazor-data:
+    driver: local

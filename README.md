@@ -1,203 +1,190 @@
 # TraceRazor
 
-**Agentic Reasoning Path Efficiency Auditor**
+**Token efficiency for AI agents.**
 
-> "Lighthouse score for AI agents. Audit reasoning traces and tell you exactly where your agent wastes tokens, why, and how to fix it."
+> Audit your agent's reasoning traces, score them like Lighthouse scores a webpage, and get a step-by-step plan to cut token waste. No changes to your agent code required.
 
-Version 1.3 · Apache 2.0 · Author: Zulfaqar Hafez
-
----
-
-## What It Does
-
-TraceRazor is a framework-agnostic auditor for AI agent reasoning traces. It analyses completed agentic execution paths and produces:
-
-- A composite **TraceRazor Score (TAS)** from 0–100 (like Google Lighthouse, but for agents)
-- Per-step annotations identifying **redundant steps, loops, tool misfires, and context bloat**
-- An **optimal path diff** showing exactly which steps to remove or trim
-- **Token and cost savings estimates** at enterprise scale
-
-Industry research shows 40–70% of reasoning tokens in typical chain-of-thought traces are redundant. TraceRazor makes that waste visible, quantifiable, and fixable.
+[![CI](https://github.com/ZulfaqarHafez/tracerazor/actions/workflows/tracerazor.yml/badge.svg)](https://github.com/ZulfaqarHafez/tracerazor/actions)
+&nbsp;Apache 2.0 &nbsp;·&nbsp; Rust + Alpine.js &nbsp;·&nbsp; Author: Zulfaqar Hafez
 
 ---
 
-## The Problem
+## Why TraceRazor
 
-Token costs scale with agent complexity. A single customer-support resolution requiring 8 tool calls and 3 reasoning loops can consume 15,000–40,000 tokens per interaction. At 50,000 interactions/month, a 30% reduction in waste translates to six-figure annual savings.
+Production AI agents are expensive because they reason too much. Five academic research groups across ACL 2025, NeurIPS 2024, and KDD 2025 independently measured **40-70% of reasoning tokens as redundant** in typical chain-of-thought traces [[1](#research-foundation)-[6](#research-foundation)]. That redundancy is invisible until it shows up on the invoice.
 
-Existing tools either passively log what happened (LangSmith, Langfuse, Arize) or modify inference behaviour (TALE, SelfBudgeter, Step Pruner). **No existing product audits traces post-hoc and recommends concrete optimisations.** TraceRazor fills that gap.
+A customer-support agent requiring 8 tool calls and 3 reasoning loops can consume 15,000-40,000 tokens per resolution. At 50,000 interactions/month, a 30% efficiency improvement pays for six figures annually.
+
+Existing observability tools (LangSmith, Langfuse, Arize) tell you *what happened*. They don't tell you *what was unnecessary* or *what the efficient version looks like*. TraceRazor is a post-hoc auditor: it reads the trace after execution, scores it, and produces a concrete diff.
 
 ---
 
-## Quick Start
+## What You Get
 
-### Requirements
+**TAS Score.** A composite 0-100 efficiency grade derived from eight research-backed metrics, weighted and normalised consistently. One number your team can track, gate CI/CD on, and regression-test against.
 
-- Rust 1.70+ (`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`)
-- Node.js 18+ (for dashboard only)
+**Optimal path diff.** A step-by-step breakdown of which reasoning steps to remove, which tool calls are redundant, and which context windows are being re-transmitted for no reason.
 
-### Build and Run
+**Savings projection.** Tokens saved multiplied by cost per token multiplied by your run volume, extrapolated to monthly and annual figures.
+
+**Known-Good-Paths KB.** Every trace scoring >= 85 is automatically stored as a reference. Future traces by the same agent are matched against it and the audit response surfaces the closest prior run: its score, its path, and its token count.
+
+**Live guardrails.** An interceptor layer that blocks semantically-drifted prompts, enforces tool scope whitelists, and injects token budget directives before an agent blows its budget.
+
+---
+
+## Quickstart
+
+### Docker (recommended)
 
 ```bash
 git clone https://github.com/ZulfaqarHafez/tracerazor
 cd tracerazor
+echo "OPENAI_API_KEY=sk-..." > .env   # optional, Phase 2 only
+docker compose up --build
+```
+
+Open `http://localhost:8080`. No Node.js or Rust toolchain required on the host.
+
+### Binary
+
+```bash
 cargo build --release
-# Binary at: target/release/tracerazor
-```
-
-### Audit a trace (CLI)
-
-```bash
-# Phase 1: structural analysis (no API key needed)
-./target/release/tracerazor audit ./traces/support-agent-run-2847.json
-
-# Phase 2: full analysis with OpenAI embeddings + LLM metrics
-./target/release/tracerazor audit ./traces/support-agent-run-2847.json --semantic
+./target/release/tracerazor audit traces/support-agent-run-2847.json
 ```
 
 ```
-TRACERAZOR REPORT
-------------------------------------------------------
-Trace:     support-agent-run-2847
-Agent:     customer-support-v3
-Framework: langgraph
-Steps:     11   Tokens: 14,280
-Analysed:  3ms (structural)
-------------------------------------------------------
 TRACERAZOR SCORE:  82 / 100  [GOOD]
-------------------------------------------------------
-METRIC BREAKDOWN
-SRR    Step Redundancy Rate      18.2%    <15%     FAIL
-LDI    Loop Detection Index      0.182    <0.10    FAIL
-TCA    Tool Call Accuracy        83.3%    >85%     FAIL
-TUR    Token Utilisation Ratio   71.4%    >35%     PASS
-CCE    Context Carry-over        100.0%   >60%     PASS
-------------------------------------------------------
-SAVINGS ESTIMATE
-Tokens saved:      7,006  (49.1% reduction)
-At 50K runs/month: $1,050.90/month saved
+──────────────────────────────────────
+SRR  Step Redundancy Rate    18.2%   FAIL  (target < 15%)
+LDI  Loop Detection Index    0.182   FAIL  (target < 0.10)
+TCA  Tool Call Accuracy      83.3%   FAIL  (target > 85%)
+TUR  Token Utilisation       71.4%   PASS
+CCE  Context Carry-over     100.0%   PASS
+──────────────────────────────────────
+Tokens saved:  7,006  (49.1%)
+At 50K runs/month:  $1,050.90/month saved
 ```
 
-### Output formats
+### CI/CD gate
 
 ```bash
-./target/release/tracerazor audit trace.json --format json      # machine-readable
-./target/release/tracerazor audit trace.json --format markdown  # human-readable (default)
-```
-
-### CI/CD gating
-
-```bash
-./target/release/tracerazor audit trace.json --threshold 75
-# Exits non-zero if TAS < 75 — blocks the PR
+# Exits non-zero if TAS drops below 75, blocking the build
+tracerazor audit trace.json --threshold 75
 ```
 
 ---
 
-## Phase 3: Web Dashboard + Server
+## Dashboard
 
-### Start the server
+The web interface ships as a single HTML file compiled into the server binary. There is no separate frontend deployment and no Node.js required in production.
 
-```bash
-# Build the dashboard first
-cd dashboard && npm install && npm run build && cd ..
+| Tab | What it shows |
+|-----|---------------|
+| **Dashboard** | TAS trend chart, agent rankings worst-first, savings totals |
+| **Traces** | Full trace history with drill-down to the report |
+| **Audit** | Paste any trace JSON, get a full report in-browser |
+| **Compare** | Side-by-side diff of two trace IDs: TAS delta, tokens saved delta, verdict |
+| **KB** | Known-Good-Paths library, browse optimal paths from high-scoring traces |
+| **Live** | Real-time WebSocket feed of every audit event |
 
-# Set database path (optional — defaults to ./tracerazor.db)
-export TRACERAZOR_DB_PATH=./tracerazor.db
+Light and dark themes, localStorage persistence, auto-reconnecting WebSocket.
 
-# Start the server
-./target/release/tracerazor-server
-# Listening on http://localhost:8080
-```
+---
 
-### Server endpoints
+## API Reference
+
+Start the server: `./target/release/tracerazor-server`
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `POST` | `/api/audit` | Ingest and analyse a trace |
+| `POST` | `/api/audit` | Ingest and analyse a trace; auto-captures to KB if TAS >= 85 |
 | `GET` | `/api/traces` | List all stored traces |
-| `GET` | `/api/traces/:id` | Full trace + report |
-| `DELETE` | `/api/traces/:id` | Delete a trace |
-| `GET` | `/api/dashboard` | Aggregate dashboard data |
-| `GET` | `/api/agents` | Per-agent statistics |
+| `GET` | `/api/traces/:id` | Full trace and report |
+| `DELETE` | `/api/traces/:id` | Remove a trace |
+| `GET` | `/api/dashboard` | Aggregate stats for the dashboard |
+| `GET` | `/api/agents` | Per-agent statistics, sorted worst-first |
 | `GET` | `/api/agents/:name` | Single agent stats |
-| `WS` | `/ws` | Real-time events (WebSocket) |
-| `GET` | `/` | React dashboard |
+| `GET` | `/api/compare?a=:id&b=:id` | Score two traces against each other |
+| `GET` | `/api/kb` | List Known-Good-Paths entries |
+| `GET` | `/api/kb/:id` | Full optimal path for one KB entry |
+| `DELETE` | `/api/kb/:id` | Remove a KB entry |
+| `GET` | `/api/metrics` | Prometheus exposition format |
+| `WS` | `/ws` | Live audit events |
 
-### Audit via REST API
-
-```bash
-curl -s -X POST http://localhost:8080/api/audit \
-  -H "Content-Type: application/json" \
-  -d '{"trace": '"$(cat traces/support-agent-run-2847.json)"'}' | jq .
-```
-
-### WebSocket live events
-
-Connect to `ws://localhost:8080/ws` to receive real-time JSON events:
+### Audit response
 
 ```json
-{"type":"trace_analysed","trace_id":"run-001","agent_name":"support-v3","tas_score":82.1,"grade":"Good","tokens_saved":7006}
-{"type":"loop_detected","trace_id":"run-002","step_id":5,"cycle":"check_eligibility→check_eligibility"}
+{
+  "trace_id": "run-001",
+  "tas_score": 91.2,
+  "grade": "Excellent",
+  "tokens_saved": 3400,
+  "captured_to_kb": true,
+  "kb_match": {
+    "entry": { "source_trace_id": "run-098", "tas_score": 94.1, "optimal_tokens": 2800 },
+    "similarity": 0.81
+  },
+  "report_markdown": "..."
+}
 ```
 
-### Dashboard
+`captured_to_kb: true` means this trace's optimal path was added to the KB. `kb_match` is present when a similar prior run exists.
 
-Open `http://localhost:8080` to see:
-- **Overview** — total traces, agents, avg TAS, tokens saved
-- **TAS trend chart** — Recharts line chart of score over time
-- **Agent rankings** — worst-to-best table
-- **Trace list** — click any trace for the full report
-- **Audit** — paste trace JSON and get a report in-browser
-- **Live** — real-time event feed from the WebSocket
+### Prometheus
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: tracerazor
+    static_configs:
+      - targets: ['localhost:8080']
+    metrics_path: /api/metrics
+```
+
+Exposes `tracerazor_traces_total`, `tracerazor_avg_tas_score`, `tracerazor_tokens_saved_total`, `tracerazor_cost_saved_usd_total`.
 
 ---
 
-## Phase 3: Proxy Guardrail System
+## Known-Good-Paths KB
 
-The `tracerazor-proxy` crate intercepts LLM calls and applies three guardrail layers:
+The KB stores the optimal execution paths of high-scoring traces so future runs by the same agent can be compared against a validated reference.
 
-### Layer 1 — Semantic Preservation
+**Capture.** Any trace scoring >= 85 TAS has its KEEP/TRIM steps extracted from the diff and written to a `kb_entries` table in SurrealDB, along with the task hint, token counts, and grade.
 
-Blocks requests where the combined prompt has drifted too far from the original task description (default threshold: cosine similarity < 0.55).
+**Match.** When a new trace is submitted, TraceRazor computes bag-of-words cosine similarity between the incoming trace's first reasoning step and every KB entry for the same agent. Matches above the 0.45 threshold are returned in the audit response.
 
-### Layer 2 — Scope Whitelist
+**Over time.** The KB accumulates the proven-efficient patterns for each agent. Unlike passive trace logging, the KB only stores *optimal* paths, not what actually happened.
 
-Validates tool names against a configurable allowlist. Blocks calls to disallowed tools before they reach the LLM.
+---
+
+## Guardrail Proxy
+
+`tracerazor-proxy` sits between your agent orchestrator and the model and applies three checks in order.
+
+**Layer 1: Semantic Preservation.** Computes cosine similarity between the incoming prompt and the original task description. If the agent has drifted beyond the 0.55 threshold, the request is blocked. This catches runaway reasoning loops before they consume tokens.
+
+**Layer 2: Scope Whitelist.** Validates every requested tool name against a configured allowlist. Tools not on the list never reach the model.
 
 ```rust
-let scope = ScopeConfig::whitelist(["get_order", "process_refund"]);
-// Blocks "delete_database", "drop_table", etc.
+let scope = ScopeConfig::whitelist(["get_order", "check_eligibility", "process_refund"]);
 ```
 
-### Layer 3 — Token Budget Injection
-
-When token usage exceeds 75% of the budget, prepends a `<budget>` directive to the system prompt nudging conciseness — without hard-blocking the request.
+**Layer 3: Budget Injection.** When cumulative token usage crosses 75% of the configured budget, a `<budget>` directive is prepended to the system prompt.
 
 ```
 <budget remaining="2000" total="8000">
 Be concise. Avoid repeating context already established in this conversation.
 </budget>
-[original system prompt...]
 ```
-
-### Usage
 
 ```rust
 use tracerazor_proxy::{ProxyConfig, ProxyRequest, ProxyResponse};
 
 let proxy = ProxyConfig::default();
-let req = ProxyRequest {
-    task_description: "Process refund for order ORD-9182".into(),
-    system_prompt: "You are a helpful assistant.".into(),
-    user_message: "Check the refund status.".into(),
-    requested_tools: vec!["get_order".into()],
-    tokens_used: 1200,
-};
-
 match proxy.intercept(&req) {
-    ProxyResponse::Approved { system_prompt, .. } => { /* proceed */ }
-    ProxyResponse::Blocked { reason, layer } => { /* log and abort */ }
+    ProxyResponse::Approved { system_prompt, .. } => { /* call LLM */ }
+    ProxyResponse::Blocked { reason, layer }      => { /* log and abort */ }
 }
 ```
 
@@ -209,156 +196,173 @@ match proxy.intercept(&req) {
 from tracerazor_langgraph import TraceRazorCallback
 
 callback = TraceRazorCallback(
-    agent_name="my-agent",
-    threshold=75,       # CI/CD gating
-    semantic=True,      # OpenAI embeddings + RDA/DBO
+    agent_name="support-agent",
+    threshold=75,    # block deployment if TAS falls below this
+    semantic=True,   # use OpenAI embeddings for SRR/ISR and GPT-4o-mini for RDA/DBO
 )
 
 result = graph.invoke(inputs, config={"callbacks": [callback]})
+
 report = callback.analyse()
 print(report.markdown())
 
-# Raise AssertionError if TAS < 75 (for tests/CI)
+# Raises AssertionError if TAS < threshold, useful in pytest
 callback.assert_passes()
 ```
 
-Install the adapter:
 ```bash
 pip install -e integrations/langgraph
 ```
 
 ---
 
-## Metrics Framework
+## Metrics
 
-### Phase 1: Structural Metrics
+All eight metrics derive from trace data alone. No model weights, no inference hooks, no prompt modification.
 
-| Code | Metric | Weight | Formula | Target |
-|------|--------|--------|---------|--------|
-| **SRR** | Step Redundancy Rate | 20% | `redundant_steps / total_steps × 100` | < 15% |
-| **LDI** | Loop Detection Index | 15% | `max_cycle_length / total_steps` | < 0.10 |
-| **TCA** | Tool Call Accuracy | 15% | `successful_first_attempts / total_tool_calls × 100` | > 85% |
-| **TUR** | Token Utilisation Ratio | 10% | `useful_output_tokens / total_tokens` | > 0.35 |
-| **CCE** | Context Carry-over Efficiency | 10% | `1 − (duplicate_context_tokens / total_input_tokens)` | > 0.60 |
+### Structural (Phase 1, offline, no API key)
 
-### Phase 2: Semantic Metrics (requires `--semantic` + `OPENAI_API_KEY`)
+| Code | Metric | Weight | What it measures | Target |
+|------|--------|--------|-----------------|--------|
+| **SRR** | Step Redundancy Rate | 20% | Fraction of reasoning steps that are near-duplicates of prior steps | < 15% |
+| **LDI** | Loop Detection Index | 15% | Longest repeated tool-call cycle as a fraction of total steps | < 0.10 |
+| **TCA** | Tool Call Accuracy | 15% | Rate of tool calls that succeed on the first attempt | > 85% |
+| **TUR** | Token Utilisation Ratio | 10% | Fraction of tokens attributed to useful work | > 35% |
+| **CCE** | Context Carry-over Efficiency | 10% | How much of the input context is novel vs. already seen | > 60% |
+
+### Semantic (Phase 2, requires `OPENAI_API_KEY`)
 
 | Code | Metric | Weight | Method |
 |------|--------|--------|--------|
-| **RDA** | Reasoning Depth Appropriateness | 10% | GPT-4o-mini task complexity classifier |
-| **ISR** | Information Sufficiency Rate | 10% | Cosine distance; steps with < 10% novelty flagged |
-| **DBO** | Decision Branch Optimality | 10% | GPT-4o-mini retrospective branch judge |
+| **RDA** | Reasoning Depth Appropriateness | 10% | GPT-4o-mini classifies task complexity and compares it to actual reasoning depth |
+| **ISR** | Information Sufficiency Rate | 10% | Embedding novelty per step; steps below 10% novelty are flagged |
+| **DBO** | Decision Branch Optimality | 10% | GPT-4o-mini retrospectively judges each decision point |
 
-### TAS Score (0–100)
+Activate with `--semantic`. Weights re-normalise automatically when Phase 2 metrics are unavailable, so the score stays interpretable in both modes.
 
-Weighted composite re-normalised over available metrics.
+### TAS Score
 
 | Grade | Range | Meaning |
 |-------|-------|---------|
-| Excellent | 90–100 | Highly optimised |
-| Good | 70–89 | Minor inefficiencies |
-| Fair | 50–69 | Actionable waste |
-| Poor | 0–49 | Significant restructuring needed |
+| **Excellent** | 90-100 | Optimised, minor gains only |
+| **Good** | 70-89 | Some inefficiency present |
+| **Fair** | 50-69 | Significant waste, restructuring recommended |
+| **Poor** | 0-49 | Fundamental reasoning pattern issues |
 
 ---
 
 ## Architecture
 
+Seven Rust crates, one embedded Alpine.js dashboard, one Python integration layer.
+
 ```
 tracerazor/
 ├── crates/
-│   ├── tracerazor-core/      # Graph engine, metrics (SRR/LDI/TCA/TUR/CCE/RDA/ISR/DBO), scoring, reports
-│   ├── tracerazor-ingest/    # Parsers: raw JSON, LangSmith, OpenTelemetry
-│   ├── tracerazor-semantic/  # BoW + OpenAI embeddings + LLM chat client
-│   ├── tracerazor-store/     # SurrealDB: in-memory (CLI) + persistent kv-surrealkv (server)
-│   ├── tracerazor-server/    # Axum HTTP/WebSocket server + REST API
-│   ├── tracerazor-proxy/     # LLM proxy with 3-layer guardrail system
+│   ├── tracerazor-core/      # Metrics, scoring, report generation, DAG engine
+│   ├── tracerazor-ingest/    # Format parsers: raw JSON, LangSmith, OpenTelemetry
+│   ├── tracerazor-semantic/  # BoW similarity, OpenAI embeddings, LLM client
+│   ├── tracerazor-store/     # SurrealDB persistence: traces and KB entries
+│   ├── tracerazor-server/    # Axum REST, WebSocket, embedded dashboard
+│   ├── tracerazor-proxy/     # Three-layer LLM guardrail interceptor
 │   └── tracerazor-cli/       # CLI entry point (clap 4)
-├── dashboard/                # React + Vite dashboard (Recharts)
+├── dashboard/                # Alpine.js + Chart.js (embedded) / React build (optional)
 ├── integrations/
-│   └── langgraph/            # Python LangGraph callback adapter
-├── traces/                   # Sample trace files
-└── .github/workflows/        # GitHub Actions CI/CD
+│   └── langgraph/            # Python callback adapter
+├── traces/                   # Sample traces
+├── Dockerfile                # Multi-stage: node -> rust -> debian-slim
+└── .github/workflows/        # CI: check, test, clippy, dashboard build, TAS gate
 ```
+
+A few decisions worth noting:
+
+- `tracerazor-core` has zero network dependencies. All structural metrics run offline in under 5ms.
+- `tracerazor-semantic` is a separate crate so the offline path never pulls in `reqwest` or async runtimes.
+- The dashboard is compiled into the server binary via `include_str!`. The React build in `dashboard/` is an optional alternative for teams that want to extend the UI.
+- SurrealDB runs in-memory for the CLI and `kv-surrealkv` for the server. The store API is identical in both modes.
 
 ---
 
-## CI/CD: GitHub Action
+## Deployment
 
-`.github/workflows/tracerazor.yml` runs on every push:
+### Docker Compose
 
-1. **`cargo check`** — all crates compile
-2. **`cargo test`** — 42 unit + integration tests pass
-3. **`cargo clippy`** — no warnings treated as errors
-4. **Dashboard build** — `npm ci && npm run build`
-5. **TAS gate** — audit `traces/support-agent-run-2847.json`, fail if TAS < 60
-
-```yaml
-- name: Run TAS gate on sample trace
-  run: ./target/release/tracerazor audit \
-         --file traces/support-agent-run-2847.json \
-         --threshold 60
+```bash
+docker compose up --build
+# Server at http://localhost:8080
+# Data persisted to a named volume
 ```
 
----
+Override port or database path:
 
-## Environment Variables
+```bash
+PORT=9090 docker compose up
+```
+
+### Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `OPENAI_API_KEY` | — | Required for `--semantic` (Phase 2) |
-| `TRACERAZOR_LLM_MODEL` | `gpt-4o-mini` | Chat model for RDA / DBO |
-| `TRACERAZOR_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model for SRR / ISR |
-| `TRACERAZOR_DB_PATH` | `./tracerazor.db` | Server persistent DB path |
-| `PORT` | `8080` | Server port |
-| `TRACERAZOR_BIN` | auto-detected | Path to `tracerazor` binary (Python adapter) |
+| `OPENAI_API_KEY` | none | Required for Phase 2 semantic metrics |
+| `TRACERAZOR_LLM_MODEL` | `gpt-4o-mini` | Chat model for RDA and DBO |
+| `TRACERAZOR_EMBEDDING_MODEL` | `text-embedding-3-small` | Embedding model for SRR and ISR |
+| `TRACERAZOR_DB_PATH` | `./tracerazor.db` | Persistent database path |
+| `PORT` | `8080` | HTTP server port |
+| `TRACERAZOR_BIN` | auto-detected | Path to CLI binary (Python adapter) |
 
-Store secrets in `.env` at the repo root (already in `.gitignore`).
+Store secrets in `.env` at the repo root. It is already in `.gitignore`.
+
+---
+
+## CI/CD
+
+`.github/workflows/tracerazor.yml` runs on every push to `main`:
+
+1. `cargo check` — workspace compiles
+2. `cargo test` — 45 tests pass
+3. `cargo clippy` — zero warnings
+4. Dashboard build — `npm ci && npm run build`
+5. **TAS gate** — audits the included sample trace, exits non-zero if TAS < 60
+
+Replace the sample trace with your agent's most recent production trace and the gate becomes a regression test for efficiency, not just correctness.
 
 ---
 
 ## Test Coverage
 
-```
-cargo test --workspace
-```
-
-| Crate | Tests | Coverage |
-|-------|-------|---------|
-| tracerazor-core | 20 | SRR, LDI, TCA, TUR, CCE, scoring, report, graph |
-| tracerazor-ingest | 3 | raw JSON, LangSmith, OTEL parsing |
-| tracerazor-semantic | 5 | BoW similarity edge cases |
-| tracerazor-store | 5 | save/retrieve, list, baseline, dashboard, delete |
-| tracerazor-server | 4 | index, audit+list, dashboard, 404 |
-| tracerazor-proxy | 5 | scope whitelist, budget injection |
-| **Total** | **42** | **all pass** |
+| Crate | Tests |
+|-------|-------|
+| tracerazor-core | 20: all eight metrics, scoring, report generation, graph engine |
+| tracerazor-ingest | 3: raw JSON, LangSmith, OTEL parsers |
+| tracerazor-semantic | 5: BoW similarity edge cases |
+| tracerazor-store | 6: traces and KB: save, retrieve, list, baseline, dashboard, delete |
+| tracerazor-server | 6: audit, list, dashboard, 404, metrics, compare |
+| tracerazor-proxy | 5: scope whitelist, budget injection |
+| **Total** | **45, all pass** |
 
 ---
 
 ## Trace Format
 
-### Raw JSON
-
 ```json
 {
   "trace_id": "run-001",
-  "agent_name": "my-agent",
+  "agent_name": "support-agent",
   "framework": "langgraph",
   "task_value_score": 1.0,
   "steps": [
     {
       "id": 1,
       "step_type": "reasoning",
-      "content": "Parse the user request...",
+      "content": "Parse the user request about order refund",
       "tokens": 820
     },
     {
       "id": 2,
       "step_type": "tool_call",
-      "content": "Fetching order details",
+      "content": "Fetch order details",
       "tokens": 340,
       "tool_name": "get_order_details",
-      "tool_params": {"order_id": "ORD-9182"},
+      "tool_params": { "order_id": "ORD-9182" },
       "tool_success": true,
       "input_context": "full prompt sent to LLM"
     }
@@ -366,60 +370,57 @@ cargo test --workspace
 }
 ```
 
-**Step fields:**
-| Field | Required | Description |
-|-------|----------|-------------|
-| `id` | ✓ | 1-based step index |
-| `step_type` | ✓ | `reasoning`, `tool_call`, or `handoff` |
-| `content` | ✓ | Primary text content |
-| `tokens` | ✓ | Total tokens consumed |
-| `tool_name` | — | Tool identifier |
-| `tool_params` | — | Parameters passed to tool |
-| `tool_success` | — | Whether the call succeeded |
-| `tool_error` | — | Error message if failed |
-| `input_context` | — | Full input context (for CCE) |
-| `agent_id` | — | Agent ID for multi-agent traces |
+LangSmith exports and OpenTelemetry JSON spans are auto-detected. Pass `--trace-format langsmith|otel|raw` to override.
 
-### LangSmith, OpenTelemetry
-
-Auto-detected by the parser (checks for `run_type`, `child_runs`, or `resourceSpans` fields). Pass `--trace-format langsmith|otel|raw` to override.
+| Field | Required | Notes |
+|-------|----------|-------|
+| `id` | yes | 1-based step index |
+| `step_type` | yes | `reasoning`, `tool_call`, or `handoff` |
+| `content` | yes | Primary text of the step |
+| `tokens` | yes | Token count for this step |
+| `tool_name` | no | Required for accurate TCA |
+| `tool_success` | no | `false` triggers misfire detection |
+| `input_context` | no | Full LLM input, used by CCE |
+| `agent_id` | no | For multi-agent traces |
 
 ---
 
-## Research Background
+## Framework Support
 
-| # | Paper | Relevance |
-|---|-------|-----------|
-| [1] | Han et al. (2024). **Token-Budget-Aware LLM Reasoning (TALE)**. ACL 2025. | Motivates TUR and CCE |
-| [2] | Zhao et al. (2025). **SelfBudgeter: Adaptive Token Allocation**. | Proxy Layer 3 budget injection |
-| [3] | Lee et al. (2025). **Evaluating Step-by-step Reasoning Traces: A Survey**. | 8-metric framework basis |
-| [4] | Su et al. (2024). **Dualformer: Controllable Fast and Slow Thinking**. | RDA metric design |
-| [5] | Wu et al. (2025). **Step Pruner: Efficient Reasoning in LLMs**. | Optimal path recommendation |
-| [6] | Feng et al. (2025). **Efficient Reasoning Models: A Survey**. | Metric selection validation |
-| [7] | Pan et al. (2024). **ToolChain*: A* Search for Tool Sequences**. NeurIPS 2024. | DBO metric + path search |
-| [8] | Hassid et al. (2025). **Reasoning on a Budget**. | VAE scoring + proxy design |
-| [9] | (2025). **Balanced Thinking (SCALe-SFT)**. | Validates efficiency without accuracy loss |
-| [10] | Mohammadi et al. (2025). **Evaluation and Benchmarking of LLM Agents**. KDD 2025. | Composite scoring validation |
-
-**Key finding:** Studies [1], [2], [5], [8] all show 40–70% of reasoning tokens are redundant in typical CoT traces. Study [3] confirms step-by-step trace evaluation is tractable from trace data alone — no model internals required.
-
----
-
-## Compatibility
-
-| Framework | Format | Status |
-|-----------|--------|--------|
-| LangGraph / LangChain | LangSmith JSON, OTEL | Implemented |
-| OpenAI Agents SDK | OTEL spans | Implemented |
+| Framework | Ingestion format | Status |
+|-----------|-----------------|--------|
+| LangGraph / LangChain | LangSmith JSON, OTEL | Supported |
+| OpenAI Agents SDK | OTEL spans | Supported |
 | CrewAI | Task logs | Parser included |
-| Raw / Custom | User-defined JSON | Implemented |
-| OpenTelemetry (generic) | OTEL JSON | Implemented |
+| Any OTEL-instrumented agent | OTEL JSON | Supported |
+| Raw / custom | User-defined JSON | Supported |
 | AutoGen | Conversation JSON | Planned |
+
+---
+
+## Research Foundation
+
+The eight TAS metrics map directly to failure modes identified in peer-reviewed work from 2024-2025. The metric selection follows from the literature rather than from intuition.
+
+| # | Paper | Metric |
+|---|-------|--------|
+| [1] | Han et al. (2024). **Token-Budget-Aware LLM Reasoning (TALE)**. ACL 2025. | TUR, CCE |
+| [2] | Zhao et al. (2025). **SelfBudgeter: Adaptive Token Allocation**. | Proxy Layer 3 |
+| [3] | Lee et al. (2025). **Evaluating Step-by-step Reasoning Traces: A Survey**. | Framework basis |
+| [4] | Su et al. (2024). **Dualformer: Controllable Fast and Slow Thinking**. | RDA |
+| [5] | Wu et al. (2025). **Step Pruner: Efficient Reasoning in LLMs**. | Optimal path diff |
+| [6] | Feng et al. (2025). **Efficient Reasoning Models: A Survey**. | Metric validation |
+| [7] | Pan et al. (2024). **ToolChain\*: A\* Search for Tool Sequences**. NeurIPS 2024. | DBO, KB design |
+| [8] | Hassid et al. (2025). **Reasoning on a Budget**. | VAE score, proxy |
+| [9] | (2025). **Balanced Thinking (SCALe-SFT)**. | Efficiency without accuracy loss |
+| [10] | Mohammadi et al. (2025). **Evaluation and Benchmarking of LLM Agents**. KDD 2025. | Composite scoring |
+
+The 40-70% redundancy figure is independently replicated in studies [1], [2], [5], and [8]. Study [3] establishes that trace-level evaluation is tractable from execution logs alone, without model internals or ground-truth labels.
 
 ---
 
 ## Licence
 
-Apache 2.0.
+Apache 2.0. The CLI, server, dashboard, proxy, and Python integration are all open-source.
 
-All Rust crates, the CLI, Python SDK, and the web dashboard are open-source. Monetisation path: managed cloud hosting (TraceRazor Cloud) with SLA, SSO, and team management — mirrors the Langfuse / PostHog model.
+The commercial path is managed hosting with persistent storage, SSO, team management, and SLA support, following the Langfuse and PostHog model.
