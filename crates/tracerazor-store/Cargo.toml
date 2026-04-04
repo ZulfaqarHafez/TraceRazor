@@ -1,0 +1,17 @@
+[package]
+name = "tracerazor-store"
+version = "0.1.0"
+edition = "2021"
+description = "Persistent trace storage for TraceRazor using SurrealDB embedded"
+license = "Apache-2.0"
+
+[dependencies]
+tracerazor-core = { path = "../tracerazor-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }
+tokio = { workspace = true }
+surrealdb = { version = "2", features = ["kv-mem"] }

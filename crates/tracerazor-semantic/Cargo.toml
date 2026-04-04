@@ -1,0 +1,12 @@
+[package]
+name = "tracerazor-semantic"
+version = "0.1.0"
+edition = "2021"
+description = "Semantic similarity engine for TraceRazor (TF-IDF cosine similarity, ONNX embedding upgrade path)"
+license = "Apache-2.0"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }

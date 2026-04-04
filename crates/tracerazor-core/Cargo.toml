@@ -1,0 +1,15 @@
+[package]
+name = "tracerazor-core"
+version = "0.1.0"
+edition = "2021"
+description = "Core graph engine, metrics, and scoring for TraceRazor"
+license = "Apache-2.0"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+petgraph = { workspace = true }
+chrono = { workspace = true }
+uuid = { workspace = true }

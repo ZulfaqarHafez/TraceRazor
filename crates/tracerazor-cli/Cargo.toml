@@ -1,0 +1,22 @@
+[package]
+name = "tracerazor"
+version = "0.1.0"
+edition = "2021"
+description = "TraceRazor CLI — Agentic Reasoning Path Efficiency Auditor"
+license = "Apache-2.0"
+default-run = "tracerazor"
+
+[[bin]]
+name = "tracerazor"
+path = "src/main.rs"
+
+[dependencies]
+tracerazor-core = { path = "../tracerazor-core" }
+tracerazor-ingest = { path = "../tracerazor-ingest" }
+tracerazor-semantic = { path = "../tracerazor-semantic" }
+tracerazor-store = { path = "../tracerazor-store" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+clap = { version = "4", features = ["derive"] }

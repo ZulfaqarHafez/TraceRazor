@@ -1,0 +1,14 @@
+[package]
+name = "tracerazor-ingest"
+version = "0.1.0"
+edition = "2021"
+description = "Trace format parsers for TraceRazor (raw JSON, LangSmith, OTEL)"
+license = "Apache-2.0"
+
+[dependencies]
+tracerazor-core = { path = "../tracerazor-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+chrono = { workspace = true }
