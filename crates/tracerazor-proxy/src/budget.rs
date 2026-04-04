@@ -1,8 +1,8 @@
-/// Layer 3: Token budget injection.
-///
-/// When a trace is projected to exceed the configured token budget, a
-/// `<budget>` directive is prepended to the system prompt, nudging the
-/// model to be more concise without hard-blocking the request.
+//! Layer 3: Token budget injection.
+//!
+//! When a trace is projected to exceed the configured token budget, a
+//! `<budget>` directive is prepended to the system prompt, nudging the
+//! model to be more concise without hard-blocking the request.
 
 /// Token budget configuration.
 #[derive(Debug, Clone)]

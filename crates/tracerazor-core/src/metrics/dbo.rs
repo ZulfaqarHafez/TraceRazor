@@ -103,7 +103,7 @@ fn build_summary(trace: &Trace) -> String {
 }
 
 /// Parse the LLM's JSON response into DBO decisions.
-fn parse_dbo_response(response: &str, trace: &Trace) -> Result<DboResult> {
+fn parse_dbo_response(response: &str, _trace: &Trace) -> Result<DboResult> {
     // Strip any markdown code fences the model might add.
     let cleaned = response
         .trim()

@@ -86,7 +86,7 @@ pub fn compute(trace: &Trace) -> CceResult {
         1.0
     } else {
         let ratio = 1.0 - (duplicate_tokens as f64 / total_input_tokens as f64);
-        ratio.max(0.0).min(1.0)
+        ratio.clamp(0.0, 1.0)
     };
 
     CceResult {
@@ -131,7 +131,7 @@ fn extract_ngrams(text: &str, n: usize) -> Vec<String> {
 }
 
 /// Apply CCE flags to trace steps.
-pub fn annotate_steps(steps: &mut Vec<TraceStep>, result: &CceResult) {
+pub fn annotate_steps(steps: &mut [TraceStep], result: &CceResult) {
     for bloat in &result.bloated_steps {
         if let Some(step) = steps.iter_mut().find(|s| s.id == bloat.step_id) {
             step.flags.push(StepFlag::ContextBloat);

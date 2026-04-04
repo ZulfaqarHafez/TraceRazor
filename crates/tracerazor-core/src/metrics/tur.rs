@@ -148,7 +148,7 @@ mod tests {
     #[test]
     fn test_tur_with_waste() {
         use crate::types::StepFlag;
-        let mut trace = Trace {
+        let trace = Trace {
             trace_id: "t2".into(),
             agent_name: "a".into(),
             framework: "raw".into(),
@@ -167,7 +167,7 @@ mod tests {
             task_value_score: 1.0,
             metadata: HashMap::new(),
         };
-        let result = compute(&mut trace);
+        let result = compute(&trace);
         // 600 useful out of 1100 total
         let expected = 600.0 / 1100.0;
         assert!((result.score - expected).abs() < 0.01);

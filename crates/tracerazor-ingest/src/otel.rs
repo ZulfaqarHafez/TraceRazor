@@ -38,13 +38,16 @@ struct ScopeSpan {
 #[serde(rename_all = "camelCase")]
 struct Span {
     trace_id: String,
+    #[allow(dead_code)]
     span_id: String,
+    #[allow(dead_code)]
     parent_span_id: Option<String>,
     name: String,
     #[serde(default)]
     attributes: Vec<Attribute>,
     status: Option<SpanStatus>,
     start_time_unix_nano: Option<String>,
+    #[allow(dead_code)]
     end_time_unix_nano: Option<String>,
 }
 
@@ -59,8 +62,8 @@ struct Attribute {
 enum AttributeValue {
     String { #[serde(alias = "stringValue")] string_value: String },
     Int { #[serde(alias = "intValue")] int_value: serde_json::Value },
-    Bool { #[serde(alias = "boolValue")] bool_value: bool },
-    Double { #[serde(alias = "doubleValue")] double_value: f64 },
+    Bool { #[allow(dead_code)] #[serde(alias = "boolValue")] bool_value: bool },
+    Double { #[allow(dead_code)] #[serde(alias = "doubleValue")] double_value: f64 },
 }
 
 impl AttributeValue {
@@ -91,7 +94,6 @@ pub fn parse(data: &str) -> Result<Trace> {
         serde_json::from_str(data).context("Failed to parse OTEL JSON")?;
 
     let mut all_spans: Vec<Span> = Vec::new();
-    let mut trace_id = String::new();
     let mut agent_name = "unknown".to_string();
 
     for rs in export.resource_spans {
@@ -117,7 +119,7 @@ pub fn parse(data: &str) -> Result<Trace> {
     }
 
     // Use the first span's trace_id.
-    trace_id = all_spans[0].trace_id.clone();
+    let trace_id = all_spans[0].trace_id.clone();
 
     // Sort spans by start time (lexicographic on nanosecond timestamps works).
     all_spans.sort_by(|a, b| {

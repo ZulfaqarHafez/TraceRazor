@@ -36,7 +36,7 @@ impl TaskComplexity {
         }
     }
 
-    pub fn from_str(s: &str) -> Self {
+    pub fn parse(s: &str) -> Self {
         let lower = s.to_lowercase();
         if lower.contains("trivial") || lower.contains("simple") {
             TaskComplexity::Trivial
@@ -101,7 +101,7 @@ trivial = 1-2 steps needed, moderate = 3-5, complex = 6-10, expert = 10+.";
     );
 
     let response = llm_complete(system.to_string(), user).await?;
-    let complexity = TaskComplexity::from_str(response.trim());
+    let complexity = TaskComplexity::parse(response.trim());
     let expected = complexity.expected_steps();
 
     let rda = if actual_steps == 0 {
@@ -124,7 +124,6 @@ trivial = 1-2 steps needed, moderate = 3-5, complex = 6-10, expert = 10+.";
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[tokio::test]
     async fn test_rda_trivial_task_over_reasoned() {

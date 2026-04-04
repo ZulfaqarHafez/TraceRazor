@@ -11,7 +11,7 @@ use axum::{
 };
 use futures_util::{SinkExt, StreamExt};
 
-use crate::state::{AppState, WsEvent};
+use crate::state::AppState;
 
 pub async fn handler(
     ws: WebSocketUpgrade,
@@ -33,7 +33,7 @@ async fn handle_socket(socket: WebSocket, state: AppState) {
                         Ok(j) => j,
                         Err(_) => continue,
                     };
-                    if sender.send(Message::Text(json.into())).await.is_err() {
+                    if sender.send(Message::Text(json)).await.is_err() {
                         break;
                     }
                 }

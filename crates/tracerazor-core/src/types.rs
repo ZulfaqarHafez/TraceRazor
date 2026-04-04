@@ -2,19 +2,14 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// The type of a reasoning step in an agent trace.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum StepType {
     Reasoning,
     ToolCall,
     Handoff,
+    #[default]
     Unknown,
-}
-
-impl Default for StepType {
-    fn default() -> Self {
-        StepType::Unknown
-    }
 }
 
 impl std::fmt::Display for StepType {

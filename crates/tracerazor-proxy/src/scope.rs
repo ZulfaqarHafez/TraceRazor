@@ -1,4 +1,4 @@
-/// Layer 2: Scope whitelist — blocks disallowed tool calls.
+//! Layer 2: Scope whitelist — blocks disallowed tool calls.
 
 /// Scope whitelist configuration.
 #[derive(Debug, Clone, Default)]

@@ -46,7 +46,7 @@ pub struct LdiResult {
 impl LdiResult {
     /// Normalised score for TAS composite (0.0–1.0, higher = better).
     pub fn normalised(&self) -> f64 {
-        (1.0 - self.score).max(0.0).min(1.0)
+        (1.0 - self.score).clamp(0.0, 1.0)
     }
 }
 
@@ -150,7 +150,7 @@ pub fn compute(trace: &Trace) -> LdiResult {
 }
 
 /// Apply LDI flags to trace steps.
-pub fn annotate_steps(steps: &mut Vec<TraceStep>, result: &LdiResult) {
+pub fn annotate_steps(steps: &mut [TraceStep], result: &LdiResult) {
     if result.loops.is_empty() {
         return;
     }

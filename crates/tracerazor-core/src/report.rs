@@ -51,7 +51,7 @@ pub struct TraceReport {
 
 impl TraceReport {
     /// Build the optimal-path diff from annotated trace steps.
-    pub fn build_diff(trace: &Trace, score: &TasScore) -> Vec<DiffLine> {
+    pub fn build_diff(trace: &Trace, _score: &TasScore) -> Vec<DiffLine> {
         let mut diff = Vec::new();
 
         for step in &trace.steps {

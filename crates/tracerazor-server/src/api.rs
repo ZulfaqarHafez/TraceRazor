@@ -12,7 +12,7 @@ use axum::{
     extract::{Path, Query, State},
     http::{header, StatusCode},
     response::IntoResponse,
-    routing::{delete, get, post},
+    routing::{get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -142,7 +142,7 @@ async fn audit(
 async fn find_kb_match(
     state: &AppState,
     trace: &tracerazor_core::types::Trace,
-    report: &tracerazor_core::report::TraceReport,
+    _report: &tracerazor_core::report::TraceReport,
 ) -> Option<tracerazor_store::KgpMatch> {
     const MATCH_THRESHOLD: f64 = 0.45;
 

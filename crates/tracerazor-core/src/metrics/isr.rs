@@ -8,7 +8,6 @@
 ///            all prior steps using embeddings. Steps with < 10% novel
 ///            information content are flagged.
 /// Target: > 80%. An ISR below 60% suggests the agent is verbose.
-use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 use crate::types::Trace;

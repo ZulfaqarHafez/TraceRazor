@@ -76,8 +76,7 @@ where
         let curr = &steps[i];
         let curr_text = curr.semantic_content();
 
-        for j in 0..i {
-            let prev = &steps[j];
+        for prev in steps.iter().take(i) {
             let prev_text = prev.semantic_content();
 
             let sim = similarity_fn(&curr_text, &prev_text);
@@ -127,7 +126,7 @@ where
 }
 
 /// Apply SRR flags to the trace steps (mutates the flag lists in place).
-pub fn annotate_steps(steps: &mut Vec<TraceStep>, result: &SrrResult) {
+pub fn annotate_steps(steps: &mut [TraceStep], result: &SrrResult) {
     for pair in &result.redundant_steps {
         if let Some(step) = steps.iter_mut().find(|s| s.id == pair.step_b) {
             step.flags.push(StepFlag::Redundant);

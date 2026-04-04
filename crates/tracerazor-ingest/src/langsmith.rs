@@ -7,7 +7,7 @@
 ///
 /// We flatten the tree into a sequential list of TraceSteps.
 use anyhow::{Context, Result};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::collections::HashMap;
 use tracerazor_core::types::{StepType, Trace, TraceStep};
 
@@ -29,8 +29,10 @@ struct LangSmithRun {
     #[serde(default)]
     child_runs: Vec<LangSmithRun>,
     #[serde(default)]
+    #[allow(dead_code)]
     parent_run_id: Option<String>,
     #[serde(default)]
+    #[allow(dead_code)]
     tags: Vec<String>,
 }
 
@@ -48,8 +50,7 @@ pub fn parse(data: &str) -> Result<Trace> {
             anyhow::bail!("LangSmith trace contains no runs");
         }
         // Use the first run as root; remaining become siblings (treat as children).
-        let mut root = runs.into_iter().next().unwrap();
-        root
+        runs.into_iter().next().unwrap()
     } else {
         serde_json::from_value(v).context("Failed to parse LangSmith run")?
     };

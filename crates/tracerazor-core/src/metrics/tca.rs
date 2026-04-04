@@ -143,7 +143,7 @@ pub fn compute(trace: &Trace) -> TcaResult {
 }
 
 /// Apply TCA flags to trace steps.
-pub fn annotate_steps(steps: &mut Vec<TraceStep>, result: &TcaResult) {
+pub fn annotate_steps(steps: &mut [TraceStep], result: &TcaResult) {
     for misfire in &result.misfires {
         if let Some(step) = steps.iter_mut().find(|s| s.id == misfire.failed_step) {
             step.flags.push(StepFlag::Misfire);

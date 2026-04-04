@@ -127,6 +127,7 @@ impl Default for ScoringConfig {
 
 /// Compute the composite TAS score from structural (Phase 1) metrics
 /// plus optional semantic (Phase 2) metrics.
+#[allow(clippy::too_many_arguments)]
 pub fn compute(
     srr: SrrResult,
     ldi: LdiResult,

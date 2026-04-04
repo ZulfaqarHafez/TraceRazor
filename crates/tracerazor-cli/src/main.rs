@@ -143,8 +143,7 @@ async fn cmd_audit(
         return Ok(());
     }
 
-    let mut config = ScoringConfig::default();
-    config.cost_per_million_tokens = cost_per_million;
+    let mut config = ScoringConfig { cost_per_million_tokens: cost_per_million, ..Default::default() };
     if let Some(t) = threshold {
         config.threshold = t;
     }
@@ -205,7 +204,7 @@ async fn cmd_list(agent_filter: Option<String>) -> Result<()> {
         .filter(|s| agent_filter.as_ref().map(|a| s.agent_name.contains(a.as_str())).unwrap_or(true))
         .collect();
 
-    println!("{:<36} {:<22} {:<10} {:<8} {}", "TRACE ID", "AGENT", "FRAMEWORK", "STEPS", "TAS");
+    println!("{:<36} {:<22} {:<10} {:<8} TAS", "TRACE ID", "AGENT", "FRAMEWORK", "STEPS");
     println!("{}", "-".repeat(90));
     for s in &summaries {
         println!(
