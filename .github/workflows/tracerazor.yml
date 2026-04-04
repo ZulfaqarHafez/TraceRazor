@@ -95,6 +95,6 @@ jobs:
       - name: Run TAS gate on sample trace
         run: |
           ./target/release/tracerazor audit \
-            --file traces/support-agent-run-2847.json \
+            traces/support-agent-run-2847.json \
             --threshold 60
         # Exit code 1 if TAS < threshold — fails the build
