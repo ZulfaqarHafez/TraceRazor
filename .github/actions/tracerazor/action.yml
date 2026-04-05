@@ -1,0 +1,110 @@
+name: TraceRazor Audit
+description: >
+  Audit an AI agent trace file and gate the CI build on a minimum TAS score.
+  Returns exit code 1 if TAS is below the threshold.
+
+inputs:
+  trace-file:
+    description: Path to the trace JSON file to audit.
+    required: true
+  threshold:
+    description: Minimum TAS score (0–100). CI fails if TAS is below this value.
+    required: false
+    default: "70"
+  format:
+    description: Output format — "markdown" or "json".
+    required: false
+    default: "markdown"
+  binary-path:
+    description: >
+      Path to the pre-built tracerazor binary. If omitted, the action builds
+      from source using the workspace Cargo.toml.
+    required: false
+    default: ""
+
+outputs:
+  tas-score:
+    description: The composite TraceRazor Score (0–100).
+    value: ${{ steps.audit.outputs.tas-score }}
+  grade:
+    description: Grade band — Excellent, Good, Fair, or Poor.
+    value: ${{ steps.audit.outputs.grade }}
+  passes:
+    description: "true" if TAS >= threshold, "false" otherwise.
+    value: ${{ steps.audit.outputs.passes }}
+  report:
+    description: Full report text (markdown or JSON).
+    value: ${{ steps.audit.outputs.report }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install Rust toolchain
+      if: inputs.binary-path == ''
+      uses: dtolnay/rust-toolchain@stable
+
+    - name: Cache Cargo registry and build artefacts
+      if: inputs.binary-path == ''
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: tracerazor-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: tracerazor-${{ runner.os }}-
+
+    - name: Build tracerazor CLI
+      if: inputs.binary-path == ''
+      shell: bash
+      run: cargo build --release -p tracerazor-cli
+
+    - name: Set binary path
+      id: bin
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.binary-path }}" ]; then
+          echo "path=${{ inputs.binary-path }}" >> "$GITHUB_OUTPUT"
+        else
+          echo "path=./target/release/tracerazor" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Run tracerazor audit
+      id: audit
+      shell: bash
+      run: |
+        set +e
+        REPORT=$("${{ steps.bin.outputs.path }}" audit \
+          "${{ inputs.trace-file }}" \
+          --format "${{ inputs.format }}" \
+          --threshold "${{ inputs.threshold }}" \
+          2>/dev/null)
+        EXIT_CODE=$?
+        set -e
+
+        # Capture report as multiline output.
+        {
+          echo "report<<EOF"
+          echo "$REPORT"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+        if [ "${{ inputs.format }}" = "json" ]; then
+          TAS=$(echo "$REPORT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['score']['score'])" 2>/dev/null || echo "0")
+          GRADE=$(echo "$REPORT" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['score']['grade'])" 2>/dev/null || echo "Unknown")
+        else
+          TAS=$(echo "$REPORT" | grep -oP 'TRACERAZOR SCORE:\s+\K[\d.]+' || echo "0")
+          GRADE=$(echo "$REPORT" | grep -oP 'TRACERAZOR SCORE:.*\[\K[A-Z]+(?=\])' || echo "Unknown")
+        fi
+
+        echo "tas-score=$TAS" >> "$GITHUB_OUTPUT"
+        echo "grade=$GRADE" >> "$GITHUB_OUTPUT"
+
+        if [ "$EXIT_CODE" -eq 0 ]; then
+          echo "passes=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "passes=false" >> "$GITHUB_OUTPUT"
+        fi
+
+        echo "$REPORT"
+        exit $EXIT_CODE

@@ -1,0 +1,55 @@
+name: Agent Efficiency Gate
+
+# Example workflow showing how to use the TraceRazor action in CI.
+# Copy this file into your own repo and adjust the trace file path and threshold.
+
+on:
+  pull_request:
+    paths:
+      - "traces/**"
+      - "agents/**"
+  push:
+    branches: [main]
+
+jobs:
+  tracerazor-audit:
+    name: TraceRazor Efficiency Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Option A: audit a checked-in trace file ────────────────────────────
+      - name: Audit agent trace
+        id: audit
+        uses: ./.github/actions/tracerazor
+        with:
+          trace-file: traces/latest-run.json   # path to your trace file
+          threshold: "70"                       # fail if TAS drops below 70
+          format: markdown
+
+      # ── Show the report in the PR summary ─────────────────────────────────
+      - name: Post report to job summary
+        if: always()
+        run: |
+          echo "## TraceRazor Efficiency Report" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**TAS Score:** ${{ steps.audit.outputs.tas-score }} [${{ steps.audit.outputs.grade }}]" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Passes:** ${{ steps.audit.outputs.passes }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.audit.outputs.report }}" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # ── Option B: generate a trace at CI time and audit it ─────────────────
+      # Uncomment if you run your agent as part of CI and capture its trace:
+      #
+      # - name: Run agent and capture trace
+      #   run: python scripts/run_agent.py --save-trace traces/ci-run.json
+      #
+      # - name: Audit generated trace
+      #   uses: ./.github/actions/tracerazor
+      #   with:
+      #     trace-file: traces/ci-run.json
+      #     threshold: "70"

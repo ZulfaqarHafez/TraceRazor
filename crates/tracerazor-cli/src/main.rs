@@ -12,6 +12,31 @@ use tracerazor_ingest::{TraceFormat, parse as ingest_parse};
 use tracerazor_semantic::default_similarity_fn;
 use tracerazor_store::TraceStore;
 
+/// Open the persistent file-backed store at `~/.tracerazor/store`.
+///
+/// Falls back to in-memory if the home directory cannot be determined or if
+/// the file store fails to open (e.g. permissions error). This ensures the
+/// CLI always works even in CI environments without a writable home directory.
+async fn open_store() -> TraceStore {
+    let path = (|| -> Option<PathBuf> {
+        let home = std::env::var("HOME")
+            .or_else(|_| std::env::var("USERPROFILE"))
+            .ok()?;
+        let dir = PathBuf::from(home).join(".tracerazor");
+        std::fs::create_dir_all(&dir).ok()?;
+        Some(dir.join("store"))
+    })();
+
+    if let Some(p) = path {
+        match TraceStore::connect_file(p.to_string_lossy().as_ref()).await {
+            Ok(store) => return store,
+            Err(e) => eprintln!("Warning: could not open persistent store ({e}), using in-memory."),
+        }
+    }
+
+    TraceStore::connect_mem().await.expect("in-memory store failed")
+}
+
 /// TraceRazor — Token Efficiency Auditor for AI Agents
 #[derive(Parser)]
 #[command(
@@ -246,7 +271,7 @@ async fn cmd_audit(
         return Ok(());
     }
 
-    let store = TraceStore::connect_mem().await?;
+    let store = open_store().await;
 
     let mut config = ScoringConfig {
         cost_per_million_tokens: cost_per_million,
@@ -268,8 +293,8 @@ async fn cmd_audit(
     let sim_fn = default_similarity_fn();
     let mut report = tracerazor_core::analyse(&mut trace, sim_fn, &config)?;
 
-    // Detect anomalies against historical baseline (E-04).
-    if let Ok(anomalies) = store.detect_anomalies(&trace.agent_name, report.score.score).await {
+    // Detect anomalies against historical baseline (E-04) — all 8 metrics + TAS.
+    if let Ok(anomalies) = store.detect_all_anomalies(&trace.agent_name, &report).await {
         report.anomalies = anomalies;
     }
 
@@ -296,7 +321,7 @@ async fn cmd_audit(
 // ── list ──────────────────────────────────────────────────────────────────────
 
 async fn cmd_list(agent_filter: Option<String>) -> Result<()> {
-    let store = TraceStore::connect_mem().await?;
+    let store = open_store().await;
     let summaries = store.list_traces().await?;
 
     if summaries.is_empty() {

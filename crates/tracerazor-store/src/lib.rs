@@ -270,6 +270,78 @@ impl TraceStore {
 
     // ── Anomaly Detection (E-04) ───────────────────────────────────────────
 
+    /// Detect anomalies across all 8 metrics + TAS composite for a newly computed report.
+    ///
+    /// Checks every metric independently against its own rolling baseline.
+    /// Returns one `Anomaly` entry per metric that deviates by more than 2σ.
+    /// Requires ≥ 5 prior traces with reports for the agent.
+    pub async fn detect_all_anomalies(
+        &self,
+        agent_name: &str,
+        report: &tracerazor_core::report::TraceReport,
+    ) -> Result<Vec<Anomaly>> {
+        let stored: Vec<StoredTrace> = self.db.select("traces").await?;
+
+        // Collect historical normalised-metric vectors for this agent.
+        let history: Vec<[f64; 9]> = stored
+            .iter()
+            .filter(|st| st.trace.agent_name == agent_name)
+            .filter_map(|st| st.report.as_ref())
+            .map(|r| {
+                [
+                    r.score.score,                  // idx 0: TAS
+                    r.score.srr.normalised(),        // idx 1
+                    r.score.ldi.normalised(),        // idx 2
+                    r.score.tca.normalised(),        // idx 3
+                    r.score.tur.normalised(),        // idx 4
+                    r.score.cce.normalised(),        // idx 5
+                    r.score.rda.normalised(),        // idx 6
+                    r.score.isr.normalised(),        // idx 7
+                    r.score.dbo.normalised(),        // idx 8
+                ]
+            })
+            .collect();
+
+        if history.len() < 5 {
+            return Ok(vec![]);
+        }
+
+        let names = ["tas_score", "srr", "ldi", "tca", "tur", "cce", "rda", "isr", "dbo"];
+        let current = [
+            report.score.score,
+            report.score.srr.normalised(),
+            report.score.ldi.normalised(),
+            report.score.tca.normalised(),
+            report.score.tur.normalised(),
+            report.score.cce.normalised(),
+            report.score.rda.normalised(),
+            report.score.isr.normalised(),
+            report.score.dbo.normalised(),
+        ];
+
+        let mut anomalies = Vec::new();
+
+        for (i, &metric_name) in names.iter().enumerate() {
+            let values: Vec<f64> = history.iter().map(|row| row[i]).collect();
+            let mean = values.iter().sum::<f64>() / values.len() as f64;
+            let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
+            let std_dev = variance.sqrt().max(0.01); // floor to avoid division by near-zero σ
+
+            let z = (current[i] - mean) / std_dev;
+            if z.abs() > 2.0 {
+                anomalies.push(Anomaly {
+                    metric: metric_name.to_string(),
+                    value: (current[i] * 1000.0).round() / 1000.0,
+                    z_score: (z * 100.0).round() / 100.0,
+                    baseline_mean: (mean * 1000.0).round() / 1000.0,
+                    baseline_std: (std_dev * 1000.0).round() / 1000.0,
+                });
+            }
+        }
+
+        Ok(anomalies)
+    }
+
     /// Compute the rolling baseline for an agent's TAS score.
     ///
     /// Returns `None` if fewer than 5 traces exist (insufficient for statistics).
@@ -468,5 +540,39 @@ mod tests {
         store.save_trace(&dummy_trace("t2", "agent-a"), None).await.unwrap();
         let anomalies = store.detect_anomalies("agent-a", 30.0).await.unwrap();
         assert!(anomalies.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_detect_all_anomalies_insufficient_data() {
+        let store = TraceStore::connect_mem().await.unwrap();
+        // Only 3 traces — below the 5-trace minimum.
+        for i in 1..=3 {
+            store.save_trace(&dummy_trace(&format!("t{i}"), "agent-b"), None).await.unwrap();
+        }
+        // Build a minimal report with defaults.
+        use tracerazor_core::{analyse, scoring::ScoringConfig};
+        use tracerazor_core::types::{StepType, TraceStep};
+        let mut trace = dummy_trace("probe", "agent-b");
+        // Add enough steps for analysis.
+        trace.steps = (1..=6).map(|id| TraceStep {
+            id,
+            step_type: StepType::Reasoning,
+            content: format!("step {id}"),
+            tokens: 200,
+            tool_name: None,
+            tool_params: None,
+            tool_success: None,
+            tool_error: None,
+            agent_id: None,
+            input_context: None,
+            output: None,
+            flags: vec![],
+            flag_details: vec![],
+        }).collect();
+        trace.total_tokens = 1200;
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, |_, _| 0.0_f64, &config).unwrap();
+        let anomalies = store.detect_all_anomalies("agent-b", &report).await.unwrap();
+        assert!(anomalies.is_empty(), "should be empty with < 5 historical reports");
     }
 }

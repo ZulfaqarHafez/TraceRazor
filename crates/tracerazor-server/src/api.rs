@@ -115,10 +115,10 @@ async fn audit(
     let mut report = analyse(&mut trace, sim_fn, &config)
         .map_err(AppError::internal)?;
 
-    // ── E-04: Anomaly detection against agent baseline ────────────────────────
+    // ── E-04: Anomaly detection against agent baseline (all 8 metrics) ───────
     let anomalies = state
         .store
-        .detect_anomalies(&trace.agent_name, report.score.score)
+        .detect_all_anomalies(&trace.agent_name, &report)
         .await
         .unwrap_or_default();
     report.anomalies = anomalies.clone();

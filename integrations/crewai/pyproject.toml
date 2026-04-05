@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "tracerazor-crewai"
+version = "0.1.0"
+description = "TraceRazor callback adapter for CrewAI — automatic token efficiency auditing"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+crewai = ["crewai>=0.28"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tracerazor_crewai*"]
