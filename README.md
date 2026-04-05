@@ -359,6 +359,8 @@ match proxy.intercept(&req) {
 
 ## Architecture
 
+![TraceRazor system architecture](tracerazor_architecture.svg)
+
 Six Rust crates, one embedded Alpine.js dashboard.
 
 ```
