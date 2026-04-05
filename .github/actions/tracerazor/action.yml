@@ -30,7 +30,7 @@ outputs:
     description: Grade band — Excellent, Good, Fair, or Poor.
     value: ${{ steps.audit.outputs.grade }}
   passes:
-    description: "true" if TAS >= threshold, "false" otherwise.
+    description: '"true" if TAS >= threshold, "false" otherwise.'
     value: ${{ steps.audit.outputs.passes }}
   report:
     description: Full report text (markdown or JSON).
