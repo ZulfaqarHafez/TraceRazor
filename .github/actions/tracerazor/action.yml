@@ -57,7 +57,7 @@ runs:
     - name: Build tracerazor CLI
       if: inputs.binary-path == ''
       shell: bash
-      run: cargo build --release -p tracerazor-cli
+      run: cargo build --release -p tracerazor
 
     - name: Set binary path
       id: bin
