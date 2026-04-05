@@ -57,8 +57,6 @@ def run_support_agent(user_message: str) -> dict:
         agent_name="customer-support-v3",
         framework="langgraph",
         threshold=70,
-        semantic=True,         # Use OpenAI embeddings for Phase 2 SRR/ISR
-        cost_per_million=3.0,
     )
 
     model = ChatOpenAI(model="gpt-4o-mini", temperature=0)

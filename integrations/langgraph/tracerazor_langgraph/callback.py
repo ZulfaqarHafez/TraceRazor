@@ -41,8 +41,6 @@ class TraceRazorCallback(BaseCallbackHandler):
         agent_name: str = "langgraph-agent",
         framework: str = "langgraph",
         threshold: float = 70.0,
-        semantic: bool = False,
-        cost_per_million: float = 3.0,
         tracerazor_bin: Optional[str] = None,
         task_value_score: float = 1.0,
     ):
@@ -53,8 +51,6 @@ class TraceRazorCallback(BaseCallbackHandler):
             task_value_score=task_value_score,
         )
         self._threshold = threshold
-        self._semantic = semantic
-        self._cost_per_million = cost_per_million
         self._client = TraceRazorClient(bin_path=tracerazor_bin)
         self._report: Optional[TraceRazorReport] = None
 
@@ -150,9 +146,7 @@ class TraceRazorCallback(BaseCallbackHandler):
         trace_dict = self._builder.build()
         self._report = self._client.analyse(
             trace=trace_dict,
-            semantic=self._semantic,
             threshold=self._threshold,
-            cost_per_million=self._cost_per_million,
         )
         return self._report
 

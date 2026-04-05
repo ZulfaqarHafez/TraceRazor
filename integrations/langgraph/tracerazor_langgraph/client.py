@@ -78,15 +78,13 @@ class TraceRazorClient:
     def analyse(
         self,
         trace: Dict[str, Any],
-        semantic: bool = False,
         threshold: float = 70.0,
-        cost_per_million: float = 3.0,
     ) -> TraceRazorReport:
         """
         Write the trace to a temp file and run tracerazor audit on it.
 
         Returns a TraceRazorReport with the full parsed result.
-        Raises subprocess.CalledProcessError if the binary fails unexpectedly.
+        Raises RuntimeError if the binary fails unexpectedly.
         """
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".json", delete=False, encoding="utf-8"
@@ -101,10 +99,7 @@ class TraceRazorClient:
                 tmp_path,
                 "--format", "json",
                 "--threshold", str(threshold),
-                "--cost-per-million", str(cost_per_million),
             ]
-            if semantic:
-                cmd.append("--semantic")
 
             result = subprocess.run(
                 cmd,
