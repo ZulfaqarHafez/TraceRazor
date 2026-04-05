@@ -77,6 +77,12 @@ enum Commands {
         /// Save trace and report to the store for historical benchmarking.
         #[arg(long, default_value = "true")]
         store: bool,
+
+        /// Enable enhanced semantic analysis using OpenAI embeddings.
+        /// Significantly improves SRR and ISR accuracy by replacing bag-of-words
+        /// with dense sentence embeddings. Requires OPENAI_API_KEY env var.
+        #[arg(long, default_value = "false")]
+        enhanced: bool,
     },
 
     /// List all stored traces in the current session.
@@ -222,8 +228,8 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store } => {
-            cmd_audit(file, format, threshold, trace_format, cost_per_million, store).await?;
+        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, enhanced } => {
+            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, enhanced).await?;
         }
         Commands::List { agent } => {
             cmd_list(agent).await?;
@@ -254,6 +260,7 @@ async fn cmd_audit(
     trace_format: InputFormat,
     cost_per_million: f64,
     do_store: bool,
+    enhanced: bool,
 ) -> Result<()> {
     let data = std::fs::read_to_string(&file)
         .with_context(|| format!("Cannot read file: {}", file.display()))?;
@@ -290,8 +297,18 @@ async fn cmd_audit(
         config.historical_sequences = sequences;
     }
 
-    let sim_fn = default_similarity_fn();
-    let mut report = tracerazor_core::analyse(&mut trace, sim_fn, &config)?;
+    let mut report = if enhanced {
+        // Build embedding cache from all step texts in one batched call.
+        let texts: Vec<String> = trace.steps.iter().map(|s| s.content.clone()).collect();
+        if std::env::var("OPENAI_API_KEY").is_err() {
+            eprintln!("Warning: --enhanced requires OPENAI_API_KEY. Falling back to BoW.");
+        }
+        let sim_fn = tracerazor_semantic::openai_similarity_fn(texts).await;
+        tracerazor_core::analyse(&mut trace, sim_fn, &config)?
+    } else {
+        let sim_fn = default_similarity_fn();
+        tracerazor_core::analyse(&mut trace, sim_fn, &config)?
+    };
 
     // Detect anomalies against historical baseline (E-04) — all 8 metrics + TAS.
     if let Ok(anomalies) = store.detect_all_anomalies(&trace.agent_name, &report).await {

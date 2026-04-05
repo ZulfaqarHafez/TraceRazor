@@ -13,7 +13,7 @@ use anyhow::Result;
 
 use crate::fixes::generate_fixes;
 use crate::metrics::{cce, dbo, isr, ldi, rda, srr, tca, tur};
-use crate::report::{TraceReport, generate_summary};
+use crate::report::{AgentBreakdown, TraceReport, generate_oneliner, generate_summary};
 use crate::scoring::{ScoringConfig, estimate_savings};
 use crate::types::{MIN_TRACE_STEPS, Trace};
 
@@ -35,11 +35,23 @@ pub fn analyse<F>(
 where
     F: Fn(&str, &str) -> f64,
 {
+    // Type-erase to break the generic recursion chain in compute_per_agent_scores.
+    analyse_dyn(trace, &similarity_fn as &dyn Fn(&str, &str) -> f64, config)
+}
+
+/// Internal implementation using a `dyn Fn` reference so that
+/// `compute_per_agent_scores` can call back into it without creating an
+/// infinitely-deep monomorphization chain.
+fn analyse_dyn(
+    trace: &mut Trace,
+    similarity_fn: &dyn Fn(&str, &str) -> f64,
+    config: &ScoringConfig,
+) -> Result<TraceReport> {
     let start = Instant::now();
     let total_tokens = trace.effective_total_tokens();
 
     // ── Structural metrics ────────────────────────────────────────────────────
-    let srr_result = srr::compute(trace, &similarity_fn, None);
+    let srr_result = srr::compute(trace, similarity_fn, None);
     let ldi_result = ldi::compute(trace);
     let tca_result = tca::compute(trace);
 
@@ -52,7 +64,7 @@ where
     cce::annotate_steps(&mut trace.steps, &cce_result);
 
     // ── Information / semantic metrics (BoW, no external calls) ───────────────
-    let isr_result = isr::compute_from_similarities(trace, &similarity_fn);
+    let isr_result = isr::compute_from_similarities(trace, similarity_fn);
 
     // ── Local-first RDA (heuristic classifier, optional historical baseline) ──
     let rda_result = rda::compute(trace, config.historical_median_steps);
@@ -83,8 +95,12 @@ where
     // ── E-01: auto-fix generation ─────────────────────────────────────────────
     let generated_fixes = generate_fixes(trace, &score);
 
-    // ── E-08: template-based summary ──────────────────────────────────────────
+    // ── E-08: template-based NL summaries ────────────────────────────────────
     let summary = generate_summary(trace, &score, &savings);
+    let summary_oneliner = generate_oneliner(trace, &score, &savings);
+
+    // ── Decision 7: per-agent breakdown for multi-agent traces ────────────────
+    let per_agent = compute_per_agent_scores(trace, similarity_fn, config, total_tokens);
 
     Ok(TraceReport {
         trace_id: trace.trace_id.clone(),
@@ -98,8 +114,93 @@ where
         savings,
         fixes: generated_fixes,
         summary,
+        summary_oneliner,
         anomalies: vec![], // populated by the store layer after analysis
+        per_agent,
     })
+}
+
+/// Compute per-agent TAS scores for multi-agent traces.
+///
+/// Returns an empty vec if fewer than 2 distinct `agent_id` values are present.
+/// Uses `analyse_dyn` (concrete function) to break the generic recursion chain.
+fn compute_per_agent_scores(
+    trace: &Trace,
+    similarity_fn: &dyn Fn(&str, &str) -> f64,
+    config: &ScoringConfig,
+    total_tokens: u32,
+) -> Vec<AgentBreakdown> {
+    // Collect ordered distinct agent IDs (preserving first-seen order).
+    let mut seen = std::collections::HashSet::new();
+    let agent_ids: Vec<String> = trace
+        .steps
+        .iter()
+        .filter_map(|s| s.agent_id.as_ref())
+        .filter(|id| seen.insert(id.as_str()))
+        .map(|id| id.to_string())
+        .collect();
+
+    if agent_ids.len() < 2 {
+        return vec![];
+    }
+
+    let total_f = total_tokens.max(1) as f64;
+
+    agent_ids
+        .iter()
+        .map(|agent_id| {
+            let steps: Vec<_> = trace
+                .steps
+                .iter()
+                .filter(|s| s.agent_id.as_deref() == Some(agent_id.as_str()))
+                .cloned()
+                .collect();
+
+            let agent_tokens: u32 = steps.iter().map(|s| s.tokens).sum();
+            let token_share_pct = (agent_tokens as f64 / total_f * 1000.0).round() / 10.0;
+            let step_count = steps.len();
+
+            if step_count >= MIN_TRACE_STEPS {
+                let mut sub = Trace {
+                    trace_id: format!("{}-{}", trace.trace_id, agent_id),
+                    agent_name: agent_id.clone(),
+                    framework: trace.framework.clone(),
+                    steps,
+                    total_tokens: agent_tokens,
+                    task_value_score: trace.task_value_score,
+                    metadata: Default::default(),
+                };
+                // analyse_dyn is a concrete (non-generic) function — no recursion risk.
+                match analyse_dyn(&mut sub, similarity_fn, config) {
+                    Ok(r) => AgentBreakdown {
+                        agent_id: agent_id.clone(),
+                        total_steps: r.total_steps,
+                        total_tokens: r.total_tokens,
+                        token_share_pct,
+                        tas_score: Some(r.score.score),
+                        grade: Some(r.score.grade.to_string()),
+                    },
+                    Err(_) => AgentBreakdown {
+                        agent_id: agent_id.clone(),
+                        total_steps: step_count,
+                        total_tokens: agent_tokens,
+                        token_share_pct,
+                        tas_score: None,
+                        grade: None,
+                    },
+                }
+            } else {
+                AgentBreakdown {
+                    agent_id: agent_id.clone(),
+                    total_steps: step_count,
+                    total_tokens: agent_tokens,
+                    token_share_pct,
+                    tas_score: None,
+                    grade: None,
+                }
+            }
+        })
+        .collect()
 }
 
 /// Returns true if the trace has enough steps to be analysed.
@@ -249,5 +350,70 @@ mod tests {
         let report = analyse(&mut trace, simple_sim, &config).unwrap();
         assert!(report.score.dbo.cold_start);
         assert!((report.score.dbo.score - 0.7).abs() < 0.001);
+    }
+
+    #[test]
+    fn test_multi_agent_breakdown() {
+        // Build a trace with two agent IDs, each with enough steps.
+        let mut trace = Trace {
+            trace_id: "multi-agent-test".into(),
+            agent_name: "test-crew".into(),
+            framework: "crewai".into(),
+            steps: (1u32..=12)
+                .map(|id| TraceStep {
+                    id,
+                    step_type: if id % 2 == 0 {
+                        StepType::ToolCall
+                    } else {
+                        StepType::Reasoning
+                    },
+                    content: format!("step {} content about processing tasks", id),
+                    tokens: 400,
+                    tool_name: if id % 2 == 0 { Some(format!("tool_{id}")) } else { None },
+                    tool_params: None,
+                    tool_success: Some(true),
+                    tool_error: None,
+                    // First 6 steps = researcher, last 6 = resolver
+                    agent_id: Some(if id <= 6 { "researcher".into() } else { "resolver".into() }),
+                    input_context: None,
+                    output: None,
+                    flags: vec![],
+                    flag_details: vec![],
+                })
+                .collect(),
+            total_tokens: 4800,
+            task_value_score: 1.0,
+            metadata: HashMap::new(),
+        };
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+
+        assert_eq!(report.per_agent.len(), 2, "should have two agent breakdowns");
+        let researcher = report.per_agent.iter().find(|a| a.agent_id == "researcher").unwrap();
+        let resolver = report.per_agent.iter().find(|a| a.agent_id == "resolver").unwrap();
+        assert_eq!(researcher.total_steps, 6);
+        assert_eq!(resolver.total_steps, 6);
+        assert!((researcher.token_share_pct - 50.0).abs() < 1.0);
+        // Both sub-traces have ≥ MIN_TRACE_STEPS → should have TAS scores.
+        assert!(researcher.tas_score.is_some());
+        assert!(resolver.tas_score.is_some());
+    }
+
+    #[test]
+    fn test_single_agent_no_breakdown() {
+        let mut trace = make_trace(); // no agent_id set
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        assert!(report.per_agent.is_empty(), "single-agent trace should have no breakdown");
+    }
+
+    #[test]
+    fn test_summary_oneliner_populated() {
+        let mut trace = make_trace();
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        assert!(!report.summary_oneliner.is_empty());
+        // One-liner should contain the score.
+        assert!(report.summary_oneliner.contains(&format!("{:.0}", report.score.score)));
     }
 }

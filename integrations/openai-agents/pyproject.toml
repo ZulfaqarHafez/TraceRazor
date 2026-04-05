@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "tracerazor-openai-agents"
+version = "0.1.0"
+description = "TraceRazor hooks adapter for the OpenAI Agents SDK"
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.9"
+dependencies = []
+
+[project.optional-dependencies]
+agents = ["openai-agents>=0.0.3"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["tracerazor_openai_agents*"]

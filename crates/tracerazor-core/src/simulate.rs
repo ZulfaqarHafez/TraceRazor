@@ -280,6 +280,11 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
         target: 0.70,
     };
 
+    let step_msg = format!(
+        "Trace {} has {} steps (below minimum for analysis).",
+        trace.trace_id,
+        trace.steps.len()
+    );
     TraceReport {
         trace_id: trace.trace_id.clone(),
         agent_name: trace.agent_name.clone(),
@@ -310,12 +315,10 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
             latency_saved_seconds: 0.0,
         },
         fixes: vec![],
-        summary: format!(
-            "Trace {} has {} steps (below minimum for analysis).",
-            trace.trace_id,
-            trace.steps.len()
-        ),
+        summary: step_msg.clone(),
+        summary_oneliner: step_msg,
         anomalies: vec![],
+        per_agent: vec![],
     }
 }
 

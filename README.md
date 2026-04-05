@@ -33,7 +33,11 @@ All eight metrics run **entirely offline** using local heuristics. No API keys r
 
 **Simulation.** Project the impact of removing or merging specific steps *before* re-running your agent. Pure arithmetic in Rust — no LLM calls.
 
-**Anomaly detection.** Rolling baseline per agent (mean TAS ± std dev). Alerts when a new trace deviates by more than 2σ — regression or improvement.
+**Multi-agent scoring.** Traces with multiple agent IDs automatically receive a per-agent TAS breakdown alongside the composite score. Each sub-agent's contribution is weighted by token share.
+
+**Executive summaries.** Every report includes a natural-language paragraph leading with the worst-performing metric and its specific token numbers, plus a one-line summary suitable for CI logs and Slack notifications.
+
+**Per-metric anomaly detection.** Nine independent rolling baselines — one for TAS and one for each of the eight normalised metric scores. Each is checked independently at 2σ, so a loop-detection regression doesn't hide behind a good TCA score.
 
 **Known-Good-Paths KB.** Every trace scoring ≥ 85 is automatically stored as a reference. Future traces by the same agent are matched against it and the closest prior run is surfaced in the audit response.
 
@@ -117,6 +121,7 @@ Options for audit:
   --threshold <N>          Exit non-zero if TAS < N (default: 0, CI gate usage)
   --format <fmt>           Output format: markdown (default) | json
   --trace-format <fmt>     Input format: auto (default) | raw | langsmith | otel
+  --enhanced               Use OpenAI embeddings for similarity (requires OPENAI_API_KEY)
 ```
 
 ### `compare`
@@ -145,6 +150,17 @@ tracerazor cost trace1.json trace2.json trace3.json \
 ```
 
 Supported providers: `openai-gpt-4o`, `openai-gpt-4o-mini`, `anthropic-claude-3-5-sonnet`, `anthropic-claude-3-haiku`, `google-gemini-1-5-flash`.
+
+### `audit --enhanced`
+
+The default similarity engine is bag-of-words (offline, no API keys). Pass `--enhanced` to use OpenAI `text-embedding-3-small` embeddings for SRR and ISR — more accurate redundancy detection on traces where token overlap is low:
+
+```bash
+export OPENAI_API_KEY=sk-...
+tracerazor audit trace.json --enhanced
+```
+
+Embeddings are batched into a single API call. The rest of the analysis (RDA, DBO, TCA, LDI, TUR, CCE) is unchanged and fully offline.
 
 ### `export`
 
@@ -204,7 +220,13 @@ Start the server: `./target/release/tracerazor-server`
   "grade": "Excellent",
   "tokens_saved": 3400,
   "captured_to_kb": true,
+  "summary_oneliner": "TAS 91.2/100 [EXCELLENT] — 3,400 tokens saved (38%). Loop rate 0.18 is the primary drag.",
   "anomalies": [],
+  "per_agent": [
+    { "agent_id": "TriageAgent",   "total_steps": 4, "total_tokens": 1200, "token_share_pct": 28.6, "tas_score": 82.5, "grade": "GOOD" },
+    { "agent_id": "SupportAgent",  "total_steps": 7, "total_tokens": 2600, "token_share_pct": 61.9, "tas_score": 61.2, "grade": "FAIR" },
+    { "agent_id": "EscalationAgent","total_steps": 2, "total_tokens": 400,  "token_share_pct": 9.5,  "tas_score": null, "grade": null }
+  ],
   "kb_match": {
     "entry": { "source_trace_id": "run-098", "tas_score": 94.1, "optimal_tokens": 2800 },
     "similarity": 0.81
@@ -212,6 +234,8 @@ Start the server: `./target/release/tracerazor-server`
   "report_markdown": "..."
 }
 ```
+
+`per_agent` is populated whenever the trace contains ≥ 2 distinct `agent_id` values. Agents with fewer than the minimum step threshold receive `null` TAS.
 
 ### Export endpoints
 
@@ -270,7 +294,7 @@ All eight TAS metrics are computed locally from trace data. No model weights, no
 
 ## Anomaly Detection
 
-After each audit, TraceRazor computes a z-score against the agent's rolling TAS baseline (mean ± std dev, minimum 5 traces). If `|z| > 2.0`, an anomaly is returned in the audit response.
+After each audit, TraceRazor checks nine independent rolling baselines — the composite TAS score plus each of the eight normalised metric values. Every baseline requires a minimum of 5 prior traces before activating; each is tested at `|z| > 2.0`.
 
 ```json
 "anomalies": [
@@ -280,11 +304,20 @@ After each audit, TraceRazor computes a z-score against the agent's rolling TAS 
     "z_score": -2.4,
     "baseline_mean": 79.3,
     "baseline_std": 8.8
+  },
+  {
+    "metric": "ldi",
+    "value": 0.42,
+    "z_score": -2.1,
+    "baseline_mean": 0.12,
+    "baseline_std": 0.14
   }
 ]
 ```
 
-Negative z-score = regression. Positive = improvement.
+Negative z-score = regression. Positive = improvement. Checking each metric independently means a loop-detection spike (LDI) is surfaced even when TCA and overall TAS look normal.
+
+**Persistent baselines.** The CLI accumulates historical data in `~/.tracerazor/store` across runs. No server required — the store is a local file opened automatically on every `audit` call.
 
 ---
 
@@ -361,31 +394,39 @@ match proxy.intercept(&req) {
 
 ![TraceRazor system architecture](tracerazor_architecture.svg)
 
-Six Rust crates, one embedded Alpine.js dashboard.
+Six Rust crates, one embedded Alpine.js dashboard, and three Python integration adapters.
 
 ```
 tracerazor/
 ├── crates/
 │   ├── tracerazor-core/      # Metrics, scoring, simulation, fixes, report generation
 │   ├── tracerazor-ingest/    # Format parsers: raw JSON, LangSmith, OpenTelemetry
-│   ├── tracerazor-semantic/  # Bag-of-words similarity engine
-│   ├── tracerazor-store/     # SurrealDB persistence: traces, KB, baselines
+│   ├── tracerazor-semantic/  # BoW similarity + optional OpenAI embeddings (--enhanced)
+│   ├── tracerazor-store/     # SurrealDB persistence: traces, KB, baselines, anomaly detection
 │   ├── tracerazor-server/    # Axum REST + WebSocket + embedded dashboard
 │   ├── tracerazor-proxy/     # Three-layer LLM guardrail interceptor
-│   └── tracerazor-cli/       # CLI entry point (clap 4)
+│   └── tracerazor-cli/       # CLI entry point (clap 4); persistent store at ~/.tracerazor/
+├── integrations/
+│   ├── crewai/               # Python adapter: TraceRazorCallback for CrewAI
+│   └── openai-agents/        # Python adapter: TraceRazorHooks for OpenAI Agents SDK
+├── .github/
+│   ├── actions/tracerazor/   # Composite GitHub Action with Cargo caching
+│   └── workflows/            # CI: check, test, clippy, TAS gate, example efficiency gate
 ├── dashboard/                # Alpine.js + Chart.js (embedded in server binary)
 ├── traces/                   # Sample traces
-├── Dockerfile                # Multi-stage: rust -> debian-slim
-└── .github/workflows/        # CI: check, test, clippy, TAS gate
+└── Dockerfile                # Multi-stage: rust -> debian-slim
 ```
 
 Design decisions:
 
 - `tracerazor-core` has zero network dependencies. All eight metrics run offline in under 5 ms. No API keys, no async runtime.
-- `tracerazor-semantic` is a separate crate so the offline analysis path never pulls in `reqwest`.
+- `tracerazor-semantic` is a separate crate so the offline analysis path never pulls in `reqwest`. The `--enhanced` flag activates the OpenAI embeddings path at runtime without recompiling.
 - The dashboard is compiled into the server binary via `include_str!`. No Node.js in production.
-- SurrealDB runs in-memory for the CLI and `kv-surrealkv` for the server. The store API is identical in both modes.
-- RDA and DBO use local heuristics (keyword analysis, Jaccard similarity over historical sequences). Historical baselines are loaded from the store and override heuristics when enough data exists (≥ 3 traces for RDA median, ≥ 10 for DBO cold-start threshold).
+- The CLI opens a persistent file store at `~/.tracerazor/store` (SurrealKV) on every `audit` run. Historical baselines, DBO sequences, and anomaly baselines accumulate automatically — no server needed.
+- The server uses `kv-surrealkv` with a configurable path (`TRACERAZOR_DB_PATH`). The store API is identical in both modes.
+- RDA and DBO use local heuristics (keyword analysis, Jaccard similarity over historical sequences). Historical baselines override heuristics when enough data exists (≥ 3 traces for RDA median, ≥ 10 for DBO cold-start threshold).
+- Multi-agent scoring uses type erasure (`&dyn Fn`) to break the generic monomorphization recursion that would occur if `analyse<F>` called itself for sub-traces. `analyse<F>` coerces immediately to `analyse_dyn(&dyn Fn)`, which is a single concrete function used for both the top-level trace and all sub-agent traces.
+- Python adapters are duck-typed against the respective SDK hook protocols, avoiding hard install dependencies. The CrewAI adapter works without `crewai` installed; the OpenAI Agents adapter inherits from `RunHooks` only when `openai-agents` is present.
 
 ---
 
@@ -430,13 +471,13 @@ Replace the sample trace with your agent's most recent production trace to turn 
 
 | Crate | Tests |
 |-------|-------|
-| tracerazor-core | 36: all eight metrics, scoring, simulation, fixes, cost projection |
+| tracerazor-core | 39: all eight metrics, scoring, simulation, fixes, cost projection, multi-agent breakdown, NL summaries |
 | tracerazor-ingest | 3: raw JSON, LangSmith, OTEL parsers |
 | tracerazor-semantic | 5: BoW similarity edge cases |
-| tracerazor-store | 8: traces, KB, baselines, anomaly detection, dashboard, delete |
+| tracerazor-store | 9: traces, KB, baselines, per-metric anomaly detection, dashboard, delete |
 | tracerazor-server | 6: audit, list, dashboard, 404, metrics, compare |
 | tracerazor-proxy | 5: scope whitelist, budget injection |
-| **Total** | **63, all pass** |
+| **Total** | **73, all pass** |
 
 ---
 
@@ -480,19 +521,89 @@ LangSmith exports and OpenTelemetry JSON spans are auto-detected. Pass `--trace-
 | `tool_name` | no | Required for accurate TCA and DBO |
 | `tool_success` | no | `false` triggers misfire detection |
 | `input_context` | no | Full LLM input, used by CCE |
-| `agent_id` | no | For multi-agent traces |
+| `agent_id` | no | Agent identifier; when ≥ 2 distinct values appear, a per-agent TAS breakdown is computed automatically |
+
+---
+
+## Integrations
+
+Native adapters instrument your agent automatically — no manual trace building required.
+
+### CrewAI
+
+```bash
+pip install tracerazor-crewai
+```
+
+```python
+from tracerazor_crewai import TraceRazorCallback
+from crewai import Crew, Agent, Task
+
+callback = TraceRazorCallback(agent_name="support-crew", threshold=70)
+
+crew = Crew(
+    agents=[support_agent],
+    tasks=[support_task],
+    callbacks=[callback],
+)
+
+result = crew.kickoff()
+report = callback.analyse()
+print(report.markdown())
+callback.assert_passes()  # raises AssertionError if TAS < threshold
+```
+
+Captured events: `on_task_start/end`, `on_agent_action`, `on_tool_use_start/end`, `on_tool_error`.
+See [`integrations/crewai/`](integrations/crewai/) for full docs and example.
+
+### OpenAI Agents SDK
+
+```bash
+pip install tracerazor-openai-agents
+```
+
+```python
+from tracerazor_openai_agents import TraceRazorHooks
+from agents import Agent, Runner
+
+hooks = TraceRazorHooks(agent_name="support-agent", threshold=70)
+result = await Runner.run(agent, "I need a refund for order ORD-9182", hooks=hooks)
+
+report = hooks.analyse()
+print(report.markdown())
+hooks.assert_passes()
+```
+
+Captured events: `on_agent_start/end`, `on_tool_start/end`, `on_handoff`. Multi-agent handoffs produce an automatic per-agent breakdown.
+See [`integrations/openai-agents/`](integrations/openai-agents/) for full docs and example.
+
+### GitHub Action
+
+Add a TAS efficiency gate to any workflow in one step:
+
+```yaml
+- uses: ./.github/actions/tracerazor
+  with:
+    trace-file: traces/latest.json
+    threshold: '75'
+    format: markdown
+```
+
+Outputs: `tas-score`, `grade`, `passes`, `report`. Exits 1 if TAS < threshold — blocking the build automatically. Builds the binary from source with Cargo caching (~35 s on a cold runner).
+
+See [`.github/actions/tracerazor/`](.github/actions/tracerazor/) and the example workflow at [`.github/workflows/agent-efficiency-gate.yml`](.github/workflows/agent-efficiency-gate.yml).
 
 ---
 
 ## Framework Support
 
-| Framework | Ingestion format | Status |
-|-----------|-----------------|--------|
-| LangGraph / LangChain | LangSmith JSON, OTEL | Supported |
-| OpenAI Agents SDK | OTEL spans | Supported |
-| CrewAI | Task logs | Parser included |
-| Any OTEL-instrumented agent | OTEL JSON | Supported |
-| Raw / custom | User-defined JSON | Supported |
+| Framework | Status | Adapter |
+|-----------|--------|---------|
+| LangGraph / LangChain | Supported | LangSmith JSON / OTEL ingest |
+| OpenAI Agents SDK | Supported | Native `RunHooks` adapter |
+| CrewAI | Supported | Native `CrewCallbackHandler` adapter |
+| Any OTEL-instrumented agent | Supported | OTEL JSON ingest |
+| Raw / custom | Supported | User-defined JSON |
 
 ---
 

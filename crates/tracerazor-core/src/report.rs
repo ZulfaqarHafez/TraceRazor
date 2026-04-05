@@ -51,6 +51,25 @@ pub struct Anomaly {
     pub baseline_std: f64,
 }
 
+/// Per-agent efficiency breakdown for multi-agent traces (Decision 7).
+///
+/// Populated only when the trace contains steps with at least two distinct
+/// `agent_id` values. Each entry represents one agent thread within the
+/// overall trace DAG.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentBreakdown {
+    /// The agent identifier (matches `TraceStep::agent_id`).
+    pub agent_id: String,
+    pub total_steps: usize,
+    pub total_tokens: u32,
+    /// This agent's share of total trace tokens (0–100%).
+    pub token_share_pct: f64,
+    /// Individual TAS score for this agent's sub-trace (0–100).
+    /// `None` if the sub-trace had fewer than the minimum required steps.
+    pub tas_score: Option<f64>,
+    pub grade: Option<String>,
+}
+
 /// A complete TraceRazor report.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TraceReport {
@@ -68,9 +87,14 @@ pub struct TraceReport {
     pub fixes: Vec<Fix>,
     /// Plain-English one-paragraph summary of the report.
     pub summary: String,
+    /// Executive one-liner for stakeholder communication (E-08).
+    pub summary_oneliner: String,
     /// Anomalies detected against the agent's historical baseline (E-04).
     #[serde(default)]
     pub anomalies: Vec<Anomaly>,
+    /// Per-agent thread breakdown (populated for multi-agent traces only).
+    #[serde(default)]
+    pub per_agent: Vec<AgentBreakdown>,
 }
 
 impl TraceReport {
@@ -362,11 +386,66 @@ impl TraceReport {
             sv.latency_saved_seconds
         );
 
+        // Multi-agent breakdown
+        if !self.per_agent.is_empty() {
+            out += "MULTI-AGENT BREAKDOWN\n";
+            out += &format!(
+                "{:<24} {:>6} {:>8} {:>7} {:>7}  {}\n",
+                "Agent", "Steps", "Tokens", "Share", "TAS", "Grade"
+            );
+            out += &"-".repeat(64);
+            out += "\n";
+            for ab in &self.per_agent {
+                let tas_str = ab
+                    .tas_score
+                    .map(|t| format!("{:.1}", t))
+                    .unwrap_or_else(|| "N/A".into());
+                let grade_str = ab.grade.as_deref().unwrap_or("N/A");
+                out += &format!(
+                    "{:<24} {:>6} {:>8} {:>6.1}% {:>7}  {}\n",
+                    ab.agent_id,
+                    ab.total_steps,
+                    ab.total_tokens,
+                    ab.token_share_pct,
+                    tas_str,
+                    grade_str,
+                );
+            }
+            out += &format!("{sep}\n");
+        }
+
+        // Executive one-liner (E-08)
+        if !self.summary_oneliner.is_empty() {
+            out += &format!("EXECUTIVE SUMMARY\n{}\n{sep}\n", self.summary_oneliner);
+        }
+
         out
     }
 }
 
-/// Generate a plain-English one-paragraph summary of the audit result.
+/// Identify the single worst-performing metric by its normalised score.
+fn worst_metric(score: &TasScore) -> (&'static str, f64) {
+    let metrics = [
+        ("SRR (step redundancy)", score.srr.normalised()),
+        ("LDI (loop detection)", score.ldi.normalised()),
+        ("TCA (tool accuracy)", score.tca.normalised()),
+        ("RDA (reasoning depth)", score.rda.normalised()),
+        ("ISR (info sufficiency)", score.isr.normalised()),
+        ("TUR (token utilisation)", score.tur.normalised()),
+        ("CCE (context carry-over)", score.cce.normalised()),
+        ("DBO (branch optimality)", score.dbo.normalised()),
+    ];
+    metrics
+        .iter()
+        .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+        .copied()
+        .unwrap_or(("TAS", 0.0))
+}
+
+/// Generate a plain-English one-paragraph summary (E-08 template engine).
+///
+/// Leads with the single biggest problem, includes specific token numbers,
+/// and ends with the cost impact. Suitable for a PR comment or Slack alert.
 pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstimate) -> String {
     let grade_desc = match score.grade {
         crate::scoring::Grade::Excellent => "highly optimised",
@@ -375,24 +454,74 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
         crate::scoring::Grade::Poor => "consuming far more tokens than necessary",
     };
 
+    // Lead with the worst metric.
+    let (worst_name, worst_val) = worst_metric(score);
+    let worst_sentence = format!(
+        "The biggest efficiency gap is {} (score {:.2}/1.0).",
+        worst_name,
+        worst_val
+    );
+
+    // Build specific issue sentences.
     let mut issues = Vec::new();
-    if !score.srr.pass {
+
+    if !score.ldi.pass && !score.ldi.loops.is_empty() {
+        let loop_tokens: u32 = score
+            .ldi
+            .loops
+            .iter()
+            .flat_map(|l| l.step_ids.iter())
+            .filter_map(|&id| trace.steps.iter().find(|s| s.id == id))
+            .map(|s| s.tokens)
+            .sum();
         issues.push(format!(
-            "{:.0}% of steps are semantically redundant",
-            score.srr.score
+            "{} reasoning loop(s) detected consuming ~{} tokens unnecessarily",
+            score.ldi.loops.len(),
+            loop_tokens
         ));
     }
-    if !score.ldi.pass {
+    if !score.srr.pass {
+        let redundant_tokens: u32 = score
+            .srr
+            .redundant_steps
+            .iter()
+            .filter_map(|p| trace.steps.iter().find(|s| s.id == p.step_b))
+            .map(|s| s.tokens)
+            .sum();
         issues.push(format!(
-            "{} loop(s) detected (LDI {:.3})",
-            score.ldi.loops.len(),
-            score.ldi.score
+            "{:.0}% of steps are redundant ({} tokens wasted)",
+            score.srr.score,
+            redundant_tokens
         ));
     }
     if !score.tca.pass {
+        let misfire_tokens: u32 = score
+            .tca
+            .misfires
+            .iter()
+            .filter_map(|m| trace.steps.iter().find(|s| s.id == m.failed_step))
+            .map(|s| s.tokens)
+            .sum();
         issues.push(format!(
-            "{} tool misfire(s) requiring retries",
-            score.tca.misfires.len()
+            "{} tool misfire(s) wasted ~{} tokens on failed calls",
+            score.tca.misfires.len(),
+            misfire_tokens
+        ));
+    }
+    if !score.cce.pass {
+        let bloat_tokens: u32 = score
+            .cce
+            .bloated_steps
+            .iter()
+            .filter_map(|b| {
+                trace.steps.iter().find(|s| s.id == b.step_id).map(|s| {
+                    (s.tokens as f64 * b.duplicate_pct / 100.0) as u32
+                })
+            })
+            .sum();
+        issues.push(format!(
+            "context bloat duplicated ~{} tokens across LLM calls",
+            bloat_tokens
         ));
     }
     if !score.rda.pass {
@@ -402,27 +531,24 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
             "under-reasoned"
         };
         issues.push(format!(
-            "{} ({} steps used, ~{:.0} expected for {} task)",
+            "{} ({} steps used vs ~{:.0} expected for a {} task)",
             direction,
             score.rda.actual_steps,
             score.rda.expected_steps,
             score.rda.classified_complexity
         ));
     }
-    if !score.cce.pass {
-        issues.push("significant context bloat in input windows".into());
-    }
 
-    let issue_text = if issues.is_empty() {
-        "No major issues were flagged.".into()
+    let issues_text = if issues.is_empty() {
+        "No major issues detected.".into()
     } else {
-        format!("Key issues: {}.", issues.join("; "))
+        format!("Issues found: {}.", issues.join("; "))
     };
 
     let savings_text = if savings.tokens_saved > 0 {
         format!(
-            " Applying the recommended fixes would save {} tokens per run (${:.4}/run, \
-             ${:.2}/month at 50K runs).",
+            " Applying the recommended fixes would save {} tokens per run \
+             (${:.4}/run, ${:.2}/month at 50K runs).",
             savings.tokens_saved,
             savings.cost_saved_per_run_usd,
             savings.monthly_savings_usd
@@ -432,16 +558,48 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
     };
 
     format!(
-        "The {} agent completed this {} trace scoring {:.0}/100 ({}) — it is {}. \
-         {} {}",
+        "The {} agent ({}) scored {:.0}/100 [{}] — it is {}. {} {}{}",
         trace.agent_name,
         trace.framework,
         score.score,
         score.grade,
         grade_desc,
-        issue_text,
-        savings_text.trim()
+        worst_sentence,
+        issues_text,
+        savings_text,
     )
     .trim()
     .to_string()
+}
+
+/// Generate an executive one-liner for stakeholder communication (E-08).
+///
+/// Format: "<Agent> scores <N>/100 [<Grade>]. Biggest issue: <worst metric>.
+/// Fix saves $<Z>/month."
+pub fn generate_oneliner(trace: &Trace, score: &TasScore, savings: &SavingsEstimate) -> String {
+    let (worst_name, _) = worst_metric(score);
+
+    if savings.monthly_savings_usd > 0.0 {
+        format!(
+            "{} scores {:.0}/100 [{}]. Biggest issue: {}. \
+             Apply fixes to save ${:.0}/month at 50K runs.",
+            trace.agent_name,
+            score.score,
+            score.grade,
+            worst_name,
+            savings.monthly_savings_usd,
+        )
+    } else {
+        format!(
+            "{} scores {:.0}/100 [{}]. {}",
+            trace.agent_name,
+            score.score,
+            score.grade,
+            if score.score >= 90.0 {
+                "No significant waste detected.".into()
+            } else {
+                format!("Primary concern: {}.", worst_name)
+            }
+        )
+    }
 }
