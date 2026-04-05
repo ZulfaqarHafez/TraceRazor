@@ -20,4 +20,5 @@ serde_json = { workspace = true }
 anyhow = { workspace = true }
 tokio = { workspace = true }
 clap = { version = "4", features = ["derive"] }
+reqwest = { workspace = true }
 dotenvy = "0.15"

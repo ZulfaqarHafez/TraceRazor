@@ -25,6 +25,7 @@ tower = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
 futures-util = { workspace = true }
+reqwest = { workspace = true }
 dotenvy = "0.15"
 
 [dev-dependencies]

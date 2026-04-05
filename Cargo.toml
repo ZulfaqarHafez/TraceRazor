@@ -23,3 +23,4 @@ axum = { version = "0.7", features = ["ws"] }
 tower-http = { version = "0.5", features = ["cors", "fs"] }
 tower = "0.4"
 futures-util = "0.3"
+reqwest = { version = "0.12", features = ["json"] }

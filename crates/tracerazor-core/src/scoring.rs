@@ -1,8 +1,14 @@
-/// Scoring engine: composites all metrics into the TraceRazor Score (TAS)
+/// Scoring engine: composites all eight metrics into the TraceRazor Score (TAS)
 /// and computes the Value-Adjusted Efficiency (VAE) multiplier.
+///
+/// All eight metrics are now always computed (no API key required). RDA and DBO
+/// use local heuristics / historical data; ISR uses the BoW similarity backend.
 use serde::{Deserialize, Serialize};
 
-use crate::metrics::{CceResult, DboResult, IsrResult, LdiResult, RdaResult, SrrResult, TcaResult, TurResult};
+use crate::metrics::{
+    dbo::{DboResult, HistoricalSequence},
+    CceResult, IsrResult, LdiResult, RdaResult, SrrResult, TcaResult, TurResult,
+};
 
 /// Grade bands for the composite TAS score (mirrors Google Lighthouse).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -71,15 +77,8 @@ impl Default for Weights {
     }
 }
 
-/// Phase 1 computes 5 structural metrics. The remaining 3 (rda, isr, dbo)
-/// are added in Phase 2. In Phase 1 we re-normalise over the available weights.
-impl Weights {
-    pub fn phase1_normalised(&self) -> f64 {
-        self.srr + self.ldi + self.tca + self.tur + self.cce
-    }
-}
-
 /// The composite TraceRazor Score and all component results.
+/// All eight metrics are always present — no more Option wrappers.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TasScore {
     /// Composite score (0–100). Higher is better.
@@ -90,16 +89,15 @@ pub struct TasScore {
     /// Whether TAS meets the configured threshold.
     pub passes_threshold: bool,
 
-    // Component metrics (Phase 1)
+    // All eight metrics.
     pub srr: SrrResult,
     pub ldi: LdiResult,
     pub tca: TcaResult,
     pub tur: TurResult,
     pub cce: CceResult,
-    // Phase 2 metrics (None when run without API key)
-    pub rda: Option<RdaResult>,
-    pub isr: Option<IsrResult>,
-    pub dbo: Option<DboResult>,
+    pub rda: RdaResult,
+    pub isr: IsrResult,
+    pub dbo: DboResult,
 }
 
 /// Configuration for the scoring engine.
@@ -108,10 +106,17 @@ pub struct ScoringConfig {
     pub weights: Weights,
     /// Minimum TAS to "pass" (used for CI/CD gating).
     pub threshold: f64,
-    /// Per-token cost in USD (for savings estimates).
+    /// Per-token cost in USD, expressed per million tokens.
     pub cost_per_million_tokens: f64,
     /// Historical median token count for this task type (for VAE normalisation).
     pub baseline_tokens: Option<u32>,
+    /// Historical tool sequences for DBO computation.
+    /// Empty slice = cold start (neutral 0.7). Populated from the store.
+    #[serde(default)]
+    pub historical_sequences: Vec<HistoricalSequence>,
+    /// Historical median step count for RDA accuracy improvement.
+    /// None = use heuristic classifier. Populated from the store.
+    pub historical_median_steps: Option<f64>,
 }
 
 impl Default for ScoringConfig {
@@ -121,12 +126,13 @@ impl Default for ScoringConfig {
             threshold: 70.0,
             cost_per_million_tokens: 3.0,
             baseline_tokens: None,
+            historical_sequences: vec![],
+            historical_median_steps: None,
         }
     }
 }
 
-/// Compute the composite TAS score from structural (Phase 1) metrics
-/// plus optional semantic (Phase 2) metrics.
+/// Compute the composite TAS score from all eight metrics.
 #[allow(clippy::too_many_arguments)]
 pub fn compute(
     srr: SrrResult,
@@ -134,50 +140,41 @@ pub fn compute(
     tca: TcaResult,
     tur: TurResult,
     cce: CceResult,
-    rda: Option<RdaResult>,
-    isr: Option<IsrResult>,
-    dbo: Option<DboResult>,
+    rda: RdaResult,
+    isr: IsrResult,
+    dbo: DboResult,
     task_value_score: f64,
     total_tokens: u32,
     config: &ScoringConfig,
 ) -> TasScore {
     let w = &config.weights;
 
-    // Normalise component scores to 0.0–1.0 (higher = better).
+    // Normalise all component scores to 0.0–1.0 (higher = better).
     let srr_n = srr.normalised();
     let ldi_n = ldi.normalised();
     let tca_n = tca.normalised();
     let tur_n = tur.normalised();
     let cce_n = cce.normalised();
+    let rda_n = rda.normalised();
+    let isr_n = isr.normalised();
+    let dbo_n = dbo.normalised();
 
-    // Accumulate weighted scores over available metrics.
-    let mut weighted_sum = srr_n * w.srr
+    let weight_total = w.srr + w.ldi + w.tca + w.tur + w.cce + w.rda + w.isr + w.dbo;
+    let weighted_sum = srr_n * w.srr
         + ldi_n * w.ldi
         + tca_n * w.tca
         + tur_n * w.tur
-        + cce_n * w.cce;
-    let mut weight_total = w.srr + w.ldi + w.tca + w.tur + w.cce;
-
-    // Add Phase 2 metrics when available.
-    if let Some(ref r) = rda {
-        weighted_sum += r.normalised() * w.rda;
-        weight_total += w.rda;
-    }
-    if let Some(ref i) = isr {
-        weighted_sum += i.normalised() * w.isr;
-        weight_total += w.isr;
-    }
-    if let Some(ref d) = dbo {
-        weighted_sum += d.normalised() * w.dbo;
-        weight_total += w.dbo;
-    }
+        + cce_n * w.cce
+        + rda_n * w.rda
+        + isr_n * w.isr
+        + dbo_n * w.dbo;
 
     let raw_efficiency = weighted_sum / weight_total;
 
-    // TAS in 0–100
+    // TAS in 0–100.
     let tas = (raw_efficiency * 100.0 * 10.0).round() / 10.0;
 
-    // VAE = (task_value_score * raw_efficiency) / normalised_token_cost
+    // VAE = (task_value_score * raw_efficiency) / normalised_token_cost.
     let baseline = config.baseline_tokens.unwrap_or(total_tokens).max(1) as f64;
     let normalised_cost = (total_tokens as f64 / baseline).max(0.001);
     let vae = ((task_value_score * raw_efficiency) / normalised_cost * 100.0).round() / 100.0;

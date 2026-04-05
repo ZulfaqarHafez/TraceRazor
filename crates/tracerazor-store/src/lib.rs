@@ -1,9 +1,8 @@
 /// Persistent trace storage using SurrealDB.
 ///
 /// Two modes:
-///   `TraceStore::connect_mem()`  — in-memory, for CLI sessions and tests.
-///   `TraceStore::connect_file(path)` — persistent embedded (kv-surrealkv),
-///                                      for the Phase 3 server.
+///   `TraceStore::connect_mem()`       — in-memory, for CLI sessions and tests.
+///   `TraceStore::connect_file(path)`  — persistent (kv-surrealkv), for the server.
 pub mod kb;
 pub use kb::{KgpEntry, KgpMatch, KgpStep, KGP_CAPTURE_THRESHOLD, build_kb_entry};
 
@@ -11,7 +10,11 @@ use anyhow::Result;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use surrealdb::Surreal;
-use tracerazor_core::{report::TraceReport, types::Trace};
+use tracerazor_core::{
+    metrics::dbo::HistoricalSequence,
+    report::{Anomaly, TraceReport},
+    types::Trace,
+};
 
 /// A stored trace entry with its analysis report.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,14 +72,25 @@ pub struct TasTrendPoint {
     pub tokens: u32,
 }
 
+/// Rolling baseline statistics for an agent, used for anomaly detection (E-04).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentBaseline {
+    pub agent_name: String,
+    /// Rolling mean TAS score.
+    pub mean_tas: f64,
+    /// Rolling standard deviation of TAS scores.
+    pub std_dev_tas: f64,
+    /// Number of traces used to compute this baseline.
+    pub sample_count: usize,
+}
+
 /// The TraceRazor store — wraps SurrealDB with a stable API.
 pub struct TraceStore {
     db: Surreal<surrealdb::engine::local::Db>,
 }
 
 impl TraceStore {
-    /// In-memory store (no persistence across restarts).
-    /// Used by the CLI and tests.
+    /// In-memory store (no persistence across restarts). Used by the CLI and tests.
     pub async fn connect_mem() -> Result<Self> {
         use surrealdb::engine::local::Mem;
         let db = Surreal::new::<Mem>(()).await?;
@@ -84,8 +98,7 @@ impl TraceStore {
         Ok(TraceStore { db })
     }
 
-    /// Persistent file-backed store using SurrealKV.
-    /// Used by the Phase 3 server.
+    /// Persistent file-backed store using SurrealKV. Used by the server.
     pub async fn connect_file(path: &str) -> Result<Self> {
         use surrealdb::engine::local::SurrealKv;
         let db = Surreal::new::<SurrealKv>(path).await?;
@@ -160,6 +173,50 @@ impl TraceStore {
         Ok(Some(tokens[tokens.len() / 2]))
     }
 
+    /// Historical median step count for an agent (used for RDA accuracy).
+    pub async fn historical_median_steps(&self, agent_name: &str) -> Result<Option<f64>> {
+        let stored: Vec<StoredTrace> = self.db.select("traces").await?;
+        let mut step_counts: Vec<usize> = stored
+            .iter()
+            .filter(|st| st.trace.agent_name == agent_name)
+            .map(|st| st.trace.steps.len())
+            .collect();
+        if step_counts.len() < 3 {
+            return Ok(None);
+        }
+        step_counts.sort();
+        let median = step_counts[step_counts.len() / 2] as f64;
+        Ok(Some(median))
+    }
+
+    /// Historical tool-call sequences for an agent (used for DBO computation).
+    ///
+    /// Returns sequences for all stored traces by this agent.
+    /// DBO cold-starts when fewer than 10 similar sequences are found.
+    pub async fn historical_sequences(
+        &self,
+        agent_name: &str,
+    ) -> Result<Vec<HistoricalSequence>> {
+        let stored: Vec<StoredTrace> = self.db.select("traces").await?;
+        let sequences = stored
+            .into_iter()
+            .filter(|st| st.trace.agent_name == agent_name)
+            .map(|st| {
+                let tool_sequence: Vec<String> = st
+                    .trace
+                    .steps
+                    .iter()
+                    .filter_map(|s| s.tool_name.clone())
+                    .collect();
+                HistoricalSequence {
+                    tool_sequence,
+                    total_tokens: st.trace.effective_total_tokens(),
+                }
+            })
+            .collect();
+        Ok(sequences)
+    }
+
     /// Delete a trace by ID.
     pub async fn delete_trace(&self, trace_id: &str) -> Result<()> {
         let _: Option<StoredTrace> = self.db.delete(("traces", trace_id)).await?;
@@ -180,10 +237,8 @@ impl TraceStore {
             scores.iter().sum::<f64>() / scores.len() as f64
         };
         let total_tokens_saved: u32 = summaries.iter().filter_map(|s| s.tokens_saved).sum();
-        // Rough cost at $3/M tokens.
         let total_cost_saved_usd = total_tokens_saved as f64 * 3.0 / 1_000_000.0;
 
-        // TAS trend (all traces sorted by stored_at).
         let mut trend: Vec<TasTrendPoint> = summaries
             .iter()
             .filter_map(|s| {
@@ -197,7 +252,6 @@ impl TraceStore {
             .collect();
         trend.sort_by(|a, b| a.timestamp.cmp(&b.timestamp));
 
-        // 20 most recent traces.
         let mut recent = summaries;
         recent.sort_by(|a, b| b.stored_at.cmp(&a.stored_at));
         recent.truncate(20);
@@ -214,13 +268,69 @@ impl TraceStore {
         })
     }
 
+    // ── Anomaly Detection (E-04) ───────────────────────────────────────────
+
+    /// Compute the rolling baseline for an agent's TAS score.
+    ///
+    /// Returns `None` if fewer than 5 traces exist (insufficient for statistics).
+    pub async fn agent_baseline(&self, agent_name: &str) -> Result<Option<AgentBaseline>> {
+        let summaries = self.list_traces().await?;
+        let scores: Vec<f64> = summaries
+            .iter()
+            .filter(|s| s.agent_name == agent_name)
+            .filter_map(|s| s.tas_score)
+            .collect();
+
+        if scores.len() < 5 {
+            return Ok(None);
+        }
+
+        let mean = scores.iter().sum::<f64>() / scores.len() as f64;
+        let variance =
+            scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
+        let std_dev = variance.sqrt();
+
+        Ok(Some(AgentBaseline {
+            agent_name: agent_name.to_string(),
+            mean_tas: (mean * 10.0).round() / 10.0,
+            std_dev_tas: (std_dev * 10.0).round() / 10.0,
+            sample_count: scores.len(),
+        }))
+    }
+
+    /// Detect anomalies for a newly computed TAS score against the agent's baseline.
+    ///
+    /// Returns anomaly entries if the score deviates by more than 2 standard
+    /// deviations from the rolling mean. Pass the result into `report.anomalies`.
+    pub async fn detect_anomalies(
+        &self,
+        agent_name: &str,
+        tas_score: f64,
+    ) -> Result<Vec<Anomaly>> {
+        let Some(baseline) = self.agent_baseline(agent_name).await? else {
+            return Ok(vec![]);
+        };
+
+        let std_dev = baseline.std_dev_tas.max(1.0); // floor to avoid division by tiny σ
+        let z_score = (tas_score - baseline.mean_tas) / std_dev;
+
+        if z_score.abs() > 2.0 {
+            Ok(vec![Anomaly {
+                metric: "tas_score".into(),
+                value: tas_score,
+                z_score: (z_score * 100.0).round() / 100.0,
+                baseline_mean: baseline.mean_tas,
+                baseline_std: baseline.std_dev_tas,
+            }])
+        } else {
+            Ok(vec![])
+        }
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────
 
     fn to_summary(st: StoredTrace) -> TraceSummary {
-        let tokens_saved = st
-            .report
-            .as_ref()
-            .map(|r| r.savings.tokens_saved);
+        let tokens_saved = st.report.as_ref().map(|r| r.savings.tokens_saved);
         TraceSummary {
             trace_id: st.trace.trace_id.clone(),
             agent_name: st.trace.agent_name.clone(),
@@ -341,5 +451,22 @@ mod tests {
         store.delete_trace("t1").await.unwrap();
         let retrieved = store.get_trace("t1").await.unwrap();
         assert!(retrieved.is_none());
+    }
+
+    #[tokio::test]
+    async fn test_historical_sequences_empty() {
+        let store = TraceStore::connect_mem().await.unwrap();
+        let sequences = store.historical_sequences("agent-a").await.unwrap();
+        assert!(sequences.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_anomaly_detection_insufficient_data() {
+        let store = TraceStore::connect_mem().await.unwrap();
+        // Only 2 traces — below the 5-trace minimum.
+        store.save_trace(&dummy_trace("t1", "agent-a"), None).await.unwrap();
+        store.save_trace(&dummy_trace("t2", "agent-a"), None).await.unwrap();
+        let anomalies = store.detect_anomalies("agent-a", 30.0).await.unwrap();
+        assert!(anomalies.is_empty());
     }
 }

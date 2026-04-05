@@ -1,6 +1,7 @@
 /// Report generation: produces JSON and Markdown output from a TasScore.
 use serde::{Deserialize, Serialize};
 
+use crate::fixes::Fix;
 use crate::scoring::{SavingsEstimate, TasScore};
 use crate::types::{StepFlag, Trace};
 
@@ -35,6 +36,21 @@ pub struct DiffLine {
     pub tokens_suggested: Option<u32>,
 }
 
+/// A detected anomaly when this trace deviates from the agent's historical baseline.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Anomaly {
+    /// Metric that triggered the anomaly.
+    pub metric: String,
+    /// Observed value.
+    pub value: f64,
+    /// z-score (signed: negative = regression, positive = improvement).
+    pub z_score: f64,
+    /// Rolling mean of this metric for the agent.
+    pub baseline_mean: f64,
+    /// Rolling standard deviation.
+    pub baseline_std: f64,
+}
+
 /// A complete TraceRazor report.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TraceReport {
@@ -47,6 +63,14 @@ pub struct TraceReport {
     pub score: TasScore,
     pub diff: Vec<DiffLine>,
     pub savings: SavingsEstimate,
+    /// Auto-generated fix patches (E-01).
+    #[serde(default)]
+    pub fixes: Vec<Fix>,
+    /// Plain-English one-paragraph summary of the report.
+    pub summary: String,
+    /// Anomalies detected against the agent's historical baseline (E-04).
+    #[serde(default)]
+    pub anomalies: Vec<Anomaly>,
 }
 
 impl TraceReport {
@@ -61,19 +85,24 @@ impl TraceReport {
                 let detail = step.flag_details.first().cloned().unwrap_or_default();
                 (DiffAction::Delete, Some(format!("Redundant: {}", detail)), Some(0))
             } else if has_flag(&StepFlag::Loop) {
-                // Loop *repeat* steps are deleted.
                 let detail = step.flag_details.first().cloned().unwrap_or("loop".into());
                 (DiffAction::Delete, Some(format!("Loop: {}", detail)), Some(0))
             } else if has_flag(&StepFlag::LoopStart) {
-                // Loop *start* step is kept (it's the first, valid occurrence).
-                // The loop is documented in a note.
-                let detail = step.flag_details.first().cloned().unwrap_or("loop start".into());
-                (DiffAction::Keep, Some(format!("Loop start (keep first): {}", detail)), None)
+                let detail = step
+                    .flag_details
+                    .first()
+                    .cloned()
+                    .unwrap_or("loop start".into());
+                (
+                    DiffAction::Keep,
+                    Some(format!("Loop start (keep first): {}", detail)),
+                    None,
+                )
             } else if has_flag(&StepFlag::Misfire) {
                 let detail = step.flag_details.first().cloned().unwrap_or_default();
                 (DiffAction::Delete, Some(format!("Misfired: {}", detail)), Some(0))
             } else if has_flag(&StepFlag::OverDepth) {
-                let trimmed = (step.tokens / 4).max(100); // suggest 25% of original
+                let trimmed = (step.tokens / 4).max(100);
                 (
                     DiffAction::Trim,
                     Some("Reduce reasoning depth (simple task)".into()),
@@ -81,15 +110,12 @@ impl TraceReport {
                 )
             } else if has_flag(&StepFlag::ContextBloat) {
                 let detail = step.flag_details.first().cloned().unwrap_or_default();
-                let kept = (step.tokens as f64 * 0.44) as u32; // remove ~56% bloat
+                let kept = (step.tokens as f64 * 0.44) as u32;
                 (
                     DiffAction::Trim,
                     Some(format!("Compress context: {}", detail)),
                     Some(kept),
                 )
-            } else if has_flag(&StepFlag::Retry) {
-                // The retry itself is OK (needed) — keep it.
-                (DiffAction::Keep, None, None)
             } else {
                 (DiffAction::Keep, None, None)
             };
@@ -134,7 +160,7 @@ impl TraceReport {
              Trace:     {}\n\
              Agent:     {}\n\
              Framework: {}\n\
-             Steps:     {}   Tokens: {}   \n\
+             Steps:     {}   Tokens: {}\n\
              Analysed:  {}ms\n\
              {sep}\n",
             self.trace_id,
@@ -188,58 +214,72 @@ impl TraceReport {
             ">85%",
             pass_str(s.tca.pass)
         );
-        // RDA — show actual value if Phase 2 computed it, else PENDING
-        let (rda_score_str, rda_status) = match &s.rda {
-            Some(r) => (format!("{:.3}", r.score), pass_str(r.pass).to_string()),
-            None => ("N/A".into(), "PENDING".into()),
-        };
-        out += &format!("{:<6} {:<30} {:<8} {:<8} {}\n", "RDA", "Reasoning Depth Approp.", rda_score_str, ">0.75", rda_status);
-
-        // ISR — available in both phases (Phase 1 uses BoW, Phase 2 uses embeddings)
-        let (isr_score_str, isr_status) = match &s.isr {
-            Some(r) => (format!("{:.1}%", r.score), pass_str(r.pass).to_string()),
-            None => ("N/A".into(), "PENDING".into()),
-        };
-        out += &format!("{:<6} {:<30} {:<8} {:<8} {}\n", "ISR", "Info Sufficiency Rate", isr_score_str, ">80%", isr_status);
-
         out += &format!(
-            "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "TUR", "Token Utilisation Ratio",
-            format!("{:.3}", s.tur.score), ">0.35", pass_str(s.tur.pass)
+            "{:<6} {:<30} {:<8} {:<8} {}{}\n",
+            "RDA",
+            "Reasoning Depth Approp.",
+            format!("{:.3}", s.rda.score),
+            ">0.75",
+            pass_str(s.rda.pass),
+            if s.rda.uses_historical_baseline { " [hist]" } else { "" }
         );
         out += &format!(
             "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "CCE", "Context Carry-over Eff.",
-            format!("{:.3}", s.cce.score), ">0.60", pass_str(s.cce.pass)
+            "ISR",
+            "Info Sufficiency Rate",
+            format!("{:.1}%", s.isr.score),
+            ">80%",
+            pass_str(s.isr.pass)
         );
-
-        // DBO — show actual value if Phase 2 computed it
-        let (dbo_score_str, dbo_status) = match &s.dbo {
-            Some(r) => (format!("{:.3}", r.score), pass_str(r.pass).to_string()),
-            None => ("N/A".into(), "PENDING".into()),
-        };
-        out += &format!("{:<6} {:<30} {:<8} {:<8} {}\n", "DBO", "Decision Branch Optimality", dbo_score_str, ">0.70", dbo_status);
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}\n",
+            "TUR",
+            "Token Utilisation Ratio",
+            format!("{:.3}", s.tur.score),
+            ">0.35",
+            pass_str(s.tur.pass)
+        );
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}\n",
+            "CCE",
+            "Context Carry-over Eff.",
+            format!("{:.3}", s.cce.score),
+            ">0.60",
+            pass_str(s.cce.pass)
+        );
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}{}\n",
+            "DBO",
+            "Decision Branch Optimality",
+            format!("{:.3}", s.dbo.score),
+            ">0.70",
+            pass_str(s.dbo.pass),
+            if s.dbo.cold_start { " [cold]" } else { "" }
+        );
 
         out += &format!("{sep}\n");
+
+        // Summary (plain-English)
+        if !self.summary.is_empty() {
+            out += "SUMMARY\n";
+            out += &self.summary;
+            out += "\n";
+            out += &format!("{sep}\n");
+        }
 
         // Per-step annotations
         out += "PER-STEP ANNOTATIONS\n";
         out += &format!("{:>3}  {:<12} {:<8}  {}\n", "#", "Type", "Tokens", "Flags");
 
-        // We need the trace steps — re-derive from score's waste data.
-        // The report stores all info needed.
         for line in &self.diff {
-            let flags_str = if line.justification.is_some() {
-                line.justification.as_deref().unwrap_or("").to_string()
-            } else {
-                "-".into()
-            };
+            let flags_str = line
+                .justification
+                .as_deref()
+                .unwrap_or("-")
+                .to_string();
             out += &format!(
                 "{:>3}  {:<12} {:>8}  {}\n",
-                line.step_id,
-                line.step_type,
-                line.tokens_actual,
-                flags_str
+                line.step_id, line.step_type, line.tokens_actual, flags_str
             );
         }
 
@@ -247,7 +287,11 @@ impl TraceReport {
 
         // Optimal path
         let optimal_tokens = Self::optimal_tokens(&self.diff);
-        let kept = self.diff.iter().filter(|d| matches!(d.action, DiffAction::Keep | DiffAction::Trim)).count();
+        let kept = self
+            .diff
+            .iter()
+            .filter(|d| matches!(d.action, DiffAction::Keep | DiffAction::Trim))
+            .count();
         out += &format!(
             "OPTIMAL PATH RECOMMENDATION\n\
              Suggested: {} steps (vs {} actual)  |  Est. tokens: {} (vs {})\n\n",
@@ -273,23 +317,131 @@ impl TraceReport {
 
         out += &format!("{sep}\n");
 
+        // Fixes (E-01)
+        if !self.fixes.is_empty() {
+            out += "AUTO-GENERATED FIXES\n";
+            for (i, fix) in self.fixes.iter().enumerate() {
+                out += &format!(
+                    "  Fix {}: [{}] → {}\n  Patch: {}\n  Est. savings: {} tokens/run\n\n",
+                    i + 1,
+                    fix.fix_type,
+                    fix.target,
+                    fix.patch,
+                    fix.estimated_token_savings,
+                );
+            }
+            out += &format!("{sep}\n");
+        }
+
+        // Anomalies (E-04)
+        if !self.anomalies.is_empty() {
+            out += "ANOMALY ALERTS\n";
+            for a in &self.anomalies {
+                let direction = if a.z_score < 0.0 { "REGRESSION" } else { "IMPROVEMENT" };
+                out += &format!(
+                    "  [{}] {}: {:.1} (baseline {:.1} ± {:.1}, z={:.1})\n",
+                    direction, a.metric, a.value, a.baseline_mean, a.baseline_std, a.z_score
+                );
+            }
+            out += &format!("{sep}\n");
+        }
+
         // Savings
         let sv = &self.savings;
         out += &format!(
             "SAVINGS ESTIMATE\n\
              Tokens saved:      {}  ({:.1}% reduction)\n\
-             Cost saved:        ${:.4} per run  (at ${:.2}/1M tokens)\n\
+             Cost saved:        ${:.4} per run\n\
              At 50K runs/month: ${:.2}/month saved\n\
              Latency saved:     ~{:.1}s per run\n\
              {sep}\n",
             sv.tokens_saved,
             sv.reduction_pct,
             sv.cost_saved_per_run_usd,
-            3.0_f64, // default display
             sv.monthly_savings_usd,
             sv.latency_saved_seconds
         );
 
         out
     }
+}
+
+/// Generate a plain-English one-paragraph summary of the audit result.
+pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstimate) -> String {
+    let grade_desc = match score.grade {
+        crate::scoring::Grade::Excellent => "highly optimised",
+        crate::scoring::Grade::Good => "reasonably efficient with minor inefficiencies",
+        crate::scoring::Grade::Fair => "wasting a significant portion of its token budget",
+        crate::scoring::Grade::Poor => "consuming far more tokens than necessary",
+    };
+
+    let mut issues = Vec::new();
+    if !score.srr.pass {
+        issues.push(format!(
+            "{:.0}% of steps are semantically redundant",
+            score.srr.score
+        ));
+    }
+    if !score.ldi.pass {
+        issues.push(format!(
+            "{} loop(s) detected (LDI {:.3})",
+            score.ldi.loops.len(),
+            score.ldi.score
+        ));
+    }
+    if !score.tca.pass {
+        issues.push(format!(
+            "{} tool misfire(s) requiring retries",
+            score.tca.misfires.len()
+        ));
+    }
+    if !score.rda.pass {
+        let direction = if score.rda.actual_steps > score.rda.expected_steps as usize {
+            "over-reasoned"
+        } else {
+            "under-reasoned"
+        };
+        issues.push(format!(
+            "{} ({} steps used, ~{:.0} expected for {} task)",
+            direction,
+            score.rda.actual_steps,
+            score.rda.expected_steps,
+            score.rda.classified_complexity
+        ));
+    }
+    if !score.cce.pass {
+        issues.push("significant context bloat in input windows".into());
+    }
+
+    let issue_text = if issues.is_empty() {
+        "No major issues were flagged.".into()
+    } else {
+        format!("Key issues: {}.", issues.join("; "))
+    };
+
+    let savings_text = if savings.tokens_saved > 0 {
+        format!(
+            " Applying the recommended fixes would save {} tokens per run (${:.4}/run, \
+             ${:.2}/month at 50K runs).",
+            savings.tokens_saved,
+            savings.cost_saved_per_run_usd,
+            savings.monthly_savings_usd
+        )
+    } else {
+        String::new()
+    };
+
+    format!(
+        "The {} agent completed this {} trace scoring {:.0}/100 ({}) — it is {}. \
+         {} {}",
+        trace.agent_name,
+        trace.framework,
+        score.score,
+        score.grade,
+        grade_desc,
+        issue_text,
+        savings_text.trim()
+    )
+    .trim()
+    .to_string()
 }

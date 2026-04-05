@@ -21,6 +21,7 @@ use tracerazor_core::{analyse, scoring::ScoringConfig};
 use tracerazor_ingest::{parse, TraceFormat};
 use tracerazor_semantic::{default_similarity_fn, BowSimilarity, Similarity};
 use tracerazor_store::{KGP_CAPTURE_THRESHOLD, build_kb_entry};
+use tracerazor_core::report::Anomaly;
 
 use crate::state::{AppState, WsEvent};
 
@@ -39,6 +40,9 @@ pub fn router() -> Router<AppState> {
         // Known-Good-Paths knowledge base
         .route("/kb", get(list_kb))
         .route("/kb/:id", get(get_kb_entry).delete(delete_kb_entry))
+        // Observability export (E-07)
+        .route("/export/otel", post(export_otel))
+        .route("/export/webhook", post(export_webhook))
 }
 
 async fn index() -> impl IntoResponse {
@@ -75,6 +79,8 @@ pub struct AuditResponse {
     pub captured_to_kb: bool,
     /// Closest matching KB entry for this agent (if similarity ≥ 0.45).
     pub kb_match: Option<tracerazor_store::KgpMatch>,
+    /// Anomalies detected against the agent's historical baseline (E-04).
+    pub anomalies: Vec<Anomaly>,
 }
 
 /// POST /api/audit
@@ -88,10 +94,34 @@ async fn audit(
     let mut trace = parse(&trace_str, TraceFormat::Auto)
         .map_err(|e| AppError::bad_request(format!("Ingest error: {e}")))?;
 
+    // ── Build historical context for local-first RDA/DBO ─────────────────────
+    let historical_sequences = state
+        .store
+        .historical_sequences(&trace.agent_name)
+        .await
+        .unwrap_or_default();
+    let historical_median_steps = state
+        .store
+        .historical_median_steps(&trace.agent_name)
+        .await
+        .unwrap_or(None);
+
     let sim_fn = default_similarity_fn();
-    let config = ScoringConfig::default();
-    let report = analyse(&mut trace, sim_fn, &config)
+    let config = ScoringConfig {
+        historical_sequences,
+        historical_median_steps,
+        ..ScoringConfig::default()
+    };
+    let mut report = analyse(&mut trace, sim_fn, &config)
         .map_err(AppError::internal)?;
+
+    // ── E-04: Anomaly detection against agent baseline ────────────────────────
+    let anomalies = state
+        .store
+        .detect_anomalies(&trace.agent_name, report.score.score)
+        .await
+        .unwrap_or_default();
+    report.anomalies = anomalies.clone();
 
     state
         .store
@@ -134,6 +164,7 @@ async fn audit(
             report_markdown: report.to_markdown(),
             captured_to_kb,
             kb_match,
+            anomalies,
         }),
     ))
 }
@@ -419,6 +450,221 @@ async fn metrics(State(state): State<AppState>) -> impl IntoResponse {
         [(header::CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8")],
         out,
     )
+}
+
+// ── Observability Export (E-07) ───────────────────────────────────────────────
+
+#[derive(Deserialize)]
+pub struct ExportOtelRequest {
+    /// Trace ID to export (must already be stored).
+    pub trace_id: String,
+    /// OTEL collector endpoint (e.g. "http://localhost:4318").
+    pub endpoint: String,
+}
+
+#[derive(Deserialize)]
+pub struct ExportWebhookRequest {
+    /// Trace ID to export.
+    pub trace_id: String,
+    /// Webhook URL to POST the summary JSON to.
+    pub webhook_url: String,
+}
+
+#[derive(Serialize)]
+pub struct ExportResponse {
+    pub trace_id: String,
+    pub destination: String,
+    pub success: bool,
+    pub message: String,
+}
+
+/// POST /api/export/otel — send a stored trace to an OpenTelemetry collector.
+async fn export_otel(
+    State(state): State<AppState>,
+    Json(req): Json<ExportOtelRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let stored = state
+        .store
+        .get_trace(&req.trace_id)
+        .await
+        .map_err(AppError::internal)?
+        .ok_or_else(|| AppError::not_found(format!("Trace '{}' not found", req.trace_id)))?;
+
+    let report = stored
+        .report
+        .as_ref()
+        .ok_or_else(|| AppError::bad_request("Trace has no report — audit it first"))?;
+
+    let trace = &stored.trace;
+
+    // Build OTEL HTTP/JSON payload (ResourceSpans format).
+    let spans: Vec<serde_json::Value> = trace
+        .steps
+        .iter()
+        .enumerate()
+        .map(|(i, step)| {
+            let span_id = format!("{:016x}", i as u64 + 1);
+            let parent_span_id = if i == 0 {
+                serde_json::Value::Null
+            } else {
+                serde_json::Value::String(format!("{:016x}", i as u64))
+            };
+            json!({
+                "traceId": format!("{:032x}", trace.trace_id.len() as u128),
+                "spanId": span_id,
+                "parentSpanId": parent_span_id,
+                "name": step.tool_name.as_deref().unwrap_or(&step.step_type.to_string()),
+                "kind": 1,
+                "startTimeUnixNano": (i as u64) * 1_000_000_000u64,
+                "endTimeUnixNano": (i as u64 + 1) * 1_000_000_000u64,
+                "attributes": [
+                    {"key": "tracerazor.step_id", "value": {"intValue": step.id}},
+                    {"key": "tracerazor.step_type", "value": {"stringValue": step.step_type.to_string()}},
+                    {"key": "tracerazor.tokens", "value": {"intValue": step.tokens}},
+                    {"key": "tracerazor.tool_success", "value": {"boolValue": step.tool_success.unwrap_or(true)}},
+                    {"key": "tracerazor.agent_name", "value": {"stringValue": trace.agent_name.clone()}},
+                    {"key": "tracerazor.framework", "value": {"stringValue": trace.framework.clone()}},
+                ],
+                "status": {"code": if step.tool_success.unwrap_or(true) { 1 } else { 2 }}
+            })
+        })
+        .collect();
+
+    let root_span = json!({
+        "traceId": format!("{:032x}", trace.trace_id.len() as u128),
+        "spanId": "0000000000000000",
+        "name": format!("tracerazor.audit/{}", trace.trace_id),
+        "kind": 1,
+        "startTimeUnixNano": 0u64,
+        "endTimeUnixNano": (trace.steps.len() as u64) * 1_000_000_000u64,
+        "attributes": [
+            {"key": "tracerazor.trace_id", "value": {"stringValue": trace.trace_id.clone()}},
+            {"key": "tracerazor.agent_name", "value": {"stringValue": trace.agent_name.clone()}},
+            {"key": "tracerazor.framework", "value": {"stringValue": trace.framework.clone()}},
+            {"key": "tracerazor.tas_score", "value": {"doubleValue": report.score.score}},
+            {"key": "tracerazor.grade", "value": {"stringValue": report.score.grade.to_string()}},
+            {"key": "tracerazor.total_tokens", "value": {"intValue": report.total_tokens}},
+            {"key": "tracerazor.tokens_saved", "value": {"intValue": report.savings.tokens_saved}},
+        ],
+        "status": {"code": 1}
+    });
+
+    let mut all_spans = vec![root_span];
+    all_spans.extend(spans);
+
+    let payload = json!({
+        "resourceSpans": [{
+            "resource": {
+                "attributes": [
+                    {"key": "service.name", "value": {"stringValue": "tracerazor"}},
+                    {"key": "service.version", "value": {"stringValue": env!("CARGO_PKG_VERSION")}}
+                ]
+            },
+            "scopeSpans": [{
+                "scope": {"name": "tracerazor", "version": env!("CARGO_PKG_VERSION")},
+                "spans": all_spans
+            }]
+        }]
+    });
+
+    let endpoint_url = format!("{}/v1/traces", req.endpoint.trim_end_matches('/'));
+    let client = reqwest::Client::new();
+    let result = client
+        .post(&endpoint_url)
+        .header("Content-Type", "application/json")
+        .json(&payload)
+        .send()
+        .await;
+
+    match result {
+        Ok(resp) if resp.status().is_success() => Ok(Json(ExportResponse {
+            trace_id: req.trace_id,
+            destination: endpoint_url,
+            success: true,
+            message: format!("Exported {} spans to OTEL collector", all_spans.len()),
+        })),
+        Ok(resp) => {
+            let status = resp.status().as_u16();
+            Ok(Json(ExportResponse {
+                trace_id: req.trace_id,
+                destination: endpoint_url,
+                success: false,
+                message: format!("Collector returned HTTP {status}"),
+            }))
+        }
+        Err(e) => Ok(Json(ExportResponse {
+            trace_id: req.trace_id,
+            destination: endpoint_url,
+            success: false,
+            message: format!("Export failed: {e}"),
+        })),
+    }
+}
+
+/// POST /api/export/webhook — POST a trace summary JSON to a webhook URL.
+async fn export_webhook(
+    State(state): State<AppState>,
+    Json(req): Json<ExportWebhookRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let stored = state
+        .store
+        .get_trace(&req.trace_id)
+        .await
+        .map_err(AppError::internal)?
+        .ok_or_else(|| AppError::not_found(format!("Trace '{}' not found", req.trace_id)))?;
+
+    let report = stored
+        .report
+        .as_ref()
+        .ok_or_else(|| AppError::bad_request("Trace has no report — audit it first"))?;
+
+    let trace = &stored.trace;
+    let summary = json!({
+        "trace_id": trace.trace_id,
+        "agent_name": trace.agent_name,
+        "framework": trace.framework,
+        "total_steps": trace.steps.len(),
+        "total_tokens": report.total_tokens,
+        "tas_score": report.score.score,
+        "grade": report.score.grade.to_string(),
+        "tokens_saved": report.savings.tokens_saved,
+        "cost_saved_per_run_usd": report.savings.cost_saved_per_run_usd,
+        "summary": report.summary,
+        "anomalies": report.anomalies.len(),
+        "source": "tracerazor"
+    });
+
+    let client = reqwest::Client::new();
+    let result = client
+        .post(&req.webhook_url)
+        .header("Content-Type", "application/json")
+        .json(&summary)
+        .send()
+        .await;
+
+    match result {
+        Ok(resp) if resp.status().is_success() => Ok(Json(ExportResponse {
+            trace_id: req.trace_id,
+            destination: req.webhook_url,
+            success: true,
+            message: "Webhook delivered successfully".into(),
+        })),
+        Ok(resp) => {
+            let status = resp.status().as_u16();
+            Ok(Json(ExportResponse {
+                trace_id: req.trace_id,
+                destination: req.webhook_url,
+                success: false,
+                message: format!("Webhook returned HTTP {status}"),
+            }))
+        }
+        Err(e) => Ok(Json(ExportResponse {
+            trace_id: req.trace_id,
+            destination: req.webhook_url,
+            success: false,
+            message: format!("Webhook delivery failed: {e}"),
+        })),
+    }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
