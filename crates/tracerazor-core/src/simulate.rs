@@ -302,9 +302,11 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
                 filler_count: 0,
                 total_words: 0,
                 low_density: false,
+                entropy_flagged: false,
             })
             .collect(),
         low_density_steps: vec![],
+        entropy_low_steps: vec![],
         pass: true,
         target: 0.60,
     };
@@ -349,6 +351,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
             grade: Grade::Poor,
             vae: 0.0,
             passes_threshold: false,
+            avs: 0.0,
             srr: zero_srr,
             ldi: zero_ldi,
             tca: zero_tca,

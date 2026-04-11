@@ -39,8 +39,10 @@ pub struct GuardrailResult {
     pub decision: GuardrailDecision,
     /// Similarity score from Layer 1.
     pub semantic_similarity: f64,
-    /// Whether budget injection was applied.
+    /// Whether budget injection was applied (Layer 3).
     pub budget_injected: bool,
+    /// Whether a verbosity directive was injected (Layer 4).
+    pub verbosity_injected: bool,
 }
 
 impl ProxyConfig {
@@ -53,7 +55,7 @@ impl ProxyConfig {
                 ProxyResponse::Blocked { reason, layer }
             }
             _ => {
-                // Apply budget injection if flagged.
+                // Apply budget injection if flagged (Layer 3).
                 let system_prompt = if result.budget_injected {
                     crate::budget::inject_budget_header(
                         &req.system_prompt,
@@ -62,6 +64,16 @@ impl ProxyConfig {
                     )
                 } else {
                     req.system_prompt.clone()
+                };
+
+                // Apply verbosity directive if flagged (Layer 4).
+                let system_prompt = if result.verbosity_injected {
+                    crate::verbosity::inject_verbosity_directive(
+                        &system_prompt,
+                        req.rolling_ccr,
+                    )
+                } else {
+                    system_prompt
                 };
 
                 ProxyResponse::Approved {
@@ -90,6 +102,7 @@ impl ProxyConfig {
                 },
                 semantic_similarity: similarity,
                 budget_injected: false,
+                verbosity_injected: false,
             };
         }
 
@@ -102,16 +115,24 @@ impl ProxyConfig {
                 },
                 semantic_similarity: similarity,
                 budget_injected: false,
+                verbosity_injected: false,
             };
         }
 
         // ── Layer 3: Token Budget ─────────────────────────────────────────
         let budget_injected = self.budget.should_inject(req.tokens_used);
 
+        // ── Layer 4: Verbosity Directive ──────────────────────────────────
+        let verbosity_injected = req
+            .rolling_ccr
+            .map(|ccr| ccr >= crate::verbosity::STANDARD_THRESHOLD)
+            .unwrap_or(false);
+
         GuardrailResult {
             decision: GuardrailDecision::Pass,
             semantic_similarity: similarity,
             budget_injected,
+            verbosity_injected,
         }
     }
 }

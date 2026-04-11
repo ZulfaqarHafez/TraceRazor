@@ -41,6 +41,8 @@ pub enum StepFlag {
     OverDepth,
     /// Input context contains significant duplicated content.
     ContextBloat,
+    /// Step opening sentence reformulates input_context without adding new information.
+    Reformulation,
 }
 
 impl std::fmt::Display for StepFlag {
@@ -53,6 +55,7 @@ impl std::fmt::Display for StepFlag {
             StepFlag::Retry => write!(f, "RETRY"),
             StepFlag::OverDepth => write!(f, "OVER-DEPTH"),
             StepFlag::ContextBloat => write!(f, "CONTEXT-BLOAT"),
+            StepFlag::Reformulation => write!(f, "REFORMULATION"),
         }
     }
 }

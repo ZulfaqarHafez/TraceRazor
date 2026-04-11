@@ -22,6 +22,8 @@ pub struct VdiStepResult {
     pub total_words: usize,
     /// True when step VDI falls below the hard-fail threshold (0.50).
     pub low_density: bool,
+    /// True when character-level Shannon entropy < 3.8 bits/char (low information variety).
+    pub entropy_flagged: bool,
 }
 
 /// Aggregate VDI result across the full trace.
@@ -32,6 +34,8 @@ pub struct VdiResult {
     pub step_results: Vec<VdiStepResult>,
     /// IDs of steps whose individual VDI < 0.50 (hard-fail per step).
     pub low_density_steps: Vec<u32>,
+    /// IDs of steps with character-level Shannon entropy < 3.8 bits/char.
+    pub entropy_low_steps: Vec<u32>,
     pub pass: bool,
     pub target: f64,
 }
@@ -46,6 +50,7 @@ impl VdiResult {
 
 pub const TARGET: f64 = 0.60;
 const LOW_DENSITY_THRESHOLD: f64 = 0.50;
+const ENTROPY_THRESHOLD: f64 = 3.8; // bits/char
 
 /// Compute VDI for all steps in the trace and return an aggregate result.
 pub fn compute(trace: &Trace) -> VdiResult {
@@ -73,13 +78,41 @@ pub fn compute(trace: &Trace) -> VdiResult {
         .map(|r| r.step_id)
         .collect();
 
+    let entropy_low_steps: Vec<u32> = step_results
+        .iter()
+        .filter(|r| r.entropy_flagged)
+        .map(|r| r.step_id)
+        .collect();
+
     VdiResult {
         score,
+        entropy_low_steps,
         low_density_steps,
         step_results,
         pass: score >= TARGET,
         target: TARGET,
     }
+}
+
+/// Character-level Shannon entropy (bits/char).
+/// Returns 0.0 for empty strings.
+fn character_entropy(text: &str) -> f64 {
+    if text.is_empty() {
+        return 0.0;
+    }
+    let mut counts = [0u32; 256];
+    for b in text.bytes() {
+        counts[b as usize] += 1;
+    }
+    let len = text.len() as f64;
+    counts
+        .iter()
+        .filter(|&&c| c > 0)
+        .map(|&c| {
+            let p = c as f64 / len;
+            -p * p.log2()
+        })
+        .sum()
 }
 
 /// Compute VDI for a single piece of text, labelled with `step_id`.
@@ -127,12 +160,15 @@ fn compute_step(step_id: u32, content: &str) -> VdiStepResult {
         (substantive as f64 / total as f64).clamp(0.0, 1.0)
     };
 
+    let entropy = character_entropy(content);
+
     VdiStepResult {
         step_id,
         score,
         filler_count: filler,
         total_words: total,
         low_density: score < LOW_DENSITY_THRESHOLD,
+        entropy_flagged: total > 0 && entropy < ENTROPY_THRESHOLD,
     }
 }
 
@@ -232,5 +268,32 @@ mod tests {
         let trace = make_trace(vec![("", 0)]);
         let result = compute(&trace);
         assert_eq!(result.score, 1.0, "empty content should default to 1.0");
+    }
+
+    #[test]
+    fn test_entropy_flagged_low_variety() {
+        // Highly repetitive content has low entropy.
+        let trace = make_trace(vec![("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", 50)]);
+        let result = compute(&trace);
+        assert!(
+            result.step_results[0].entropy_flagged,
+            "single-char repetition should be entropy-flagged"
+        );
+        assert_eq!(result.entropy_low_steps, vec![1]);
+    }
+
+    #[test]
+    fn test_entropy_not_flagged_rich_content() {
+        // Normal English prose has entropy > 3.8.
+        let trace = make_trace(vec![(
+            "Order ORD-9182 fetched. Customer eligible for refund. \
+             Transaction 7821 processed successfully.",
+            400,
+        )]);
+        let result = compute(&trace);
+        assert!(
+            !result.step_results[0].entropy_flagged,
+            "rich English prose should not be entropy-flagged"
+        );
     }
 }

@@ -140,6 +140,14 @@ impl TraceReport {
                     Some(format!("Compress context: {}", detail)),
                     Some(kept),
                 )
+            } else if has_flag(&StepFlag::Reformulation) {
+                let detail = step.flag_details.first().cloned().unwrap_or_default();
+                let trimmed = (step.tokens * 2 / 3).max(50);
+                (
+                    DiffAction::Trim,
+                    Some(format!("Reformulation: {}", detail)),
+                    Some(trimmed),
+                )
             } else {
                 (DiffAction::Keep, None, None)
             };
@@ -202,6 +210,32 @@ impl TraceReport {
              {sep}\n",
             s.score, s.grade, s.vae
         );
+
+        // VERBOSITY ALERT (when AVS > 0.40)
+        if s.avs > 0.40 {
+            // Identify the primary verbosity driver.
+            let vdi_waste = 1.0 - s.vdi.normalised();
+            let drivers = [
+                ("VDI (verbosity density)", vdi_waste * 0.45),
+                ("SHL (sycophancy/hedging)", s.shl.score * 0.30),
+                ("CCR (compression ratio)", s.ccr.score * 0.25),
+            ];
+            let primary = drivers
+                .iter()
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+                .map(|(name, _)| *name)
+                .unwrap_or("VDI");
+            let estimated_verbose_tokens = ((s.avs
+                * self.total_tokens as f64)
+                .round() as u32)
+                .min(self.total_tokens);
+            out += &format!(
+                "!! VERBOSITY ALERT  AVS: {:.3}  Primary driver: {}  \
+                 Est. verbose tokens: {}\n\
+                 {sep}\n",
+                s.avs, primary, estimated_verbose_tokens
+            );
+        }
 
         // Metric breakdown table
         out += "METRIC BREAKDOWN\n";

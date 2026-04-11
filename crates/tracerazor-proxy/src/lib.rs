@@ -16,6 +16,11 @@
 ///     projected to exceed the configured token budget. Nudges the model
 ///     to be more concise without hard-blocking.
 ///
+///   Layer 4 — Verbosity Directive Injection
+///     When the caller reports a rolling average CCR of the last three steps
+///     ≥ 0.35, injects a conciseness directive into the system prompt.
+///     Standard directive at CCR ≥ 0.35; ultra-concise directive at CCR > 0.50.
+///
 /// Usage:
 /// ```ignore
 /// let proxy = ProxyConfig::default();
@@ -24,6 +29,7 @@
 pub mod budget;
 pub mod guardrail;
 pub mod scope;
+pub mod verbosity;
 
 pub use guardrail::{GuardrailDecision, GuardrailResult, ProxyConfig};
 
@@ -40,6 +46,10 @@ pub struct ProxyRequest {
     pub requested_tools: Vec<String>,
     /// Cumulative token count so far in this trace.
     pub tokens_used: u32,
+    /// Rolling average CCR (Caveman Compression Ratio) of the last three steps.
+    /// `None` when fewer than three steps have been completed. Used by Layer 4.
+    #[serde(default)]
+    pub rolling_ccr: Option<f64>,
 }
 
 /// A proxy response — either approved (possibly modified) or blocked.

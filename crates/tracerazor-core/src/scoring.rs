@@ -102,6 +102,9 @@ pub struct TasScore {
     pub vae: f64,
     /// Whether TAS meets the configured threshold.
     pub passes_threshold: bool,
+    /// Aggregate Verbosity Score (0.0–1.0). Higher = more verbose waste.
+    /// AVS > 0.40 triggers a VERBOSITY ALERT in the report.
+    pub avs: f64,
 
     // Structural metrics.
     pub srr: SrrResult,
@@ -221,6 +224,14 @@ pub fn compute(
     let vae = ((task_value_score * raw_efficiency) / normalised_cost * 100.0).round() / 100.0;
     let vae = vae.min(1.0);
 
+    // Aggregate Verbosity Score: weighted combination of three verbosity waste signals.
+    // vdi_waste = 1 - vdi density (higher = more filler)
+    // shl.score = fraction of sycophantic/hedged sentences (higher = more hedging)
+    // ccr.score = compression ratio waste (higher = more compressible)
+    let avs = ((1.0 - vdi_n) * 0.45 + shl.score * 0.30 + ccr.score * 0.25)
+        .clamp(0.0, 1.0);
+    let avs = (avs * 1000.0).round() / 1000.0;
+
     let grade = Grade::from_score(tas);
     let passes = tas >= config.threshold;
 
@@ -229,6 +240,7 @@ pub fn compute(
         grade,
         vae,
         passes_threshold: passes,
+        avs,
         srr,
         ldi,
         tca,

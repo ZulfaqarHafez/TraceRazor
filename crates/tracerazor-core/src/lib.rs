@@ -12,7 +12,7 @@ use std::time::Instant;
 use anyhow::Result;
 
 use crate::fixes::generate_fixes;
-use crate::metrics::{ccr, cce, dbo, isr, ldi, rda, shl, srr, tca, tur, vdi};
+use crate::metrics::{ccr, cce, dbo, isr, ldi, rda, reformulation, shl, srr, tca, tur, vdi};
 use crate::report::{AgentBreakdown, TraceReport, generate_oneliner, generate_summary};
 use crate::scoring::{ScoringConfig, estimate_savings};
 use crate::types::{MIN_TRACE_STEPS, Trace};
@@ -76,6 +76,10 @@ fn analyse_dyn(
     let vdi_result = vdi::compute(trace);
     let shl_result = shl::compute(trace);
     let ccr_result = ccr::compute(trace);
+
+    // ── Reformulation detection (P2) ──────────────────────────────────────────
+    let reformulation_detected = reformulation::detect(trace);
+    reformulation::annotate_steps(&mut trace.steps, &reformulation_detected);
 
     let score = scoring::compute(
         srr_result,

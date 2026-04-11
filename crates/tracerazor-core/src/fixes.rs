@@ -4,14 +4,20 @@
 /// the user can apply directly to their agent configuration.
 ///
 /// Fix types:
-///   - `ToolSchema`        — correct a tool description's required parameters
-///   - `PromptInsert`      — insert an instruction into the system prompt
-///   - `TerminationGuard`  — add a loop-breaking condition to the system prompt
-///   - `ContextCompression`— add a context summarisation instruction
+///   - `ToolSchema`         — correct a tool description's required parameters
+///   - `PromptInsert`       — insert an instruction into the system prompt
+///   - `TerminationGuard`   — add a loop-breaking condition to the system prompt
+///   - `ContextCompression` — add a context summarisation instruction
+///   - `VerbosityReduction` — reduce filler words and low-density content
+///   - `HedgeReduction`     — strip sycophantic preambles and hedging phrases
+///   - `CavemanPromptInsert`— add a directive to keep output maximally concise
+///   - `ReformulationGuard` — prevent the agent from re-stating its input context
 use serde::{Deserialize, Serialize};
 
 use crate::scoring::TasScore;
 use crate::types::{StepFlag, Trace};
+
+const AVS_FIX_THRESHOLD: f64 = 0.40;
 
 /// The kind of fix generated.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -25,6 +31,14 @@ pub enum FixType {
     TerminationGuard,
     /// Context summarisation instruction to reduce CCE bloat.
     ContextCompression,
+    /// Remove filler words and low-density content from reasoning steps.
+    VerbosityReduction,
+    /// Eliminate sycophantic openers and excessive hedging phrases.
+    HedgeReduction,
+    /// Inject a Caveman-style conciseness directive into the system prompt.
+    CavemanPromptInsert,
+    /// Prevent the agent from re-stating its input context verbatim.
+    ReformulationGuard,
 }
 
 impl std::fmt::Display for FixType {
@@ -34,6 +48,10 @@ impl std::fmt::Display for FixType {
             FixType::PromptInsert => write!(f, "prompt_insert"),
             FixType::TerminationGuard => write!(f, "termination_guard"),
             FixType::ContextCompression => write!(f, "context_compression"),
+            FixType::VerbosityReduction => write!(f, "verbosity_reduction"),
+            FixType::HedgeReduction => write!(f, "hedge_reduction"),
+            FixType::CavemanPromptInsert => write!(f, "caveman_prompt_insert"),
+            FixType::ReformulationGuard => write!(f, "reformulation_guard"),
         }
     }
 }
@@ -166,6 +184,110 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore) -> Vec<Fix> {
                 estimated_token_savings: estimated,
             });
         }
+    }
+
+    // ── Verbosity metrics (VDI, SHL, CCR) → verbosity fixes ─────────────────
+    if score.avs > AVS_FIX_THRESHOLD {
+        // VDI: low density → VerbosityReduction
+        if !score.vdi.pass {
+            let low_steps = &score.vdi.low_density_steps;
+            let wasted: u32 = trace
+                .steps
+                .iter()
+                .filter(|s| low_steps.contains(&s.id))
+                .map(|s| (s.tokens as f64 * (1.0 - score.vdi.score)).round() as u32)
+                .sum();
+            if wasted > 0 {
+                fixes.push(Fix {
+                    fix_type: FixType::VerbosityReduction,
+                    target: "system_prompt".into(),
+                    patch: format!(
+                        "Add to system prompt: \"Every reasoning step must consist of \
+                         substantive content only. Do not use filler adverbs (basically, \
+                         actually, essentially, literally), articles in non-essential positions, \
+                         or vague qualifiers. Steps [{low_steps_str}] had VDI below target.\"\
+                         ",
+                        low_steps_str = low_steps
+                            .iter()
+                            .map(|id| id.to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ),
+                    estimated_token_savings: wasted,
+                });
+            }
+        }
+
+        // SHL: high sycophancy/hedging → HedgeReduction
+        if !score.shl.pass {
+            let shl_waste = (score.shl.score * trace.steps.iter().map(|s| s.tokens).sum::<u32>() as f64)
+                .round() as u32;
+            fixes.push(Fix {
+                fix_type: FixType::HedgeReduction,
+                target: "system_prompt".into(),
+                patch: format!(
+                    "Add to system prompt: \"Do not begin responses with preamble phrases \
+                     (let me, I'd be happy to, certainly, absolutely, of course). \
+                     Do not use more than one hedging phrase per sentence (might, could, \
+                     perhaps, possibly). State conclusions directly.\" \
+                     ({:.0}% of sentences were flagged as sycophantic or over-hedged.)",
+                    score.shl.score * 100.0
+                ),
+                estimated_token_savings: shl_waste / 5, // ~20% of flagged content is preamble
+            });
+        }
+
+        // CCR: high compression ratio → CavemanPromptInsert
+        if !score.ccr.pass {
+            let ccr_waste = score.ccr.total_cuttable_tokens;
+            if ccr_waste > 0 {
+                fixes.push(Fix {
+                    fix_type: FixType::CavemanPromptInsert,
+                    target: "system_prompt".into(),
+                    patch: format!(
+                        "Add to system prompt: \"Be maximally concise. Output only the \
+                         information necessary for the next step. Skip re-stating context, \
+                         avoid throat-clearing sentences, and omit preamble sentences entirely. \
+                         ~{ccr_waste} tokens of your current output are estimated to be \
+                         compressible without information loss.\""
+                    ),
+                    estimated_token_savings: ccr_waste,
+                });
+            }
+        }
+    }
+
+    // ── Reformulation detection → ReformulationGuard ─────────────────────────
+    let reformulation_steps: Vec<u32> = trace
+        .steps
+        .iter()
+        .filter(|s| s.flags.contains(&StepFlag::Reformulation))
+        .map(|s| s.id)
+        .collect();
+
+    if !reformulation_steps.is_empty() {
+        let wasted: u32 = trace
+            .steps
+            .iter()
+            .filter(|s| reformulation_steps.contains(&s.id))
+            .map(|s| s.tokens / 3) // ~33% of reformulation step is the redundant restate
+            .sum();
+        let ids_str = reformulation_steps
+            .iter()
+            .map(|id| id.to_string())
+            .collect::<Vec<_>>()
+            .join(", ");
+        fixes.push(Fix {
+            fix_type: FixType::ReformulationGuard,
+            target: "system_prompt".into(),
+            patch: format!(
+                "Add to system prompt: \"Do not re-state, paraphrase, or summarise the \
+                 user's request at the start of your reasoning. Proceed directly to your \
+                 analysis or first action.\" \
+                 (Steps [{ids_str}] were detected as reformulating their input context.)"
+            ),
+            estimated_token_savings: wasted,
+        });
     }
 
     fixes

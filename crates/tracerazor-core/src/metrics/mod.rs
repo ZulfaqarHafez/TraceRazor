@@ -10,6 +10,7 @@ mod verbosity_data;
 pub mod vdi;
 pub mod shl;
 pub mod ccr;
+pub mod reformulation;
 
 pub use srr::{SrrResult, SrrRedundantPair};
 pub use ldi::{LdiResult, DetectedLoop};
@@ -22,3 +23,4 @@ pub use dbo::{DboResult, BranchDecision, HistoricalSequence};
 pub use vdi::{VdiResult, VdiStepResult};
 pub use shl::ShlResult;
 pub use ccr::{CcrResult, CcrStepResult};
+pub use reformulation::ReformulationStep;
