@@ -76,6 +76,9 @@ pub struct MetricDeltas {
     pub rda: f64,
     pub isr: f64,
     pub dbo: f64,
+    pub vdi: f64,
+    pub shl: f64,
+    pub ccr: f64,
 }
 
 /// Apply the spec to the trace and return the projected simulation result.
@@ -195,6 +198,12 @@ where
                 - original_report.score.isr.normalised(),
             dbo: projected_report.score.dbo.normalised()
                 - original_report.score.dbo.normalised(),
+            vdi: projected_report.score.vdi.normalised()
+                - original_report.score.vdi.normalised(),
+            shl: projected_report.score.shl.normalised()
+                - original_report.score.shl.normalised(),
+            ccr: projected_report.score.ccr.normalised()
+                - original_report.score.ccr.normalised(),
         },
         simulated_step_ids: simulated_ids,
     }
@@ -202,14 +211,17 @@ where
 
 fn placeholder_report(trace: &Trace) -> TraceReport {
     use crate::metrics::{
+        ccr::{CcrResult, CcrStepResult},
         dbo::DboResult,
         isr::IsrResult,
         ldi::LdiResult,
         rda::{RdaResult, TaskComplexity},
+        shl::ShlResult,
         srr::SrrResult,
         tca::TcaResult,
         tur::TurResult,
         cce::CceResult,
+        vdi::{VdiResult, VdiStepResult},
     };
     use crate::scoring::{Grade, SavingsEstimate, TasScore};
 
@@ -279,6 +291,46 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
         pass: true,
         target: 0.70,
     };
+    let zero_vdi = VdiResult {
+        score: 1.0,
+        step_results: trace
+            .steps
+            .iter()
+            .map(|s| VdiStepResult {
+                step_id: s.id,
+                score: 1.0,
+                filler_count: 0,
+                total_words: 0,
+                low_density: false,
+            })
+            .collect(),
+        low_density_steps: vec![],
+        pass: true,
+        target: 0.60,
+    };
+    let zero_shl = ShlResult {
+        score: 0.0,
+        flagged_sentences: 0,
+        total_sentences: 0,
+        pass: true,
+        target: 0.20,
+    };
+    let zero_ccr = CcrResult {
+        score: 0.0,
+        step_results: trace
+            .steps
+            .iter()
+            .map(|s| CcrStepResult {
+                step_id: s.id,
+                original_tokens: 0,
+                compressed_tokens: 0,
+                ratio: 0.0,
+            })
+            .collect(),
+        total_cuttable_tokens: 0,
+        pass: true,
+        target: 0.30,
+    };
 
     let step_msg = format!(
         "Trace {} has {} steps (below minimum for analysis).",
@@ -305,6 +357,9 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
             rda: zero_rda,
             isr: zero_isr,
             dbo: zero_dbo,
+            vdi: zero_vdi,
+            shl: zero_shl,
+            ccr: zero_ccr,
         },
         diff: vec![],
         savings: SavingsEstimate {

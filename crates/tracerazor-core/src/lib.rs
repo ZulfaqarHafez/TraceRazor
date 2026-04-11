@@ -12,7 +12,7 @@ use std::time::Instant;
 use anyhow::Result;
 
 use crate::fixes::generate_fixes;
-use crate::metrics::{cce, dbo, isr, ldi, rda, srr, tca, tur};
+use crate::metrics::{ccr, cce, dbo, isr, ldi, rda, shl, srr, tca, tur, vdi};
 use crate::report::{AgentBreakdown, TraceReport, generate_oneliner, generate_summary};
 use crate::scoring::{ScoringConfig, estimate_savings};
 use crate::types::{MIN_TRACE_STEPS, Trace};
@@ -72,6 +72,11 @@ fn analyse_dyn(
     // ── Local-first DBO (historical comparison, cold-start when < 10 traces) ──
     let dbo_result = dbo::compute(trace, &config.historical_sequences);
 
+    // ── Verbosity metrics (v2: VDI, SHL, CCR) ────────────────────────────────
+    let vdi_result = vdi::compute(trace);
+    let shl_result = shl::compute(trace);
+    let ccr_result = ccr::compute(trace);
+
     let score = scoring::compute(
         srr_result,
         ldi_result,
@@ -81,6 +86,9 @@ fn analyse_dyn(
         rda_result,
         isr_result,
         dbo_result,
+        vdi_result,
+        shl_result,
+        ccr_result,
         trace.task_value_score,
         total_tokens,
         config,

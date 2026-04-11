@@ -6,6 +6,10 @@ pub mod cce;
 pub mod rda;
 pub mod isr;
 pub mod dbo;
+mod verbosity_data;
+pub mod vdi;
+pub mod shl;
+pub mod ccr;
 
 pub use srr::{SrrResult, SrrRedundantPair};
 pub use ldi::{LdiResult, DetectedLoop};
@@ -15,3 +19,6 @@ pub use cce::{CceResult, ContextBloatStep};
 pub use rda::{RdaResult, TaskComplexity};
 pub use isr::{IsrResult, LowNoveltyStep};
 pub use dbo::{DboResult, BranchDecision, HistoricalSequence};
+pub use vdi::{VdiResult, VdiStepResult};
+pub use shl::ShlResult;
+pub use ccr::{CcrResult, CcrStepResult};

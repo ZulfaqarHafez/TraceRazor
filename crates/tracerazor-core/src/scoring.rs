@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::metrics::{
     dbo::{DboResult, HistoricalSequence},
-    CceResult, IsrResult, LdiResult, RdaResult, SrrResult, TcaResult, TurResult,
+    CceResult, CcrResult, IsrResult, LdiResult, RdaResult, ShlResult, SrrResult, TcaResult,
+    TurResult, VdiResult,
 };
 
 /// Grade bands for the composite TAS score (mirrors Google Lighthouse).
@@ -48,37 +49,50 @@ impl std::fmt::Display for Grade {
     }
 }
 
-/// Weight configuration for the composite score.
-/// Weights must sum to 1.0.
+/// Weight configuration for the eleven-metric composite score.
+///
+/// Weights are normalised by their sum in `compute()`, so they do not need to
+/// equal exactly 1.0. The relative proportions determine each metric's
+/// contribution to TAS. Defaults match the v2 distribution from the product
+/// spec (structural metrics reduced to make room for three verbosity metrics).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Weights {
-    pub srr: f64,
-    pub ldi: f64,
-    pub tca: f64,
-    pub rda: f64,
-    pub isr: f64,
-    pub tur: f64,
-    pub cce: f64,
-    pub dbo: f64,
+    // Structural metrics (reduced from v1).
+    pub srr: f64, // 17%
+    pub ldi: f64, // 13%
+    pub tca: f64, // 13%
+    // Context / semantic metrics (unchanged from v1).
+    pub rda: f64, // 10%
+    pub isr: f64, // 10%
+    pub tur: f64, // 10%
+    pub cce: f64, // 10%
+    pub dbo: f64, //  9%
+    // Verbosity metrics (new in v2).
+    pub vdi: f64, //  9%
+    pub shl: f64, //  5%
+    pub ccr: f64, //  4%
 }
 
 impl Default for Weights {
     fn default() -> Self {
         Weights {
-            srr: 0.20,
-            ldi: 0.15,
-            tca: 0.15,
+            srr: 0.17,
+            ldi: 0.13,
+            tca: 0.13,
             rda: 0.10,
             isr: 0.10,
             tur: 0.10,
             cce: 0.10,
-            dbo: 0.10,
+            dbo: 0.09,
+            vdi: 0.09,
+            shl: 0.05,
+            ccr: 0.04,
         }
     }
 }
 
 /// The composite TraceRazor Score and all component results.
-/// All eight metrics are always present — no more Option wrappers.
+/// All eleven metrics are always present — no Option wrappers.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TasScore {
     /// Composite score (0–100). Higher is better.
@@ -89,7 +103,7 @@ pub struct TasScore {
     /// Whether TAS meets the configured threshold.
     pub passes_threshold: bool,
 
-    // All eight metrics.
+    // Structural metrics.
     pub srr: SrrResult,
     pub ldi: LdiResult,
     pub tca: TcaResult,
@@ -98,6 +112,11 @@ pub struct TasScore {
     pub rda: RdaResult,
     pub isr: IsrResult,
     pub dbo: DboResult,
+
+    // Verbosity metrics (v2).
+    pub vdi: VdiResult,
+    pub shl: ShlResult,
+    pub ccr: CcrResult,
 }
 
 /// Configuration for the scoring engine.
@@ -132,7 +151,7 @@ impl Default for ScoringConfig {
     }
 }
 
-/// Compute the composite TAS score from all eight metrics.
+/// Compute the composite TAS score from all eleven metrics.
 #[allow(clippy::too_many_arguments)]
 pub fn compute(
     srr: SrrResult,
@@ -143,6 +162,9 @@ pub fn compute(
     rda: RdaResult,
     isr: IsrResult,
     dbo: DboResult,
+    vdi: VdiResult,
+    shl: ShlResult,
+    ccr: CcrResult,
     task_value_score: f64,
     total_tokens: u32,
     config: &ScoringConfig,
@@ -158,8 +180,24 @@ pub fn compute(
     let rda_n = rda.normalised();
     let isr_n = isr.normalised();
     let dbo_n = dbo.normalised();
+    let vdi_n = vdi.normalised();
+    let shl_n = shl.normalised();
+    let ccr_n = ccr.normalised();
 
-    let weight_total = w.srr + w.ldi + w.tca + w.tur + w.cce + w.rda + w.isr + w.dbo;
+    // Sum weights so the composite remains in [0, 1] even if weights don't
+    // add up to exactly 1.0 (the spec sums to 1.10 due to rounding).
+    let weight_total = w.srr
+        + w.ldi
+        + w.tca
+        + w.tur
+        + w.cce
+        + w.rda
+        + w.isr
+        + w.dbo
+        + w.vdi
+        + w.shl
+        + w.ccr;
+
     let weighted_sum = srr_n * w.srr
         + ldi_n * w.ldi
         + tca_n * w.tca
@@ -167,7 +205,10 @@ pub fn compute(
         + cce_n * w.cce
         + rda_n * w.rda
         + isr_n * w.isr
-        + dbo_n * w.dbo;
+        + dbo_n * w.dbo
+        + vdi_n * w.vdi
+        + shl_n * w.shl
+        + ccr_n * w.ccr;
 
     let raw_efficiency = weighted_sum / weight_total;
 
@@ -196,6 +237,9 @@ pub fn compute(
         rda,
         isr,
         dbo,
+        vdi,
+        shl,
+        ccr,
     }
 }
 

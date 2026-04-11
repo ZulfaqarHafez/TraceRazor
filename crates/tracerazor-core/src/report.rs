@@ -281,6 +281,33 @@ impl TraceReport {
             if s.dbo.cold_start { " [cold]" } else { "" }
         );
 
+        // Verbosity metrics separator + three new rows.
+        out += &format!("-- Verbosity Metrics {}\n", "-".repeat(34));
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}\n",
+            "VDI",
+            "Verbosity Density Index",
+            format!("{:.3}", s.vdi.score),
+            ">0.60",
+            pass_str(s.vdi.pass)
+        );
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}\n",
+            "SHL",
+            "Sycophancy/Hedging Level",
+            format!("{:.3}", s.shl.score),
+            "<0.20",
+            pass_str(s.shl.pass)
+        );
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}\n",
+            "CCR",
+            "Caveman Compression Ratio",
+            format!("{:.3}", s.ccr.score),
+            "<0.30",
+            pass_str(s.ccr.pass)
+        );
+
         out += &format!("{sep}\n");
 
         // Summary (plain-English)
@@ -434,6 +461,9 @@ fn worst_metric(score: &TasScore) -> (&'static str, f64) {
         ("TUR (token utilisation)", score.tur.normalised()),
         ("CCE (context carry-over)", score.cce.normalised()),
         ("DBO (branch optimality)", score.dbo.normalised()),
+        ("VDI (verbosity density)", score.vdi.normalised()),
+        ("SHL (sycophancy/hedging)", score.shl.normalised()),
+        ("CCR (compression ratio)", score.ccr.normalised()),
     ];
     metrics
         .iter()
