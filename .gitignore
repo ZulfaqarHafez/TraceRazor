@@ -13,3 +13,13 @@ tracerazor-reports/
 # Dashboard: dependencies and build output
 dashboard/node_modules/
 dashboard/dist/
+
+# Python build artifacts
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+build/
+
+# Claude local settings
+.claude/

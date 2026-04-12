@@ -261,6 +261,9 @@ Start the server: `./target/release/tracerazor-server`
   "avs": 0.18,
   "tokens_saved": 3400,
   "captured_to_kb": true,
+  "fixes": [
+    { "fix_type": "hedge_reduction", "target": "system_prompt", "patch": "...", "estimated_token_savings": 740 }
+  ],
   "summary_oneliner": "TAS 91.2/100 [EXCELLENT] — 3,400 tokens saved (38%). Loop rate 0.18 is the primary drag.",
   "anomalies": [],
   "per_agent": [
@@ -389,8 +392,6 @@ Twelve rolling baselines (TAS + eleven normalised metric scores). Each activates
 ```
 
 Negative z-score = regression. Each metric checked independently — a SHL spike surfaces even when overall TAS looks normal.
-
-**Persistent baselines** accumulate in `~/.tracerazor/store`. No server required.
 
 ---
 
@@ -531,8 +532,10 @@ tracerazor/
 │   ├── tracerazor-proxy/     # Four-layer guardrail: semantic, scope, budget, verbosity
 │   └── tracerazor-cli/       # CLI entry point (clap 4); persistent store at ~/.tracerazor/
 ├── integrations/
+│   ├── tracerazor/           # Core Python SDK (pip install tracerazor)
 │   ├── crewai/               # TraceRazorCallback for CrewAI
-│   └── openai-agents/        # TraceRazorHooks for OpenAI Agents SDK
+│   ├── openai-agents/        # TraceRazorHooks for OpenAI Agents SDK
+│   └── langgraph/            # LangChain callback for LangGraph
 ├── .github/
 │   ├── actions/tracerazor/   # Composite GitHub Action with Cargo caching
 │   └── workflows/            # CI: check, test, clippy, TAS gate
@@ -545,12 +548,9 @@ Key design decisions:
 
 - `tracerazor-core` has zero network dependencies. All eleven metrics run offline in under 5 ms.
 - `tracerazor-semantic` is separate so the offline path never pulls in `reqwest`. `--enhanced` activates OpenAI embeddings at runtime without recompiling.
-- Dashboard compiled into the server binary via `include_str!`.
-- CLI opens `~/.tracerazor/store` (SurrealKV) on every `audit` run. Baselines and sequences accumulate without a server.
+- CLI opens `~/.tracerazor/store` (SurrealKV) on every `audit` run. Baselines accumulate without a running server.
 - VDI, SHL, and CCR share a private `verbosity_data` module (HEDGE_PHRASES, PREAMBLE_PATTERNS, FILLER_WORDS) for consistent detection.
 - Reformulation threshold (0.70 Jaccard) flags near-verbatim restates without triggering on steps that merely reference the same entities.
-- Multi-agent scoring uses type erasure (`&dyn Fn`) to avoid infinite monomorphization when `analyse<F>` recurses into sub-traces.
-- Python adapters duck-type against SDK hook protocols — no hard install dependencies.
 
 ---
 
@@ -565,6 +565,7 @@ PORT=9090 docker compose up
 |----------|---------|-------------|
 | `TRACERAZOR_DB_PATH` | `./tracerazor.db` | Persistent database path |
 | `PORT` | `8080` | HTTP server port |
+| `TRACERAZOR_CORS_ORIGINS` | *(permissive)* | Comma-separated allowed origins, e.g. `https://app.example.com,http://localhost:3000` |
 
 ---
 
@@ -587,9 +588,9 @@ PORT=9090 docker compose up
 | tracerazor-ingest | 3 | raw JSON, LangSmith, OTEL parsers |
 | tracerazor-semantic | 5 | BoW similarity edge cases |
 | tracerazor-store | 9 | traces, KB, baselines, anomaly detection, dashboard, delete |
-| tracerazor-server | 6 | audit, list, dashboard, 404, metrics, compare |
+| tracerazor-server | 13 | full lifecycle, audit/retrieve/delete, compare, agents, KB, malformed input, metrics |
 | tracerazor-proxy | 12 | scope whitelist, budget injection, Layer 4 (standard, ultra, boundary, no-op) |
-| **Total** | **102, all pass** | |
+| **Total** | **109, all pass** | |
 
 ---
 
@@ -639,6 +640,37 @@ LangSmith and OpenTelemetry JSON are auto-detected. Use `--trace-format langsmit
 ---
 
 ## Integrations
+
+### Python SDK (framework-agnostic)
+
+```bash
+pip install tracerazor
+```
+
+```python
+from tracerazor_sdk import TraceRazorClient
+
+client = TraceRazorClient(base_url="http://localhost:8080")
+report = client.audit(trace_dict)
+print(report["tas_score"], report["grade"])
+```
+
+### LangGraph / LangChain
+
+```bash
+pip install tracerazor-langgraph
+```
+
+```python
+from tracerazor_langgraph import TraceRazorCallback
+
+callback = TraceRazorCallback(agent_name="support-graph", threshold=70)
+graph = build_graph()  # your LangGraph StateGraph
+result = graph.invoke({"messages": [...]}, config={"callbacks": [callback]})
+callback.analyse().markdown()
+```
+
+See [`integrations/langgraph/`](integrations/langgraph/).
 
 ### CrewAI
 
@@ -697,11 +729,11 @@ See [`.github/actions/tracerazor/`](.github/actions/tracerazor/) and [`.github/w
 
 | Framework | Status | Adapter |
 |-----------|--------|---------|
-| LangGraph / LangChain | Supported | LangSmith JSON / OTEL ingest |
+| LangGraph / LangChain | Supported | Native callback + LangSmith JSON / OTEL ingest |
 | OpenAI Agents SDK | Supported | Native `RunHooks` adapter |
 | CrewAI | Supported | Native `CrewCallbackHandler` adapter |
 | Any OTEL-instrumented agent | Supported | OTEL JSON ingest |
-| Raw / custom | Supported | User-defined JSON |
+| Raw / custom | Supported | Python SDK or user-defined JSON |
 
 ---
 
