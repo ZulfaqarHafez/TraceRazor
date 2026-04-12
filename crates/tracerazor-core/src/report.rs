@@ -222,7 +222,7 @@ impl TraceReport {
             ];
             let primary = drivers
                 .iter()
-                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+                .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
                 .map(|(name, _)| *name)
                 .unwrap_or("VDI");
             let estimated_verbose_tokens = ((s.avs
@@ -501,7 +501,7 @@ fn worst_metric(score: &TasScore) -> (&'static str, f64) {
     ];
     metrics
         .iter()
-        .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
+        .min_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
         .copied()
         .unwrap_or(("TAS", 0.0))
 }

@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=68", "wheel"]
-build-backend = "setuptools.backends.legacy:build"
+build-backend = "setuptools.backends._legacy:_Backend"
 
 [project]
 name = "tracerazor-langgraph"
@@ -10,9 +10,24 @@ authors = [{ name = "Zulfaqar Hafez" }]
 license = { text = "Apache-2.0" }
 readme = "README.md"
 requires-python = ">=3.10"
+keywords = ["ai", "agents", "langgraph", "langchain", "token-efficiency", "tracing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+]
 dependencies = [
     "langchain-core>=0.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/ZulfaqarHafez/tracerazor"
+Repository = "https://github.com/ZulfaqarHafez/tracerazor"
 
 [project.optional-dependencies]
 langgraph = ["langgraph>=0.2"]

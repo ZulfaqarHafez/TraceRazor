@@ -50,7 +50,10 @@ pub fn parse(data: &str) -> Result<Trace> {
             anyhow::bail!("LangSmith trace contains no runs");
         }
         // Use the first run as root; remaining become siblings (treat as children).
-        runs.into_iter().next().unwrap()
+        // Safety: we checked runs.is_empty() above, but use expect for clarity.
+        runs.into_iter()
+            .next()
+            .expect("non-empty after is_empty check")
     } else {
         serde_json::from_value(v).context("Failed to parse LangSmith run")?
     };

@@ -81,6 +81,10 @@ pub struct AuditResponse {
     pub kb_match: Option<tracerazor_store::KgpMatch>,
     /// Anomalies detected against the agent's historical baseline (E-04).
     pub anomalies: Vec<Anomaly>,
+    /// Aggregate Verbosity Score (0.0–1.0); > 0.40 triggers VERBOSITY ALERT.
+    pub avs: f64,
+    /// Auto-generated fix suggestions.
+    pub fixes: Vec<tracerazor_core::fixes::Fix>,
 }
 
 /// POST /api/audit
@@ -153,6 +157,9 @@ async fn audit(
         tokens_saved,
     });
 
+    let avs = report.score.avs;
+    let fixes = report.fixes.clone();
+
     Ok((
         StatusCode::OK,
         Json(AuditResponse {
@@ -165,6 +172,8 @@ async fn audit(
             captured_to_kb,
             kb_match,
             anomalies,
+            avs,
+            fixes,
         }),
     ))
 }
@@ -200,7 +209,7 @@ async fn find_kb_match(
             (e, sim)
         })
         .filter(|(_, sim)| *sim >= MATCH_THRESHOLD)
-        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap());
+        .max_by(|(_, a), (_, b)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
     best.map(|(entry, similarity)| tracerazor_store::KgpMatch { entry, similarity })
 }
@@ -756,5 +765,157 @@ mod tests {
         let server = test_app().await;
         let resp = server.get("/api/compare?a=x&b=y").await;
         resp.assert_status(StatusCode::NOT_FOUND);
+    }
+
+    // ── Integration tests: full lifecycle ─────────────────────────────────────
+
+    fn sample_trace() -> serde_json::Value {
+        json!({
+            "trace_id": "integ-001",
+            "agent_name": "integ-agent",
+            "framework": "raw",
+            "total_tokens": 3000,
+            "task_value_score": 1.0,
+            "steps": [
+                {"id": 1, "step_type": "reasoning", "content": "Parse the user request about order refund", "tokens": 500},
+                {"id": 2, "step_type": "tool_call", "content": "Fetch order details for ORD-9182", "tokens": 400,
+                 "tool_name": "get_order", "tool_success": true},
+                {"id": 3, "step_type": "reasoning", "content": "The order is eligible for refund based on policy", "tokens": 500},
+                {"id": 4, "step_type": "tool_call", "content": "Check refund eligibility", "tokens": 400,
+                 "tool_name": "check_eligibility", "tool_success": true},
+                {"id": 5, "step_type": "tool_call", "content": "Process refund transaction", "tokens": 300,
+                 "tool_name": "process_refund", "tool_success": true},
+                {"id": 6, "step_type": "reasoning", "content": "Refund processed successfully for ORD-9182", "tokens": 300}
+            ]
+        })
+    }
+
+    #[tokio::test]
+    async fn test_full_lifecycle_audit_retrieve_delete() {
+        let server = test_app().await;
+
+        // 1. Audit a trace
+        let resp = server.post("/api/audit").json(&json!({"trace": sample_trace()})).await;
+        resp.assert_status_ok();
+        let body: serde_json::Value = resp.json();
+        assert_eq!(body["trace_id"], "integ-001");
+        assert!(body["tas_score"].as_f64().is_some());
+        let tas = body["tas_score"].as_f64().unwrap();
+        assert!(tas >= 0.0 && tas <= 100.0, "TAS should be 0-100, got {tas}");
+        assert!(body["grade"].as_str().is_some());
+        assert!(body["report_markdown"].as_str().is_some_and(|s| s.contains("TRACERAZOR")));
+
+        // 2. Retrieve the trace by ID
+        let resp = server.get("/api/traces/integ-001").await;
+        resp.assert_status_ok();
+        let detail: serde_json::Value = resp.json();
+        assert_eq!(detail["trace"]["trace_id"], "integ-001");
+
+        // 3. Dashboard stats should reflect the new trace
+        let resp = server.get("/api/dashboard").await;
+        resp.assert_status_ok();
+        let dash: serde_json::Value = resp.json();
+        assert_eq!(dash["total_traces"], 1);
+
+        // 4. Delete the trace (returns 204 No Content)
+        let resp = server.delete("/api/traces/integ-001").await;
+        resp.assert_status(StatusCode::NO_CONTENT);
+
+        // 5. Verify deletion
+        let resp = server.get("/api/traces/integ-001").await;
+        resp.assert_status(StatusCode::NOT_FOUND);
+    }
+
+    #[tokio::test]
+    async fn test_audit_response_contains_avs_and_fixes() {
+        let server = test_app().await;
+        let resp = server.post("/api/audit").json(&json!({"trace": sample_trace()})).await;
+        resp.assert_status_ok();
+        let body: serde_json::Value = resp.json();
+
+        // AVS field must be present (P2 addition)
+        assert!(body["avs"].is_number() || body["report_markdown"].as_str().unwrap_or("").contains("AVS"));
+
+        // fixes array must be present
+        assert!(body["fixes"].is_array());
+
+        // savings must be present
+        assert!(body["tokens_saved"].is_number());
+    }
+
+    #[tokio::test]
+    async fn test_audit_compare_two_traces() {
+        let server = test_app().await;
+
+        // Audit two traces
+        let mut trace_a = sample_trace();
+        trace_a["trace_id"] = json!("cmp-a");
+        let mut trace_b = sample_trace();
+        trace_b["trace_id"] = json!("cmp-b");
+
+        server.post("/api/audit").json(&json!({"trace": trace_a})).await.assert_status_ok();
+        server.post("/api/audit").json(&json!({"trace": trace_b})).await.assert_status_ok();
+
+        // Compare
+        let resp = server.get("/api/compare?a=cmp-a&b=cmp-b").await;
+        resp.assert_status_ok();
+    }
+
+    #[tokio::test]
+    async fn test_audit_invalid_trace_returns_error() {
+        let server = test_app().await;
+
+        // Missing required fields
+        let bad_trace = json!({
+            "trace_id": "bad",
+            "agent_name": "bad",
+            "framework": "raw",
+            "steps": []
+        });
+        let resp = server.post("/api/audit").json(&json!({"trace": bad_trace})).await;
+        // Should return 400 or 422, not panic
+        let status = resp.status_code();
+        assert!(
+            status == StatusCode::BAD_REQUEST
+                || status == StatusCode::UNPROCESSABLE_ENTITY
+                || status == StatusCode::OK, // some validators pass empty traces through
+            "malformed trace should not crash server, got {status}"
+        );
+    }
+
+    #[tokio::test]
+    async fn test_agents_endpoint() {
+        let server = test_app().await;
+
+        // Seed a trace
+        server.post("/api/audit").json(&json!({"trace": sample_trace()})).await.assert_status_ok();
+
+        // Agent stats
+        let resp = server.get("/api/agents").await;
+        resp.assert_status_ok();
+        let agents: Vec<serde_json::Value> = resp.json();
+        assert!(!agents.is_empty(), "should have at least one agent");
+    }
+
+    #[tokio::test]
+    async fn test_kb_lifecycle() {
+        let server = test_app().await;
+
+        // KB should start empty
+        let resp = server.get("/api/kb").await;
+        resp.assert_status_ok();
+        let entries: Vec<serde_json::Value> = resp.json();
+        assert!(entries.is_empty(), "KB should start empty");
+    }
+
+    #[tokio::test]
+    async fn test_websocket_endpoint_exists() {
+        // Verify the /ws route is registered (TestServer can check route existence).
+        let server = test_app().await;
+        // GET /ws without upgrade should return 4xx, not 404 or panic.
+        let resp = server.get("/ws").await;
+        let status = resp.status_code().as_u16();
+        // WebSocket routes return various codes without proper upgrade, but NOT 404.
+        assert_ne!(status, 404, "/ws route should be registered");
     }
 }

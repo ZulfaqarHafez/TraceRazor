@@ -9,7 +9,7 @@ use axum::{
     Router,
 };
 use std::net::SocketAddr;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{AllowOrigin, Any, CorsLayer};
 use tower_http::services::ServeDir;
 
 use state::AppState;
@@ -25,10 +25,26 @@ async fn dashboard_handler() -> impl IntoResponse {
     )
 }
 
+/// Parse TRACERAZOR_CORS_ORIGINS into an AllowOrigin policy.
+/// Accepts a comma-separated list of origins (e.g. "https://app.example.com,http://localhost:3000").
+/// Falls back to permissive `Any` when unset or empty — suitable for local dev.
+fn cors_origins() -> AllowOrigin {
+    match std::env::var("TRACERAZOR_CORS_ORIGINS") {
+        Ok(val) if !val.is_empty() && val != "*" => {
+            let origins: Vec<_> = val
+                .split(',')
+                .map(|s| s.trim().parse().expect("invalid origin in TRACERAZOR_CORS_ORIGINS"))
+                .collect();
+            AllowOrigin::list(origins)
+        }
+        _ => AllowOrigin::any(),
+    }
+}
+
 /// Build the Axum application router. Extracted for testability.
 pub fn build_app(state: AppState) -> Router {
     let cors = CorsLayer::new()
-        .allow_origin(Any)
+        .allow_origin(cors_origins())
         .allow_methods(Any)
         .allow_headers(Any);
 

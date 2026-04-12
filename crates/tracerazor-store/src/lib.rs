@@ -154,7 +154,7 @@ impl TraceStore {
             .filter_map(|a| Self::compute_agent_stats(a, &summaries))
             .collect();
         // Sort by avg_tas ascending (worst offenders first).
-        stats.sort_by(|a, b| a.avg_tas.partial_cmp(&b.avg_tas).unwrap());
+        stats.sort_by(|a, b| a.avg_tas.partial_cmp(&b.avg_tas).unwrap_or(std::cmp::Ordering::Equal));
         Ok(stats)
     }
 

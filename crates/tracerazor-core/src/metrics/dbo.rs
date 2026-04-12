@@ -118,7 +118,10 @@ pub fn compute(trace: &Trace, historical: &[HistoricalSequence]) -> DboResult {
     }
 
     // Identify the lowest-token historical path among similar traces.
-    let optimal = similar.iter().min_by_key(|h| h.total_tokens).unwrap();
+    // Safety: similar.len() >= MIN_HISTORY_TRACES is guaranteed above.
+    let Some(optimal) = similar.iter().min_by_key(|h| h.total_tokens) else {
+        unreachable!("similar is non-empty after length check");
+    };
     let optimal_tool_set: HashSet<&str> =
         optimal.tool_sequence.iter().map(String::as_str).collect();
     let optimal_tokens = optimal.total_tokens;
@@ -130,7 +133,7 @@ pub fn compute(trace: &Trace, historical: &[HistoricalSequence]) -> DboResult {
         .iter()
         .filter(|s| s.tool_name.is_some())
         .map(|s| {
-            let tool = s.tool_name.as_deref().unwrap();
+            let tool = s.tool_name.as_deref().unwrap_or("unknown");
             let was_optimal = optimal_tool_set.contains(tool);
             BranchDecision {
                 step_id: s.id,
