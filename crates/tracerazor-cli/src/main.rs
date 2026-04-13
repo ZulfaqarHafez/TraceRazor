@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use std::path::PathBuf;
 use tracerazor_core::{
     cost::{CostConfig, ProviderPreset, project_cost},
+    fixes::{Fix, FixType},
     is_analysable,
     scoring::ScoringConfig,
     simulate::{SimulationSpec, simulate},
@@ -151,6 +152,49 @@ enum Commands {
         format: OutputFormat,
     },
 
+    /// Apply safe fix patches from an audit JSON onto a target prompt file.
+    ///
+    /// By default only "safe" patches (system_prompt-only, non-functional)
+    /// are applied: hedge_reduction, verbosity_reduction, caveman_prompt_insert,
+    /// reformulation_guard. Pass `--all` to apply every fix in the file.
+    ///
+    /// The input JSON may be either a raw `[Fix, ...]` array or a full audit
+    /// report (output of `tracerazor audit --format json`).
+    Apply {
+        /// Path to fixes JSON (audit report or raw fix array).
+        #[arg(value_name = "FIXES")]
+        fixes: PathBuf,
+        /// Target file to append patches to (e.g. system_prompt.txt).
+        #[arg(long, value_name = "FILE")]
+        to: PathBuf,
+        /// Apply every fix type, not just the safe subset.
+        #[arg(long, default_value = "false")]
+        all: bool,
+        /// Preview the patches without writing to disk.
+        #[arg(long, default_value = "false")]
+        dry_run: bool,
+    },
+
+    /// Benchmark actual savings between a before and after trace.
+    ///
+    /// Reports measured token and TAS deltas and — if the fixes JSON from the
+    /// baseline audit is supplied — compares those measured savings against the
+    /// fixes' `estimated_token_savings` so you can validate the recommendation.
+    Bench {
+        /// Baseline trace captured before fixes were applied.
+        #[arg(long, value_name = "FILE")]
+        before: PathBuf,
+        /// Target trace captured after fixes were applied.
+        #[arg(long, value_name = "FILE")]
+        after: PathBuf,
+        /// Optional fixes JSON from the baseline audit (for estimated-vs-actual).
+        #[arg(long, value_name = "FIXES")]
+        fixes: Option<PathBuf>,
+        /// Output format.
+        #[arg(short, long, default_value = "markdown")]
+        format: OutputFormat,
+    },
+
     /// Export a report to an observability platform or webhook (E-07).
     Export {
         /// Trace file to audit and export.
@@ -242,6 +286,12 @@ async fn main() -> Result<()> {
         }
         Commands::Simulate { file, remove, merge, format } => {
             cmd_simulate(file, remove, merge, format).await?;
+        }
+        Commands::Apply { fixes, to, all, dry_run } => {
+            cmd_apply(fixes, to, all, dry_run).await?;
+        }
+        Commands::Bench { before, after, fixes, format } => {
+            cmd_bench(before, after, fixes, format).await?;
         }
         Commands::Export { file, otel, webhook, print, format } => {
             cmd_export(file, otel, webhook, print, format).await?;
@@ -712,6 +762,253 @@ async fn cmd_simulate(
         }
         OutputFormat::Json => {
             println!("{}", serde_json::to_string_pretty(&result)?);
+        }
+    }
+
+    Ok(())
+}
+
+// ── apply ─────────────────────────────────────────────────────────────────────
+
+/// Fix types that only patch the system prompt with non-functional changes.
+///
+/// These can be auto-applied without risk of breaking tool wiring or agent
+/// control flow. Fixes like `tool_schema` and `termination_guard` are *not*
+/// included because they alter behaviour and require human review.
+fn is_safe_fix(fix: &Fix) -> bool {
+    matches!(
+        fix.fix_type,
+        FixType::HedgeReduction
+            | FixType::VerbosityReduction
+            | FixType::CavemanPromptInsert
+            | FixType::ReformulationGuard
+    ) && fix.target == "system_prompt"
+}
+
+/// Load `[Fix, ...]` from either a raw fix array JSON file or a full audit
+/// report JSON file (which has a top-level `fixes` field).
+fn load_fixes(path: &PathBuf) -> Result<Vec<Fix>> {
+    let data = std::fs::read_to_string(path)
+        .with_context(|| format!("Cannot read fixes file: {}", path.display()))?;
+    if let Ok(fixes) = serde_json::from_str::<Vec<Fix>>(&data) {
+        return Ok(fixes);
+    }
+    let value: serde_json::Value = serde_json::from_str(&data)
+        .with_context(|| format!("Invalid JSON in {}", path.display()))?;
+    if let Some(arr) = value.get("fixes") {
+        let fixes: Vec<Fix> = serde_json::from_value(arr.clone())
+            .context("`fixes` field is not a Fix array")?;
+        return Ok(fixes);
+    }
+    anyhow::bail!(
+        "{} is neither a Fix array nor an audit report with a `fixes` field",
+        path.display()
+    )
+}
+
+async fn cmd_apply(
+    fixes_path: PathBuf,
+    target: PathBuf,
+    all: bool,
+    dry_run: bool,
+) -> Result<()> {
+    let fixes = load_fixes(&fixes_path)?;
+    if fixes.is_empty() {
+        println!("No fixes found in {}. Nothing to apply.", fixes_path.display());
+        return Ok(());
+    }
+
+    let selected: Vec<&Fix> = if all {
+        fixes.iter().collect()
+    } else {
+        fixes.iter().filter(|f| is_safe_fix(f)).collect()
+    };
+
+    if selected.is_empty() {
+        println!(
+            "No {} fixes found in {}. Use --all to apply non-safe fixes.",
+            if all { "any" } else { "safe" },
+            fixes_path.display()
+        );
+        return Ok(());
+    }
+
+    let total_savings: u32 = selected.iter().map(|f| f.estimated_token_savings).sum();
+
+    let sep = "-".repeat(60);
+    println!("TRACERAZOR APPLY");
+    println!("{sep}");
+    println!("Target:       {}", target.display());
+    println!("Fixes file:   {}", fixes_path.display());
+    println!(
+        "Mode:         {}{}",
+        if all { "all" } else { "safe-only" },
+        if dry_run { " (dry-run)" } else { "" }
+    );
+    println!("Patches:      {} of {} in file", selected.len(), fixes.len());
+    println!("Est. savings: {} tokens/run", total_savings);
+    println!("{sep}");
+
+    let mut appended = String::new();
+    appended.push_str("\n\n# ── TraceRazor auto-applied patches ──\n");
+    for (i, fix) in selected.iter().enumerate() {
+        println!(
+            "  [{}/{}] {} (~{} tokens)",
+            i + 1,
+            selected.len(),
+            fix.fix_type,
+            fix.estimated_token_savings
+        );
+        appended.push_str(&format!(
+            "# {} (est. {} tokens/run)\n{}\n\n",
+            fix.fix_type, fix.estimated_token_savings, fix.patch
+        ));
+    }
+
+    if dry_run {
+        println!("{sep}");
+        println!("DRY RUN — patches below would be appended to {}:", target.display());
+        println!("{sep}");
+        println!("{appended}");
+        return Ok(());
+    }
+
+    let existing = std::fs::read_to_string(&target).unwrap_or_default();
+    let new_contents = format!("{existing}{appended}");
+    std::fs::write(&target, new_contents)
+        .with_context(|| format!("Cannot write to {}", target.display()))?;
+
+    println!("{sep}");
+    println!("Applied {} patch(es) to {}", selected.len(), target.display());
+    println!(
+        "Next step: re-run your agent, capture a new trace, then validate with:"
+    );
+    println!(
+        "  tracerazor bench --before <old>.json --after <new>.json --fixes {}",
+        fixes_path.display()
+    );
+
+    Ok(())
+}
+
+// ── bench ─────────────────────────────────────────────────────────────────────
+
+async fn cmd_bench(
+    before: PathBuf,
+    after: PathBuf,
+    fixes_path: Option<PathBuf>,
+    format: OutputFormat,
+) -> Result<()> {
+    let config = ScoringConfig::default();
+
+    let mut before_trace = ingest_parse(
+        &std::fs::read_to_string(&before)
+            .with_context(|| format!("Cannot read {}", before.display()))?,
+        TraceFormat::Auto,
+    )?;
+    let mut after_trace = ingest_parse(
+        &std::fs::read_to_string(&after)
+            .with_context(|| format!("Cannot read {}", after.display()))?,
+        TraceFormat::Auto,
+    )?;
+
+    let before_report =
+        tracerazor_core::analyse(&mut before_trace, default_similarity_fn(), &config)?;
+    let after_report =
+        tracerazor_core::analyse(&mut after_trace, default_similarity_fn(), &config)?;
+
+    let tokens_before = before_report.total_tokens as i64;
+    let tokens_after = after_report.total_tokens as i64;
+    let actual_tokens_saved = tokens_before - tokens_after;
+    let pct_saved = if tokens_before > 0 {
+        (actual_tokens_saved as f64 / tokens_before as f64) * 100.0
+    } else {
+        0.0
+    };
+    let tas_delta = after_report.score.score - before_report.score.score;
+
+    let estimated: Option<u32> = match &fixes_path {
+        Some(p) => Some(load_fixes(p)?.iter().map(|f| f.estimated_token_savings).sum()),
+        None => None,
+    };
+    let accuracy_pct = estimated.and_then(|est| {
+        if est == 0 {
+            None
+        } else {
+            Some((actual_tokens_saved as f64 / est as f64) * 100.0)
+        }
+    });
+
+    match format {
+        OutputFormat::Markdown => {
+            let sep = "-".repeat(60);
+            println!("TRACERAZOR BENCHMARK");
+            println!("{sep}");
+            println!(
+                "Before: {} | TAS {:.1} | {} tokens",
+                before_report.trace_id, before_report.score.score, tokens_before
+            );
+            println!(
+                "After:  {} | TAS {:.1} | {} tokens",
+                after_report.trace_id, after_report.score.score, tokens_after
+            );
+            println!("{sep}");
+            let tok_arrow = if actual_tokens_saved >= 0 { "▼" } else { "▲" };
+            println!(
+                "Tokens saved:  {} {} ({:+.1}%)",
+                tok_arrow,
+                actual_tokens_saved.abs(),
+                -pct_saved
+            );
+            let tas_arrow = if tas_delta >= 0.0 { "▲" } else { "▼" };
+            println!("TAS delta:     {} {:.1}", tas_arrow, tas_delta.abs());
+            if let Some(est) = estimated {
+                println!("{sep}");
+                println!("Estimated savings: {est} tokens");
+                println!("Measured savings:  {} tokens", actual_tokens_saved);
+                if let Some(acc) = accuracy_pct {
+                    let verdict = if acc >= 80.0 && acc <= 120.0 {
+                        "MATCH"
+                    } else if acc > 120.0 {
+                        "UNDER-ESTIMATED"
+                    } else if acc >= 0.0 {
+                        "OVER-ESTIMATED"
+                    } else {
+                        "REGRESSION"
+                    };
+                    println!("Accuracy:          {:.0}% [{}]", acc, verdict);
+                }
+            }
+            println!("{sep}");
+            if actual_tokens_saved > 0 && tas_delta >= 0.0 {
+                println!("RESULT: Fixes are working. Keep them.");
+            } else if actual_tokens_saved > 0 && tas_delta < 0.0 {
+                println!("RESULT: Tokens down, but TAS regressed. Review which metric dropped.");
+            } else if actual_tokens_saved < 0 {
+                println!("RESULT: After-trace uses MORE tokens. Revert the patches.");
+            } else {
+                println!("RESULT: No measurable change.");
+            }
+        }
+        OutputFormat::Json => {
+            let output = serde_json::json!({
+                "before": {
+                    "trace_id": before_report.trace_id,
+                    "tas": before_report.score.score,
+                    "tokens": tokens_before,
+                },
+                "after": {
+                    "trace_id": after_report.trace_id,
+                    "tas": after_report.score.score,
+                    "tokens": tokens_after,
+                },
+                "actual_tokens_saved": actual_tokens_saved,
+                "pct_tokens_saved": pct_saved,
+                "tas_delta": tas_delta,
+                "estimated_tokens_saved": estimated,
+                "estimate_accuracy_pct": accuracy_pct,
+            });
+            println!("{}", serde_json::to_string_pretty(&output)?);
         }
     }
 
