@@ -1,0 +1,69 @@
+{
+  "trace_id": "looping-agent-001",
+  "agent_name": "looping-agent",
+  "framework": "raw",
+  "task_value_score": 0.6,
+  "steps": [
+    {
+      "id": 1,
+      "type": "reasoning",
+      "content": "Need to look up product catalogue. Call search_products.",
+      "tokens": 300,
+      "input_context": "User: do you sell blue jackets?"
+    },
+    {
+      "id": 2,
+      "type": "tool_call",
+      "content": "search_products",
+      "tokens": 220,
+      "tool_name": "search_products",
+      "tool_params": {"q": "blue jacket"},
+      "tool_success": true,
+      "output": "No results",
+      "input_context": "User: do you sell blue jackets?"
+    },
+    {
+      "id": 3,
+      "type": "reasoning",
+      "content": "No results. Let me try searching again with the same query just to make sure.",
+      "tokens": 280,
+      "input_context": "search_products returned No results"
+    },
+    {
+      "id": 4,
+      "type": "tool_call",
+      "content": "search_products",
+      "tokens": 220,
+      "tool_name": "search_products",
+      "tool_params": {"q": "blue jacket"},
+      "tool_success": true,
+      "output": "No results",
+      "input_context": "search_products returned No results"
+    },
+    {
+      "id": 5,
+      "type": "reasoning",
+      "content": "Still no results. Let me search one more time to be absolutely sure.",
+      "tokens": 290,
+      "input_context": "search_products returned No results again"
+    },
+    {
+      "id": 6,
+      "type": "tool_call",
+      "content": "search_products",
+      "tokens": 220,
+      "tool_name": "search_products",
+      "tool_params": {"q": "blue jacket"},
+      "tool_success": true,
+      "output": "No results",
+      "input_context": "search_products returned No results again"
+    },
+    {
+      "id": 7,
+      "type": "reasoning",
+      "content": "Okay, definitely no blue jackets. Reply to customer.",
+      "tokens": 180,
+      "input_context": "search_products consistently returned No results"
+    }
+  ]
+}

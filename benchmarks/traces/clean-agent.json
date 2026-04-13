@@ -1,0 +1,51 @@
+{
+  "trace_id": "clean-agent-001",
+  "agent_name": "clean-agent",
+  "framework": "raw",
+  "task_value_score": 1.0,
+  "steps": [
+    {
+      "id": 1,
+      "type": "reasoning",
+      "content": "Customer wants order status for ORD-1001. Fetch it.",
+      "tokens": 180,
+      "input_context": "User: status of ORD-1001?"
+    },
+    {
+      "id": 2,
+      "type": "tool_call",
+      "content": "get_order_status",
+      "tokens": 140,
+      "tool_name": "get_order_status",
+      "tool_params": {"order_id": "ORD-1001"},
+      "tool_success": true,
+      "output": "Shipped 2026-04-10, arriving 2026-04-15.",
+      "input_context": "User: status of ORD-1001?"
+    },
+    {
+      "id": 3,
+      "type": "reasoning",
+      "content": "Shipped 2026-04-10, ETA 2026-04-15. Customer also asked whether a refund is still possible. Check policy.",
+      "tokens": 210,
+      "input_context": "User: status of ORD-1001? Result: Shipped 2026-04-10, arriving 2026-04-15."
+    },
+    {
+      "id": 4,
+      "type": "tool_call",
+      "content": "get_refund_policy",
+      "tokens": 150,
+      "tool_name": "get_refund_policy",
+      "tool_params": {"order_id": "ORD-1001"},
+      "tool_success": true,
+      "output": "Refund eligible within 30 days of delivery.",
+      "input_context": "Shipped 2026-04-10, ETA 2026-04-15."
+    },
+    {
+      "id": 5,
+      "type": "reasoning",
+      "content": "Shipment on track; refund window open post-delivery. Reply to customer with both facts.",
+      "tokens": 180,
+      "input_context": "Shipped 2026-04-10, ETA 2026-04-15. Refund eligible within 30 days."
+    }
+  ]
+}

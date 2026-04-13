@@ -1,0 +1,43 @@
+{
+  "trace_id": "verbose-agent-001",
+  "agent_name": "verbose-agent",
+  "framework": "raw",
+  "task_value_score": 0.9,
+  "steps": [
+    {
+      "id": 1,
+      "type": "reasoning",
+      "content": "Certainly! I'd be happy to help with that. Let me take a moment to think about this carefully. So basically, the user is essentially asking what the capital of France is. Actually, I should note that this is a relatively common question and I want to make sure I get it exactly right. Let me think about this step by step. First, I need to recall the major European capitals. France is in Western Europe and its capital has historically been the political and cultural heart of the country. I'm fairly confident the answer is Paris, though of course I should double-check my reasoning. Paris is indeed the capital.",
+      "tokens": 1200,
+      "input_context": "User: What is the capital of France?"
+    },
+    {
+      "id": 2,
+      "type": "reasoning",
+      "content": "Actually, let me reconsider whether I'm being fully accurate here. I think it might perhaps be worth noting that Paris has been the capital since basically forever. To be completely sure, I could possibly cross-reference this, but I'm quite certain. I'd say the answer is definitely Paris.",
+      "tokens": 540,
+      "input_context": "User: What is the capital of France? Previous: Paris"
+    },
+    {
+      "id": 3,
+      "type": "reasoning",
+      "content": "Of course, I absolutely want to give the user a truly thorough and genuinely helpful response. The capital of France is Paris, which I am essentially certain of at this point.",
+      "tokens": 360,
+      "input_context": "User: What is the capital of France? Answer: Paris"
+    },
+    {
+      "id": 4,
+      "type": "reasoning",
+      "content": "Before I finalise the response, let me literally just double-check one more time that I am totally confident. Yes, of course, Paris is basically the obvious correct answer and I am happy to share it.",
+      "tokens": 420,
+      "input_context": "User: What is the capital of France? Answer: Paris"
+    },
+    {
+      "id": 5,
+      "type": "reasoning",
+      "content": "I'd be happy to confirm one final time: the capital of France is Paris. I hope that helps!",
+      "tokens": 240,
+      "input_context": "User: What is the capital of France? Answer: Paris"
+    }
+  ]
+}

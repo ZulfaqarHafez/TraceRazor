@@ -1,0 +1,47 @@
+{
+  "trace_id": "reformulator-agent-001",
+  "agent_name": "reformulator-agent",
+  "framework": "raw",
+  "task_value_score": 0.95,
+  "steps": [
+    {
+      "id": 1,
+      "type": "reasoning",
+      "content": "The user is asking me to calculate the compound interest on a principal of 10000 dollars at an annual rate of 5 percent over 3 years. So I need to calculate the compound interest on a principal of 10000 dollars at an annual rate of 5 percent compounded over 3 years.",
+      "tokens": 420,
+      "input_context": "User: Calculate compound interest on principal 10000 at annual rate 5% over 3 years."
+    },
+    {
+      "id": 2,
+      "type": "tool_call",
+      "content": "compound_interest",
+      "tokens": 100,
+      "tool_name": "compound_interest",
+      "tool_params": {"p": 10000, "r": 0.05, "n": 3},
+      "tool_success": true,
+      "output": "1576.25",
+      "input_context": "User: Calculate compound interest on principal 10000 at annual rate 5% over 3 years."
+    },
+    {
+      "id": 3,
+      "type": "reasoning",
+      "content": "So to summarise the user's question, they wanted the compound interest on 10000 dollars at 5 percent over 3 years. The answer is 1576.25.",
+      "tokens": 320,
+      "input_context": "User: Calculate compound interest. Tool returned 1576.25."
+    },
+    {
+      "id": 4,
+      "type": "reasoning",
+      "content": "To restate: the user asked for the compound interest on 10000 dollars at 5 percent over 3 years, and I need to convert it to a currency format before replying.",
+      "tokens": 280,
+      "input_context": "User: Calculate compound interest on principal 10000 at annual rate 5% over 3 years. Tool: 1576.25"
+    },
+    {
+      "id": 5,
+      "type": "reasoning",
+      "content": "The user wanted compound interest on 10000 at 5 percent over 3 years. Final answer: $1,576.25.",
+      "tokens": 220,
+      "input_context": "User: Calculate compound interest on principal 10000 at annual rate 5% over 3 years. Tool: 1576.25"
+    }
+  ]
+}

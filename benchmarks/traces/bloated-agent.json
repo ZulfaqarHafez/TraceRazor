@@ -1,0 +1,66 @@
+{
+  "trace_id": "bloated-agent-001",
+  "agent_name": "bloated-agent",
+  "framework": "raw",
+  "task_value_score": 0.8,
+  "steps": [
+    {
+      "id": 1,
+      "type": "reasoning",
+      "content": "User wants a refund for order ORD-5050. First fetch order details.",
+      "tokens": 420,
+      "input_context": "User: Refund order ORD-5050."
+    },
+    {
+      "id": 2,
+      "type": "tool_call",
+      "content": "get_order",
+      "tokens": 180,
+      "tool_name": "get_order",
+      "tool_params": {"id": "ORD-5050"},
+      "tool_success": true,
+      "output": "Order ORD-5050: running shoes $80, delivered 2026-03-30.",
+      "input_context": "User: Refund order ORD-5050."
+    },
+    {
+      "id": 3,
+      "type": "tool_call",
+      "content": "check_refund_eligibility",
+      "tokens": 300,
+      "tool_name": "check_refund_eligibility",
+      "tool_params": {},
+      "tool_success": false,
+      "tool_error": "missing required parameter: order_id",
+      "input_context": "User: Refund order ORD-5050. Order ORD-5050: running shoes $80, delivered 2026-03-30."
+    },
+    {
+      "id": 4,
+      "type": "tool_call",
+      "content": "check_refund_eligibility (retry)",
+      "tokens": 320,
+      "tool_name": "check_refund_eligibility",
+      "tool_params": {"order_id": "ORD-5050"},
+      "tool_success": true,
+      "output": "Eligible within 30-day window.",
+      "input_context": "User: Refund order ORD-5050. Order ORD-5050: running shoes $80, delivered 2026-03-30."
+    },
+    {
+      "id": 5,
+      "type": "reasoning",
+      "content": "Order eligible. Process refund now.",
+      "tokens": 900,
+      "input_context": "User: Refund order ORD-5050. Order ORD-5050: running shoes $80, delivered 2026-03-30. Eligibility: yes, within 30-day return window. Customer requested refund for order ORD-5050. Order ORD-5050: running shoes $80, delivered 2026-03-30. Refund eligibility confirmed as yes, within 30-day return window."
+    },
+    {
+      "id": 6,
+      "type": "tool_call",
+      "content": "process_refund",
+      "tokens": 200,
+      "tool_name": "process_refund",
+      "tool_params": {"id": "ORD-5050", "amount": 80},
+      "tool_success": true,
+      "output": "Refund REF-9090 processed.",
+      "input_context": "User: Refund order ORD-5050. Order ORD-5050: running shoes $80, delivered 2026-03-30. Eligibility: yes. Customer requested refund for order ORD-5050. Order ORD-5050: running shoes $80, delivered 2026-03-30. Refund eligibility confirmed as yes, within 30-day return window. Processing refund."
+    }
+  ]
+}
