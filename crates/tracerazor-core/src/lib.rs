@@ -104,6 +104,16 @@ fn analyse_dyn(
     let waste_tokens = total_tokens.saturating_sub(optimal_tokens);
     let savings = estimate_savings(total_tokens, waste_tokens, config, None);
 
+    // ── M3: Minimum Viable Trace Gap ─────────────────────────────────────────
+    // Fraction of tokens above the diff-optimal path (0.0 = perfectly lean).
+    // This is a structural lower bound: it only counts steps the diff already
+    // classified as DELETE or TRIM, with no speculative fix estimates.
+    let mvtg = if total_tokens > 0 {
+        (waste_tokens as f64 / total_tokens as f64).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+
     // ── E-01: auto-fix generation ─────────────────────────────────────────────
     let generated_fixes = generate_fixes(trace, &score);
 
@@ -124,6 +134,7 @@ fn analyse_dyn(
         score,
         diff,
         savings,
+        mvtg,
         fixes: generated_fixes,
         summary,
         summary_oneliner,
@@ -427,5 +438,174 @@ mod tests {
         assert!(!report.summary_oneliner.is_empty());
         // One-liner should contain the score.
         assert!(report.summary_oneliner.contains(&format!("{:.0}", report.score.score)));
+    }
+
+    // ── M2: Task Value Integration (integration) ──────────────────────────────
+
+    #[test]
+    fn m2_perfect_task_value_score_does_not_change_tas() {
+        let mut trace = make_trace(); // task_value_score = 1.0
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        // With tvs=1.0 the multiplier is 1.0 so score == raw_tas.
+        assert!(
+            (report.score.score - report.score.raw_tas).abs() < 0.1,
+            "score={:.1} raw_tas={:.1}",
+            report.score.score,
+            report.score.raw_tas
+        );
+        assert!((report.score.task_value_score - 1.0).abs() < 0.001);
+    }
+
+    #[test]
+    fn m2_low_task_value_reduces_score() {
+        let mut trace_high = make_trace();
+        let mut trace_low = make_trace();
+        trace_low.task_value_score = 0.0;
+
+        let config = ScoringConfig::default();
+        let report_high = analyse(&mut trace_high, simple_sim, &config).unwrap();
+        let report_low = analyse(&mut trace_low, simple_sim, &config).unwrap();
+
+        assert!(
+            report_high.score.score > report_low.score.score,
+            "tvs=1.0 TAS ({:.1}) should be higher than tvs=0.0 TAS ({:.1})",
+            report_high.score.score,
+            report_low.score.score
+        );
+        // raw_tas should be identical (same trace structure).
+        assert!(
+            (report_high.score.raw_tas - report_low.score.raw_tas).abs() < 0.1,
+            "raw_tas should be the same for structurally identical traces"
+        );
+    }
+
+    #[test]
+    fn m2_zero_task_value_caps_score_at_70pct_of_raw() {
+        let mut trace = make_trace();
+        trace.task_value_score = 0.0;
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+
+        let expected_cap = report.score.raw_tas * 0.7;
+        assert!(
+            (report.score.score - expected_cap).abs() < 0.2,
+            "score={:.1}, expected cap={:.1} (0.7 × raw_tas {:.1})",
+            report.score.score,
+            expected_cap,
+            report.score.raw_tas
+        );
+    }
+
+    #[test]
+    fn m2_score_exposed_in_json_output() {
+        let mut trace = make_trace();
+        trace.task_value_score = 0.6;
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        let json = serde_json::to_string(&report).unwrap();
+        assert!(json.contains("\"raw_tas\""), "raw_tas must appear in JSON");
+        assert!(json.contains("\"task_value_score\""), "task_value_score must appear in JSON");
+    }
+
+    // ── M3: Minimum Viable Trace Gap (integration) ────────────────────────────
+
+    #[test]
+    fn m3_mvtg_in_range() {
+        let mut trace = make_trace();
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        assert!(
+            (0.0..=1.0).contains(&report.mvtg),
+            "MVTG must be in [0, 1], got {:.3}",
+            report.mvtg
+        );
+    }
+
+    #[test]
+    fn m3_mvtg_matches_savings_reduction_pct() {
+        // MVTG and savings.reduction_pct are derived from the same waste_tokens
+        // value so they must be consistent.
+        let mut trace = make_trace();
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        let pct_from_mvtg = report.mvtg * 100.0;
+        assert!(
+            (pct_from_mvtg - report.savings.reduction_pct).abs() < 0.5,
+            "MVTG%={:.1} should match savings.reduction_pct={:.1}",
+            pct_from_mvtg,
+            report.savings.reduction_pct
+        );
+    }
+
+    #[test]
+    fn m3_mvtg_zero_for_optimal_trace() {
+        // A trace where all steps are KEEP in the diff should have MVTG ≈ 0.
+        // Build the simplest clean trace: no loops, no misfires, no reformulations.
+        let mut trace = Trace {
+            trace_id: "clean".into(),
+            agent_name: "clean-agent".into(),
+            framework: "raw".into(),
+            steps: (1u32..=5)
+                .map(|id| TraceStep {
+                    id,
+                    step_type: if id % 2 == 0 {
+                        StepType::ToolCall
+                    } else {
+                        StepType::Reasoning
+                    },
+                    content: format!("step {id}: unique actionable content for task {id}"),
+                    tokens: 100,
+                    tool_name: if id % 2 == 0 { Some(format!("tool_{id}")) } else { None },
+                    tool_params: None,
+                    tool_success: Some(true),
+                    tool_error: None,
+                    agent_id: None,
+                    input_context: None,
+                    output: None,
+                    flags: vec![],
+                    flag_details: vec![],
+                })
+                .collect(),
+            total_tokens: 500,
+            task_value_score: 1.0,
+            metadata: HashMap::new(),
+        };
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        // This trace may have some trims but should not be massively wasteful.
+        assert!(
+            report.mvtg < 0.6,
+            "clean trace MVTG should be < 0.6, got {:.3}",
+            report.mvtg
+        );
+    }
+
+    #[test]
+    fn m3_mvtg_exposed_in_json_output() {
+        let mut trace = make_trace();
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        let json = serde_json::to_string(&report).unwrap();
+        assert!(json.contains("\"mvtg\""), "mvtg must appear in JSON output");
+    }
+
+    #[test]
+    fn m3_mvtg_and_m2_together() {
+        // Both features at once: partial task + some structural waste.
+        let mut trace = make_trace();
+        trace.task_value_score = 0.5;
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        // Score is TVI-adjusted.
+        assert!(report.score.score < report.score.raw_tas + 0.1);
+        // MVTG is independent of task_value_score (structural gap only).
+        let mut trace2 = make_trace();
+        trace2.task_value_score = 1.0;
+        let report2 = analyse(&mut trace2, simple_sim, &config).unwrap();
+        assert!(
+            (report.mvtg - report2.mvtg).abs() < 0.01,
+            "MVTG must not change with task_value_score (structural metric)"
+        );
     }
 }

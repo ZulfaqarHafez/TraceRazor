@@ -348,6 +348,8 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
         analysis_duration_ms: 0,
         score: TasScore {
             score: 0.0,
+            raw_tas: 0.0,
+            task_value_score: 1.0,
             grade: Grade::Poor,
             vae: 0.0,
             passes_threshold: false,
@@ -372,6 +374,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
             monthly_savings_usd: 0.0,
             latency_saved_seconds: 0.0,
         },
+        mvtg: 0.0,
         fixes: vec![],
         summary: step_msg.clone(),
         summary_oneliner: step_msg,

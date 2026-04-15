@@ -11,6 +11,12 @@ use crate::metrics::{
     TurResult, VdiResult,
 };
 
+/// Serde default helper returning 1.0 (used for backward-compat deserialization
+/// of reports that pre-date the task_value_score field).
+fn default_one() -> f64 {
+    1.0
+}
+
 /// Grade bands for the composite TAS score (mirrors Google Lighthouse).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Grade {
@@ -95,8 +101,19 @@ impl Default for Weights {
 /// All eleven metrics are always present — no Option wrappers.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TasScore {
-    /// Composite score (0–100). Higher is better.
+    /// Composite score (0–100), **after** the Task Value Integration multiplier.
+    /// `score = raw_tas × (0.7 + 0.3 × task_value_score)`.
+    /// Higher is better.
     pub score: f64,
+    /// Raw structural-efficiency score before the TVI adjustment (0–100).
+    /// Equal to `score` when `task_value_score == 1.0`.
+    #[serde(default)]
+    pub raw_tas: f64,
+    /// The task-completion quality supplied by the caller (0.0–1.0).
+    /// A trace that is structurally clean but failed the task is penalised:
+    /// at 0.0 the multiplier is 0.7; at 1.0 it is 1.0 (no change).
+    #[serde(default = "default_one")]
+    pub task_value_score: f64,
     pub grade: Grade,
     /// Value-Adjusted Efficiency score.
     pub vae: f64,
@@ -215,13 +232,24 @@ pub fn compute(
 
     let raw_efficiency = weighted_sum / weight_total;
 
-    // TAS in 0–100.
-    let tas = (raw_efficiency * 100.0 * 10.0).round() / 10.0;
+    // Raw TAS (0–100) — structural efficiency only, before task-value adjustment.
+    let raw_tas = (raw_efficiency * 100.0 * 10.0).round() / 10.0;
+
+    // ── M2: Task Value Integration (TVI) ─────────────────────────────────────
+    // TAS_final = TAS_raw × (0.7 + 0.3 × task_value_score)
+    //   task_value_score = 1.0 → multiplier = 1.0  (no change for complete tasks)
+    //   task_value_score = 0.5 → multiplier = 0.85 (15% penalty for partial failure)
+    //   task_value_score = 0.0 → multiplier = 0.7  (30% penalty for total failure)
+    // This ensures a structurally clean but failed trace cannot exceed ~70 TAS,
+    // and task quality directly gates the ceiling of the composite score.
+    let tvs = task_value_score.clamp(0.0, 1.0);
+    let tvi_multiplier = 0.7 + 0.3 * tvs;
+    let tas = (raw_tas * tvi_multiplier * 10.0).round() / 10.0;
 
     // VAE = (task_value_score * raw_efficiency) / normalised_token_cost.
     let baseline = config.baseline_tokens.unwrap_or(total_tokens).max(1) as f64;
     let normalised_cost = (total_tokens as f64 / baseline).max(0.001);
-    let vae = ((task_value_score * raw_efficiency) / normalised_cost * 100.0).round() / 100.0;
+    let vae = ((tvs * raw_efficiency) / normalised_cost * 100.0).round() / 100.0;
     let vae = vae.min(1.0);
 
     // Aggregate Verbosity Score: weighted combination of three verbosity waste signals.
@@ -232,11 +260,14 @@ pub fn compute(
         .clamp(0.0, 1.0);
     let avs = (avs * 1000.0).round() / 1000.0;
 
+    // Grade is based on the TVI-adjusted score so quality gating is reflected.
     let grade = Grade::from_score(tas);
     let passes = tas >= config.threshold;
 
     TasScore {
         score: tas,
+        raw_tas,
+        task_value_score: tvs,
         grade,
         vae,
         passes_threshold: passes,
@@ -303,5 +334,85 @@ mod tests {
         assert_eq!(Grade::from_score(75.0), Grade::Good);
         assert_eq!(Grade::from_score(55.0), Grade::Fair);
         assert_eq!(Grade::from_score(40.0), Grade::Poor);
+    }
+
+    // ── M2: Task Value Integration ────────────────────────────────────────────
+
+    #[test]
+    fn m2_perfect_task_value_leaves_score_unchanged() {
+        // task_value_score = 1.0 → multiplier = 1.0; TAS must not change.
+        let raw = 80.0_f64;
+        let tvs = 1.0_f64;
+        let tvi = 0.7 + 0.3 * tvs;
+        let adjusted = (raw * tvi * 10.0).round() / 10.0;
+        assert_eq!(adjusted, raw, "perfect task should not change TAS");
+    }
+
+    #[test]
+    fn m2_zero_task_value_applies_30pct_ceiling() {
+        // task_value_score = 0.0 → multiplier = 0.7; max reachable TAS ≈ 70.
+        let raw = 100.0_f64;
+        let tvs = 0.0_f64;
+        let tvi = 0.7 + 0.3 * tvs;
+        let adjusted = (raw * tvi * 10.0).round() / 10.0;
+        assert!(
+            adjusted <= 70.0,
+            "failed task should cap TAS at ~70, got {adjusted}"
+        );
+    }
+
+    #[test]
+    fn m2_half_task_value_applies_15pct_penalty() {
+        let raw = 80.0_f64;
+        let tvs = 0.5_f64;
+        let tvi = 0.7 + 0.3 * tvs;
+        let adjusted = (raw * tvi * 10.0).round() / 10.0;
+        // 80 × 0.85 = 68.0
+        let expected = (80.0_f64 * 0.85 * 10.0).round() / 10.0;
+        assert!(
+            (adjusted - expected).abs() < 0.2,
+            "half-value task: expected ≈ {expected}, got {adjusted}"
+        );
+    }
+
+    #[test]
+    fn m2_task_value_score_clamped_above_one() {
+        // Values > 1.0 are clamped; should behave same as 1.0.
+        let tvs_clamped = 1.5_f64.clamp(0.0, 1.0);
+        assert_eq!(tvs_clamped, 1.0);
+        let tvi = 0.7 + 0.3 * tvs_clamped;
+        assert_eq!(tvi, 1.0);
+    }
+
+    #[test]
+    fn m2_raw_tas_always_geq_adjusted_tas() {
+        // For any valid task_value_score ≤ 1.0, raw_tas ≥ score.
+        for tvs_tenth in 0..=10 {
+            let tvs = tvs_tenth as f64 / 10.0;
+            let tvi = 0.7 + 0.3 * tvs;
+            let raw = 75.0_f64;
+            let adjusted = (raw * tvi * 10.0).round() / 10.0;
+            assert!(
+                raw >= adjusted - 0.1,
+                "raw_tas {raw} should be >= adjusted {adjusted} at tvs={tvs}"
+            );
+        }
+    }
+
+    #[test]
+    fn m2_grade_reflects_adjusted_score() {
+        // A structurally excellent (raw 92) but partially-failed (tvs 0.5) trace
+        // should grade as Fair/Good after TVI, not Excellent.
+        let raw = 92.0_f64;
+        let tvs = 0.5_f64;
+        let tvi = 0.7 + 0.3 * tvs;
+        let adjusted = (raw * tvi * 10.0).round() / 10.0;
+        // 92 × 0.85 = 78.2 → Good (not Excellent)
+        let grade = Grade::from_score(adjusted);
+        assert_ne!(
+            grade,
+            Grade::Excellent,
+            "partial-failure trace (tvs=0.5) should not grade as Excellent"
+        );
     }
 }

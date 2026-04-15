@@ -82,6 +82,19 @@ pub struct TraceReport {
     pub score: TasScore,
     pub diff: Vec<DiffLine>,
     pub savings: SavingsEstimate,
+    /// Minimum Viable Trace Gap (M3).
+    ///
+    /// Fraction of tokens above the optimal path suggested by the step diff:
+    ///   `mvtg = (actual_tokens − optimal_tokens) / actual_tokens`
+    ///
+    /// 0.0 = the trace was already at minimum viable token count.
+    /// 1.0 = all tokens were in deletable/trimmable steps (fully wasteful).
+    ///
+    /// Unlike `savings.reduction_pct` (which projects fix-based estimates),
+    /// MVTG is derived directly from the per-step diff classifications
+    /// (KEEP / DELETE / TRIM), making it a structural lower bound on waste.
+    #[serde(default)]
+    pub mvtg: f64,
     /// Auto-generated fix patches (E-01).
     #[serde(default)]
     pub fixes: Vec<Fix>,
@@ -203,12 +216,24 @@ impl TraceReport {
             self.analysis_duration_ms,
         );
 
-        // Score
+        // Score — show TVI-adjusted TAS; also show raw_tas when task was imperfect.
+        let tvi_note = if (s.task_value_score - 1.0).abs() > 0.001 {
+            format!(
+                "  (raw structural: {:.0}, task value: {:.2})",
+                s.raw_tas, s.task_value_score
+            )
+        } else {
+            String::new()
+        };
         out += &format!(
-            "TRACERAZOR SCORE:  {:.0} / 100  [{}]\n\
+            "TRACERAZOR SCORE:  {:.0} / 100  [{}]{}\n\
              VAE SCORE:         {:.2}\n\
+             MVTG:              {:.1}%  (trace is {:.1}% above minimum viable token count)\n\
              {sep}\n",
-            s.score, s.grade, s.vae
+            s.score, s.grade, tvi_note,
+            s.vae,
+            self.mvtg * 100.0,
+            self.mvtg * 100.0,
         );
 
         // VERBOSITY ALERT (when AVS > 0.40)
