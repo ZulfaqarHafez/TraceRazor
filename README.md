@@ -159,6 +159,123 @@ tracerazor audit trace.json --threshold 75
 
 ---
 
+## End-to-end example — LangGraph customer-support agent
+
+This walkthrough uses the `tracerazor-langgraph` integration to measure and
+then optimize a real agent. All numbers below come from running the commands
+against the traces in `benchmarks/traces/`.
+
+### Step 1 — Instrument your agent
+
+```python
+# pip install tracerazor-langgraph langgraph langchain-openai
+from tracerazor_langgraph import TraceRazorCallback
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+
+@tool
+def get_order_status(order_id: str) -> str:
+    """Look up current order status."""
+    return f"Order {order_id}: shipped 2026-04-10, arriving 2026-04-15."
+
+@tool
+def get_refund_policy(order_id: str) -> str:
+    """Return the refund policy for an order."""
+    return "Refund eligible within 30 days of delivery."
+
+callback = TraceRazorCallback(agent_name="support-agent", threshold=75)
+agent   = create_react_agent(ChatOpenAI(model="gpt-4o-mini"), [get_order_status, get_refund_policy])
+
+agent.invoke(
+    {"messages": [{"role": "user", "content": "Status of ORD-1001? Can I still get a refund?"}]},
+    config={"callbacks": [callback]},
+)
+
+# Writes trace to disk and prints the audit report
+callback.analyse()
+```
+
+### Step 2 — Audit the trace
+
+```
+$ tracerazor audit trace.json
+
+╔══════════════════════════════════════╗
+║  TRACERAZOR EFFICIENCY REPORT        ║
+╚══════════════════════════════════════╝
+Agent:   support-agent
+TAS:     69.5 / 100   [FAIR]
+Tokens:  1 710 total  |  603 wasted (35%)
+
+Issues:
+  ✗  LDI  0.43  — 1 reasoning loop (steps 2 → 4 → 6 repeat identical tool call)
+  ✗  RDA  0.21  — 7 steps used for a trivial task (expected ≤ 2)
+  ✗  CCE  0.53  — 805 duplicate tokens across context windows
+
+Fixes:
+  1. [termination_guard]  "Once search_products returns results, do not
+                           call it again for the same query."   est. 420 tokens/run
+  2. [context_compression] "Summarise conversation to last 3 facts before
+                            each tool call."                    est. 183 tokens/run
+
+Est. savings: 603 tokens/run  ·  $90/month at 50 K runs
+```
+
+### Step 3 — Optimize the system prompt
+
+```bash
+export OPENAI_API_KEY=sk-...   # or ANTHROPIC_API_KEY, or TRACERAZOR_LLM_*
+tracerazor optimize trace.json --output system_prompt_v2.txt --target-tas 82
+```
+
+```
+Optimizing 'support-agent' (TAS 69.5 → target 82.0) using gpt-4o-mini…
+  Iteration 1/3 — calling LLM… projected TAS 83.7 (+14.2), tokens -440
+  Target reached — stopping early.
+Wrote optimised prompt → system_prompt_v2.txt
+```
+
+The new `system_prompt_v2.txt` contains directives such as:
+
+```
+EFFICIENCY RULES
+• Call each tool at most once per unique input. If a tool already returned
+  results for this query, use those results directly.
+• Keep reasoning to one sentence. Do not restate the user's question.
+• Summarise prior context to the last three facts before any tool call.
+• Reply immediately once the answer is known — no closing preamble.
+```
+
+### Step 4 — Re-run and verify
+
+Set `system_prompt_v2.txt` as your agent's system prompt, re-run the same
+conversation, then confirm the improvement with `tracerazor bench`:
+
+```bash
+tracerazor bench --before trace.json --after trace_v2.json --fixes fixes.json
+```
+
+```
+Before → After
+  TAS      69.5 → 83.7   (+14.2)   ✓ MATCH estimated
+  Tokens    1710 →  1270   (−440)
+  Cost/run  $0.0051 → $0.0038   (−25.7%)
+  Verdict   MATCH — actual savings within 10% of estimate
+```
+
+| | Before | After | Delta |
+|---|---:|---:|---:|
+| TAS | 69.5 | 83.7 | **+14.2** |
+| Tokens | 1 710 | 1 270 | **−440** |
+| Waste | 35% | 9% | **−26 pp** |
+| Est. monthly cost (50 K runs) | $255 | $190 | **−$65** |
+
+The full example code lives in
+[`integrations/langgraph/examples/customer_support.py`](integrations/langgraph/examples/customer_support.py).
+
+---
+
 ## Scoring Pipeline
 
 ```mermaid
@@ -379,6 +496,9 @@ tracerazor <COMMAND>
 
 Commands:
   audit      Score a trace file; optionally gate on --threshold <N>
+  optimize   Rewrite the system prompt with an LLM to eliminate detected waste
+  apply      Patch a system prompt file with safe, non-functional fixes
+  bench      Compare before/after traces and verify actual savings
   compare    Per-metric delta table between two trace files
   simulate   Project TAS impact of removing or merging steps
   cost       Monthly savings estimate across a set of traces
@@ -389,21 +509,29 @@ Options (audit):
   --format markdown|json
   --trace-format auto|raw|langsmith|otel
   --enhanced              LLM embeddings for SRR/ISR (OpenAI / OpenAI-compatible; Anthropic chat-only)
+
+Options (optimize):
+  --system-prompt <FILE>  Existing system prompt to rewrite (creates one if absent)
+  --output <FILE>         Write optimised prompt here (stdout if omitted)
+  --iterations <N>        Max LLM calls per run (default: 3)
+  --target-tas <N>        Stop early when projected TAS ≥ N (default: 85.0)
+  --format markdown|json
 ```
 
 ```bash
 tracerazor compare before.json after.json --regression-threshold 5.0
 tracerazor simulate trace.json --remove 3,8 --merge 6,7
 tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs-per-month 50000
+tracerazor optimize trace.json --system-prompt agent.txt --output agent_v2.txt
 ```
 
-`--enhanced` backend selection is environment-driven:
+LLM backend selection is environment-driven (used by `optimize` and `--enhanced`):
 
 ```bash
 # OpenAI
 export OPENAI_API_KEY=sk-...
 
-# Anthropic (chat completion support; embeddings fall back to BoW)
+# Anthropic (chat completion; embeddings fall back to BoW)
 export ANTHROPIC_API_KEY=sk-ant-...
 
 # OpenAI-compatible (Ollama, vLLM, OpenRouter, Groq, Together, LM Studio, ...)
