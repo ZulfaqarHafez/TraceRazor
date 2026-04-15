@@ -79,9 +79,11 @@ enum Commands {
         #[arg(long, default_value = "true")]
         store: bool,
 
-        /// Enable enhanced semantic analysis using OpenAI embeddings.
+        /// Enable enhanced semantic analysis using configured LLM embeddings.
         /// Significantly improves SRR and ISR accuracy by replacing bag-of-words
-        /// with dense sentence embeddings. Requires OPENAI_API_KEY env var.
+        /// with dense sentence embeddings. Supports OpenAI, Anthropic (chat-only,
+        /// falls back to BoW for embeddings), and OpenAI-compatible endpoints via
+        /// TRACERAZOR_LLM_* / OPENAI_API_KEY / ANTHROPIC_API_KEY env vars.
         #[arg(long, default_value = "false")]
         enhanced: bool,
     },
@@ -350,10 +352,14 @@ async fn cmd_audit(
     let mut report = if enhanced {
         // Build embedding cache from all step texts in one batched call.
         let texts: Vec<String> = trace.steps.iter().map(|s| s.content.clone()).collect();
-        if std::env::var("OPENAI_API_KEY").is_err() {
-            eprintln!("Warning: --enhanced requires OPENAI_API_KEY. Falling back to BoW.");
+        if tracerazor_semantic::LlmConfig::from_env().is_none() {
+            eprintln!(
+                "Warning: --enhanced found no LLM credentials \
+                 (OPENAI_API_KEY / ANTHROPIC_API_KEY / TRACERAZOR_LLM_*). \
+                 Falling back to BoW similarity."
+            );
         }
-        let sim_fn = tracerazor_semantic::openai_similarity_fn(texts).await;
+        let sim_fn = tracerazor_semantic::embedding_similarity_fn(texts).await;
         tracerazor_core::analyse(&mut trace, sim_fn, &config)?
     } else {
         let sim_fn = default_similarity_fn();
@@ -967,7 +973,7 @@ async fn cmd_bench(
                 println!("Estimated savings: {est} tokens");
                 println!("Measured savings:  {} tokens", actual_tokens_saved);
                 if let Some(acc) = accuracy_pct {
-                    let verdict = if acc >= 80.0 && acc <= 120.0 {
+                    let verdict = if (80.0..=120.0).contains(&acc) {
                         "MATCH"
                     } else if acc > 120.0 {
                         "UNDER-ESTIMATED"

@@ -388,13 +388,30 @@ Options (audit):
   --threshold <N>         Exit non-zero if TAS < N
   --format markdown|json
   --trace-format auto|raw|langsmith|otel
-  --enhanced              OpenAI embeddings for SRR/ISR (requires OPENAI_API_KEY)
+  --enhanced              LLM embeddings for SRR/ISR (OpenAI / OpenAI-compatible; Anthropic chat-only)
 ```
 
 ```bash
 tracerazor compare before.json after.json --regression-threshold 5.0
 tracerazor simulate trace.json --remove 3,8 --merge 6,7
 tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs-per-month 50000
+```
+
+`--enhanced` backend selection is environment-driven:
+
+```bash
+# OpenAI
+export OPENAI_API_KEY=sk-...
+
+# Anthropic (chat completion support; embeddings fall back to BoW)
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# OpenAI-compatible (Ollama, vLLM, OpenRouter, Groq, Together, LM Studio, ...)
+export TRACERAZOR_LLM_PROVIDER=openai-compatible
+export TRACERAZOR_LLM_BASE_URL=http://localhost:11434/v1
+export TRACERAZOR_LLM_MODEL=llama3.1
+# optional auth:
+export TRACERAZOR_LLM_API_KEY=...
 ```
 
 ---
@@ -451,7 +468,7 @@ tracerazor/
 ├── crates/
 │   ├── tracerazor-core/      # 11 metrics, AVS, reformulation, scoring, fixes, reports
 │   ├── tracerazor-ingest/    # Parsers: raw JSON, LangSmith, OpenTelemetry
-│   ├── tracerazor-semantic/  # BoW similarity + optional OpenAI embeddings
+│   ├── tracerazor-semantic/  # BoW similarity + pluggable LLM backend (OpenAI/Anthropic/OpenAI-compatible)
 │   ├── tracerazor-store/     # SurrealDB: traces, KB, baselines, anomaly detection
 │   ├── tracerazor-server/    # Axum REST + WebSocket + embedded dashboard
 │   ├── tracerazor-proxy/     # Four-layer guardrail proxy

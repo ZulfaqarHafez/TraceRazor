@@ -1,14 +1,20 @@
 /// Semantic similarity engine for TraceRazor.
 ///
-/// Phase 1: TF-IDF bag-of-words cosine similarity (fully offline, no API needed).
-/// Phase 2: OpenAI `text-embedding-3-small` for true sentence-level similarity,
-///          enabling the PRD-specified 0.85 cosine threshold.
+/// Phase 1: TF-IDF bag-of-words cosine similarity (fully offline, no API key).
+/// Phase 2: Dense sentence embeddings via a pluggable LLM backend — OpenAI,
+///          Anthropic (chat only), or any OpenAI-compatible endpoint (Ollama,
+///          vLLM, Azure OpenAI, OpenRouter, Groq, Together, LM Studio, …).
 ///
-/// The engine auto-selects the backend based on OPENAI_API_KEY availability.
+/// Backend selection is controlled by `tracerazor_semantic::llm::LlmConfig`,
+/// which reads `TRACERAZOR_LLM_PROVIDER` / `TRACERAZOR_LLM_BASE_URL` /
+/// `TRACERAZOR_LLM_MODEL` / `TRACERAZOR_LLM_API_KEY` from the environment,
+/// with graceful fallback to `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`.
 pub mod bow;
+pub mod llm;
 pub mod openai;
 
 pub use bow::BowSimilarity;
+pub use llm::{LlmConfig, Provider};
 
 /// Trait for any similarity backend.
 pub trait Similarity: Send + Sync {
@@ -22,28 +28,30 @@ pub fn default_similarity_fn() -> impl Fn(&str, &str) -> f64 {
     move |a: &str, b: &str| engine.similarity(a, b)
 }
 
-/// Phase 2: Build a similarity closure backed by pre-computed OpenAI embeddings.
+/// Phase 2: Build a similarity closure backed by pre-computed embeddings from
+/// whichever LLM backend is configured via the environment.
 ///
 /// Fetches all embeddings in a single batched API call, then returns a closure
 /// that computes cosine similarity from the cached vectors — no additional
 /// network calls during the O(n²) step comparison.
 ///
-/// Falls back to BoW similarity if the API call fails.
-pub async fn openai_similarity_fn(
+/// Falls back to BoW similarity if:
+///   - no credentials are present,
+///   - the configured provider has no embeddings API (Anthropic), or
+///   - the embeddings request fails for any reason.
+pub async fn embedding_similarity_fn(
     texts: Vec<String>,
 ) -> Box<dyn Fn(&str, &str) -> f64 + Send + Sync> {
-    let api_key = std::env::var("OPENAI_API_KEY").unwrap_or_default();
-    let model = std::env::var("TRACERAZOR_EMBEDDING_MODEL")
-        .unwrap_or_else(|_| "text-embedding-3-small".to_string());
-
-    if api_key.is_empty() {
+    let Some(cfg) = LlmConfig::from_env() else {
         let engine = BowSimilarity::new();
         return Box::new(move |a, b| engine.similarity(a, b));
-    }
+    };
 
-    match openai::build_similarity_cache(&texts, &api_key, &model).await {
+    let embed_model = std::env::var("TRACERAZOR_EMBEDDING_MODEL")
+        .unwrap_or_else(|_| "text-embedding-3-small".to_string());
+
+    match cfg.embed(&texts, &embed_model).await {
         Ok(embeddings) => {
-            // Build a text→index lookup for the closure.
             let text_index: std::collections::HashMap<String, usize> = texts
                 .iter()
                 .enumerate()
@@ -52,9 +60,7 @@ pub async fn openai_similarity_fn(
 
             let bow = BowSimilarity::new();
             Box::new(move |a: &str, b: &str| {
-                let idx_a = text_index.get(a);
-                let idx_b = text_index.get(b);
-                match (idx_a, idx_b) {
+                match (text_index.get(a), text_index.get(b)) {
                     (Some(&i), Some(&j)) => {
                         openai::cosine_similarity(&embeddings[i], &embeddings[j])
                     }
@@ -63,84 +69,20 @@ pub async fn openai_similarity_fn(
             })
         }
         Err(e) => {
-            eprintln!("Warning: OpenAI embeddings failed ({}), falling back to BoW", e);
+            eprintln!(
+                "Warning: embeddings backend failed ({e}); falling back to BoW similarity"
+            );
             let engine = BowSimilarity::new();
             Box::new(move |a, b| engine.similarity(a, b))
         }
     }
 }
 
-/// LLM chat completion client for RDA and DBO metrics.
-pub mod llm {
-    use anyhow::{Context, Result};
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Serialize)]
-    struct ChatRequest {
-        model: String,
-        messages: Vec<Message>,
-        temperature: f32,
-        max_tokens: u32,
-    }
-
-    #[derive(Serialize, Deserialize)]
-    struct Message {
-        role: String,
-        content: String,
-    }
-
-    #[derive(Deserialize)]
-    struct ChatResponse {
-        choices: Vec<Choice>,
-    }
-
-    #[derive(Deserialize)]
-    struct Choice {
-        message: Message,
-    }
-
-    /// Send a single chat completion request and return the text response.
-    pub async fn complete(system: &str, user: &str) -> Result<String> {
-        let api_key = std::env::var("OPENAI_API_KEY")
-            .context("OPENAI_API_KEY not set")?;
-        let model = std::env::var("TRACERAZOR_LLM_MODEL")
-            .unwrap_or_else(|_| "gpt-4o-mini".to_string());
-
-        let client = reqwest::Client::new();
-        let request = ChatRequest {
-            model,
-            messages: vec![
-                Message { role: "system".into(), content: system.to_string() },
-                Message { role: "user".into(), content: user.to_string() },
-            ],
-            temperature: 0.0,
-            max_tokens: 256,
-        };
-
-        let response = client
-            .post("https://api.openai.com/v1/chat/completions")
-            .bearer_auth(api_key)
-            .json(&request)
-            .send()
-            .await
-            .context("OpenAI chat request failed")?;
-
-        if !response.status().is_success() {
-            let status = response.status();
-            let body = response.text().await.unwrap_or_default();
-            anyhow::bail!("OpenAI API error {}: {}", status, body);
-        }
-
-        let chat: ChatResponse = response
-            .json()
-            .await
-            .context("Failed to parse OpenAI chat response")?;
-
-        Ok(chat
-            .choices
-            .into_iter()
-            .next()
-            .map(|c| c.message.content)
-            .unwrap_or_default())
-    }
+/// Backward-compatible alias for the old OpenAI-only helper.
+/// Prefer [`embedding_similarity_fn`] in new code.
+#[deprecated(note = "Renamed to `embedding_similarity_fn` now that other backends are supported")]
+pub async fn openai_similarity_fn(
+    texts: Vec<String>,
+) -> Box<dyn Fn(&str, &str) -> f64 + Send + Sync> {
+    embedding_similarity_fn(texts).await
 }

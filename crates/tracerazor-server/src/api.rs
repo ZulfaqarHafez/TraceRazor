@@ -801,7 +801,7 @@ mod tests {
         assert_eq!(body["trace_id"], "integ-001");
         assert!(body["tas_score"].as_f64().is_some());
         let tas = body["tas_score"].as_f64().unwrap();
-        assert!(tas >= 0.0 && tas <= 100.0, "TAS should be 0-100, got {tas}");
+        assert!((0.0..=100.0).contains(&tas), "TAS should be 0-100, got {tas}");
         assert!(body["grade"].as_str().is_some());
         assert!(body["report_markdown"].as_str().is_some_and(|s| s.contains("TRACERAZOR")));
 
