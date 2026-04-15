@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::metrics::{
     dbo::{DboResult, HistoricalSequence},
-    CceResult, CcrResult, IsrResult, LdiResult, RdaResult, ShlResult, SrrResult, TcaResult,
-    TurResult, VdiResult,
+    CceResult, CcrResult, GarResult, IsrResult, LdiResult, RdaResult, ShlResult, SrrResult,
+    TcaResult, TurResult, VdiResult,
 };
 
 /// Serde default helper returning 1.0 (used for backward-compat deserialization
@@ -74,9 +74,11 @@ pub struct Weights {
     pub cce: f64, // 10%
     pub dbo: f64, //  9%
     // Verbosity metrics (new in v2).
-    pub vdi: f64, //  9%
+    pub vdi: f64, //  8%
     pub shl: f64, //  5%
-    pub ccr: f64, //  4%
+    pub ccr: f64, //  3%
+    // Goal advancement (M1).
+    pub gar: f64, //  6%
 }
 
 impl Default for Weights {
@@ -90,9 +92,10 @@ impl Default for Weights {
             tur: 0.10,
             cce: 0.10,
             dbo: 0.09,
-            vdi: 0.09,
+            vdi: 0.08,
             shl: 0.05,
-            ccr: 0.04,
+            ccr: 0.03,
+            gar: 0.07,
         }
     }
 }
@@ -137,6 +140,8 @@ pub struct TasScore {
     pub vdi: VdiResult,
     pub shl: ShlResult,
     pub ccr: CcrResult,
+    // Goal advancement metric (M1).
+    pub gar: GarResult,
 }
 
 /// Configuration for the scoring engine.
@@ -185,6 +190,7 @@ pub fn compute(
     vdi: VdiResult,
     shl: ShlResult,
     ccr: CcrResult,
+    gar: GarResult,
     task_value_score: f64,
     total_tokens: u32,
     config: &ScoringConfig,
@@ -203,9 +209,11 @@ pub fn compute(
     let vdi_n = vdi.normalised();
     let shl_n = shl.normalised();
     let ccr_n = ccr.normalised();
+    let gar_n = gar.normalised();
 
     // Sum weights so the composite remains in [0, 1] even if weights don't
-    // add up to exactly 1.0 (the spec sums to 1.10 due to rounding).
+    // add up to exactly 1.0.  GAR uses 7% of the composite; CCR reduced from
+    // 4% to 3% to partially offset (both overlap with verbosity waste signal).
     let weight_total = w.srr
         + w.ldi
         + w.tca
@@ -216,7 +224,8 @@ pub fn compute(
         + w.dbo
         + w.vdi
         + w.shl
-        + w.ccr;
+        + w.ccr
+        + w.gar;
 
     let weighted_sum = srr_n * w.srr
         + ldi_n * w.ldi
@@ -228,7 +237,8 @@ pub fn compute(
         + dbo_n * w.dbo
         + vdi_n * w.vdi
         + shl_n * w.shl
-        + ccr_n * w.ccr;
+        + ccr_n * w.ccr
+        + gar_n * w.gar;
 
     let raw_efficiency = weighted_sum / weight_total;
 
@@ -283,6 +293,7 @@ pub fn compute(
         vdi,
         shl,
         ccr,
+        gar,
     }
 }
 

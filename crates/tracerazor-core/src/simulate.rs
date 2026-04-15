@@ -79,6 +79,7 @@ pub struct MetricDeltas {
     pub vdi: f64,
     pub shl: f64,
     pub ccr: f64,
+    pub gar: f64,
 }
 
 /// Apply the spec to the trace and return the projected simulation result.
@@ -204,6 +205,8 @@ where
                 - original_report.score.shl.normalised(),
             ccr: projected_report.score.ccr.normalised()
                 - original_report.score.ccr.normalised(),
+            gar: projected_report.score.gar.normalised()
+                - original_report.score.gar.normalised(),
         },
         simulated_step_ids: simulated_ids,
     }
@@ -213,6 +216,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
     use crate::metrics::{
         ccr::{CcrResult, CcrStepResult},
         dbo::DboResult,
+        gar::GarResult,
         isr::IsrResult,
         ldi::LdiResult,
         rda::{RdaResult, TaskComplexity},
@@ -365,6 +369,14 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
             vdi: zero_vdi,
             shl: zero_shl,
             ccr: zero_ccr,
+            gar: GarResult {
+                score: 1.0,
+                step_results: vec![],
+                low_advancement_steps: vec![],
+                goal_step_id: None,
+                pass: true,
+                target: 0.40,
+            },
         },
         diff: vec![],
         savings: SavingsEstimate {

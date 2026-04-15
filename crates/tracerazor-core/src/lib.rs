@@ -12,7 +12,7 @@ use std::time::Instant;
 use anyhow::Result;
 
 use crate::fixes::generate_fixes;
-use crate::metrics::{ccr, cce, dbo, isr, ldi, rda, reformulation, shl, srr, tca, tur, vdi};
+use crate::metrics::{ccr, cce, dbo, gar, isr, ldi, rda, reformulation, shl, srr, tca, tur, vdi};
 use crate::report::{AgentBreakdown, TraceReport, generate_oneliner, generate_summary};
 use crate::scoring::{ScoringConfig, estimate_savings};
 use crate::types::{MIN_TRACE_STEPS, Trace};
@@ -81,6 +81,9 @@ fn analyse_dyn(
     let reformulation_detected = reformulation::detect(trace);
     reformulation::annotate_steps(&mut trace.steps, &reformulation_detected);
 
+    // ── M1: Goal Advancement Ratio ────────────────────────────────────────────
+    let gar_result = gar::compute(trace, similarity_fn);
+
     let score = scoring::compute(
         srr_result,
         ldi_result,
@@ -93,6 +96,7 @@ fn analyse_dyn(
         vdi_result,
         shl_result,
         ccr_result,
+        gar_result,
         trace.task_value_score,
         total_tokens,
         config,
@@ -588,6 +592,178 @@ mod tests {
         let report = analyse(&mut trace, simple_sim, &config).unwrap();
         let json = serde_json::to_string(&report).unwrap();
         assert!(json.contains("\"mvtg\""), "mvtg must appear in JSON output");
+    }
+
+    // ── M1: Goal Advancement Ratio (integration) ─────────────────────────────
+
+    #[test]
+    fn m1_gar_present_in_report() {
+        let mut trace = make_trace();
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        assert!(
+            (0.0..=1.0).contains(&report.score.gar.score),
+            "GAR score must be in [0, 1], got {}",
+            report.score.gar.score
+        );
+    }
+
+    #[test]
+    fn m1_gar_present_in_json() {
+        let mut trace = make_trace();
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, simple_sim, &config).unwrap();
+        let json = serde_json::to_string(&report).unwrap();
+        assert!(json.contains("\"gar\""), "GAR must appear in JSON output");
+        assert!(json.contains("\"goal_step_id\""));
+    }
+
+    /// Build a trace with multiple reasoning steps so GAR has meaningful input.
+    fn make_reasoning_trace() -> Trace {
+        Trace {
+            trace_id: "gar-integ-test".into(),
+            agent_name: "test-agent".into(),
+            framework: "raw".into(),
+            steps: vec![
+                TraceStep {
+                    id: 1,
+                    step_type: StepType::Reasoning,
+                    content: "user wants a refund for their order".into(),
+                    tokens: 200,
+                    tool_name: None,
+                    tool_params: None,
+                    tool_success: None,
+                    tool_error: None,
+                    agent_id: None,
+                    input_context: None,
+                    output: None,
+                    flags: vec![],
+                    flag_details: vec![],
+                },
+                TraceStep {
+                    id: 2,
+                    step_type: StepType::Reasoning,
+                    content: "checking refund eligibility for this order".into(),
+                    tokens: 200,
+                    tool_name: None,
+                    tool_params: None,
+                    tool_success: None,
+                    tool_error: None,
+                    agent_id: None,
+                    input_context: None,
+                    output: None,
+                    flags: vec![],
+                    flag_details: vec![],
+                },
+                TraceStep {
+                    id: 3,
+                    step_type: StepType::Reasoning,
+                    content: "order is eligible, processing refund now".into(),
+                    tokens: 200,
+                    tool_name: None,
+                    tool_params: None,
+                    tool_success: None,
+                    tool_error: None,
+                    agent_id: None,
+                    input_context: None,
+                    output: None,
+                    flags: vec![],
+                    flag_details: vec![],
+                },
+                TraceStep {
+                    id: 4,
+                    step_type: StepType::Reasoning,
+                    content: "refund processed successfully".into(),
+                    tokens: 200,
+                    tool_name: None,
+                    tool_params: None,
+                    tool_success: None,
+                    tool_error: None,
+                    agent_id: None,
+                    input_context: None,
+                    output: None,
+                    flags: vec![],
+                    flag_details: vec![],
+                },
+                TraceStep {
+                    id: 5,
+                    step_type: StepType::Reasoning,
+                    content: "refund complete".into(),
+                    tokens: 200,
+                    tool_name: None,
+                    tool_params: None,
+                    tool_success: None,
+                    tool_error: None,
+                    agent_id: None,
+                    input_context: None,
+                    output: None,
+                    flags: vec![],
+                    flag_details: vec![],
+                },
+            ],
+            total_tokens: 1000,
+            task_value_score: 1.0,
+            metadata: HashMap::new(),
+        }
+    }
+
+    #[test]
+    fn m1_perfect_sim_gives_high_gar() {
+        // const sim=1.0 → every step is identical to goal → GAR = 1.0.
+        let mut trace = make_reasoning_trace();
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, |_, _| 1.0_f64, &config).unwrap();
+        assert!(
+            report.score.gar.score > 0.90,
+            "perfect similarity → high GAR, got {}",
+            report.score.gar.score
+        );
+    }
+
+    #[test]
+    fn m1_zero_sim_gives_low_gar() {
+        // const sim=0.0 → no step aligns with goal → GAR = 0, should fail.
+        let mut trace = make_reasoning_trace();
+        let config = ScoringConfig::default();
+        let report = analyse(&mut trace, |_, _| 0.0_f64, &config).unwrap();
+        assert!(
+            report.score.gar.score < 0.10,
+            "zero similarity → low GAR, got {}",
+            report.score.gar.score
+        );
+        assert!(!report.score.gar.pass, "low GAR should not pass");
+    }
+
+    #[test]
+    fn m1_gar_is_structural_not_cost_driven() {
+        // GAR must not change when only task_value_score differs — it's a
+        // structural metric independent of task quality weighting.
+        let mut trace_a = make_reasoning_trace();
+        let mut trace_b = make_reasoning_trace();
+        trace_b.task_value_score = 0.5;
+        let config = ScoringConfig::default();
+        let rep_a = analyse(&mut trace_a, simple_sim, &config).unwrap();
+        let rep_b = analyse(&mut trace_b, simple_sim, &config).unwrap();
+        assert!(
+            (rep_a.score.gar.score - rep_b.score.gar.score).abs() < 0.001,
+            "GAR must not depend on task_value_score"
+        );
+    }
+
+    #[test]
+    fn m1_gar_weight_in_composite() {
+        // high-sim → high GAR (~6% weight in TAS).  Two traces, same structure,
+        // different sim functions → different raw_tas values.
+        let mut trace_high = make_reasoning_trace();
+        let mut trace_low = make_reasoning_trace();
+        let config = ScoringConfig::default();
+        let high = analyse(&mut trace_high, |_, _| 1.0_f64, &config).unwrap();
+        let low = analyse(&mut trace_low, |_, _| 0.0_f64, &config).unwrap();
+        assert!(
+            high.score.raw_tas > low.score.raw_tas,
+            "high-GAR ({:.1}) should score above low-GAR ({:.1})",
+            high.score.raw_tas, low.score.raw_tas
+        );
     }
 
     #[test]

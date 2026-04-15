@@ -340,7 +340,7 @@ impl TraceReport {
             if s.dbo.cold_start { " [cold]" } else { "" }
         );
 
-        // Verbosity metrics separator + three new rows.
+        // Verbosity metrics separator + three rows.
         out += &format!("-- Verbosity Metrics {}\n", "-".repeat(34));
         out += &format!(
             "{:<6} {:<30} {:<8} {:<8} {}\n",
@@ -365,6 +365,32 @@ impl TraceReport {
             format!("{:.3}", s.ccr.score),
             "<0.30",
             pass_str(s.ccr.pass)
+        );
+
+        // Goal advancement metric (M1).
+        out += &format!("-- Goal Advancement {}\n", "-".repeat(35));
+        let gar_note = if s.gar.low_advancement_steps.is_empty() {
+            String::new()
+        } else {
+            format!(
+                "  [steps off-track: {}]",
+                s.gar
+                    .low_advancement_steps
+                    .iter()
+                    .map(|id| id.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        };
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}{}  (goal proxy: step {})\n",
+            "GAR",
+            "Goal Advancement Ratio",
+            format!("{:.3}", s.gar.score),
+            "≥0.40",
+            pass_str(s.gar.pass),
+            gar_note,
+            s.gar.goal_step_id.map(|id| id.to_string()).unwrap_or_else(|| "—".into()),
         );
 
         out += &format!("{sep}\n");
@@ -523,6 +549,7 @@ fn worst_metric(score: &TasScore) -> (&'static str, f64) {
         ("VDI (verbosity density)", score.vdi.normalised()),
         ("SHL (sycophancy/hedging)", score.shl.normalised()),
         ("CCR (compression ratio)", score.ccr.normalised()),
+        ("GAR (goal advancement)", score.gar.normalised()),
     ];
     metrics
         .iter()
