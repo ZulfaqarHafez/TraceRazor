@@ -59,7 +59,7 @@ class TraceRazorReport:
             f"TRACERAZOR SCORE:  {self.tas_score:.0f} / 100  [{self.grade.upper()}]",
             sep,
         ]
-        for code in ("srr", "ldi", "tca", "rda", "isr", "tur", "cce", "dbo"):
+        for code in ("srr", "ldi", "tca", "rda", "isr", "tur", "cce", "dbo", "vdi", "shl", "ccr", "csd", "gar"):
             m = s.get(code, {})
             if m:
                 status = "PASS" if m.get("pass") else "FAIL"

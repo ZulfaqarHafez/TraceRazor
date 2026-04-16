@@ -1,8 +1,13 @@
 # tracerazor
 
-Python SDK for [TraceRazor](../../README.md) — token efficiency auditing for AI agents.
+Python SDK for [TraceRazor](../../README.md) — comprehensive token efficiency auditing & optimization for AI agents.
 
 Works with any Python agent: OpenAI, Anthropic, LangGraph, CrewAI, AutoGen, or raw code.
+
+**v0.2.0** — New metrics:
+- **Semantic Continuity (CSD)** — detects reasoning drift across steps
+- **Adherence Scoring (IAR)** — validates that optimization fixes improve metrics
+- **Multi-agent reporting** — audit 2+ agents in a workflow, aggregate efficiency
 
 ## Install
 
@@ -127,3 +132,102 @@ Submit the trace and return the report.
 | `.summary()` | method | one-line string |
 | `.markdown()` | method | full formatted report |
 | `.assert_passes()` | method | raises `AssertionError` if TAS < threshold |
+
+## Multi-Agent Workflows
+
+TraceRazor handles multi-agent systems natively. Each agent in your workflow gets its own tracer and independent report:
+
+```python
+from tracerazor_sdk import Tracer
+
+# Agent 1: Triage
+with Tracer(agent_name="triage") as t:
+    category = classify_request(user_query)
+    t.reasoning(f"Classified as: {category}", tokens=120)
+    triage_result = t.analyse()
+
+# Agent 2: Resolution
+with Tracer(agent_name="resolution") as t:
+    answer = resolve_by_category(category)
+    t.tool("search_kb", params={"q": category}, output=answer, success=True, tokens=180)
+    resolution_result = t.analyse()
+
+# Agent 3: Escalation (if needed)
+if not resolution_result.passes:
+    with Tracer(agent_name="escalation") as t:
+        ticket = escalate_to_human()
+        t.tool("create_ticket", params={}, output=ticket, success=True, tokens=100)
+        escalation_result = t.analyse()
+
+# Aggregate results
+total_tokens = sum([
+    triage_result.total_tokens,
+    resolution_result.total_tokens,
+    escalation_result.total_tokens,
+])
+avg_efficiency = (
+    triage_result.tas_score +
+    resolution_result.tas_score +
+    escalation_result.tas_score
+) / 3
+
+print(f"Workflow: {total_tokens} tokens | Efficiency: {avg_efficiency:.1f}/100")
+```
+
+See [`examples/multi_agent_workflow.py`](examples/multi_agent_workflow.py) for a complete working example with 4 agents, tool calling, and cost analysis.
+
+## What's Audited
+
+Each trace is analyzed across **13 independent signals**:
+
+**Structural Efficiency:**
+- Step Redundancy (SRR) — near-duplicate steps
+- Loop Detection (LDI) — repeated tool calls
+- Tool Accuracy (TCA) — failed tool calls
+- Reasoning Depth (RDA) — over-complex reasoning
+- Information Sufficiency (ISR) — wasted steps
+- Token Utilisation (TUR) — off-task content
+- Context Efficiency (CCE) — duplicate context
+- Decision Optimality (DBO) — suboptimal tool sequences
+- **Semantic Continuity (CSD)** — reasoning drift [NEW in v0.2]
+
+**Verbosity & Presentation:**
+- Verbosity Density (VDI) — filler words, low-substance content
+- Sycophancy/Hedging (SHL) — over-polite phrasing
+- Compression Ratio (CCR) — highly compressible output
+
+**Optimization Validation:**
+- **Adherence Score (IAR)** — % of fixes that improved metrics on re-audit [NEW in v0.2]
+
+## Examples
+
+- **Multi-agent customer support system** — [`examples/multi_agent_workflow.py`](examples/multi_agent_workflow.py)
+- **LangGraph integration** — [`../langgraph/examples/`](../langgraph/examples/)
+- **CrewAI integration** — [`../crewai/examples/`](../crewai/examples/)
+
+## Troubleshooting
+
+**Q: How do I optimize an agent?**  
+Use the Rust CLI:
+```bash
+tracerazor optimize trace.json --output optimized_prompt.txt --target-tas 85
+```
+
+**Q: Can I compare two runs?**  
+Yes:
+```bash
+tracerazor bench --before trace_v1.json --after trace_v2.json
+```
+
+**Q: What if I don't have the `tracerazor` binary?**  
+Use HTTP mode with a running server:
+```bash
+pip install tracerazor[http]
+docker compose up  # in the TraceRazor repo
+```
+
+Then pass `server="http://localhost:8080"` to `Tracer()`.
+
+## License
+
+Apache 2.0. See [LICENSE](../../LICENSE).

@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tracerazor"
-version = "0.1.0"
-description = "TraceRazor Python SDK — token efficiency auditing for AI agents"
+version = "0.2.0"
+description = "TraceRazor Python SDK — comprehensive token efficiency auditing & optimization for AI agents"
 authors = [{ name = "Zulfaqar Hafez" }]
 license = "Apache-2.0"
 readme = "README.md"

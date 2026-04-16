@@ -34,4 +34,4 @@ from .client import TraceRazorClient, TraceRazorReport
 from .trace import TraceStep
 
 __all__ = ["Tracer", "TraceRazorClient", "TraceRazorReport", "TraceStep"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"
