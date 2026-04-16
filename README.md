@@ -37,72 +37,48 @@ Existing tools surface *that* these runs happened. They do not surface *which st
 
 ## What TraceRazor Measures
 
-TraceRazor decomposes agent efficiency into thirteen orthogonal metrics across two tiers. Every metric runs **offline in under 5 ms** — no model weights, no inference calls, no API keys.
+TraceRazor decomposes agent efficiency into thirteen independent signals, each targeting a specific category of waste. Every analysis runs **offline in under 5 ms** — no model weights, no inference calls, no API keys.
 
-### Tier 1 — Structural & Semantic Efficiency
+### Structural Efficiency
 
-| Code | Metric | Weight | Signal |
-|------|--------|--------|--------|
-| **SRR** | Step Redundancy Rate | 17% | Near-duplicate steps via bag-of-words Jaccard |
-| **LDI** | Loop Detection Index | 13% | Longest repeated tool-call cycle ÷ total steps |
-| **TCA** | Tool Call Accuracy | 13% | First-attempt tool success rate |
-| **RDA** | Reasoning Depth Appropriateness | 10% | Heuristic complexity vs. actual step count; calibrated to agent history after 3+ traces |
-| **ISR** | Information Sufficiency Rate | 10% | Novel-information contribution per step |
-| **TUR** | Token Utilisation Ratio | 10% | Tokens attributed to task-relevant content |
-| **CCE** | Context Carry-over Efficiency | 10% | Novel tokens ÷ total input window per step |
-| **DBO** | Decision Branch Optimality | 9% | Jaccard similarity to historical optimal tool sequences |
-| **CSD** | Cross-Step Semantic Drift | 5% | Mean cosine similarity between consecutive reasoning steps (identifies "wandering" agents) |
+| Metric | Weight | What It Detects |
+|--------|--------|--------|
+| **Step Redundancy Rate** (SRR) | 17% | Near-duplicate reasoning steps wasting context and tokens |
+| **Loop Detection Index** (LDI) | 13% | Repeated tool-call cycles that re-attempt the same action |
+| **Tool Call Accuracy** (TCA) | 13% | Tool misconfigurations causing failed calls and retries |
+| **Reasoning Depth** (RDA) | 10% | Over-deep reasoning chains for simple tasks |
+| **Information Sufficiency** (ISR) | 10% | Steps that don't contribute novel information to the solution |
+| **Token Utilisation** (TUR) | 10% | Tokens spent on task-irrelevant content |
+| **Context Efficiency** (CCE) | 10% | Duplicate context carried forward across steps |
+| **Decision Optimality** (DBO) | 9% | Tool sequences that deviate from historical best paths |
+| **Semantic Continuity** (CSD) | 5% | Agents whose reasoning drifts topic mid-trace (identifies "wandering") |
 
-### Tier 2 — Verbosity Intelligence
+### Verbosity & Presentation
 
-A secondary finding from Shi et al. [[11]](#research-foundation) established that LLM verbosity bias — sycophantic openers, hedge cascades, and compressible filler — accounts for a distinct and largely unaddressed category of token waste. TraceRazor measures this with three dedicated metrics and an Aggregate Verbosity Score (AVS).
+LLM outputs often carry sycophantic openers, excessive hedging, and compressible filler — a distinct category of waste that compounds token costs without improving reasoning quality.
 
-| Code | Metric | Weight | Signal |
-|------|--------|--------|--------|
-| **VDI** | Verbosity Density Index | 9% | Substantive token ratio; preamble phrases weighted 3× |
-| **SHL** | Sycophancy/Hedging Level | 5% | Sycophantic openers or ≥ 2 hedge phrases per sentence |
-| **CCR** | Caveman Compression Ratio | 4% | Tokens removable by local compression (preamble → articles → fillers) |
+| Metric | Weight | What It Detects |
+|--------|--------|--------|
+| **Verbosity Density** (VDI) | 9% | Low-substance-per-token; filler adverbs, unnecessary articles |
+| **Sycophancy/Hedging** (SHL) | 5% | "Let me...", "I'd be happy to...", over-cautious phrasing |
+| **Compression Ratio** (CCR) | 4% | Text that compresses >30% without information loss |
 
-**AVS** = `(1 − VDI) × 0.45 + SHL × 0.30 + CCR × 0.25`. When AVS > 0.40, a `VERBOSITY ALERT` appears in the report identifying the primary driver and estimating the verbose token count.
+**Verbosity Alert:** When combined verbosity signals exceed 40%, the report flags the primary driver and estimates wasted tokens.
 
-### Reformulation Detection
+### Content Reformulation Detection
 
-Steps that open by paraphrasing their `input_context` add no information — they consume tokens restating what the agent was already given. TraceRazor detects these via bigram Jaccard overlap between a step's first sentence and its input context. Overlap ≥ 0.70 flags the step as `Reformulation` and triggers a `ReformulationGuard` fix patch.
+Steps that open by paraphrasing the user's request add no information — they consume tokens restating context the agent was already given. TraceRazor detects this by comparing a step's opening sentence against its input context via bigram overlap. Overlap ≥ 70% flags the step and triggers an automated fix suggestion.
 
-```
-first_sentence(step.content) → bigrams A
-step.input_context            → bigrams B
+### Optimization Validation
 
-Jaccard(A, B) ≥ 0.70 → StepFlag::Reformulation
-                        Fix: "Do not re-state the user's request at the
-                              start of reasoning. Proceed directly to analysis."
-```
+After applying fixes from `tracerazor optimize`, you can re-audit to measure whether the changes actually improved the trace. TraceRazor compares before and after reports, checking whether each category of fixes improved their target metric. This **Adherence Score** (target ≥75%) confirms that optimization recommendations translate to real gains — not just projected ones.
 
-A Shannon entropy pre-filter (< 3.8 bits/char) additionally flags repetitive or low-variety content inside VDI, catching structurally different but informationally empty steps.
-
-### Instruction Adherence Rate (IAR) — Metric Validation
-
-After applying fixes from `tracerazor optimize`, IAR measures the **fraction of fix types that actually improved their target metrics** when re-audited. This validates whether the optimizer's recommendations translate to real gains.
-
-**IAR Algorithm:**
-```
-before_audit = tracerazor audit trace.json → fixes[1..N] with target metrics
-after_audit  = tracerazor audit trace_optimized.json
-IAR = (# of fix types with improved metric scores) / (# of unique fix types)
-```
-
-| Fix Type | Target Metric | Improved If |
-|---|---|---|
-| `tool_schema` | TCA (Tool Call Accuracy) | TCA normalised score increases |
-| `context_compression` | CCE (Context Efficiency) | CCE normalised score increases |
-| `termination_guard` | LDI (Loop Detection) | LDI normalised score increases |
-| `prompt_insert` | RDA (Reasoning Depth) | RDA normalised score increases |
-| `verbosity_reduction` | VDI (Verbosity Density) | VDI normalised score increases |
-| `hedge_reduction` | SHL (Sycophancy/Hedging) | SHL normalised score increases (inverted) |
-| `caveman_prompt_insert` | CCR (Compression Ratio) | CCR normalised score increases (inverted) |
-| `reformulation_guard` | ISR (Info Sufficiency) | ISR normalised score increases |
-
-IAR target: **≥0.75** (3 out of 4 addressed fix types must improve). Changes < 1% are noise-filtered.
+**How it works:**
+- Run `tracerazor audit trace.json` — identifies 8 categories of waste with fix suggestions
+- Apply fixes to your agent configuration or system prompt
+- Re-run your test case with the optimized agent
+- Run `tracerazor bench --before trace.json --after trace_v2.json` to validate improvement
+- Adherence score shows what percentage of fix types delivered measurable gains
 
 ---
 
@@ -306,31 +282,35 @@ The full example code lives in
 ```mermaid
 flowchart TD
     T[Trace JSON] --> P[Parse & Ingest]
-    P --> M[Compute 13 Metrics]
+    P --> M["Compute All Signals"]
 
-    subgraph M[Compute 13 Metrics]
+    subgraph M["Structural & Semantic Analysis"]
         direction LR
-        SRR["SRR 17%\nStep Redundancy"]
-        LDI["LDI 13%\nLoop Detection"]
-        TCA["TCA 13%\nTool Accuracy"]
-        RDA["RDA 10%\nReasoning Depth"]
-        ISR["ISR 10%\nInfo Sufficiency"]
-        TUR["TUR 10%\nToken Utilisation"]
-        CCE["CCE 10%\nContext Efficiency"]
-        DBO["DBO 9%\nBranch Optimality"]
-        CSD["CSD 5%\nSemantic Drift"]
-        VDI["VDI 9%\nVerbosity Density"]
-        SHL["SHL 5%\nSycophancy Level"]
-        CCR["CCR 4%\nCompression Ratio"]
-        GAR["GAR\nGoal Advancement"]
+        S1["Step Redundancy\n17%"]
+        S2["Loop Detection\n13%"]
+        S3["Tool Accuracy\n13%"]
+        S4["Reasoning Depth\n10%"]
+        S5["Info Sufficiency\n10%"]
+        S6["Token Utilisation\n10%"]
+        S7["Context Efficiency\n10%"]
+        S8["Decision Optimality\n9%"]
+        S9["Semantic Continuity\n5%"]
     end
 
-    M --> W["Weighted Sum\n÷ weight_total"]
-    W --> TAS["TAS Score\n0–100"]
+    subgraph V["Verbosity & Presentation"]
+        direction LR
+        V1["Density\n9%"]
+        V2["Sycophancy/Hedging\n5%"]
+        V3["Compression\n4%"]
+    end
+
+    M --> W["Weighted Score\n(normalised 0–100)"]
+    V --> W
+    W --> TAS["TAS\nToken Audit Score"]
     TAS --> G["Grade\nExcellent/Good/Fair/Poor"]
 
-    VDI & SHL & CCR --> AVS["AVS\n= (1-VDI)×0.45 + SHL×0.30 + CCR×0.25"]
-    AVS -->|"> 0.40"| VA["!! VERBOSITY ALERT"]
+    V1 & V2 & V3 --> AVS["Verbosity Alert\nif combined > 0.40"]
+    AVS -.->|detects| VA["!! VERBOSITY ALERT\nwith remediation"]
 ```
 
 | Grade | TAS | Meaning |
@@ -650,11 +630,14 @@ tracerazor/
 | tracerazor-store | 9 |
 | tracerazor-server | 13 |
 | tracerazor-proxy | 12 |
-| **Total** | **116+ integration tests, all pass** |
+| **Total** | **125+, all pass** |
 
-**Recent additions:**
-- M4 (CSD): 11 unit tests covering similarity computation, reasoning-only filtering, drift pair detection
-- M5 (IAR): 11 unit tests covering fix deduplication, improvement detection, threshold logic, metric mapping
+Comprehensive coverage including:
+- Structural metric detection (redundancy, loops, tool failures, depth)
+- Verbosity analysis (density, hedging, compression)
+- Semantic drift and continuity validation
+- Optimization validation and adherence scoring
+- End-to-end integration tests across all crates
 
 ---
 
