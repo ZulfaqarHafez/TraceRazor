@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tracerazor-openai"
-version = "0.1.0"
+version = "0.2.0"
 description = "Drop-in TraceRazor-instrumented OpenAI client. Zero-friction token efficiency auditing."
 authors = [{ name = "Zulfaqar Hafez" }]
 readme = "README.md"

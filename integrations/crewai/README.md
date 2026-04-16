@@ -4,6 +4,10 @@ CrewAI callback adapter for [TraceRazor](../../README.md).
 
 Automatically captures every task execution and tool call from your CrewAI crew with zero manual instrumentation.
 
+**v0.2.0 — New Metrics:**
+- ✨ **Semantic Continuity (CSD)** — Detects when your crew's agents drift topic mid-workflow
+- ✨ **Adherence Scoring (IAR)** — After optimizing, validates that fixes actually improved metrics
+
 ## Install
 
 ```bash
@@ -77,3 +81,25 @@ Update quality score before calling `analyse()`.
 | `on_agent_action` | `reasoning` or `tool_call` |
 | `on_tool_use_start` / `on_tool_use_end` | `tool_call` (success) |
 | `on_tool_error` | `tool_call` (failure → TCA misfire) |
+
+## Multi-Agent Crews
+
+For complex workflows with multiple crews, use a separate callback for each:
+
+```python
+from tracerazor_crewai import TraceRazorCallback
+
+# Crew 1: Triage & classification
+triage_crew = Crew(agents=[triage_agent], tasks=[triage_task], 
+                   callbacks=[TraceRazorCallback(agent_name="triage-crew")])
+triage_result = triage_crew.kickoff()
+
+# Crew 2: Resolution execution
+resolution_crew = Crew(agents=[resolution_agent], tasks=[resolution_task],
+                       callbacks=[TraceRazorCallback(agent_name="resolution-crew")])
+resolution_result = resolution_crew.kickoff()
+
+# Each crew is audited independently
+```
+
+See [Multi-Agent Guide](../tracerazor/examples/MULTI_AGENT_GUIDE.md) for complete example with per-agent optimization.

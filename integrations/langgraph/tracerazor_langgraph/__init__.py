@@ -23,4 +23,4 @@ from .callback import TraceRazorCallback
 from .client import TraceRazorClient, TraceRazorReport
 
 __all__ = ["TraceRazorCallback", "TraceRazorClient", "TraceRazorReport"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"

@@ -5,6 +5,10 @@ OpenAI Agents SDK hooks adapter for [TraceRazor](../../README.md).
 Automatically captures every LLM call, tool execution, and agent handoff
 from a `Runner.run()` invocation — zero manual instrumentation required.
 
+**v0.2.0 — New Metrics:**
+- ✨ **Semantic Continuity (CSD)** — Detects when your agent's reasoning drifts topic mid-execution
+- ✨ **Adherence Scoring (IAR)** — After optimizing, validates that fixes actually improved metrics
+
 ## Install
 
 ```bash
@@ -90,3 +94,5 @@ EscalationAgent              2      400    9.5%      N/A  N/A
 ```
 
 The composite TAS is weighted by each agent's token consumption.
+
+See [Multi-Agent Guide](../tracerazor/examples/MULTI_AGENT_GUIDE.md) for detailed workflow examples with cost analysis and optimization validation.

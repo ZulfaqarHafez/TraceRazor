@@ -4,6 +4,10 @@ LangGraph/LangChain callback adapter for [TraceRazor](../../README.md).
 
 Automatically captures every LLM call and tool call from your LangGraph graph with zero manual instrumentation.
 
+**v0.2.0 — New Metrics:**
+- ✨ **Semantic Continuity (CSD)** — Detects when your agent's reasoning drifts topic mid-execution
+- ✨ **Adherence Scoring (IAR)** — After optimizing, validates that fixes actually improved metrics
+
 ## Install
 
 ```bash
@@ -69,3 +73,27 @@ Raise `AssertionError` if TAS < threshold.
 ### `callback.set_task_value_score(score: float)`
 
 Update quality score before calling `analyse()`.
+
+## Multi-Agent Workflows
+
+For workflows with multiple graphs or nodes, use a separate callback for each agent:
+
+```python
+from tracerazor_langgraph import TraceRazorCallback
+
+# Agent 1: Triage
+triage_callback = TraceRazorCallback(agent_name="triage-agent")
+triage_result = triage_graph.invoke(input, config={"callbacks": [triage_callback]})
+triage_report = triage_callback.analyse()
+
+# Agent 2: Resolution
+resolution_callback = TraceRazorCallback(agent_name="resolution-agent")
+resolution_result = resolution_graph.invoke(triage_result, config={"callbacks": [resolution_callback]})
+resolution_report = resolution_callback.analyse()
+
+# Aggregate metrics
+total_tokens = triage_report.total_tokens + resolution_report.total_tokens
+avg_efficiency = (triage_report.tas_score + resolution_report.tas_score) / 2
+```
+
+Each agent is audited independently, enabling per-agent optimization. See [Multi-Agent Guide](../tracerazor/examples/MULTI_AGENT_GUIDE.md) for complete example with cost analysis.

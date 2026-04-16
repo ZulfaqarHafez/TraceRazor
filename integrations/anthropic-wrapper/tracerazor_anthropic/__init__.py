@@ -21,4 +21,4 @@ workflow finishes, call client.audit() to get a full TAS report.
 from .client import Anthropic
 
 __all__ = ["Anthropic"]
-__version__ = "0.1.0"
+__version__ = "0.2.0"

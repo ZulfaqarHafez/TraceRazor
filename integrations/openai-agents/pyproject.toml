@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tracerazor-openai-agents"
-version = "0.1.0"
+version = "0.2.0"
 description = "TraceRazor hooks adapter for the OpenAI Agents SDK"
 authors = [{ name = "Zulfaqar Hafez" }]
 readme = "README.md"
@@ -17,7 +17,9 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Topic :: Software Development :: Libraries",
 ]
-dependencies = []
+dependencies = [
+    "tracerazor>=0.2.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/ZulfaqarHafez/tracerazor"
