@@ -9,76 +9,76 @@
 
 ## Abstract
 
-Recent work across ACL 2025, NeurIPS 2024, and KDD 2025 converges on a consistent finding: **40–70% of the tokens consumed by chain-of-thought reasoning agents are structurally redundant** — wasted on repeated steps, sycophantic preamble, reformulated context, and over-deep reasoning loops unrelated to task complexity [[1][3][10]](#research-foundation).
+Recent research (ACL 2025, NeurIPS 2024, KDD 2025) shows **40-70% of agent tokens are structurally redundant**: wasted on repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops [[1][3][10]](#research-foundation).
 
-Current observability tools (LangSmith, Langfuse, Arize) record what an agent did. None measure whether what it did was efficient, and none produce a remediation plan. The gap is not instrumentation — it is analysis.
+Current observability tools (LangSmith, Langfuse, Arize) record agent activity but don't measure efficiency or suggest fixes. The gap is not instrumentation but analysis.
 
-**TraceRazor** is an offline audit engine that reads a completed agent trace and scores it across eleven independently-validated efficiency metrics, producing a 0–100 Token Audit Score (TAS), a step-by-step optimal path diff, and machine-applicable fix patches — all without modifying the agent, requiring API keys, or adding latency to the inference path. At 50,000 runs/month, a 30% efficiency improvement on a typical support agent translates to six figures in annual savings.
+**TraceRazor** is an offline audit engine that scores completed traces across thirteen efficiency metrics, producing a 0-100 Token Audit Score (TAS), optimal path diffs, and fix patches. No agent modification, API keys, or inference latency required. At 50K runs/month, a 30% efficiency gain saves six figures annually.
 
 ---
 
 ## The Problem
 
-A production customer-support agent making 8 tool calls across 3 reasoning loops typically consumes **15,000–40,000 tokens per resolution**. Across the measured failure modes:
+A production support agent with 8 tool calls across 3 loops typically consumes **15,000-40,000 tokens per resolution**:
 
 | Pattern | Observed Frequency | Token Cost |
 |---|---|---|
-| Redundant reasoning steps (near-duplicate content) | 18–35% of traces | ~20% of tokens |
-| Sycophantic / hedging preamble | Present in >60% of LLM outputs | 5–15% of tokens per step |
-| Input context reformulation | 1–3 steps per multi-step trace | 300–800 tokens each |
-| Unnecessary reasoning depth for task complexity | ~25% of traces | 10–30% of tokens |
-| Repeated tool-call loops without new information | ~15% of traces | Full loop cost |
+| Redundant reasoning steps | 18-35% of traces | ~20% of tokens |
+| Sycophantic/hedging preamble | >60% of outputs | 5-15% per step |
+| Input context reformulation | 1-3 steps per trace | 300-800 tokens each |
+| Unnecessary reasoning depth | ~25% of traces | 10-30% of tokens |
+| Repeated tool-call loops | ~15% of traces | Full loop cost |
 
 *Sources: Han et al. [[1]](#research-foundation), Shi et al. [[11]](#research-foundation), Mohammadi et al. [[10]](#research-foundation)*
 
-Existing tools surface *that* these runs happened. They do not surface *which steps were waste* or *what the efficient version looks like*.
+Existing tools show that runs happened, not which steps wasted tokens or what efficiency looks like.
 
 ---
 
 ## What TraceRazor Measures
 
-TraceRazor decomposes agent efficiency into thirteen independent signals, each targeting a specific category of waste. Every analysis runs **offline in under 5 ms** — no model weights, no inference calls, no API keys.
+TraceRazor decomposes efficiency into thirteen signals targeting specific waste categories. All analysis runs offline in under 5ms, no model weights or API keys needed.
 
 ### Structural Efficiency
 
 | Metric | Weight | What It Detects |
 |--------|--------|--------|
-| **Step Redundancy Rate** (SRR) | 17% | Near-duplicate reasoning steps wasting context and tokens |
-| **Loop Detection Index** (LDI) | 13% | Repeated tool-call cycles that re-attempt the same action |
-| **Tool Call Accuracy** (TCA) | 13% | Tool misconfigurations causing failed calls and retries |
-| **Reasoning Depth** (RDA) | 10% | Over-deep reasoning chains for simple tasks |
-| **Information Sufficiency** (ISR) | 10% | Steps that don't contribute novel information to the solution |
-| **Token Utilisation** (TUR) | 10% | Tokens spent on task-irrelevant content |
-| **Context Efficiency** (CCE) | 10% | Duplicate context carried forward across steps |
-| **Decision Optimality** (DBO) | 9% | Tool sequences that deviate from historical best paths |
-| **Semantic Continuity** (CSD) | 5% | Agents whose reasoning drifts topic mid-trace (identifies "wandering") |
+| **Step Redundancy Rate** (SRR) | 17% | Near-duplicate steps wasting tokens |
+| **Loop Detection Index** (LDI) | 13% | Repeated tool calls re-attempting actions |
+| **Tool Call Accuracy** (TCA) | 13% | Failed tool calls and retries |
+| **Reasoning Depth** (RDA) | 10% | Over-deep reasoning for simple tasks |
+| **Information Sufficiency** (ISR) | 10% | Steps lacking novel information |
+| **Token Utilisation** (TUR) | 10% | Off-task token spending |
+| **Context Efficiency** (CCE) | 10% | Duplicate context across steps |
+| **Decision Optimality** (DBO) | 9% | Sub-optimal tool sequences |
+| **Semantic Continuity** (CSD) | 5% | Reasoning drift mid-trace |
 
 ### Verbosity & Presentation
 
-LLM outputs often carry sycophantic openers, excessive hedging, and compressible filler — a distinct category of waste that compounds token costs without improving reasoning quality.
+LLM outputs often include sycophantic openers, hedging, and compressible filler. This waste compounds token costs without improving reasoning.
 
 | Metric | Weight | What It Detects |
 |--------|--------|--------|
-| **Verbosity Density** (VDI) | 9% | Low-substance-per-token; filler adverbs, unnecessary articles |
-| **Sycophancy/Hedging** (SHL) | 5% | "Let me...", "I'd be happy to...", over-cautious phrasing |
-| **Compression Ratio** (CCR) | 4% | Text that compresses >30% without information loss |
+| **Verbosity Density** (VDI) | 9% | Filler words and low-substance content |
+| **Sycophancy/Hedging** (SHL) | 5% | Excessive politeness and caution |
+| **Compression Ratio** (CCR) | 4% | Highly compressible text |
 
-**Verbosity Alert:** When combined verbosity signals exceed 40%, the report flags the primary driver and estimates wasted tokens.
+**Verbosity Alert:** When combined signals exceed 40%, the report flags the primary driver.
 
 ### Content Reformulation Detection
 
-Steps that open by paraphrasing the user's request add no information — they consume tokens restating context the agent was already given. TraceRazor detects this by comparing a step's opening sentence against its input context via bigram overlap. Overlap ≥ 70% flags the step and triggers an automated fix suggestion.
+Steps that restate the user's request add no information. TraceRazor detects this by comparing opening sentences to input context via bigram overlap. Overlap ≥70% triggers a fix.
 
 ### Optimization Validation
 
-After applying fixes from `tracerazor optimize`, you can re-audit to measure whether the changes actually improved the trace. TraceRazor compares before and after reports, checking whether each category of fixes improved their target metric. This **Adherence Score** (target ≥75%) confirms that optimization recommendations translate to real gains — not just projected ones.
+After applying fixes, re-audit to measure actual improvement. The **Adherence Score** (target ≥75%) validates that fixes improved metrics, not just projections.
 
-**How it works:**
-- Run `tracerazor audit trace.json` — identifies 8 categories of waste with fix suggestions
-- Apply fixes to your agent configuration or system prompt
-- Re-run your test case with the optimized agent
-- Run `tracerazor bench --before trace.json --after trace_v2.json` to validate improvement
-- Adherence score shows what percentage of fix types delivered measurable gains
+Workflow:
+- Run `tracerazor audit trace.json` to identify waste and get fixes
+- Apply fixes to agent configuration or system prompt
+- Re-run your test case with optimized agent
+- Run `tracerazor bench --before trace.json --after trace_v2.json` to validate
+- Adherence score shows % of fix types that improved
 
 ---
 
@@ -160,13 +160,11 @@ tracerazor audit trace.json --threshold 75
 
 ---
 
-## End-to-end example — LangGraph customer-support agent
+## End-to-end example: LangGraph customer-support agent
 
-This walkthrough uses the `tracerazor-langgraph` integration to measure and
-then optimize a real agent. All numbers below come from running the commands
-against the traces in `benchmarks/traces/`.
+Walkthrough using `tracerazor-langgraph` to measure and optimize an agent.
 
-### Step 1 — Instrument your agent
+### Step 1: Instrument your agent
 
 ```python
 # pip install tracerazor-langgraph langgraph langchain-openai
@@ -197,7 +195,7 @@ agent.invoke(
 callback.analyse()
 ```
 
-### Step 2 — Audit the trace
+### Step 2: Audit the trace
 
 ```
 $ tracerazor audit trace.json
@@ -210,9 +208,9 @@ TAS:     69.5 / 100   [FAIR]
 Tokens:  1 710 total  |  603 wasted (35%)
 
 Issues:
-  ✗  LDI  0.43  — 1 reasoning loop (steps 2 → 4 → 6 repeat identical tool call)
-  ✗  RDA  0.21  — 7 steps used for a trivial task (expected ≤ 2)
-  ✗  CCE  0.53  — 805 duplicate tokens across context windows
+  ✗  LDI  0.43 : 1 reasoning loop (steps 2 → 4 → 6 repeat identical tool call)
+  ✗  RDA  0.21 : 7 steps used for a trivial task (expected ≤ 2)
+  ✗  CCE  0.53 : 805 duplicate tokens across context windows
 
 Fixes:
   1. [termination_guard]  "Once search_products returns results, do not
@@ -223,7 +221,7 @@ Fixes:
 Est. savings: 603 tokens/run  ·  $90/month at 50 K runs
 ```
 
-### Step 3 — Optimize the system prompt
+### Step 3: Optimize the system prompt
 
 ```bash
 export OPENAI_API_KEY=sk-...   # or ANTHROPIC_API_KEY, or TRACERAZOR_LLM_*
@@ -232,8 +230,8 @@ tracerazor optimize trace.json --output system_prompt_v2.txt --target-tas 82
 
 ```
 Optimizing 'support-agent' (TAS 69.5 → target 82.0) using gpt-4o-mini…
-  Iteration 1/3 — calling LLM… projected TAS 83.7 (+14.2), tokens -440
-  Target reached — stopping early.
+  Iteration 1/3: calling LLM… projected TAS 83.7 (+14.2), tokens -440
+  Target reached: stopping early.
 Wrote optimised prompt → system_prompt_v2.txt
 ```
 
@@ -245,10 +243,10 @@ EFFICIENCY RULES
   results for this query, use those results directly.
 • Keep reasoning to one sentence. Do not restate the user's question.
 • Summarise prior context to the last three facts before any tool call.
-• Reply immediately once the answer is known — no closing preamble.
+• Reply immediately once the answer is known: no closing preamble.
 ```
 
-### Step 4 — Re-run and verify
+### Step 4: Re-run and verify
 
 Set `system_prompt_v2.txt` as your agent's system prompt, re-run the same
 conversation, then confirm the improvement with `tracerazor bench`:
@@ -262,7 +260,7 @@ Before → After
   TAS      69.5 → 83.7   (+14.2)   ✓ MATCH estimated
   Tokens    1710 →  1270   (−440)
   Cost/run  $0.0051 → $0.0038   (−25.7%)
-  Verdict   MATCH — actual savings within 10% of estimate
+  Verdict   MATCH: actual savings within 10% of estimate
 ```
 
 | | Before | After | Delta |
@@ -364,7 +362,7 @@ Every audit produces machine-applicable fix patches tied to the specific metrics
 
 ## Anomaly Detection
 
-Twelve independent rolling baselines (TAS + eleven normalised metric scores) activate after 5 prior traces and fire at `|z| > 2.0`. Each metric is checked independently — a SHL verbosity spike surfaces in the anomaly report even when overall TAS looks normal.
+Rolling baselines detect metric regressions after 5+ traces. Fires at |z| > 2.0. Each metric checked independently.
 
 ```json
 "anomalies": [
@@ -376,32 +374,32 @@ Twelve independent rolling baselines (TAS + eleven normalised metric scores) act
 
 ## Live Guardrail Proxy
 
-TraceRazor includes a four-layer request interceptor that applies efficiency guardrails at inference time, before tokens are consumed.
+Four-layer request interceptor applies efficiency guardrails before tokens are consumed.
 
 ```mermaid
 flowchart TD
     REQ[ProxyRequest] --> L1
 
-    subgraph L1[Layer 1 — Semantic Preservation]
+    subgraph L1[Layer 1: Semantic Preservation]
         S1{similarity ≥ threshold?}
     end
-    L1 -->|No — drift| B1[Blocked / layer: 1]
+    L1 -->|No: drift| B1[Blocked / layer: 1]
     L1 -->|Yes| L2
 
-    subgraph L2[Layer 2 — Scope Whitelist]
+    subgraph L2[Layer 2: Scope Whitelist]
         S2{tool in whitelist?}
     end
     L2 -->|No| B2[Blocked / layer: 2]
     L2 -->|Yes| L3
 
-    subgraph L3[Layer 3 — Budget Injection]
+    subgraph L3[Layer 3: Budget Injection]
         S3{tokens > 75% of budget?}
     end
     S3 -->|Yes| BI[Inject budget directive]
     S3 -->|No| L4
     BI --> L4
 
-    subgraph L4[Layer 4 — Verbosity Directive]
+    subgraph L4[Layer 4: Verbosity Directive]
         S4{rolling_ccr ≥ 0.35?}
     end
     S4 -->|0.35–0.50| VI1[Standard conciseness directive]
@@ -410,7 +408,7 @@ flowchart TD
     VI1 --> APP
     VI2 --> APP
 
-    APP[Approved — modified system_prompt]
+    APP[Approved: modified system_prompt]
 ```
 
 ```rust
@@ -616,7 +614,7 @@ tracerazor/
 └── .github/                  # CI workflow + composite GitHub Action
 ```
 
-`tracerazor-core` has zero network dependencies. The semantic crate is separate so the offline path never pulls in `reqwest` — `--enhanced` activates at runtime without recompiling. Baselines accumulate in `~/.tracerazor/store` without a running server.
+`tracerazor-core` has zero network dependencies. Semantic crate is separate, so offline analysis never pulls in `reqwest`. `--enhanced` activates at runtime without recompiling.
 
 ---
 
