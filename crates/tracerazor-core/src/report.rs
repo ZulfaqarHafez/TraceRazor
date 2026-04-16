@@ -2,6 +2,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::fixes::Fix;
+use crate::iar::IarResult;
 use crate::scoring::{SavingsEstimate, TasScore};
 use crate::types::{StepFlag, Trace};
 
@@ -108,6 +109,9 @@ pub struct TraceReport {
     /// Per-agent thread breakdown (populated for multi-agent traces only).
     #[serde(default)]
     pub per_agent: Vec<AgentBreakdown>,
+    /// Instruction Adherence Rate (M5) — populated only when comparing before/after reports.
+    #[serde(default)]
+    pub iar: Option<IarResult>,
 }
 
 impl TraceReport {
@@ -519,6 +523,27 @@ impl TraceReport {
             sv.monthly_savings_usd,
             sv.latency_saved_seconds
         );
+
+        // Instruction Adherence Rate (M5)
+        if let Some(ref iar) = self.iar {
+            out += "-- Instruction Adherence (M5) ----\n";
+            out += &format!(
+                "IAR    Instruction Adherence Rate    {:.3}    ≥0.75    {}\n",
+                iar.score,
+                pass_str(iar.pass),
+            );
+            if !iar.fix_adherence.is_empty() {
+                out += &format!("       {}/{} addressed fix types improved:\n", iar.improved_count, iar.addressed_count);
+                for adherence in &iar.fix_adherence {
+                    let status = if adherence.improved { "✓" } else { "✗" };
+                    out += &format!(
+                        "         {status} {:?}  ({:+.3})\n",
+                        adherence.fix_type, adherence.delta
+                    );
+                }
+            }
+            out += &format!("{sep}\n");
+        }
 
         // Multi-agent breakdown
         if !self.per_agent.is_empty() {

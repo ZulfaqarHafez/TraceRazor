@@ -37,7 +37,7 @@ Existing tools surface *that* these runs happened. They do not surface *which st
 
 ## What TraceRazor Measures
 
-TraceRazor decomposes agent efficiency into eleven orthogonal metrics across two tiers. Every metric runs **offline in under 5 ms** — no model weights, no inference calls, no API keys.
+TraceRazor decomposes agent efficiency into thirteen orthogonal metrics across two tiers. Every metric runs **offline in under 5 ms** — no model weights, no inference calls, no API keys.
 
 ### Tier 1 — Structural & Semantic Efficiency
 
@@ -51,6 +51,7 @@ TraceRazor decomposes agent efficiency into eleven orthogonal metrics across two
 | **TUR** | Token Utilisation Ratio | 10% | Tokens attributed to task-relevant content |
 | **CCE** | Context Carry-over Efficiency | 10% | Novel tokens ÷ total input window per step |
 | **DBO** | Decision Branch Optimality | 9% | Jaccard similarity to historical optimal tool sequences |
+| **CSD** | Cross-Step Semantic Drift | 5% | Mean cosine similarity between consecutive reasoning steps (identifies "wandering" agents) |
 
 ### Tier 2 — Verbosity Intelligence
 
@@ -78,6 +79,30 @@ Jaccard(A, B) ≥ 0.70 → StepFlag::Reformulation
 ```
 
 A Shannon entropy pre-filter (< 3.8 bits/char) additionally flags repetitive or low-variety content inside VDI, catching structurally different but informationally empty steps.
+
+### Instruction Adherence Rate (IAR) — Metric Validation
+
+After applying fixes from `tracerazor optimize`, IAR measures the **fraction of fix types that actually improved their target metrics** when re-audited. This validates whether the optimizer's recommendations translate to real gains.
+
+**IAR Algorithm:**
+```
+before_audit = tracerazor audit trace.json → fixes[1..N] with target metrics
+after_audit  = tracerazor audit trace_optimized.json
+IAR = (# of fix types with improved metric scores) / (# of unique fix types)
+```
+
+| Fix Type | Target Metric | Improved If |
+|---|---|---|
+| `tool_schema` | TCA (Tool Call Accuracy) | TCA normalised score increases |
+| `context_compression` | CCE (Context Efficiency) | CCE normalised score increases |
+| `termination_guard` | LDI (Loop Detection) | LDI normalised score increases |
+| `prompt_insert` | RDA (Reasoning Depth) | RDA normalised score increases |
+| `verbosity_reduction` | VDI (Verbosity Density) | VDI normalised score increases |
+| `hedge_reduction` | SHL (Sycophancy/Hedging) | SHL normalised score increases (inverted) |
+| `caveman_prompt_insert` | CCR (Compression Ratio) | CCR normalised score increases (inverted) |
+| `reformulation_guard` | ISR (Info Sufficiency) | ISR normalised score increases |
+
+IAR target: **≥0.75** (3 out of 4 addressed fix types must improve). Changes < 1% are noise-filtered.
 
 ---
 
@@ -281,9 +306,9 @@ The full example code lives in
 ```mermaid
 flowchart TD
     T[Trace JSON] --> P[Parse & Ingest]
-    P --> M[Compute 11 Metrics]
+    P --> M[Compute 13 Metrics]
 
-    subgraph M[Compute 11 Metrics]
+    subgraph M[Compute 13 Metrics]
         direction LR
         SRR["SRR 17%\nStep Redundancy"]
         LDI["LDI 13%\nLoop Detection"]
@@ -293,9 +318,11 @@ flowchart TD
         TUR["TUR 10%\nToken Utilisation"]
         CCE["CCE 10%\nContext Efficiency"]
         DBO["DBO 9%\nBranch Optimality"]
+        CSD["CSD 5%\nSemantic Drift"]
         VDI["VDI 9%\nVerbosity Density"]
         SHL["SHL 5%\nSycophancy Level"]
         CCR["CCR 4%\nCompression Ratio"]
+        GAR["GAR\nGoal Advancement"]
     end
 
     M --> W["Weighted Sum\n÷ weight_total"]
@@ -617,13 +644,17 @@ tracerazor/
 
 | Crate | Tests |
 |---|---|
-| tracerazor-core | 61 |
+| tracerazor-core | 125 |
 | tracerazor-ingest | 3 |
 | tracerazor-semantic | 5 |
 | tracerazor-store | 9 |
 | tracerazor-server | 13 |
 | tracerazor-proxy | 12 |
-| **Total** | **109, all pass** |
+| **Total** | **116+ integration tests, all pass** |
+
+**Recent additions:**
+- M4 (CSD): 11 unit tests covering similarity computation, reasoning-only filtering, drift pair detection
+- M5 (IAR): 11 unit tests covering fix deduplication, improvement detection, threshold logic, metric mapping
 
 ---
 

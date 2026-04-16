@@ -1,6 +1,7 @@
 pub mod cost;
 pub mod fixes;
 pub mod graph;
+pub mod iar;
 pub mod metrics;
 pub mod report;
 pub mod scoring;
@@ -148,6 +149,7 @@ fn analyse_dyn(
         summary_oneliner,
         anomalies: vec![], // populated by the store layer after analysis
         per_agent,
+        iar: None, // populated by explicit IAR comparison, not during fresh analysis
     })
 }
 

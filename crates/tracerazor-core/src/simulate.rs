@@ -404,6 +404,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
         summary_oneliner: step_msg,
         anomalies: vec![],
         per_agent: vec![],
+        iar: None,
     }
 }
 

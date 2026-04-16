@@ -20,7 +20,7 @@ use crate::types::{StepFlag, Trace};
 const AVS_FIX_THRESHOLD: f64 = 0.40;
 
 /// The kind of fix generated.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum FixType {
     /// Corrected tool schema with required parameters explicitly marked.
