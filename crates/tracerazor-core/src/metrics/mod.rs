@@ -12,6 +12,7 @@ pub mod shl;
 pub mod ccr;
 pub mod reformulation;
 pub mod gar;
+pub mod csd;
 
 pub use srr::{SrrResult, SrrRedundantPair};
 pub use ldi::{LdiResult, DetectedLoop};
@@ -26,3 +27,4 @@ pub use shl::ShlResult;
 pub use ccr::{CcrResult, CcrStepResult};
 pub use reformulation::ReformulationStep;
 pub use gar::{GarResult, GarStepResult};
+pub use csd::{CsdResult, CsdStepResult};

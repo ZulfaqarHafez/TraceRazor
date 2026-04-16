@@ -393,6 +393,28 @@ impl TraceReport {
             s.gar.goal_step_id.map(|id| id.to_string()).unwrap_or_else(|| "—".into()),
         );
 
+        // Semantic path coherence (M4).
+        out += &format!("-- Semantic Path {}\n", "-".repeat(38));
+        let csd_drift_note = if s.csd.high_drift_pairs.is_empty() {
+            String::new()
+        } else {
+            format!(
+                "  [drifting pairs: {}]",
+                s.csd.high_drift_pairs.iter()
+                    .map(|(a, b)| format!("{a}→{b}"))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+        };
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}{}\n",
+            "CSD", "Cross-Step Semantic Drift",
+            format!("{:.3}", s.csd.score),
+            "≥0.60",
+            pass_str(s.csd.pass),
+            csd_drift_note,
+        );
+
         out += &format!("{sep}\n");
 
         // Summary (plain-English)

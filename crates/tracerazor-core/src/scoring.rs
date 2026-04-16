@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::metrics::{
     dbo::{DboResult, HistoricalSequence},
-    CceResult, CcrResult, GarResult, IsrResult, LdiResult, RdaResult, ShlResult, SrrResult,
+    CceResult, CcrResult, CsdResult, GarResult, IsrResult, LdiResult, RdaResult, ShlResult, SrrResult,
     TcaResult, TurResult, VdiResult,
 };
 
@@ -79,6 +79,8 @@ pub struct Weights {
     pub ccr: f64, //  3%
     // Goal advancement (M1).
     pub gar: f64, //  6%
+    // Semantic path coherence (M4).
+    pub csd: f64, //  5%
 }
 
 impl Default for Weights {
@@ -96,6 +98,7 @@ impl Default for Weights {
             shl: 0.05,
             ccr: 0.03,
             gar: 0.07,
+            csd: 0.05,
         }
     }
 }
@@ -142,6 +145,8 @@ pub struct TasScore {
     pub ccr: CcrResult,
     // Goal advancement metric (M1).
     pub gar: GarResult,
+    // Semantic path coherence (M4).
+    pub csd: CsdResult,
 }
 
 /// Configuration for the scoring engine.
@@ -176,7 +181,7 @@ impl Default for ScoringConfig {
     }
 }
 
-/// Compute the composite TAS score from all eleven metrics.
+/// Compute the composite TAS score from all twelve metrics.
 #[allow(clippy::too_many_arguments)]
 pub fn compute(
     srr: SrrResult,
@@ -191,6 +196,7 @@ pub fn compute(
     shl: ShlResult,
     ccr: CcrResult,
     gar: GarResult,
+    csd: CsdResult,
     task_value_score: f64,
     total_tokens: u32,
     config: &ScoringConfig,
@@ -210,6 +216,7 @@ pub fn compute(
     let shl_n = shl.normalised();
     let ccr_n = ccr.normalised();
     let gar_n = gar.normalised();
+    let csd_n = csd.normalised();
 
     // Sum weights so the composite remains in [0, 1] even if weights don't
     // add up to exactly 1.0.  GAR uses 7% of the composite; CCR reduced from
@@ -225,7 +232,8 @@ pub fn compute(
         + w.vdi
         + w.shl
         + w.ccr
-        + w.gar;
+        + w.gar
+        + w.csd;
 
     let weighted_sum = srr_n * w.srr
         + ldi_n * w.ldi
@@ -238,7 +246,8 @@ pub fn compute(
         + vdi_n * w.vdi
         + shl_n * w.shl
         + ccr_n * w.ccr
-        + gar_n * w.gar;
+        + gar_n * w.gar
+        + csd_n * w.csd;
 
     let raw_efficiency = weighted_sum / weight_total;
 
@@ -294,6 +303,7 @@ pub fn compute(
         shl,
         ccr,
         gar,
+        csd,
     }
 }
 
