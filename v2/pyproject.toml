@@ -3,19 +3,53 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "tracerazor-v2"
-version = "2.0.0"
-description = "Adaptive-K speculative ensembles for agent reliability"
+name = "tracerazor"
+version = "1.0.0"
+description = "Token efficiency auditing and adaptive sampling for production AI agents"
 readme = "README.md"
 license = { text = "MIT" }
+authors = [{ name = "Zulfaqar Hafez", email = "zulfaqarhafez@gmail.com" }]
 requires-python = ">=3.11"
+keywords = [
+    "ai", "agents", "llm", "token-efficiency", "observability",
+    "tracing", "adaptive-sampling", "consensus", "langgraph",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = []
 
+[project.urls]
+Homepage   = "https://github.com/ZulfaqarHafez/tracerazor"
+Repository = "https://github.com/ZulfaqarHafez/tracerazor"
+Issues     = "https://github.com/ZulfaqarHafez/tracerazor/issues"
+
 [project.optional-dependencies]
-langgraph = ["langgraph>=0.2"]
+# LLM provider adapters for sampling
 openai    = ["openai>=1.0"]
 anthropic = ["anthropic>=0.30"]
-dev       = ["pytest>=8", "pytest-asyncio>=0.23", "anyio[trio]"]
+
+# LangGraph integration for AdaptiveKNode
+langgraph = ["langgraph>=0.2"]
+
+# HTTP mode for the audit client
+http = ["requests>=2.28"]
+
+# All optional dependencies at once
+all = ["openai>=1.0", "anthropic>=0.30", "langgraph>=0.2", "requests>=2.28"]
+
+# Development dependencies
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "anyio[trio]"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["tracerazor"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
