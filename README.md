@@ -145,10 +145,11 @@ cargo build --release
 ### Python
 
 ```bash
-pip install tracerazor                  # framework-agnostic SDK
-pip install tracerazor-langgraph        # LangGraph / LangChain
-pip install tracerazor-crewai           # CrewAI
-pip install tracerazor-openai-agents    # OpenAI Agents SDK
+pip install tracerazor                      # audit + adaptive sampling
+pip install "tracerazor[openai]"            # OpenAI adapter
+pip install "tracerazor[anthropic]"         # Anthropic adapter
+pip install "tracerazor[langgraph]"         # LangGraph integration
+pip install "tracerazor[all]"               # everything
 ```
 
 ### CI gate
@@ -432,15 +433,59 @@ match proxy.intercept(&req) {
 
 ## Integrations
 
-### Python SDK
+### Python SDK — Audit
+
+Record steps manually and submit for analysis:
 
 ```python
-from tracerazor_sdk import TraceRazorClient
+from tracerazor import Tracer
 
-client = TraceRazorClient(base_url="http://localhost:8080")
-report = client.audit(trace_dict)
-print(report["tas_score"], report["grade"])
+with Tracer(agent_name="support-agent", framework="openai") as t:
+    response = llm.invoke(prompt)
+    t.reasoning(response.text, tokens=response.usage.total_tokens)
+
+    result = lookup_order(order_id="ORD-123")
+    t.tool("lookup_order", params={"order_id": "ORD-123"},
+           output=str(result), success=True, tokens=80)
+
+report = t.analyse()
+print(report.summary())
+report.assert_passes()   # raises AssertionError in CI if TAS < 70
 ```
+
+Or submit a trace dict directly:
+
+```python
+from tracerazor import TraceRazorClient
+
+client = TraceRazorClient(server="http://localhost:8080")
+report = client.analyse(trace_dict)
+print(report.tas_score, report.grade)
+```
+
+### Python SDK — Adaptive Sampling
+
+Replace your LangGraph ReAct node with `AdaptiveKNode` to sample K parallel
+candidates per step and pick the consensus winner:
+
+```python
+from tracerazor import AdaptiveKNode, openai_llm
+from openai import AsyncOpenAI
+
+llm = openai_llm(AsyncOpenAI(), model="gpt-4.1")
+node = AdaptiveKNode(llm=llm, tools=my_tools, k_max=5, k_min=2)
+
+graph = StateGraph(AgentState)
+graph.add_node("agent", node)
+```
+
+Benchmark results on tau-bench airline (50 tasks, gpt-4o):
+
+| Strategy | pass^1 | mean tokens | vs baseline |
+|---|---|---|---|
+| K=1 baseline | 38% | 63k | 1.0x |
+| AdaptiveKNode (K=5) | 46% | 246k | 3.9x |
+| SelfConsistencyBaseline (K=5) | 48% | 137k | 2.2x |
 
 ### LangGraph / LangChain
 
@@ -599,18 +644,22 @@ PORT=9090 docker compose up
 ```
 tracerazor/
 ├── crates/
-│   ├── tracerazor-core/      # 11 metrics, AVS, reformulation, scoring, fixes, reports
+│   ├── tracerazor-core/      # 13 metrics, AVS, reformulation, scoring, fixes, IAR, reports
 │   ├── tracerazor-ingest/    # Parsers: raw JSON, LangSmith, OpenTelemetry
 │   ├── tracerazor-semantic/  # BoW similarity + pluggable LLM backend (OpenAI/Anthropic/OpenAI-compatible)
 │   ├── tracerazor-store/     # SurrealDB: traces, KB, baselines, anomaly detection
 │   ├── tracerazor-server/    # Axum REST + WebSocket + embedded dashboard
 │   ├── tracerazor-proxy/     # Four-layer guardrail proxy
 │   └── tracerazor-cli/       # CLI entry point; persistent store at ~/.tracerazor/
+├── v2/
+│   └── tracerazor/           # Python package v1.0.0  (pip install tracerazor)
+│                             # Audit: Tracer, TraceRazorClient, TraceRazorReport
+│                             # Sampling: AdaptiveKNode, SelfConsistencyBaseline,
+│                             #           NaiveKEnsemble, ExactMatchConsensus
 ├── integrations/
-│   ├── tracerazor/           # Python SDK  (pip install tracerazor)
 │   ├── crewai/               # CrewAI adapter
 │   ├── openai-agents/        # OpenAI Agents SDK adapter
-│   └── langgraph/            # LangGraph / LangChain adapter
+│   └── langgraph/            # LangGraph / LangChain callback adapter
 └── .github/                  # CI workflow + composite GitHub Action
 ```
 
@@ -622,13 +671,13 @@ tracerazor/
 
 | Crate | Tests |
 |---|---|
-| tracerazor-core | 125 |
+| tracerazor-core | 116 |
 | tracerazor-ingest | 3 |
-| tracerazor-semantic | 5 |
-| tracerazor-store | 9 |
+| tracerazor-semantic | 12 |
+| tracerazor-store | 21 |
 | tracerazor-server | 13 |
-| tracerazor-proxy | 12 |
-| **Total** | **125+, all pass** |
+| tracerazor-proxy | 9 |
+| **Total** | **183, all pass** |
 
 Comprehensive coverage including:
 - Structural metric detection (redundancy, loops, tool failures, depth)
