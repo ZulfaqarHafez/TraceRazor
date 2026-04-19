@@ -1,23 +1,32 @@
 # TraceRazor
 
-**The token efficiency audit layer for production AI agents.**
+**Token efficiency auditing and adaptive sampling for production AI agents.**
 
 [![CI](https://github.com/ZulfaqarHafez/tracerazor/actions/workflows/tracerazor.yml/badge.svg)](https://github.com/ZulfaqarHafez/tracerazor/actions)
-&nbsp;·&nbsp; Apache 2.0 &nbsp;·&nbsp; Rust &nbsp;·&nbsp; Author: Zulfaqar Hafez
+[![PyPI](https://img.shields.io/pypi/v/tracerazor)](https://pypi.org/project/tracerazor/)
+&nbsp;·&nbsp; MIT &nbsp;·&nbsp; Rust + Python &nbsp;·&nbsp; Author: Zulfaqar Hafez
+
+```bash
+pip install tracerazor
+```
 
 ---
 
-## Abstract
+## What TraceRazor Does
 
-Recent research (ACL 2025, NeurIPS 2024, KDD 2025) shows **40-70% of agent tokens are structurally redundant**: wasted on repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops [[1][3][10]](#research-foundation).
+TraceRazor v1.0.0 ships two capabilities in one package.
 
-Current observability tools (LangSmith, Langfuse, Arize) record agent activity but don't measure efficiency or suggest fixes. The gap is not instrumentation but analysis.
+**Audit** your agent's completed traces. TraceRazor scores them across thirteen efficiency metrics, produces a 0-100 Token Audit Score (TAS), shows which steps wasted tokens, generates fix patches, and estimates savings. All analysis runs offline in under 5ms. No API keys or model weights needed.
 
-**TraceRazor** is an offline audit engine that scores completed traces across thirteen efficiency metrics, producing a 0-100 Token Audit Score (TAS), optimal path diffs, and fix patches. No agent modification, API keys, or inference latency required. At 50K runs/month, a 30% efficiency gain saves six figures annually.
+**Sample** more reliably at inference time. TraceRazor's `AdaptiveKNode` replaces your LangGraph ReAct node with a parallel-sampling loop that runs K candidate responses per step and picks the consensus winner. K shrinks when candidates agree (saving tokens) and resets after state-changing tool calls. On tau-bench airline benchmarks, AdaptiveK raised task success from 38% to 46% at 3.9x token cost, while Self-Consistency reached 48% at only 2.2x cost.
+
+Use one, the other, or both together.
 
 ---
 
 ## The Problem
+
+Recent research (ACL 2025, NeurIPS 2024, KDD 2025) shows **40-70% of agent tokens are structurally redundant**: wasted on repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops [[1][3][10]](#research-foundation).
 
 A production support agent with 8 tool calls across 3 loops typically consumes **15,000-40,000 tokens per resolution**:
 
@@ -31,7 +40,7 @@ A production support agent with 8 tool calls across 3 loops typically consumes *
 
 *Sources: Han et al. [[1]](#research-foundation), Shi et al. [[11]](#research-foundation), Mohammadi et al. [[10]](#research-foundation)*
 
-Existing tools show that runs happened, not which steps wasted tokens or what efficiency looks like.
+Current observability tools (LangSmith, Langfuse, Arize) record that runs happened. They do not measure efficiency, identify which steps wasted tokens, or suggest fixes. The gap is not instrumentation but analysis.
 
 ---
 
