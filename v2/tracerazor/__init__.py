@@ -30,7 +30,9 @@ from ._adaptive_k import AdaptiveKNode
 from ._adapters import anthropic_llm, mock_llm, openai_llm
 from ._consensus import BranchProposal, ConsensusResult, ExactMatchConsensus, Outcome
 from ._mutation import MutationMetadata
+from ._naive_ensemble import NaiveKEnsemble, NaiveRunResult
 from ._report import ConsensusReport, StepRecord, TokenCounts
+from ._self_consistency import SCResult, SelfConsistencyBaseline
 
 __version__ = "2.0.0"
 
@@ -39,6 +41,10 @@ __all__ = [
     "ExactMatchConsensus",
     "ConsensusReport",
     "MutationMetadata",
+    "NaiveKEnsemble",
+    "NaiveRunResult",
+    "SelfConsistencyBaseline",
+    "SCResult",
     "BranchProposal",
     "ConsensusResult",
     "Outcome",

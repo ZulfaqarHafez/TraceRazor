@@ -1,0 +1,816 @@
+{
+  "summaries": [
+    {
+      "config": "naive_k5",
+      "n_tasks": 50,
+      "seeds": 1,
+      "pass_k": 0.4,
+      "std": 0.4949,
+      "mean_tokens_per_run": 281519,
+      "mean_fresh_tokens": 67326,
+      "total_cost_tokens": 14075973
+    }
+  ],
+  "runs": [
+    {
+      "task_index": 0,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 268383,
+        "output": 4915,
+        "cached": 197376,
+        "fresh": 71007,
+        "total": 273298
+      },
+      "elapsed_s": 87.70300000000043,
+      "steps": 70,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 1,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 149011,
+        "output": 2057,
+        "cached": 116864,
+        "fresh": 32147,
+        "total": 151068
+      },
+      "elapsed_s": 47.26600000000053,
+      "steps": 44,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 2,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 535525,
+        "output": 10368,
+        "cached": 382208,
+        "fresh": 153317,
+        "total": 545893
+      },
+      "elapsed_s": 111.59400000000005,
+      "steps": 98,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 3,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 735315,
+        "output": 8167,
+        "cached": 492160,
+        "fresh": 243155,
+        "total": 743482
+      },
+      "elapsed_s": 91.21900000000005,
+      "steps": 113,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 4,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 335698,
+        "output": 5545,
+        "cached": 248064,
+        "fresh": 87634,
+        "total": 341243
+      },
+      "elapsed_s": 94.84400000000005,
+      "steps": 76,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 5,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 348863,
+        "output": 4804,
+        "cached": 255360,
+        "fresh": 93503,
+        "total": 353667
+      },
+      "elapsed_s": 106.09400000000005,
+      "steps": 86,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 6,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 327679,
+        "output": 5393,
+        "cached": 206720,
+        "fresh": 120959,
+        "total": 333072
+      },
+      "elapsed_s": 102.8119999999999,
+      "steps": 68,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 7,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 254468,
+        "output": 5303,
+        "cached": 167424,
+        "fresh": 87044,
+        "total": 259771
+      },
+      "elapsed_s": 85.96900000000005,
+      "steps": 58,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 8,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 833083,
+        "output": 12900,
+        "cached": 607616,
+        "fresh": 225467,
+        "total": 845983
+      },
+      "elapsed_s": 111.51599999999962,
+      "steps": 134,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 9,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 721583,
+        "output": 14793,
+        "cached": 510848,
+        "fresh": 210735,
+        "total": 736376
+      },
+      "elapsed_s": 119.79700000000048,
+      "steps": 118,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 10,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 288310,
+        "output": 6156,
+        "cached": 220416,
+        "fresh": 67894,
+        "total": 294466
+      },
+      "elapsed_s": 113.6880000000001,
+      "steps": 74,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 11,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 355282,
+        "output": 6888,
+        "cached": 293504,
+        "fresh": 61778,
+        "total": 362170
+      },
+      "elapsed_s": 98.90700000000015,
+      "steps": 89,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 12,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 116810,
+        "output": 2268,
+        "cached": 87936,
+        "fresh": 28874,
+        "total": 119078
+      },
+      "elapsed_s": 62.15700000000015,
+      "steps": 37,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 13,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 319535,
+        "output": 5187,
+        "cached": 238848,
+        "fresh": 80687,
+        "total": 324722
+      },
+      "elapsed_s": 133.15599999999995,
+      "steps": 74,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 14,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 181667,
+        "output": 3175,
+        "cached": 134016,
+        "fresh": 47651,
+        "total": 184842
+      },
+      "elapsed_s": 63.48400000000038,
+      "steps": 52,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 15,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 285618,
+        "output": 5999,
+        "cached": 203776,
+        "fresh": 81842,
+        "total": 291617
+      },
+      "elapsed_s": 76.17200000000048,
+      "steps": 73,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 16,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 225510,
+        "output": 1956,
+        "cached": 163072,
+        "fresh": 62438,
+        "total": 227466
+      },
+      "elapsed_s": 64.34400000000005,
+      "steps": 57,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 17,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 392594,
+        "output": 8691,
+        "cached": 295936,
+        "fresh": 96658,
+        "total": 401285
+      },
+      "elapsed_s": 131.54600000000028,
+      "steps": 85,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 18,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 272844,
+        "output": 5700,
+        "cached": 213632,
+        "fresh": 59212,
+        "total": 278544
+      },
+      "elapsed_s": 151.9380000000001,
+      "steps": 66,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 19,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 241712,
+        "output": 6291,
+        "cached": 185600,
+        "fresh": 56112,
+        "total": 248003
+      },
+      "elapsed_s": 68.95300000000043,
+      "steps": 60,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 20,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 211947,
+        "output": 3897,
+        "cached": 164480,
+        "fresh": 47467,
+        "total": 215844
+      },
+      "elapsed_s": 73.3119999999999,
+      "steps": 60,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 21,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 174065,
+        "output": 4051,
+        "cached": 125824,
+        "fresh": 48241,
+        "total": 178116
+      },
+      "elapsed_s": 65.35899999999947,
+      "steps": 48,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 22,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 197226,
+        "output": 4195,
+        "cached": 149760,
+        "fresh": 47466,
+        "total": 201421
+      },
+      "elapsed_s": 72.3130000000001,
+      "steps": 55,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 23,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 425994,
+        "output": 8851,
+        "cached": 319872,
+        "fresh": 106122,
+        "total": 434845
+      },
+      "elapsed_s": 98.48500000000058,
+      "steps": 98,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 24,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 212237,
+        "output": 4952,
+        "cached": 171008,
+        "fresh": 41229,
+        "total": 217189
+      },
+      "elapsed_s": 67.64099999999962,
+      "steps": 57,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 25,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 284029,
+        "output": 4639,
+        "cached": 228608,
+        "fresh": 55421,
+        "total": 288668
+      },
+      "elapsed_s": 78.1869999999999,
+      "steps": 64,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 26,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 261133,
+        "output": 3990,
+        "cached": 205440,
+        "fresh": 55693,
+        "total": 265123
+      },
+      "elapsed_s": 60.64100000000053,
+      "steps": 66,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 27,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 428991,
+        "output": 5460,
+        "cached": 346240,
+        "fresh": 82751,
+        "total": 434451
+      },
+      "elapsed_s": 137.28100000000086,
+      "steps": 94,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 28,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 187597,
+        "output": 3438,
+        "cached": 150784,
+        "fresh": 36813,
+        "total": 191035
+      },
+      "elapsed_s": 71.90699999999924,
+      "steps": 49,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 29,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 323073,
+        "output": 3162,
+        "cached": 251264,
+        "fresh": 71809,
+        "total": 326235
+      },
+      "elapsed_s": 71.07799999999952,
+      "steps": 72,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 30,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 325005,
+        "output": 5444,
+        "cached": 261120,
+        "fresh": 63885,
+        "total": 330449
+      },
+      "elapsed_s": 75.13999999999942,
+      "steps": 73,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 31,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 255016,
+        "output": 3234,
+        "cached": 197248,
+        "fresh": 57768,
+        "total": 258250
+      },
+      "elapsed_s": 58.96899999999914,
+      "steps": 64,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 32,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 276270,
+        "output": 6563,
+        "cached": 209024,
+        "fresh": 67246,
+        "total": 282833
+      },
+      "elapsed_s": 88.29700000000048,
+      "steps": 67,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 33,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 426490,
+        "output": 6042,
+        "cached": 348160,
+        "fresh": 78330,
+        "total": 432532
+      },
+      "elapsed_s": 96.26599999999962,
+      "steps": 93,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 34,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 415423,
+        "output": 6198,
+        "cached": 329088,
+        "fresh": 86335,
+        "total": 421621
+      },
+      "elapsed_s": 106.625,
+      "steps": 89,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 35,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 126393,
+        "output": 3056,
+        "cached": 98560,
+        "fresh": 27833,
+        "total": 129449
+      },
+      "elapsed_s": 77.5630000000001,
+      "steps": 38,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 36,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 124126,
+        "output": 2920,
+        "cached": 99584,
+        "fresh": 24542,
+        "total": 127046
+      },
+      "elapsed_s": 107.75,
+      "steps": 37,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 37,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 116920,
+        "output": 2068,
+        "cached": 95616,
+        "fresh": 21304,
+        "total": 118988
+      },
+      "elapsed_s": 59.95300000000134,
+      "steps": 35,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 38,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 71319,
+        "output": 1322,
+        "cached": 59392,
+        "fresh": 11927,
+        "total": 72641
+      },
+      "elapsed_s": 39.9380000000001,
+      "steps": 25,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 39,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 216831,
+        "output": 3770,
+        "cached": 179328,
+        "fresh": 37503,
+        "total": 220601
+      },
+      "elapsed_s": 107.125,
+      "steps": 59,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 40,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 219254,
+        "output": 2496,
+        "cached": 174336,
+        "fresh": 44918,
+        "total": 221750
+      },
+      "elapsed_s": 50.79700000000048,
+      "steps": 57,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 41,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 85493,
+        "output": 1450,
+        "cached": 62592,
+        "fresh": 22901,
+        "total": 86943
+      },
+      "elapsed_s": 32.70299999999952,
+      "steps": 28,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 42,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 79113,
+        "output": 1450,
+        "cached": 63744,
+        "fresh": 15369,
+        "total": 80563
+      },
+      "elapsed_s": 34.0619999999999,
+      "steps": 26,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 43,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 84895,
+        "output": 1368,
+        "cached": 66944,
+        "fresh": 17951,
+        "total": 86263
+      },
+      "elapsed_s": 33.51499999999942,
+      "steps": 28,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 44,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 70328,
+        "output": 934,
+        "cached": 52736,
+        "fresh": 17592,
+        "total": 71262
+      },
+      "elapsed_s": 44.65600000000086,
+      "steps": 23,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 45,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 117931,
+        "output": 1966,
+        "cached": 94720,
+        "fresh": 23211,
+        "total": 119897
+      },
+      "elapsed_s": 48.70300000000134,
+      "steps": 39,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 46,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 487054,
+        "output": 5926,
+        "cached": 401536,
+        "fresh": 85518,
+        "total": 492980
+      },
+      "elapsed_s": 98.9369999999999,
+      "steps": 114,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 47,
+      "seed": 0,
+      "reward": 0.0,
+      "passed": false,
+      "tokens": {
+        "input": 145937,
+        "output": 2305,
+        "cached": 105856,
+        "fresh": 40081,
+        "total": 148242
+      },
+      "elapsed_s": 50.48400000000038,
+      "steps": 43,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 48,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 208056,
+        "output": 2710,
+        "cached": 164864,
+        "fresh": 43192,
+        "total": 210766
+      },
+      "elapsed_s": 76.5,
+      "steps": 54,
+      "config": "naive_k5"
+    },
+    {
+      "task_index": 49,
+      "seed": 0,
+      "reward": 1.0,
+      "passed": true,
+      "tokens": {
+        "input": 92254,
+        "output": 1670,
+        "cached": 74496,
+        "fresh": 17758,
+        "total": 93924
+      },
+      "elapsed_s": 32.875,
+      "steps": 30,
+      "config": "naive_k5"
+    }
+  ]
+}

@@ -23,3 +23,10 @@ build/
 
 # Claude local settings
 .claude/
+
+# Benchmark result JSONs — ignore intermediates, keep canonical 50-task runs
+v2/results/*.json
+!v2/results/tau_bench_all50.json
+!v2/results/tau_bench_adaptive_k5_50t.json
+!v2/results/tau_bench_sc_k5_50t.json
+!v2/results/tau_bench_naive_k5_50t.json
