@@ -107,7 +107,7 @@ from ._self_consistency import SCResult, SelfConsistencyBaseline
 # LLM adapters
 from ._adapters import anthropic_llm, mock_llm, openai_llm
 
-__version__ = "1.0.0"
+__version__ = "1.0.1"
 __author__ = "Zulfaqar Hafez"
 
 __all__ = [

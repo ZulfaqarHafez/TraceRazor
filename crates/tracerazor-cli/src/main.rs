@@ -1112,7 +1112,7 @@ async fn cmd_optimize(
 
     // ── 5. Build waste summary for the LLM ──────────────────────────────────
     let mut fixes_by_savings = report.fixes.clone();
-    fixes_by_savings.sort_by(|a, b| b.estimated_token_savings.cmp(&a.estimated_token_savings));
+    fixes_by_savings.sort_by_key(|b| std::cmp::Reverse(b.estimated_token_savings));
     let waste_summary = build_waste_summary(&report, &fixes_by_savings);
 
     // ── 6. Derive simulation spec from the diff ──────────────────────────────

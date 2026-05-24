@@ -93,7 +93,11 @@ class TraceRazorClient:
                 raise RuntimeError(
                     f"tracerazor exited with code {result.returncode}:\n{result.stderr}"
                 )
-            return self._parse(json.loads(result.stdout), threshold)
+            stdout = result.stdout.strip()
+            if not stdout:
+                notice = result.stderr.strip() or "tracerazor returned no output"
+                raise RuntimeError(f"tracerazor produced no JSON output: {notice}")
+            return self._parse(json.loads(stdout), threshold)
         finally:
             try:
                 os.unlink(tmp_path)

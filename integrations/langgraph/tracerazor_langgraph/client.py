@@ -113,8 +113,11 @@ class TraceRazorClient:
                 raise RuntimeError(
                     f"tracerazor exited with code {result.returncode}:\n{result.stderr}"
                 )
-
-            report_json = json.loads(result.stdout)
+            stdout = result.stdout.strip()
+            if not stdout:
+                notice = result.stderr.strip() or "tracerazor returned no output"
+                raise RuntimeError(f"tracerazor produced no JSON output: {notice}")
+            report_json = json.loads(stdout)
             return self._parse_report(report_json, threshold)
 
         finally:

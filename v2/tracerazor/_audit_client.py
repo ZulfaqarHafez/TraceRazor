@@ -183,7 +183,12 @@ class TraceRazorClient:
                 raise RuntimeError(
                     f"tracerazor exited with code {result.returncode}:\n{result.stderr}"
                 )
-            data = json.loads(result.stdout)
+            stdout = result.stdout.strip()
+            if not stdout:
+                # CLI emitted a notice (e.g. too few steps) but no JSON — surface it.
+                notice = result.stderr.strip() or "tracerazor returned no output"
+                raise RuntimeError(f"tracerazor produced no JSON output: {notice}")
+            data = json.loads(stdout)
             return self._parse_cli_report(data)
         finally:
             try:
