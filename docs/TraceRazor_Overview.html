@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TraceRazor - Product Overview</title>
+<style>
+  @page { size: A4; margin: 1.5cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; color: #1a1a2e; line-height: 1.6; max-width: 900px; margin: 0 auto; padding: 40px 30px; background: #fff; }
+  h1 { font-size: 2.2em; color: #0f0f23; margin-bottom: 4px; }
+  h2 { font-size: 1.5em; color: #16213e; margin: 36px 0 14px; border-bottom: 2px solid #e94560; padding-bottom: 6px; }
+  h3 { font-size: 1.15em; color: #0f3460; margin: 20px 0 8px; }
+  p { margin-bottom: 12px; font-size: 0.95em; }
+  .subtitle { color: #555; font-size: 1.05em; margin-bottom: 24px; }
+  .badge { display: inline-block; background: #e94560; color: #fff; padding: 3px 10px; border-radius: 4px; font-size: 0.8em; font-weight: 600; margin-right: 6px; }
+  .badge.rust { background: #b7410e; }
+  .badge.python { background: #306998; }
+  .badge.green { background: #2e7d32; }
+
+  /* Cards */
+  .card-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0; }
+  .card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background: #fafbfc; }
+  .card h4 { font-size: 0.95em; color: #0f3460; margin-bottom: 6px; }
+  .card p { font-size: 0.85em; margin-bottom: 0; color: #444; }
+  .card-full { grid-column: 1 / -1; }
+
+  /* Tables */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.88em; }
+  th { background: #16213e; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; }
+  tr:nth-child(even) { background: #f8f9fa; }
+  tr:hover { background: #eef1f6; }
+
+  /* SVG Charts */
+  .chart-container { text-align: center; margin: 20px 0; }
+  .chart-container svg { max-width: 100%; }
+
+  /* Code */
+  code { background: #f0f0f0; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; font-family: 'Cascadia Code', 'Fira Code', monospace; }
+  pre { background: #1a1a2e; color: #e8e8e8; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 12px 0; font-size: 0.85em; line-height: 1.5; }
+  pre code { background: none; padding: 0; color: inherit; }
+
+  /* Flow diagrams */
+  .flow { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 20px 0; flex-wrap: wrap; }
+  .flow-box { background: #16213e; color: #fff; padding: 10px 16px; border-radius: 6px; font-size: 0.85em; font-weight: 600; text-align: center; min-width: 100px; }
+  .flow-box.accent { background: #e94560; }
+  .flow-box.light { background: #fff; color: #16213e; border: 2px solid #16213e; }
+  .flow-arrow { font-size: 1.4em; color: #888; }
+
+  /* Highlights */
+  .highlight-box { background: linear-gradient(135deg, #16213e, #0f3460); color: #fff; padding: 20px; border-radius: 10px; margin: 20px 0; }
+  .highlight-box h3 { color: #fff; margin-top: 0; }
+  .highlight-box p { color: #ddd; }
+  .stat-row { display: flex; gap: 20px; margin-top: 12px; }
+  .stat { text-align: center; flex: 1; }
+  .stat .num { font-size: 1.8em; font-weight: 700; color: #e94560; }
+  .stat .label { font-size: 0.8em; color: #aaa; }
+
+  /* Page breaks for PDF */
+  .page-break { page-break-before: always; }
+
+  /* Print */
+  @media print {
+    body { padding: 0; }
+    .highlight-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .flow-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ====== COVER ====== -->
+<h1>TraceRazor</h1>
+<p class="subtitle">Token efficiency audit layer for production AI agents</p>
+<p>
+  <span class="badge rust">Rust</span>
+  <span class="badge python">Python SDK</span>
+  <span class="badge green">v0.2.0</span>
+  <span class="badge">Apache 2.0</span>
+</p>
+
+<div class="highlight-box">
+  <h3>The Core Insight</h3>
+  <p>40-70% of tokens consumed by AI agents are structurally redundant. TraceRazor finds the waste and tells you exactly how to fix it.</p>
+  <div class="stat-row">
+    <div class="stat"><div class="num">13</div><div class="label">Efficiency Metrics</div></div>
+    <div class="stat"><div class="num">&lt;5ms</div><div class="label">Analysis Time</div></div>
+    <div class="stat"><div class="num">0</div><div class="label">API Keys Needed</div></div>
+    <div class="stat"><div class="num">8</div><div class="label">Auto-Fix Types</div></div>
+  </div>
+</div>
+
+<p>TraceRazor reads a completed agent trace (JSON), scores it across thirteen efficiency metrics, and outputs a 0-100 <strong>Token Audit Score (TAS)</strong> with fix patches. No agent modification required. Everything runs offline.</p>
+
+<!-- ====== HOW IT WORKS ====== -->
+<h2>How It Works</h2>
+
+<div class="flow">
+  <div class="flow-box light">Agent Trace<br><small>(JSON)</small></div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box">Parse &amp; Ingest</div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box accent">13 Metrics</div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box">Weighted Score</div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box light">TAS 0-100<br><small>+ Fixes</small></div>
+</div>
+
+<p>The pipeline takes a raw trace from any agent framework (LangGraph, CrewAI, OpenAI Agents, or custom), computes all metrics locally, and produces a graded report with actionable fix patches and savings estimates.</p>
+
+<table>
+  <tr><th>Grade</th><th>TAS Range</th><th>Meaning</th></tr>
+  <tr><td><strong>Excellent</strong></td><td>90-100</td><td>Minimal recoverable waste</td></tr>
+  <tr><td><strong>Good</strong></td><td>70-89</td><td>Minor addressable inefficiency</td></tr>
+  <tr><td><strong>Fair</strong></td><td>50-69</td><td>Significant structural waste</td></tr>
+  <tr><td><strong>Poor</strong></td><td>0-49</td><td>Fundamental issues, restructure needed</td></tr>
+</table>
+
+<!-- ====== METRICS ====== -->
+<h2 class="page-break">The 13 Metrics</h2>
+<p>Each metric targets a specific category of token waste. All normalised to 0-1 (higher = better) before being combined into the TAS composite score.</p>
+
+<!-- SVG Pie Chart of Weights -->
+<div class="chart-container">
+<svg viewBox="0 0 500 280" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pie chart -->
+  <g transform="translate(140,140)">
+    <!-- SRR 14.2% -->
+    <circle r="120" fill="none" stroke="#e94560" stroke-width="32" stroke-dasharray="89.2 539.4" stroke-dashoffset="0" opacity="0.95"/>
+    <!-- LDI 10.8% -->
+    <circle r="120" fill="none" stroke="#533483" stroke-width="32" stroke-dasharray="67.9 560.7" stroke-dashoffset="-89.2" opacity="0.95"/>
+    <!-- TCA 10.8% -->
+    <circle r="120" fill="none" stroke="#0f3460" stroke-width="32" stroke-dasharray="67.9 560.7" stroke-dashoffset="-157.1" opacity="0.95"/>
+    <!-- RDA 8.3% -->
+    <circle r="120" fill="none" stroke="#16213e" stroke-width="32" stroke-dasharray="52.3 576.3" stroke-dashoffset="-225" opacity="0.95"/>
+    <!-- ISR 8.3% -->
+    <circle r="120" fill="none" stroke="#1a1a2e" stroke-width="32" stroke-dasharray="52.3 576.3" stroke-dashoffset="-277.3" opacity="0.85"/>
+    <!-- TUR 8.3% -->
+    <circle r="120" fill="none" stroke="#2e86ab" stroke-width="32" stroke-dasharray="52.3 576.3" stroke-dashoffset="-329.6" opacity="0.95"/>
+    <!-- CCE 8.3% -->
+    <circle r="120" fill="none" stroke="#a23b72" stroke-width="32" stroke-dasharray="52.3 576.3" stroke-dashoffset="-381.9" opacity="0.95"/>
+    <!-- DBO 7.5% -->
+    <circle r="120" fill="none" stroke="#f18f01" stroke-width="32" stroke-dasharray="47.1 581.5" stroke-dashoffset="-434.2" opacity="0.95"/>
+    <!-- VDI 6.7% -->
+    <circle r="120" fill="none" stroke="#c73e1d" stroke-width="32" stroke-dasharray="41.8 586.8" stroke-dashoffset="-481.3" opacity="0.95"/>
+    <!-- GAR 5.8% -->
+    <circle r="120" fill="none" stroke="#3b1f2b" stroke-width="32" stroke-dasharray="36.7 591.9" stroke-dashoffset="-523.1" opacity="0.95"/>
+    <!-- CSD 4.2% -->
+    <circle r="120" fill="none" stroke="#44bba4" stroke-width="32" stroke-dasharray="26.2 602.4" stroke-dashoffset="-559.8" opacity="0.95"/>
+    <!-- SHL 4.2% -->
+    <circle r="120" fill="none" stroke="#e7bb41" stroke-width="32" stroke-dasharray="26.2 602.4" stroke-dashoffset="-586" opacity="0.95"/>
+    <!-- CCR 2.5% -->
+    <circle r="120" fill="none" stroke="#8d6b94" stroke-width="32" stroke-dasharray="15.7 613.9" stroke-dashoffset="-612.2" opacity="0.95"/>
+    <!-- Center -->
+    <circle r="80" fill="#fff"/>
+    <text x="0" y="-8" text-anchor="middle" font-size="22" font-weight="700" fill="#16213e">TAS</text>
+    <text x="0" y="16" text-anchor="middle" font-size="12" fill="#666">0-100</text>
+  </g>
+  <!-- Legend -->
+  <g transform="translate(290, 18)" font-size="11" fill="#333">
+    <rect x="0" y="0" width="10" height="10" fill="#e94560" rx="2"/><text x="16" y="9">SRR  Step Redundancy</text>
+    <rect x="0" y="18" width="10" height="10" fill="#533483" rx="2"/><text x="16" y="27">LDI  Loop Detection</text>
+    <rect x="0" y="36" width="10" height="10" fill="#0f3460" rx="2"/><text x="16" y="45">TCA  Tool Accuracy</text>
+    <rect x="0" y="54" width="10" height="10" fill="#16213e" rx="2"/><text x="16" y="63">RDA  Reasoning Depth</text>
+    <rect x="0" y="72" width="10" height="10" fill="#1a1a2e" rx="2"/><text x="16" y="81">ISR  Info Sufficiency</text>
+    <rect x="0" y="90" width="10" height="10" fill="#2e86ab" rx="2"/><text x="16" y="99">TUR  Token Utilisation</text>
+    <rect x="0" y="108" width="10" height="10" fill="#a23b72" rx="2"/><text x="16" y="117">CCE  Context Efficiency</text>
+    <rect x="0" y="126" width="10" height="10" fill="#f18f01" rx="2"/><text x="16" y="135">DBO  Decision Optimality</text>
+    <rect x="0" y="144" width="10" height="10" fill="#c73e1d" rx="2"/><text x="16" y="153">VDI  Verbosity Density</text>
+    <rect x="0" y="162" width="10" height="10" fill="#3b1f2b" rx="2"/><text x="16" y="171">GAR  Goal Advancement</text>
+    <rect x="0" y="180" width="10" height="10" fill="#44bba4" rx="2"/><text x="16" y="189">CSD  Semantic Continuity</text>
+    <rect x="0" y="198" width="10" height="10" fill="#e7bb41" rx="2"/><text x="16" y="207">SHL  Sycophancy/Hedging</text>
+    <rect x="0" y="216" width="10" height="10" fill="#8d6b94" rx="2"/><text x="16" y="225">CCR  Compression Ratio</text>
+  </g>
+</svg>
+</div>
+
+<h3>Structural Metrics (9)</h3>
+<table>
+  <tr><th>Code</th><th>Metric</th><th>Detects</th><th>Target</th></tr>
+  <tr><td><strong>SRR</strong></td><td>Step Redundancy Rate</td><td>Near-duplicate steps via BoW Jaccard similarity</td><td>&lt;15%</td></tr>
+  <tr><td><strong>LDI</strong></td><td>Loop Detection Index</td><td>Repeated tool-call cycles</td><td>&lt;0.10</td></tr>
+  <tr><td><strong>TCA</strong></td><td>Tool Call Accuracy</td><td>Failed tool calls and retries</td><td>&gt;85%</td></tr>
+  <tr><td><strong>RDA</strong></td><td>Reasoning Depth</td><td>Over-deep reasoning for task complexity</td><td>&gt;0.75</td></tr>
+  <tr><td><strong>ISR</strong></td><td>Information Sufficiency</td><td>Steps lacking novel information</td><td>&gt;80%</td></tr>
+  <tr><td><strong>TUR</strong></td><td>Token Utilisation</td><td>Off-task token spending</td><td>&gt;0.35</td></tr>
+  <tr><td><strong>CCE</strong></td><td>Context Efficiency</td><td>Duplicate context across steps</td><td>&gt;0.60</td></tr>
+  <tr><td><strong>DBO</strong></td><td>Decision Optimality</td><td>Sub-optimal tool sequences</td><td>&gt;0.70</td></tr>
+  <tr><td><strong>CSD</strong></td><td>Semantic Continuity</td><td>Reasoning drift mid-trace</td><td>&ge;0.60</td></tr>
+</table>
+
+<h3>Verbosity Metrics (3)</h3>
+<table>
+  <tr><th>Code</th><th>Metric</th><th>Detects</th><th>Target</th></tr>
+  <tr><td><strong>VDI</strong></td><td>Verbosity Density</td><td>Filler words, low-substance content</td><td>&gt;0.60</td></tr>
+  <tr><td><strong>SHL</strong></td><td>Sycophancy/Hedging</td><td>Excessive politeness and caution</td><td>&lt;0.20</td></tr>
+  <tr><td><strong>CCR</strong></td><td>Compression Ratio</td><td>Highly compressible text</td><td>&lt;0.30</td></tr>
+</table>
+
+<h3>Goal Advancement (1)</h3>
+<table>
+  <tr><th>Code</th><th>Metric</th><th>Detects</th><th>Target</th></tr>
+  <tr><td><strong>GAR</strong></td><td>Goal Advancement Ratio</td><td>Steps that don't advance toward the goal</td><td>&ge;0.40</td></tr>
+</table>
+
+<!-- ====== AUTO-FIXES ====== -->
+<h2 class="page-break">Auto-Fix Generation</h2>
+<p>When a metric fails, TraceRazor generates a targeted fix patch with estimated token savings. Eight fix types cover all common waste patterns:</p>
+
+<!-- Fix type visual -->
+<div class="chart-container">
+<svg viewBox="0 0 520 310" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#888"/></marker>
+  </defs>
+  <!-- Left column: Triggers -->
+  <g font-size="11" font-weight="600">
+    <rect x="10" y="10" width="140" height="30" rx="5" fill="#e94560"/><text x="80" y="30" text-anchor="middle" fill="#fff">TCA Misfire</text>
+    <rect x="10" y="50" width="140" height="30" rx="5" fill="#533483"/><text x="80" y="70" text-anchor="middle" fill="#fff">CCE Bloat</text>
+    <rect x="10" y="90" width="140" height="30" rx="5" fill="#0f3460"/><text x="80" y="110" text-anchor="middle" fill="#fff">LDI Loop</text>
+    <rect x="10" y="130" width="140" height="30" rx="5" fill="#16213e"/><text x="80" y="150" text-anchor="middle" fill="#fff">RDA Over-Depth</text>
+    <rect x="10" y="170" width="140" height="30" rx="5" fill="#c73e1d"/><text x="80" y="190" text-anchor="middle" fill="#fff">VDI Fail + AVS</text>
+    <rect x="10" y="210" width="140" height="30" rx="5" fill="#e7bb41"/><text x="80" y="230" text-anchor="middle" fill="#1a1a2e">SHL Fail + AVS</text>
+    <rect x="10" y="250" width="140" height="30" rx="5" fill="#8d6b94"/><text x="80" y="270" text-anchor="middle" fill="#fff">CCR Fail + AVS</text>
+    <rect x="10" y="290" width="140" height="30" rx="5" fill="#44bba4"/><text x="80" y="310" text-anchor="middle" fill="#fff">Reformulation Flag</text>
+  </g>
+  <!-- Arrows -->
+  <g stroke="#888" stroke-width="1.5" fill="none">
+    <line x1="155" y1="25" x2="210" y2="25" marker-end="url(#arrow)"/>
+    <line x1="155" y1="65" x2="210" y2="65" marker-end="url(#arrow)"/>
+    <line x1="155" y1="105" x2="210" y2="105" marker-end="url(#arrow)"/>
+    <line x1="155" y1="145" x2="210" y2="145" marker-end="url(#arrow)"/>
+    <line x1="155" y1="185" x2="210" y2="185" marker-end="url(#arrow)"/>
+    <line x1="155" y1="225" x2="210" y2="225" marker-end="url(#arrow)"/>
+    <line x1="155" y1="265" x2="210" y2="265" marker-end="url(#arrow)"/>
+    <line x1="155" y1="305" x2="210" y2="305" marker-end="url(#arrow)"/>
+  </g>
+  <!-- Right column: Fix Types -->
+  <g font-size="11" font-weight="600">
+    <rect x="215" y="10" width="170" height="30" rx="5" fill="#f8f9fa" stroke="#ccc"/><text x="300" y="30" text-anchor="middle" fill="#333">tool_schema</text>
+    <rect x="215" y="50" width="170" height="30" rx="5" fill="#f8f9fa" stroke="#ccc"/><text x="300" y="70" text-anchor="middle" fill="#333">context_compression</text>
+    <rect x="215" y="90" width="170" height="30" rx="5" fill="#f8f9fa" stroke="#ccc"/><text x="300" y="110" text-anchor="middle" fill="#333">termination_guard</text>
+    <rect x="215" y="130" width="170" height="30" rx="5" fill="#f8f9fa" stroke="#ccc"/><text x="300" y="150" text-anchor="middle" fill="#333">prompt_insert</text>
+    <rect x="215" y="170" width="170" height="30" rx="5" fill="#f8f9fa" stroke="#ccc"/><text x="300" y="190" text-anchor="middle" fill="#333">verbosity_reduction</text>
+    <rect x="215" y="210" width="170" height="30" rx="5" fill="#f8f9fa" stroke="#ccc"/><text x="300" y="230" text-anchor="middle" fill="#333">hedge_reduction</text>
+    <rect x="215" y="250" width="170" height="30" rx="5" fill="#f8f9fa" stroke="#ccc"/><text x="300" y="270" text-anchor="middle" fill="#333">caveman_prompt_insert</text>
+    <rect x="215" y="290" width="170" height="30" rx="5" fill="#f8f9fa" stroke="#ccc"/><text x="300" y="310" text-anchor="middle" fill="#333">reformulation_guard</text>
+  </g>
+  <!-- Second arrows -->
+  <g stroke="#888" stroke-width="1.5" fill="none">
+    <line x1="390" y1="25" x2="415" y2="25" marker-end="url(#arrow)"/>
+    <line x1="390" y1="65" x2="415" y2="65" marker-end="url(#arrow)"/>
+    <line x1="390" y1="105" x2="415" y2="105" marker-end="url(#arrow)"/>
+    <line x1="390" y1="145" x2="415" y2="145" marker-end="url(#arrow)"/>
+    <line x1="390" y1="185" x2="415" y2="185" marker-end="url(#arrow)"/>
+    <line x1="390" y1="225" x2="415" y2="225" marker-end="url(#arrow)"/>
+    <line x1="390" y1="265" x2="415" y2="265" marker-end="url(#arrow)"/>
+    <line x1="390" y1="305" x2="415" y2="305" marker-end="url(#arrow)"/>
+  </g>
+  <!-- Target column -->
+  <g font-size="10" fill="#666">
+    <text x="425" y="30">Fix tool schema</text>
+    <text x="425" y="70">Summarise context</text>
+    <text x="425" y="110">Break loop</text>
+    <text x="425" y="150">Add step-count rule</text>
+    <text x="425" y="190">Remove filler</text>
+    <text x="425" y="230">Strip preamble</text>
+    <text x="425" y="270">Ultra-concise mode</text>
+    <text x="425" y="310">Skip re-stating</text>
+  </g>
+</svg>
+</div>
+
+<!-- ====== OPTIMIZATION VALIDATION ====== -->
+<h2>Optimization Validation (IAR)</h2>
+<p>After applying fixes and re-running your agent, the <strong>Adherence Score</strong> checks whether each fix type actually improved its target metric.</p>
+
+<div class="flow">
+  <div class="flow-box light">Audit #1<br><small>Identify waste</small></div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box accent">Apply Fixes</div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box light">Audit #2<br><small>Re-run agent</small></div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box">Compare</div>
+  <div class="flow-arrow">&#8594;</div>
+  <div class="flow-box accent">Adherence<br>Score ≥75%</div>
+</div>
+
+<table>
+  <tr><th>Fix Type</th><th>Validates Against</th></tr>
+  <tr><td>tool_schema</td><td>TCA (Tool Accuracy) improved</td></tr>
+  <tr><td>context_compression</td><td>CCE (Context Efficiency) improved</td></tr>
+  <tr><td>termination_guard</td><td>LDI (Loop Detection) improved</td></tr>
+  <tr><td>prompt_insert</td><td>RDA (Reasoning Depth) improved</td></tr>
+  <tr><td>verbosity_reduction</td><td>VDI (Verbosity Density) improved</td></tr>
+  <tr><td>hedge_reduction</td><td>SHL (Sycophancy) improved</td></tr>
+  <tr><td>caveman_prompt_insert</td><td>CCR (Compression) improved</td></tr>
+  <tr><td>reformulation_guard</td><td>ISR (Information Sufficiency) improved</td></tr>
+</table>
+
+<!-- ====== ARCHITECTURE ====== -->
+<h2 class="page-break">Architecture</h2>
+
+<div class="card-grid">
+  <div class="card">
+    <h4>tracerazor-core</h4>
+    <p>13 metrics, scoring engine, fix generation, reports. Zero network dependencies. This is where all analysis happens.</p>
+  </div>
+  <div class="card">
+    <h4>tracerazor-ingest</h4>
+    <p>Parsers for raw JSON, LangSmith, and OpenTelemetry trace formats. Converts any format to the internal Trace struct.</p>
+  </div>
+  <div class="card">
+    <h4>tracerazor-semantic</h4>
+    <p>Bag-of-words similarity backend. Optional LLM embeddings (OpenAI, Anthropic, or compatible) for enhanced mode.</p>
+  </div>
+  <div class="card">
+    <h4>tracerazor-store</h4>
+    <p>SurrealDB persistence: traces, known-good-paths, baselines, and anomaly detection rolling windows.</p>
+  </div>
+  <div class="card">
+    <h4>tracerazor-server</h4>
+    <p>Axum REST API + WebSocket live events + embedded React dashboard. Serves the full UI at port 8080.</p>
+  </div>
+  <div class="card">
+    <h4>tracerazor-proxy</h4>
+    <p>Four-layer guardrail interceptor: semantic preservation, scope whitelist, budget injection, verbosity directive.</p>
+  </div>
+  <div class="card">
+    <h4>tracerazor-cli</h4>
+    <p>CLI entry point: <code>audit</code>, <code>optimize</code>, <code>bench</code>, <code>simulate</code>, <code>compare</code>, <code>cost</code>, <code>export</code>.</p>
+  </div>
+  <div class="card">
+    <h4>Python Integrations</h4>
+    <p>SDK (<code>pip install tracerazor</code>) + adapters for LangGraph, CrewAI, and OpenAI Agents. All on PyPI v0.2.0.</p>
+  </div>
+</div>
+
+<!-- Architecture flow -->
+<div class="chart-container">
+<svg viewBox="0 0 520 180" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a2" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#888"/></marker></defs>
+  <!-- Agent -->
+  <rect x="10" y="60" width="80" height="50" rx="6" fill="#f8f9fa" stroke="#ccc" stroke-width="1.5"/>
+  <text x="50" y="82" text-anchor="middle" font-size="10" font-weight="600" fill="#333">Your Agent</text>
+  <text x="50" y="98" text-anchor="middle" font-size="8" fill="#888">(any framework)</text>
+  <!-- Arrow -->
+  <line x1="95" y1="85" x2="130" y2="85" stroke="#888" stroke-width="1.5" marker-end="url(#a2)"/>
+  <!-- Ingest -->
+  <rect x="135" y="60" width="70" height="50" rx="6" fill="#16213e"/>
+  <text x="170" y="82" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Ingest</text>
+  <text x="170" y="96" text-anchor="middle" font-size="7" fill="#aaa">Parse trace</text>
+  <!-- Arrow -->
+  <line x1="210" y1="85" x2="230" y2="85" stroke="#888" stroke-width="1.5" marker-end="url(#a2)"/>
+  <!-- Core -->
+  <rect x="235" y="40" width="100" height="90" rx="6" fill="#e94560"/>
+  <text x="285" y="68" text-anchor="middle" font-size="10" font-weight="700" fill="#fff">Core Engine</text>
+  <text x="285" y="84" text-anchor="middle" font-size="8" fill="#fdd">13 Metrics</text>
+  <text x="285" y="97" text-anchor="middle" font-size="8" fill="#fdd">Scoring</text>
+  <text x="285" y="110" text-anchor="middle" font-size="8" fill="#fdd">Fix Generation</text>
+  <!-- Arrow to Report -->
+  <line x1="340" y1="65" x2="370" y2="50" stroke="#888" stroke-width="1.5" marker-end="url(#a2)"/>
+  <!-- Arrow to Store -->
+  <line x1="340" y1="105" x2="370" y2="120" stroke="#888" stroke-width="1.5" marker-end="url(#a2)"/>
+  <!-- Report -->
+  <rect x="375" y="25" width="90" height="45" rx="6" fill="#f8f9fa" stroke="#ccc" stroke-width="1.5"/>
+  <text x="420" y="44" text-anchor="middle" font-size="9" font-weight="600" fill="#333">Report</text>
+  <text x="420" y="58" text-anchor="middle" font-size="7" fill="#888">TAS + Fixes + Savings</text>
+  <!-- Store -->
+  <rect x="375" y="100" width="90" height="45" rx="6" fill="#0f3460"/>
+  <text x="420" y="119" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Store</text>
+  <text x="420" y="133" text-anchor="middle" font-size="7" fill="#aaa">Baselines + KB</text>
+  <!-- Arrow to Server -->
+  <line x1="470" y1="122" x2="490" y2="122" stroke="#888" stroke-width="1.5" marker-end="url(#a2)"/>
+  <!-- Semantic -->
+  <rect x="235" y="145" width="100" height="30" rx="4" fill="#533483" opacity="0.8"/>
+  <text x="285" y="165" text-anchor="middle" font-size="8" font-weight="600" fill="#fff">Semantic (optional)</text>
+  <!-- Arrow from Semantic to Core -->
+  <line x1="285" y1="145" x2="285" y2="135" stroke="#888" stroke-width="1" stroke-dasharray="3" marker-end="url(#a2)"/>
+</svg>
+</div>
+
+<!-- ====== CLI ====== -->
+<h2>CLI Commands</h2>
+<table>
+  <tr><th>Command</th><th>Purpose</th></tr>
+  <tr><td><code>tracerazor audit</code></td><td>Score a trace; optionally gate on <code>--threshold</code></td></tr>
+  <tr><td><code>tracerazor optimize</code></td><td>Rewrite system prompt via LLM to eliminate detected waste</td></tr>
+  <tr><td><code>tracerazor bench</code></td><td>Compare before/after traces, verify savings</td></tr>
+  <tr><td><code>tracerazor simulate</code></td><td>Project TAS impact of removing/merging steps</td></tr>
+  <tr><td><code>tracerazor compare</code></td><td>Side-by-side metric delta between two traces</td></tr>
+  <tr><td><code>tracerazor cost</code></td><td>Monthly savings estimate across trace set</td></tr>
+  <tr><td><code>tracerazor export</code></td><td>Forward trace to OTEL or webhook</td></tr>
+</table>
+
+<!-- ====== INTEGRATIONS ====== -->
+<h2>Python Integrations</h2>
+<p>All published to PyPI v0.2.0. Each wraps the core analysis engine with framework-native callbacks.</p>
+
+<div class="card-grid">
+  <div class="card">
+    <h4>tracerazor (SDK)</h4>
+    <p><code>pip install tracerazor</code><br>Framework-agnostic. Use <code>Tracer</code> context manager with any Python agent.</p>
+  </div>
+  <div class="card">
+    <h4>tracerazor-langgraph</h4>
+    <p><code>pip install tracerazor-langgraph</code><br>Native <code>BaseCallbackHandler</code>. Auto-captures LLM and tool events.</p>
+  </div>
+  <div class="card">
+    <h4>tracerazor-crewai</h4>
+    <p><code>pip install tracerazor-crewai</code><br>CrewAI callback adapter. Traces tasks, agent actions, and tool calls.</p>
+  </div>
+  <div class="card">
+    <h4>tracerazor-openai-agents</h4>
+    <p><code>pip install tracerazor-openai-agents</code><br>OpenAI <code>RunHooks</code> adapter. Captures agent ends, tool use, handoffs.</p>
+  </div>
+</div>
+
+<!-- ====== MULTI-AGENT ====== -->
+<h2 class="page-break">Multi-Agent Support</h2>
+<p>Each agent in a workflow gets its own tracer and independent report. Aggregate metrics across all agents for workflow-level visibility.</p>
+
+<div class="chart-container">
+<svg viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+  <defs><marker id="a3" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto"><polygon points="0 0, 10 3.5, 0 7" fill="#888"/></marker></defs>
+  <!-- Query -->
+  <rect x="10" y="80" width="70" height="40" rx="5" fill="#f8f9fa" stroke="#ccc"/>
+  <text x="45" y="100" text-anchor="middle" font-size="9" font-weight="600">Query</text>
+  <text x="45" y="112" text-anchor="middle" font-size="7" fill="#888">User input</text>
+  <line x1="85" y1="100" x2="105" y2="100" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
+  <!-- Triage -->
+  <rect x="110" y="75" width="80" height="50" rx="6" fill="#e94560"/>
+  <text x="150" y="96" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Triage</text>
+  <text x="150" y="112" text-anchor="middle" font-size="7" fill="#fdd">TAS: 82</text>
+  <line x1="195" y1="100" x2="215" y2="100" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
+  <!-- Resolution -->
+  <rect x="220" y="75" width="80" height="50" rx="6" fill="#0f3460"/>
+  <text x="260" y="96" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Resolution</text>
+  <text x="260" y="112" text-anchor="middle" font-size="7" fill="#aaa">TAS: 74</text>
+  <!-- Branch -->
+  <line x1="305" y1="90" x2="330" y2="55" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
+  <line x1="305" y1="110" x2="330" y2="145" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
+  <!-- Escalation -->
+  <rect x="335" y="30" width="80" height="50" rx="6" fill="#533483"/>
+  <text x="375" y="51" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Escalation</text>
+  <text x="375" y="67" text-anchor="middle" font-size="7" fill="#ccc">TAS: 79</text>
+  <!-- Knowledge -->
+  <rect x="335" y="120" width="80" height="50" rx="6" fill="#44bba4"/>
+  <text x="375" y="141" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Knowledge</text>
+  <text x="375" y="157" text-anchor="middle" font-size="7" fill="#dff">TAS: 88</text>
+  <!-- Aggregate -->
+  <line x1="420" y1="55" x2="445" y2="100" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
+  <line x1="420" y1="145" x2="445" y2="100" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
+  <rect x="450" y="75" width="40" height="50" rx="6" fill="#16213e"/>
+  <text x="470" y="96" text-anchor="middle" font-size="8" font-weight="700" fill="#e94560">80.8</text>
+  <text x="470" y="112" text-anchor="middle" font-size="7" fill="#aaa">Avg TAS</text>
+</svg>
+</div>
+
+<!-- ====== BENCHMARKS ====== -->
+<h2>Benchmark Results</h2>
+<p>5 synthetic traces, each isolating a waste pattern. Run with <code>python benchmarks/run_benchmarks.py</code>.</p>
+
+<!-- Bar chart -->
+<div class="chart-container">
+<svg viewBox="0 0 480 200" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(100,10)">
+    <!-- Y axis labels -->
+    <text x="-8" y="18" text-anchor="end" font-size="9" fill="#333">bloated</text>
+    <text x="-8" y="53" text-anchor="end" font-size="9" fill="#333">clean</text>
+    <text x="-8" y="88" text-anchor="end" font-size="9" fill="#333">looping</text>
+    <text x="-8" y="123" text-anchor="end" font-size="9" fill="#333">reformulator</text>
+    <text x="-8" y="158" text-anchor="end" font-size="9" fill="#333">verbose</text>
+    <!-- Bars -->
+    <rect x="0" y="6" width="316" height="22" rx="3" fill="#e94560" opacity="0.85"/>
+    <text x="322" y="22" font-size="9" font-weight="600" fill="#333">87.9</text>
+    <rect x="0" y="41" width="322" height="22" rx="3" fill="#e94560" opacity="0.85"/>
+    <text x="328" y="57" font-size="9" font-weight="600" fill="#333">89.4</text>
+    <rect x="0" y="76" width="250" height="22" rx="3" fill="#f18f01" opacity="0.85"/>
+    <text x="256" y="92" font-size="9" font-weight="600" fill="#333">69.4</text>
+    <rect x="0" y="111" width="312" height="22" rx="3" fill="#e94560" opacity="0.85"/>
+    <text x="318" y="127" font-size="9" font-weight="600" fill="#333">86.9</text>
+    <rect x="0" y="146" width="277" height="22" rx="3" fill="#2e86ab" opacity="0.85"/>
+    <text x="283" y="162" font-size="9" font-weight="600" fill="#333">77.1</text>
+    <!-- Scale -->
+    <line x1="0" y1="175" x2="360" y2="175" stroke="#ccc" stroke-width="1"/>
+    <text x="0" y="190" font-size="8" fill="#888">0</text>
+    <text x="180" y="190" font-size="8" fill="#888" text-anchor="middle">50</text>
+    <text x="360" y="190" font-size="8" fill="#888" text-anchor="end">100 TAS</text>
+  </g>
+</svg>
+</div>
+
+<table>
+  <tr><th>Trace</th><th>TAS</th><th>Grade</th><th>Tokens</th><th>Waste</th><th>Savings</th><th>Fixes</th></tr>
+  <tr><td>bloated-agent</td><td>87.9</td><td>Good</td><td>2,320</td><td>30%</td><td>693</td><td>2</td></tr>
+  <tr><td>clean-agent</td><td>89.4</td><td>Good</td><td>860</td><td>34%</td><td>289</td><td>1</td></tr>
+  <tr><td>looping-agent</td><td>69.4</td><td>Fair</td><td>1,710</td><td>35%</td><td>603</td><td>3</td></tr>
+  <tr><td>reformulator-agent</td><td>86.9</td><td>Good</td><td>1,340</td><td>32%</td><td>433</td><td>1</td></tr>
+  <tr><td>verbose-agent</td><td>77.1</td><td>Good</td><td>2,760</td><td>53%</td><td>1,455</td><td>2</td></tr>
+</table>
+
+<div class="highlight-box">
+  <h3>Summary</h3>
+  <div class="stat-row">
+    <div class="stat"><div class="num">82.1</div><div class="label">Average TAS</div></div>
+    <div class="stat"><div class="num">8,990</div><div class="label">Total Tokens</div></div>
+    <div class="stat"><div class="num">3,473</div><div class="label">Tokens Saveable (39%)</div></div>
+    <div class="stat"><div class="num">125+</div><div class="label">Tests Passing</div></div>
+  </div>
+</div>
+
+<!-- ====== TEST COVERAGE ====== -->
+<h2>Test Coverage</h2>
+<table>
+  <tr><th>Crate</th><th>Tests</th><th>Covers</th></tr>
+  <tr><td>tracerazor-core</td><td>125</td><td>All 13 metrics, scoring, fixes, IAR, simulation, reports</td></tr>
+  <tr><td>tracerazor-ingest</td><td>3</td><td>Raw JSON, LangSmith, OTEL parsers</td></tr>
+  <tr><td>tracerazor-semantic</td><td>5</td><td>BoW similarity, tokenization</td></tr>
+  <tr><td>tracerazor-store</td><td>9</td><td>CRUD, baselines, anomaly detection</td></tr>
+  <tr><td>tracerazor-server</td><td>13</td><td>REST API endpoints, WebSocket</td></tr>
+  <tr><td>tracerazor-proxy</td><td>12</td><td>All 4 proxy layers</td></tr>
+</table>
+
+<!-- ====== QUICK START ====== -->
+<h2 class="page-break">Quick Start</h2>
+
+<h3>Option 1: Docker</h3>
+<pre><code>git clone https://github.com/ZulfaqarHafez/tracerazor
+cd tracerazor
+docker compose up --build
+# Dashboard at http://localhost:8080</code></pre>
+
+<h3>Option 2: Cargo</h3>
+<pre><code>cargo build --release
+./target/release/tracerazor audit trace.json</code></pre>
+
+<h3>Option 3: Python</h3>
+<pre><code>pip install tracerazor
+
+from tracerazor_sdk import Tracer
+
+with Tracer(agent_name="my-agent") as t:
+    t.reasoning("Analyzing request...", tokens=200)
+    t.tool("search", params={}, output="result", success=True, tokens=150)
+
+report = t.analyse()
+print(report.summary())
+# TAS 78.5/100 [GOOD] | 4 steps, 350 tokens | Saved 90 tokens (26%)</code></pre>
+
+<h3>CI/CD Gate</h3>
+<pre><code>tracerazor audit trace.json --threshold 75
+# Exit code 1 if TAS &lt; 75</code></pre>
+
+<!-- ====== FOOTER ====== -->
+<hr style="margin-top: 40px; border: none; border-top: 2px solid #e94560;">
+<p style="text-align: center; color: #888; font-size: 0.85em; margin-top: 14px;">
+  <strong>TraceRazor v0.2.0</strong> | Apache 2.0 | Author: Zulfaqar Hafez<br>
+  github.com/ZulfaqarHafez/tracerazor
+</p>
+
+</body>
+</html>
