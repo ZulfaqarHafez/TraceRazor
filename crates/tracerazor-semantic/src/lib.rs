@@ -1,6 +1,6 @@
 /// Semantic similarity engine for TraceRazor.
 ///
-/// Phase 1: TF-IDF bag-of-words cosine similarity (fully offline, no API key).
+/// Phase 1: Term-frequency bag-of-words cosine similarity (fully offline, no API key).
 /// Phase 2: Dense sentence embeddings via a pluggable LLM backend — OpenAI,
 ///          Anthropic (chat only), or any OpenAI-compatible endpoint (Ollama,
 ///          vLLM, Azure OpenAI, OpenRouter, Groq, Together, LM Studio, …).

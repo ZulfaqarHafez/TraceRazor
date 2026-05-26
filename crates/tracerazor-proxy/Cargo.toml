@@ -3,7 +3,7 @@ name = "tracerazor-proxy"
 version = "0.1.0"
 edition = "2021"
 description = "TraceRazor LLM proxy — guardrail system, context compression, budget injection"
-license = "Apache-2.0"
+license = "MIT"
 
 [dependencies]
 tracerazor-core = { path = "../tracerazor-core" }

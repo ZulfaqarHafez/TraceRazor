@@ -17,7 +17,7 @@ cargo build --workspace
 cargo test --workspace
 ```
 
-All 102+ tests should pass with zero clippy warnings:
+All 190+ tests should pass with zero clippy warnings:
 
 ```bash
 cargo clippy --workspace -- -D warnings
@@ -81,4 +81,4 @@ Use [GitHub Issues](https://github.com/ZulfaqarHafez/tracerazor/issues). Include
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under Apache 2.0.
+By contributing, you agree that your contributions will be licensed under the MIT License.

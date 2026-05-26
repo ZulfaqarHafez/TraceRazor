@@ -3,7 +3,7 @@ name = "tracerazor-store"
 version = "0.1.0"
 edition = "2021"
 description = "Persistent trace storage for TraceRazor using SurrealDB"
-license = "Apache-2.0"
+license = "MIT"
 
 [dependencies]
 tracerazor-core = { path = "../tracerazor-core" }

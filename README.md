@@ -645,14 +645,15 @@ tracerazor/
 
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 116 |
+| tracerazor-core | 117 |
 | tracerazor-ingest | 3 |
-| tracerazor-semantic | 12 |
+| tracerazor-semantic | 21 |
 | tracerazor-store | 21 |
 | tracerazor-server | 13 |
 | tracerazor-proxy | 9 |
+| tracerazor-cli (integration) | 9 |
 | Python v2 (pytest) | 9 suites |
-| **Total Rust** | **183, all pass** |
+| **Total Rust** | **193, all pass** |
 
 ---
 

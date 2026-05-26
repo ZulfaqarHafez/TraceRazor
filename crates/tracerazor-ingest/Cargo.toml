@@ -3,7 +3,7 @@ name = "tracerazor-ingest"
 version = "0.1.0"
 edition = "2021"
 description = "Trace format parsers for TraceRazor (raw JSON, LangSmith, OTEL)"
-license = "Apache-2.0"
+license = "MIT"
 
 [dependencies]
 tracerazor-core = { path = "../tracerazor-core" }

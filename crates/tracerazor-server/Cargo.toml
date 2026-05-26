@@ -3,7 +3,7 @@ name = "tracerazor-server"
 version = "0.1.0"
 edition = "2021"
 description = "TraceRazor Axum HTTP server — REST API and WebSocket for the dashboard"
-license = "Apache-2.0"
+license = "MIT"
 
 [[bin]]
 name = "tracerazor-server"

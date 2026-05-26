@@ -3,7 +3,7 @@ name = "tracerazor"
 version = "0.1.0"
 edition = "2021"
 description = "TraceRazor CLI — Agentic Reasoning Path Efficiency Auditor"
-license = "Apache-2.0"
+license = "MIT"
 default-run = "tracerazor"
 
 [[bin]]
@@ -22,3 +22,8 @@ tokio = { workspace = true }
 clap = { version = "4", features = ["derive"] }
 reqwest = { workspace = true }
 dotenvy = "0.15"
+
+[dev-dependencies]
+assert_cmd = "2"
+predicates = "3"
+tempfile = "3"
