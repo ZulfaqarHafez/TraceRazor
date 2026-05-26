@@ -233,6 +233,8 @@ impl TraceReport {
             "TRACERAZOR SCORE:  {:.0} / 100  [{}]{}\n\
              VAE SCORE:         {:.2}\n\
              MVTG:              {:.1}%  (trace is {:.1}% above minimum viable token count)\n\
+             Note: TAS is an *ordinal* heuristic score — compare runs within one\n\
+             project over time, not as an absolute efficiency percentage.\n\
              {sep}\n",
             s.score, s.grade, tvi_note,
             s.vae,
