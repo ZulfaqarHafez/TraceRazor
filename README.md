@@ -239,6 +239,29 @@ tracerazor optimize trace.json --output system_prompt_v2.txt --target-tas 82
 tracerazor bench --before trace.json --after trace_v2.json
 ```
 
+### Audits on Real Public Agent Trajectories
+
+We ran TraceRazor's audit over **24 real public agent runs** sourced from
+two well-known benchmarks — τ-bench (Sierra Research) and SWE-agent
+(Princeton NLP) — to calibrate expectations against artefacts you have
+likely already seen.
+
+| Model | Domain | n | Avg TAS | Avg step redundancy |
+|---|---|---|---|---|
+| GPT-4o | τ-bench airline | 5 | **53** (Fair/Poor) | **36%** |
+| GPT-4o | τ-bench retail | 5 | 85 (Good) | 14% |
+| Claude Sonnet 3.5 (new) | τ-bench airline | 5 | 67 (Fair) | **41%** |
+| Claude Sonnet 3.5 (new) | τ-bench retail | 5 | 81 (Good) | 17% |
+| SWE-agent (4 prompt variants) | marshmallow#1867 | 4 | 70 (Good/Fair) | 22% |
+
+Highlights: GPT-4o's worst airline trace scores 47/100 with **57% step
+redundancy**; SWE-agent's XML prompt variant uses ~52% fewer tokens than
+the cursors variant for the same successful patch. Full table, methodology,
+and the 24 converted trace JSONs live at
+[`docs/external_agent_audits.md`](docs/external_agent_audits.md) and
+[`traces/external/`](traces/external/). Converters in
+[`tools/`](tools/).
+
 ---
 
 ## Pillar 2 — Adaptive Sampling
