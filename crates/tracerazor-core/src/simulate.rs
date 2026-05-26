@@ -335,6 +335,9 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
                 original_tokens: 0,
                 compressed_tokens: 0,
                 ratio: 0.0,
+                wordlist_ratio: 0.0,
+                gzip_excess: 0.0,
+                ngram_repetition: 0.0,
             })
             .collect(),
         total_cuttable_tokens: 0,
