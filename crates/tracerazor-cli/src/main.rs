@@ -25,7 +25,7 @@ async fn open_store() -> TraceStore {
             .ok()?;
         let dir = PathBuf::from(home).join(".tracerazor");
         std::fs::create_dir_all(&dir).ok()?;
-        Some(dir.join("store"))
+        Some(dir.join("store.db"))
     })();
 
     if let Some(p) = path {

@@ -1,16 +1,15 @@
-/// Known-Good-Paths (KGP) Knowledge Base.
-///
-/// When a trace scores ≥ `KGP_CAPTURE_THRESHOLD` (default 85), its optimal
-/// execution path is stored here. Future traces by the same agent are matched
-/// against the KB and shown a "this looks like run X that scored 94 — here's
-/// the path it took" hint.
-///
-/// Storage: a separate `kb_entries` table in the same SurrealDB instance.
-///
-/// Note: the `kb_id` field is stored as content (not as the SurrealDB record
-/// ID field), which avoids the Thing-vs-String deserialisation conflict.
-use anyhow::Result;
+//! Known-Good-Paths (KGP) Knowledge Base.
+//!
+//! When a trace scores ≥ `KGP_CAPTURE_THRESHOLD` (default 85), its optimal
+//! execution path is stored here. Future traces by the same agent are matched
+//! against the KB and shown a "this looks like run X that scored 94 — here's
+//! the path it took" hint.
+//!
+//! Storage: a `kb_entries` table in the same SQLite database as `traces`.
+
+use anyhow::{Context, Result};
 use chrono::Utc;
+use rusqlite::OptionalExtension;
 use serde::{Deserialize, Serialize};
 
 use super::TraceStore;
@@ -32,12 +31,9 @@ pub struct KgpStep {
 }
 
 /// One KB entry — a high-scoring trace's optimal path.
-///
-/// `kb_id` is stored as regular content (not as `id`) so it survives
-/// SurrealDB's record-ID deserialization without a Thing conflict.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KgpEntry {
-    /// UUID assigned at capture time. Used as the SurrealDB record key.
+    /// UUID assigned at capture time. Used as the row primary key.
     pub kb_id: String,
     pub source_trace_id: String,
     pub agent_name: String,
@@ -65,19 +61,34 @@ pub struct KgpMatch {
 impl TraceStore {
     // ── Write ──────────────────────────────────────────────────────────────
 
-    /// Store a KGP entry. Uses the entry's `kb_id` as the SurrealDB record key.
+    /// Store a KGP entry. Uses the entry's `kb_id` as the row primary key.
     pub async fn save_kb_entry(&self, entry: &KgpEntry) -> Result<()> {
-        let _: Option<KgpEntry> = self
-            .db
-            .upsert(("kb_entries", entry.kb_id.as_str()))
-            .content(entry.clone())
-            .await?;
+        let id = entry.kb_id.clone();
+        let json = serde_json::to_string(entry).context("serialise KgpEntry")?;
+        self.conn
+            .call(move |c| {
+                c.execute(
+                    "INSERT INTO kb_entries (id, data) VALUES (?1, ?2) \
+                     ON CONFLICT(id) DO UPDATE SET data = excluded.data",
+                    rusqlite::params![id, json],
+                )?;
+                Ok(())
+            })
+            .await
+            .context("save_kb_entry")?;
         Ok(())
     }
 
     /// Delete a KB entry by its UUID.
     pub async fn delete_kb_entry(&self, id: &str) -> Result<()> {
-        let _: Option<KgpEntry> = self.db.delete(("kb_entries", id)).await?;
+        let id = id.to_string();
+        self.conn
+            .call(move |c| {
+                c.execute("DELETE FROM kb_entries WHERE id = ?1", rusqlite::params![id])?;
+                Ok(())
+            })
+            .await
+            .context("delete_kb_entry")?;
         Ok(())
     }
 
@@ -85,7 +96,20 @@ impl TraceStore {
 
     /// List all KB entries.
     pub async fn list_kb_entries(&self) -> Result<Vec<KgpEntry>> {
-        Ok(self.db.select("kb_entries").await?)
+        let raws: Vec<String> = self
+            .conn
+            .call(|c| {
+                let mut stmt = c.prepare("SELECT data FROM kb_entries")?;
+                let rows = stmt
+                    .query_map([], |r| r.get::<_, String>(0))?
+                    .collect::<std::result::Result<Vec<_>, _>>()?;
+                Ok(rows)
+            })
+            .await
+            .context("list_kb_entries")?;
+        raws.into_iter()
+            .map(|s| serde_json::from_str::<KgpEntry>(&s).context("deserialise KgpEntry"))
+            .collect()
     }
 
     /// List KB entries for a specific agent.
@@ -96,7 +120,27 @@ impl TraceStore {
 
     /// Get a single KB entry by its UUID.
     pub async fn get_kb_entry(&self, id: &str) -> Result<Option<KgpEntry>> {
-        Ok(self.db.select(("kb_entries", id)).await?)
+        let id = id.to_string();
+        let raw: Option<String> = self
+            .conn
+            .call(move |c| {
+                let row = c
+                    .query_row(
+                        "SELECT data FROM kb_entries WHERE id = ?1",
+                        rusqlite::params![id],
+                        |r| r.get::<_, String>(0),
+                    )
+                    .optional()?;
+                Ok(row)
+            })
+            .await
+            .context("get_kb_entry")?;
+        match raw {
+            Some(s) => Ok(Some(
+                serde_json::from_str(&s).context("deserialise KgpEntry")?,
+            )),
+            None => Ok(None),
+        }
     }
 }
 

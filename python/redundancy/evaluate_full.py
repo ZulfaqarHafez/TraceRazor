@@ -679,7 +679,7 @@ def write_findings(
         "",
         "```python",
         "import sys, pandas as pd",
-        "sys.path.insert(0, 'src')",
+        "sys.path.insert(0, 'python')",
         "from redundancy.substitutability import build_features",
         "",
         "# pair to evaluate",

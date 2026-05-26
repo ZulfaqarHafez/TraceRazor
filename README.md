@@ -405,7 +405,7 @@ python -m redundancy.evaluate_full --results-dir results --test-run run_v3
 
 ```python
 import sys, pandas as pd
-sys.path.insert(0, 'src')
+sys.path.insert(0, 'python')
 from redundancy.substitutability import build_features, train, evaluate, load_labels, split_by_run
 
 df = load_labels("results")
@@ -606,7 +606,7 @@ tracerazor/
 │   ├── tracerazor-core/       # 13 metrics, TAS scoring, fix generation, IAR
 │   ├── tracerazor-ingest/     # Parsers: raw JSON, LangSmith, OpenTelemetry
 │   ├── tracerazor-semantic/   # BoW similarity + LLM backend (OpenAI / Anthropic / compatible)
-│   ├── tracerazor-store/      # SurrealDB: traces, KB, baselines, anomaly detection
+│   ├── tracerazor-store/      # SQLite: traces, KB, baselines, anomaly detection
 │   ├── tracerazor-server/     # Axum REST + WebSocket + embedded dashboard
 │   ├── tracerazor-proxy/      # Four-layer guardrail proxy
 │   └── tracerazor-cli/        # CLI entry point; persistent store at ~/.tracerazor/
@@ -620,7 +620,7 @@ tracerazor/
 │   ├── _consensus.py          # ExactMatchConsensus, BranchProposal, Outcome
 │   └── _adapters.py           # openai_llm, anthropic_llm, mock_llm
 │
-├── src/redundancy/            # Substitutability classifier (PRD v5)
+├── python/redundancy/         # Substitutability classifier (PRD v5)
 │   ├── substitutability.py    # load_labels, build_features, train, evaluate, decide
 │   ├── generate_data.py       # Synthetic transcript generator (Anthropic API)
 │   └── evaluate_full.py       # 5-fold CV, bootstrap CI, PR curves, confusion matrices
@@ -645,15 +645,15 @@ tracerazor/
 
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 117 |
+| tracerazor-core | 126 |
 | tracerazor-ingest | 3 |
 | tracerazor-semantic | 21 |
-| tracerazor-store | 21 |
+| tracerazor-store | 10 |
 | tracerazor-server | 13 |
-| tracerazor-proxy | 9 |
+| tracerazor-proxy | 12 |
 | tracerazor-cli (integration) | 9 |
 | Python v2 (pytest) | 9 suites |
-| **Total Rust** | **193, all pass** |
+| **Total Rust** | **194, all pass** |
 
 ---
 

@@ -50,7 +50,7 @@ COPY --from=builder /build/target/release/tracerazor ./
 COPY --from=dashboard /build/dashboard/dist ./dashboard/dist
 COPY traces/ ./traces/
 
-# Data directory for the persistent SurrealDB file.
+# Data directory for the persistent SQLite database file.
 RUN mkdir -p /app/data
 
 ENV TRACERAZOR_DB_PATH=/app/data/tracerazor.db

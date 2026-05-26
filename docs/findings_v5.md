@@ -459,7 +459,7 @@ python -m redundancy.evaluate_full --results-dir results --test-run run_v3
 
 ```python
 import sys, pandas as pd
-sys.path.insert(0, 'src')
+sys.path.insert(0, 'python')
 from redundancy.substitutability import build_features
 
 # pair to evaluate
