@@ -16,7 +16,7 @@ The SDK hook protocol (openai-agents >= 0.0.3):
 
 Usage::
 
-    from tracerazor_openai_agents import TraceRazorHooks
+    from tracerazor.integrations.openai_agents import TraceRazorHooks
     from agents import Agent, Runner
 
     hooks = TraceRazorHooks(agent_name="support-agent", threshold=70)
@@ -36,7 +36,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from .client import TraceRazorClient, TraceRazorReport
+from tracerazor import TraceRazorClient, TraceRazorReport
 
 
 class TraceRazorHooks:

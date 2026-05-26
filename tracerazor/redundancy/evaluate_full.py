@@ -33,19 +33,19 @@ from sklearn.metrics import (
     precision_recall_curve,
     roc_auc_score,
 )
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedGroupKFold, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 _HERE = Path(__file__).parent
-_REPO = _HERE.parent.parent
-sys.path.insert(0, str(_HERE.parent))
+# tracerazor/redundancy/evaluate_full.py → repo root is three parents up.
+_REPO = _HERE.parent.parent.parent
 
-from redundancy.substitutability import (
+from .substitutability import (
+    _feature_names,
     build_features,
     load_labels,
     split_by_run,
-    _feature_names,
 )
 
 
@@ -206,10 +206,24 @@ def evaluate_config(
 
     feat_names = _feature_names(tier, X_train.shape[1])
 
-    # Cross-validation
-    skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
+    # Cross-validation. When the training set carries `template_id` we use
+    # StratifiedGroupKFold so a template never appears in both train and val —
+    # otherwise the val AUC measures memorisation of template paraphrases
+    # rather than generalisation. Without template_id we fall back to plain
+    # StratifiedKFold for backward compatibility with older JSONL records.
+    groups = (
+        df_train["template_id"].to_numpy()
+        if "template_id" in df_train.columns
+        else None
+    )
+    if groups is not None and len(set(groups)) >= n_folds:
+        skf = StratifiedGroupKFold(n_splits=n_folds, shuffle=True, random_state=42)
+        fold_iter = skf.split(X_train, y_train, groups=groups)
+    else:
+        skf = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=42)
+        fold_iter = skf.split(X_train, y_train)
     cv_roc, cv_pr = [], []
-    for fold_i, (tr_idx, val_idx) in enumerate(skf.split(X_train, y_train)):
+    for fold_i, (tr_idx, val_idx) in enumerate(fold_iter):
         pipe = _make_logreg() if model_tier == "logreg" else _make_gbm()
         pipe.fit(X_train[tr_idx], y_train[tr_idx])
         ys = pipe.predict_proba(X_train[val_idx])[:, 1]
@@ -678,9 +692,8 @@ def write_findings(
         "## Inference Snippet",
         "",
         "```python",
-        "import sys, pandas as pd",
-        "sys.path.insert(0, 'python')",
-        "from redundancy.substitutability import build_features",
+        "import pandas as pd",
+        "from tracerazor.redundancy.substitutability import build_features",
         "",
         "# pair to evaluate",
         "df = pd.DataFrame([{",
@@ -734,6 +747,27 @@ def main() -> None:
             f"  [{verdict}] CV ROC={result.cv_auc_roc_mean:.4f}±{result.cv_auc_roc_std:.4f} "
             f"Test ROC={result.test_auc_roc:.4f} "
             f"P={result.optimal_precision:.1%} R={result.optimal_recall:.1%}"
+        )
+
+    # ── Shuffled-label negative-control baseline ──────────────────────────────
+    # If real AUC stays much higher than the shuffled-label AUC, the model is
+    # learning a real signal. If they sit at the same level, the "real" run
+    # is also recovering distribution memorisation rather than substitutability.
+    print("\n" + "=" * 60)
+    print("Negative-control baseline: shuffle labels (signal should collapse)")
+    print("=" * 60)
+    rng = np.random.default_rng(0)
+    df_train_shuf = df_train.copy()
+    df_test_shuf = df_test.copy()
+    df_train_shuf["label"] = rng.permutation(df_train_shuf["label"].to_numpy())
+    df_test_shuf["label"] = rng.permutation(df_test_shuf["label"].to_numpy())
+    for model_tier, tier in configs:
+        name = f"shuffled/{model_tier}/{tier}"
+        shuf = evaluate_config(name, tier, model_tier, df_train_shuf, df_test_shuf)
+        # Not appended to all_results — control output only.
+        print(
+            f"  [CTRL ] CV ROC={shuf.cv_auc_roc_mean:.4f}±{shuf.cv_auc_roc_std:.4f} "
+            f"Test ROC={shuf.test_auc_roc:.4f}"
         )
 
     print("\n" + "=" * 60)

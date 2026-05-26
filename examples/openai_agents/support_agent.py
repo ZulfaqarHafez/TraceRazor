@@ -8,7 +8,7 @@ export TRACERAZOR_BIN=/path/to/TraceRazor/target/release/tracerazor
 
 import asyncio
 from agents import Agent, Runner, function_tool
-from tracerazor_openai_agents import TraceRazorHooks
+from tracerazor.integrations.openai_agents import TraceRazorHooks
 
 
 @function_tool

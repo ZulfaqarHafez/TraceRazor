@@ -10,7 +10,7 @@ CrewAI callback events used:
 
 Usage::
 
-    from tracerazor_crewai import TraceRazorCallback
+    from tracerazor.integrations.crewai import TraceRazorCallback
     from crewai import Crew
 
     callback = TraceRazorCallback(agent_name="support-crew", threshold=70)
@@ -30,7 +30,7 @@ import time
 import uuid
 from typing import Any, Dict, List, Optional
 
-from .client import TraceRazorClient, TraceRazorReport
+from tracerazor import TraceRazorClient, TraceRazorReport
 
 
 class TraceRazorCallback:

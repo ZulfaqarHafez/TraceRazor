@@ -255,6 +255,7 @@ mod tests {
                 step_results: vec![],
                 low_density_steps: vec![],
                 entropy_low_steps: vec![],
+                top_offenders: vec![],
                 pass: false,
                 target: 0.60,
             },

@@ -315,6 +315,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
             .collect(),
         low_density_steps: vec![],
         entropy_low_steps: vec![],
+        top_offenders: vec![],
         pass: true,
         target: 0.60,
     };

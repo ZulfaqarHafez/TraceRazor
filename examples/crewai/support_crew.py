@@ -6,7 +6,7 @@ export TRACERAZOR_BIN=/path/to/TraceRazor/target/release/tracerazor
 """
 
 from crewai import Agent, Task, Crew
-from tracerazor_crewai import TraceRazorCallback
+from tracerazor.integrations.crewai import TraceRazorCallback
 
 callback = TraceRazorCallback(
     agent_name="support-crew",

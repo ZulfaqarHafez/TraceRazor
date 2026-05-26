@@ -25,7 +25,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 _HERE = Path(__file__).parent
-_REPO = _HERE.parent.parent
+# tracerazor/redundancy/generate_data.py → repo root is three parents up.
+_REPO = _HERE.parent.parent.parent
 
 # ── load .env ────────────────────────────────────────────────────────────────
 
@@ -82,12 +83,23 @@ async def generate_pair(
 ) -> Optional[Dict[str, Any]]:
     """Ask Claude to write prompt_A, response_A, prompt_B for this scenario pair."""
 
+    # NOTE: the model is NOT told the substitutability label. The label is
+    # known structurally (we wrote the scenario templates) and is recorded
+    # separately. Leaking the label into the prompt — as the previous version
+    # did via "Substitutable: yes/no" plus explicit instructions to make
+    # prompt_A and prompt_B "semantically similar" or "clearly different" —
+    # turned the classifier into a recoverer-of-instructions and produced the
+    # AUC 1.000 result that documentation now flags as a smoke test, not a
+    # generalisation estimate.
     system = textwrap.dedent("""
         You are a data generator for an airline customer support AI training dataset.
-        When given two customer scenarios, you will output:
+        Given two customer scenarios A and B, output:
         1. prompt_A: a realistic multi-turn conversation context ending with the customer request for scenario A
         2. response_A: an ideal agent response to prompt_A (2-4 sentences, professional)
         3. prompt_B: a realistic multi-turn conversation context ending with the customer request for scenario B
+
+        Write each independently and naturally. Do not make A and B more or less
+        similar than the scenarios themselves dictate.
 
         Output ONLY valid JSON with keys: "prompt_A", "response_A", "prompt_B"
         No explanation, no markdown fences, just the JSON object.
@@ -96,12 +108,8 @@ async def generate_pair(
     user_msg = textwrap.dedent(f"""
         Scenario A: {scenario_A}
         Scenario B: {scenario_B}
-        Substitutable: {"yes" if label == 1 else "no"}
 
         Generate the JSON with prompt_A, response_A, and prompt_B.
-        If substitutable=yes, prompt_A and prompt_B should be semantically similar
-        (same intent, minor variation like date/flight number).
-        If substitutable=no, prompt_A and prompt_B should have clearly different intents.
     """).strip()
 
     loop = asyncio.get_event_loop()
@@ -127,6 +135,10 @@ async def generate_pair(
             return {
                 "run_id": run_id,
                 "task_index": task_index,
+                # template_id identifies which scenario-pair seeded this record.
+                # The methodology fix uses this for StratifiedGroupKFold so a
+                # template never appears in both train and validation splits.
+                "template_id": task_index % len(_SCENARIO_PAIRS),
                 "turn": turn,
                 "prompt_A": str(obj["prompt_A"]),
                 "response_A": str(obj["response_A"]),

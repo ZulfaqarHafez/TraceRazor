@@ -22,7 +22,7 @@ from langgraph.prebuilt import create_react_agent
 # Import the TraceRazor callback.
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from tracerazor_langgraph import TraceRazorCallback
+from tracerazor.integrations.langgraph import TraceRazorCallback
 
 
 # ── Fake tools (replace with real ones) ──────────────────────────────────────

@@ -36,6 +36,11 @@ pub struct VdiResult {
     pub low_density_steps: Vec<u32>,
     /// IDs of steps with character-level Shannon entropy < 3.8 bits/char.
     pub entropy_low_steps: Vec<u32>,
+    /// Top filler phrases observed across the trace, sorted by count desc.
+    /// Used by the VerbosityReduction fix patch to quote real, trace-specific
+    /// offenders instead of a static dictionary. Capped at the worst 5.
+    #[serde(default)]
+    pub top_offenders: Vec<(String, u32)>,
     pub pass: bool,
     pub target: f64,
 }
@@ -57,8 +62,27 @@ pub fn compute(trace: &Trace) -> VdiResult {
     let mut step_results = Vec::with_capacity(trace.steps.len());
     let mut total_words: usize = 0;
     let mut total_filler: usize = 0;
+    let mut offender_counts: std::collections::HashMap<String, u32> =
+        std::collections::HashMap::new();
 
     for step in &trace.steps {
+        let lower = step.content.to_lowercase();
+        // Tally trace-wide offenders before consuming the step.
+        for pat in PREAMBLE_PATTERNS {
+            let n = lower.matches(*pat).count() as u32;
+            if n > 0 {
+                *offender_counts.entry((*pat).to_string()).or_insert(0) += n;
+            }
+        }
+        for word in step.content.split_whitespace() {
+            let lw = word
+                .trim_matches(|c: char| !c.is_alphabetic())
+                .to_lowercase();
+            if FILLER_WORDS.contains(&lw.as_str()) {
+                *offender_counts.entry(lw).or_insert(0) += 1;
+            }
+        }
+
         let result = compute_step(step.id, &step.content);
         total_words += result.total_words;
         total_filler += result.filler_count;
@@ -84,11 +108,16 @@ pub fn compute(trace: &Trace) -> VdiResult {
         .map(|r| r.step_id)
         .collect();
 
+    let mut top_offenders: Vec<(String, u32)> = offender_counts.into_iter().collect();
+    top_offenders.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(&b.0)));
+    top_offenders.truncate(5);
+
     VdiResult {
         score,
         entropy_low_steps,
         low_density_steps,
         step_results,
+        top_offenders,
         pass: score >= TARGET,
         target: TARGET,
     }

@@ -15,7 +15,8 @@ from typing import Any, Dict, List, Optional, Sequence, Union
 from langchain_core.callbacks import BaseCallbackHandler
 from langchain_core.outputs import LLMResult
 
-from .client import TraceRazorClient, TraceRazorReport
+from tracerazor import TraceRazorClient, TraceRazorReport
+
 from .trace_builder import TraceBuilder
 
 

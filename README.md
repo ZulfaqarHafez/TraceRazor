@@ -385,7 +385,7 @@ Embeddings: `all-MiniLM-L6-v2` — 22M parameters, 384-dim, fully offline.
 > **Treat these numbers as a pipeline-wiring smoke test, not a classifier-skill
 > estimate.** Projected real-data AUC: **0.70–0.90** (consistent with the
 > `scalar`-tier CV AUC of 0.90 ± 0.05, the only number here not corrupted by
-> template leakage). The eval pipeline (`python/redundancy/evaluate_full.py`)
+> template leakage). The eval pipeline (`tracerazor/redundancy/evaluate_full.py`)
 > has been hardened to use `StratifiedGroupKFold` keyed by `template_id` — re-
 > run against real tau-bench transcripts before quoting any number in production.
 
@@ -432,14 +432,13 @@ python -m redundancy.generate_data --n 300 --run-id run_synthetic
 python -m redundancy.generate_data --n 100 --run-id run_v3 --out results/run_v3/judge_transcripts.jsonl
 
 # Full evaluation: 5-fold CV, bootstrap CI, PR curves, confusion matrices, feature importance
-python -m redundancy.evaluate_full --results-dir results --test-run run_v3
+python -m tracerazor.redundancy.evaluate_full --results-dir results --test-run run_v3
 # Writes docs/findings_v5.md
 ```
 
 ```python
-import sys, pandas as pd
-sys.path.insert(0, 'python')
-from redundancy.substitutability import build_features, train, evaluate, load_labels, split_by_run
+import pandas as pd
+from tracerazor.redundancy.substitutability import build_features, train, evaluate, load_labels, split_by_run
 
 df = load_labels("results")
 df_train, df_test = split_by_run(df, test_run_pattern="run_v3")
@@ -506,7 +505,7 @@ node = AdaptiveKNode(llm=llm_node, tools=my_tools, k_max=5)
 # ... wire into LangGraph graph ...
 
 # Step 3: Predict substitutability before each LLM call
-from redundancy.substitutability import build_features
+from tracerazor.redundancy.substitutability import build_features
 import pandas as pd
 
 df = pd.DataFrame([{
@@ -525,10 +524,23 @@ else:
 
 ## Integrations
 
+Framework adapters live under `tracerazor.integrations.*` and ship with the
+main package. Each is opt-in: install the matching extra to pull the framework
+deps in.
+
+```bash
+pip install tracerazor                    # core: audit + sampling
+pip install "tracerazor[langgraph]"       # adds TraceRazorCallback
+pip install "tracerazor[crewai]"
+pip install "tracerazor[agents]"          # OpenAI Agents SDK
+pip install "tracerazor[redundancy]"      # substitutability classifier
+pip install "tracerazor[all]"
+```
+
 ### LangGraph
 
 ```python
-from tracerazor_langgraph import TraceRazorCallback
+from tracerazor.integrations.langgraph import TraceRazorCallback
 
 callback = TraceRazorCallback(agent_name="support-graph", threshold=70)
 result = graph.invoke({"messages": [...]}, config={"callbacks": [callback]})
@@ -538,7 +550,7 @@ callback.analyse().markdown()
 ### CrewAI
 
 ```python
-from tracerazor_crewai import TraceRazorCallback
+from tracerazor.integrations.crewai import TraceRazorCallback
 
 callback = TraceRazorCallback(agent_name="support-crew", threshold=70)
 crew = Crew(agents=[...], tasks=[...], callbacks=[callback])
@@ -549,7 +561,7 @@ callback.assert_passes()
 ### OpenAI Agents SDK
 
 ```python
-from tracerazor_openai_agents import TraceRazorHooks
+from tracerazor.integrations.openai_agents import TraceRazorHooks
 
 hooks = TraceRazorHooks(agent_name="support-agent", threshold=70)
 await Runner.run(agent, "I need a refund for order ORD-9182", hooks=hooks)
@@ -644,24 +656,27 @@ tracerazor/
 │   ├── tracerazor-proxy/      # Four-layer guardrail proxy
 │   └── tracerazor-cli/        # CLI entry point; persistent store at ~/.tracerazor/
 │
-├── v2/tracerazor/             # Python package v1.0.0 (pip install tracerazor)
+├── tracerazor/                # Single Python package (pip install tracerazor)
 │   ├── _audit_tracer.py       # Tracer context manager
 │   ├── _audit_client.py       # TraceRazorClient + TraceRazorReport
 │   ├── _adaptive_k.py         # AdaptiveKNode (LangGraph node)
 │   ├── _self_consistency.py   # SelfConsistencyBaseline
 │   ├── _naive_ensemble.py     # NaiveKEnsemble
 │   ├── _consensus.py          # ExactMatchConsensus, BranchProposal, Outcome
-│   └── _adapters.py           # openai_llm, anthropic_llm, mock_llm
+│   ├── _adapters.py           # openai_llm, anthropic_llm, mock_llm
+│   ├── integrations/          # opt-in framework adapters
+│   │   ├── langgraph/         # pip install "tracerazor[langgraph]"
+│   │   ├── crewai/            # pip install "tracerazor[crewai]"
+│   │   └── openai_agents/     # pip install "tracerazor[agents]"
+│   └── redundancy/            # pip install "tracerazor[redundancy]"
+│       ├── substitutability.py
+│       ├── generate_data.py   # synthetic transcript generator (Anthropic)
+│       └── evaluate_full.py   # 5-fold CV, group-aware split, control baseline
 │
-├── python/redundancy/         # Substitutability classifier (PRD v5)
-│   ├── substitutability.py    # load_labels, build_features, train, evaluate, decide
-│   ├── generate_data.py       # Synthetic transcript generator (Anthropic API)
-│   └── evaluate_full.py       # 5-fold CV, bootstrap CI, PR curves, confusion matrices
-│
-├── integrations/
-│   ├── crewai/                # CrewAI adapter
-│   ├── openai-agents/         # OpenAI Agents SDK adapter
-│   └── langgraph/             # LangGraph / LangChain callback adapter
+├── examples/                  # framework-specific end-to-end snippets
+│   ├── langgraph/
+│   ├── crewai/
+│   └── openai_agents/
 │
 ├── docs/
 │   ├── findings_v5.md         # Substitutability study: full results + Mermaid charts

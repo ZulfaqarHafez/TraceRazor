@@ -53,7 +53,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 _HERE = Path(__file__).parent
-_REPO = _HERE.parent.parent
+# tracerazor/redundancy/substitutability.py → repo root is three parents up.
+_REPO = _HERE.parent.parent.parent
 
 
 # ── data loading ──────────────────────────────────────────────────────────────
@@ -534,7 +535,7 @@ def _write_findings(
         "## Inference",
         "",
         "```python",
-        "from redundancy.substitutability import build_features, load_labels",
+        "from tracerazor.redundancy.substitutability import build_features, load_labels",
         "import pandas as pd",
         "",
         "# Single pair",
