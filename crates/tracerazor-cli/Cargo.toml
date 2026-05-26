@@ -1,9 +1,15 @@
 [package]
 name = "tracerazor"
-version = "0.1.0"
-edition = "2021"
-description = "TraceRazor CLI — Agentic Reasoning Path Efficiency Auditor"
-license = "MIT"
+description = "TraceRazor CLI - Agentic Reasoning Path Efficiency Auditor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 default-run = "tracerazor"
 
 [[bin]]
@@ -11,10 +17,10 @@ name = "tracerazor"
 path = "src/main.rs"
 
 [dependencies]
-tracerazor-core = { path = "../tracerazor-core" }
-tracerazor-ingest = { path = "../tracerazor-ingest" }
-tracerazor-semantic = { path = "../tracerazor-semantic" }
-tracerazor-store = { path = "../tracerazor-store" }
+tracerazor-core = { path = "../tracerazor-core", version = "0.1.0" }
+tracerazor-ingest = { path = "../tracerazor-ingest", version = "0.1.0" }
+tracerazor-semantic = { path = "../tracerazor-semantic", version = "0.1.0" }
+tracerazor-store = { path = "../tracerazor-store", version = "0.1.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

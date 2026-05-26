@@ -1,20 +1,26 @@
 [package]
 name = "tracerazor-server"
-version = "0.1.0"
-edition = "2021"
-description = "TraceRazor Axum HTTP server — REST API and WebSocket for the dashboard"
-license = "MIT"
+description = "TraceRazor Axum HTTP server - REST API and WebSocket for the dashboard"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [[bin]]
 name = "tracerazor-server"
 path = "src/main.rs"
 
 [dependencies]
-tracerazor-core = { path = "../tracerazor-core" }
-tracerazor-ingest = { path = "../tracerazor-ingest" }
-tracerazor-semantic = { path = "../tracerazor-semantic" }
-tracerazor-store = { path = "../tracerazor-store" }
-tracerazor-proxy = { path = "../tracerazor-proxy" }
+tracerazor-core = { path = "../tracerazor-core", version = "0.1.0" }
+tracerazor-ingest = { path = "../tracerazor-ingest", version = "0.1.0" }
+tracerazor-semantic = { path = "../tracerazor-semantic", version = "0.1.0" }
+tracerazor-store = { path = "../tracerazor-store", version = "0.1.0" }
+tracerazor-proxy = { path = "../tracerazor-proxy", version = "0.1.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

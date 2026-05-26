@@ -1,12 +1,18 @@
 [package]
 name = "tracerazor-store"
-version = "0.1.0"
-edition = "2021"
 description = "Persistent trace storage for TraceRazor (SQLite via tokio-rusqlite)"
-license = "MIT"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
-tracerazor-core = { path = "../tracerazor-core" }
+tracerazor-core = { path = "../tracerazor-core", version = "0.1.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
