@@ -55,7 +55,7 @@ impl std::fmt::Display for Grade {
     }
 }
 
-/// Weight configuration for the twelve-metric composite score.
+/// Weight configuration for the thirteen-metric composite score.
 ///
 /// **TAS is ordinal, not cardinal.** These weights are preliminary heuristics
 /// chosen by the author; they have not been calibrated against a labelled
@@ -112,7 +112,7 @@ impl Default for Weights {
 }
 
 /// The composite TraceRazor Score and all component results.
-/// All twelve metrics are always present — no Option wrappers.
+/// All thirteen metrics are always present — no Option wrappers.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TasScore {
     /// Composite score (0–100), **after** the Task Value Integration multiplier.
@@ -189,7 +189,7 @@ impl Default for ScoringConfig {
     }
 }
 
-/// Compute the composite TAS score from all twelve metrics.
+/// Compute the composite TAS score from all thirteen metrics.
 #[allow(clippy::too_many_arguments)]
 pub fn compute(
     srr: SrrResult,

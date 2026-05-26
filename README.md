@@ -23,7 +23,7 @@ pip install tracerazor
   │   │              │    │                  │    │                        │ │
   │   │ Score your   │    │ Run K parallel   │    │ Predict when a cached  │ │
   │   │ agent traces │    │ LLM calls per    │    │ response can replace a │ │
-  │   │ across 12    │    │ step. Pick the   │    │ fresh LLM call, saving │ │
+  │   │ across 13    │    │ step. Pick the   │    │ fresh LLM call, saving │ │
   │   │ efficiency   │    │ consensus        │    │ one round-trip per     │ │
   │   │ metrics.     │    │ winner.          │    │ correct prediction.    │ │
   │   │              │    │                  │    │                        │ │
@@ -67,7 +67,7 @@ flowchart TD
     T[Trace JSON] --> P[Parse & Ingest]
     P --> M
 
-    subgraph M["12 Efficiency Signals (post-normalisation share of TAS)"]
+    subgraph M["13 Efficiency Signals (post-normalisation share of TAS)"]
         direction LR
         S1["Step Redundancy\n14.2%"]
         S2["Loop Detection\n10.8%"]
@@ -95,7 +95,7 @@ flowchart TD
 > time*, not as an absolute efficiency percentage. Override via
 > `ScoringConfig.weights` if your workload values differ.
 
-### The 12 Metrics
+### The 13 Metrics
 
 All shares are *post-normalisation* (the raw weights below sum to 1.20; `compute()` divides by the sum).
 
@@ -648,7 +648,7 @@ Start: `./target/release/tracerazor-server`
 ```
 tracerazor/
 ├── crates/
-│   ├── tracerazor-core/       # 12 metrics, TAS scoring, fix generation, IAR
+│   ├── tracerazor-core/       # 13 metrics, TAS scoring, fix generation, IAR
 │   ├── tracerazor-ingest/     # Parsers: raw JSON, LangSmith, OpenTelemetry
 │   ├── tracerazor-semantic/   # BoW similarity + LLM backend (OpenAI / Anthropic / compatible)
 │   ├── tracerazor-store/      # SQLite: traces, KB, baselines, anomaly detection
