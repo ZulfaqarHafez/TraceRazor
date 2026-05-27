@@ -4,7 +4,39 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Changed
+- **License**: project relicensed under MIT (was Apache-2.0); LICENSE, all
+  `Cargo.toml` files and CONTRIBUTING aligned with the README/PyPI metadata
+  that already advertised MIT.
+- **Storage backend**: replaced SurrealDB / SurrealKV with SQLite via
+  `tokio-rusqlite`. Two-table schema (`traces`, `kb_entries`), JSON
+  payloads, statically-linked SQLite (no system library required). The
+  public `TraceStore` API is unchanged. The CLI's persistent path moved
+  from `~/.tracerazor/store/` (a SurrealKV directory) to
+  `~/.tracerazor/store.db` (a SQLite file) — existing local data does not
+  migrate.
+- **Python source layout**: `src/redundancy/` moved to `python/redundancy/`
+  so the top-level `src/` directory is no longer mistaken for the Rust
+  workspace root. `sys.path.insert(0, 'src')` is now `... 'python'`.
+- **bow.rs**: removed the "TF-IDF" label — implementation has always been
+  plain term-frequency cosine; rustdoc and crate description updated.
+
 ### Added
+- Term-frequency BoW similarity is now correctly labelled.
+- SRR pair scan bounded to a 256-step lookback window (`LOOKBACK_WINDOW`)
+  so very long traces stay O(n · window) instead of O(n²).
+- `tracerazor-cli` integration test suite (assert_cmd + tempfile) covering
+  audit, threshold gating, missing-file, cost, simulate, compare.
+- Criterion benchmark `analyse` for 10/50/200/1000-step traces, runnable
+  via `cargo bench -p tracerazor-core`, backing the sub-5 ms claim.
+- File-backed persistence round-trip test in `tracerazor-store`.
+
+### Known TODO
+- Substitutability AUC numbers in `docs/findings_v5.md` and the README
+  remain on synthetic data. Re-running against real tau-bench transcripts
+  is queued; the evaluator is ready to consume them once collected.
+
+### Added (prior)
 - **Phase 0: Production readiness**
   - Replaced all `unwrap()` calls in production code with safe alternatives
   - Configurable CORS via `TRACERAZOR_CORS_ORIGINS` env var (comma-separated origins; defaults to permissive)

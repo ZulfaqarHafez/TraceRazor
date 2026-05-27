@@ -17,7 +17,7 @@ cargo build --workspace
 cargo test --workspace
 ```
 
-All 102+ tests should pass with zero clippy warnings:
+All 194+ tests should pass with zero clippy warnings:
 
 ```bash
 cargo clippy --workspace -- -D warnings
@@ -30,7 +30,7 @@ crates/
   tracerazor-core/      # Metrics, scoring, simulation — zero network deps
   tracerazor-ingest/    # Trace parsers (raw JSON, LangSmith, OTEL)
   tracerazor-semantic/  # BoW + optional OpenAI embeddings
-  tracerazor-store/     # SurrealDB persistence layer
+  tracerazor-store/     # SQLite persistence layer (via tokio-rusqlite)
   tracerazor-server/    # Axum REST + WebSocket server
   tracerazor-proxy/     # Four-layer guardrail interceptor
   tracerazor-cli/       # CLI entry point
@@ -81,4 +81,4 @@ Use [GitHub Issues](https://github.com/ZulfaqarHafez/tracerazor/issues). Include
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under Apache 2.0.
+By contributing, you agree that your contributions will be licensed under the MIT License.

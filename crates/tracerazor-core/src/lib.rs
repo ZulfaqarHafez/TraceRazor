@@ -382,7 +382,14 @@ mod tests {
         let config = ScoringConfig::default(); // historical_sequences is empty
         let report = analyse(&mut trace, simple_sim, &config).unwrap();
         assert!(report.score.dbo.cold_start);
-        assert!((report.score.dbo.score - 0.7).abs() < 0.001);
+        // Cold-start now uses single_trace_efficiency clamped to [0.5, 0.9],
+        // not a constant 0.7. Verify it lands somewhere in that band.
+        let score = report.score.dbo.score;
+        assert!(
+            (0.5..=0.9).contains(&score),
+            "DBO cold-start score {} outside [0.5, 0.9] band",
+            score
+        );
     }
 
     #[test]

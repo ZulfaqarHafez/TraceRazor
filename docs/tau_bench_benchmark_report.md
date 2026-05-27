@@ -94,14 +94,14 @@ To obtain publishable numbers matching the reference setup, re-run with `--user-
 
 | File | Description |
 |---|---|
-| `v2/results/tau_bench_all50.json` | K=1 baseline, 50 tasks |
-| `v2/results/tau_bench_adaptive_k5_50t.json` | AdaptiveK5, 50 tasks |
-| `v2/results/tau_bench_sc_k5_50t.json` | SC k=5, 50 tasks |
-| `v2/results/tau_bench_naive_k5_50t.json` | NaiveK5, 50 tasks |
+| `python_results/tau_bench_all50.json` | K=1 baseline, 50 tasks |
+| `python_results/tau_bench_adaptive_k5_50t.json` | AdaptiveK5, 50 tasks |
+| `python_results/tau_bench_sc_k5_50t.json` | SC k=5, 50 tasks |
+| `python_results/tau_bench_naive_k5_50t.json` | NaiveK5, 50 tasks |
 | `v2/benchmark/tau_bench_runner.py` | Runner implementation (all configs) |
-| `v2/tracerazor/_consensus.py` | ExactMatchConsensus, BranchProposal |
-| `v2/tracerazor/_self_consistency.py` | SC sampling logic |
-| `v2/tracerazor/_naive_ensemble.py` | NaiveK5 majority vote logic |
+| `tracerazor/_consensus.py` | ExactMatchConsensus, BranchProposal |
+| `tracerazor/_self_consistency.py` | SC sampling logic |
+| `tracerazor/_naive_ensemble.py` | NaiveK5 majority vote logic |
 
 ---
 

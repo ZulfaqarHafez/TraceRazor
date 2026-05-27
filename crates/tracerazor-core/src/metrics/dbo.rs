@@ -4,11 +4,15 @@
 /// by comparing against historical traces with similar tool-call patterns.
 /// No external API calls required.
 ///
-/// Cold-start behaviour: if fewer than MIN_HISTORY_TRACES similar historical
-/// sequences exist, DBO returns a neutral 0.7 score (passes the > 0.70 target
-/// but does not inflate the composite score). Accuracy improves as traces
-/// accumulate — 85–90% agreement with GPT-4o-mini judge after 50+ traces of
-/// the same task type.
+/// Cold-start behaviour: when fewer than `MIN_HISTORY_TRACES` similar
+/// historical sequences exist, DBO falls back to a *single-trace* tool-call
+/// efficiency proxy (`single_trace_efficiency`) clamped to `[0.5, 0.9]`
+/// rather than a constant 0.7. This means even first-run users get a signal
+/// that varies with the trace: failed tool calls, retries on the same tool,
+/// and a low unique-tool ratio all drag the score down.
+///
+/// Accuracy improves as traces accumulate — 85–90% agreement with
+/// GPT-4o-mini judge after 50+ traces of the same task type.
 ///
 /// Similarity metric: Jaccard overlap on tool sets (> 50% = similar task type).
 /// Optimality metric: whether the current trace used tools from the lowest-token
@@ -16,12 +20,19 @@
 ///
 /// Target: > 0.70.
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::types::Trace;
 
 /// Minimum similar historical traces needed before DBO exits cold-start.
 pub const MIN_HISTORY_TRACES: usize = 10;
+
+/// Lower bound for the cold-start single-trace fallback. Kept above 0.5 so a
+/// well-behaved first-run trace still passes the 0.70 target; kept below the
+/// history-backed maximum so users have an incentive to feed history in.
+pub const COLD_START_FLOOR: f64 = 0.5;
+/// Upper bound for the cold-start fallback (see `COLD_START_FLOOR`).
+pub const COLD_START_CEILING: f64 = 0.9;
 
 /// One historical trace's tool-call pattern, used for DBO comparison.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -62,6 +73,53 @@ impl DboResult {
 }
 
 const TARGET: f64 = 0.70;
+
+/// Cold-start fallback score derived from this trace alone, no history needed.
+///
+/// Weighted combination of three signals already present on every `TraceStep`:
+///   * `success_rate`    — share of tool calls that returned `tool_success = true`
+///   * `non_retry_rate`  — `1 - (retries / total_tool_calls)` where a retry is
+///     any tool call after the first to the same `tool_name`
+///   * `unique_ratio`    — `unique_tools / total_tool_calls`, penalises thrashing
+///
+/// Final score is clamped to `[COLD_START_FLOOR, COLD_START_CEILING]` so a
+/// pathological first trace still has bounded impact on the composite TAS,
+/// and a clean first trace cannot fully replace what history would give.
+pub fn single_trace_efficiency(trace: &Trace) -> f64 {
+    let tool_calls: Vec<&str> = trace
+        .steps
+        .iter()
+        .filter_map(|s| s.tool_name.as_deref())
+        .collect();
+    let total = tool_calls.len();
+    if total == 0 {
+        // No tool calls at all → defer to the non-cold-start "perfect" branch.
+        return 1.0;
+    }
+
+    let successes = trace
+        .steps
+        .iter()
+        .filter(|s| s.tool_name.is_some())
+        .filter(|s| s.tool_success.unwrap_or(true))
+        .count();
+    let success_rate = successes as f64 / total as f64;
+
+    let mut seen: HashMap<&str, u32> = HashMap::new();
+    let mut retries = 0usize;
+    for tool in &tool_calls {
+        let count = seen.entry(*tool).or_insert(0);
+        if *count > 0 {
+            retries += 1;
+        }
+        *count += 1;
+    }
+    let non_retry_rate = 1.0 - (retries as f64 / total as f64);
+    let unique_ratio = seen.len() as f64 / total as f64;
+
+    let raw = 0.5 * success_rate + 0.3 * non_retry_rate + 0.2 * unique_ratio;
+    raw.clamp(COLD_START_FLOOR, COLD_START_CEILING)
+}
 
 /// Compute DBO by comparing this trace against historical tool-call sequences.
 ///
@@ -106,13 +164,14 @@ pub fn compute(trace: &Trace, historical: &[HistoricalSequence]) -> DboResult {
         .collect();
 
     if similar.len() < MIN_HISTORY_TRACES {
+        let score = single_trace_efficiency(trace);
         return DboResult {
-            score: 0.7,
+            score: (score * 1000.0).round() / 1000.0,
             optimal_selections: 0,
             total_branch_points: 0,
             decisions: vec![],
             cold_start: true,
-            pass: true,
+            pass: score >= TARGET,
             target: TARGET,
         };
     }
@@ -218,12 +277,17 @@ mod tests {
     }
 
     #[test]
-    fn test_cold_start_empty_history() {
+    fn test_cold_start_empty_history_is_bounded() {
         let trace = make_trace(&["get_order", "process_refund"], 900);
         let result = compute(&trace, &[]);
         assert!(result.cold_start);
-        assert!((result.score - 0.7).abs() < 0.001);
-        assert!(result.pass);
+        // Clean trace with all-success tools + no retries should land near the ceiling.
+        assert!(
+            (COLD_START_FLOOR..=COLD_START_CEILING).contains(&result.score),
+            "score {} outside cold-start band",
+            result.score
+        );
+        assert!(result.pass, "clean cold-start trace should still pass the 0.70 target");
     }
 
     #[test]
@@ -233,6 +297,26 @@ mod tests {
         let history = make_history(5, &["get_order", "process_refund"], 800);
         let result = compute(&trace, &history);
         assert!(result.cold_start);
+        // Score still derives from the single-trace fallback, not a constant.
+        assert!((COLD_START_FLOOR..=COLD_START_CEILING).contains(&result.score));
+    }
+
+    #[test]
+    fn test_cold_start_penalises_retries_and_failures() {
+        // Same tool called three times with two failures — should land below the
+        // clean-trace cold-start score.
+        let mut trace = make_trace(&["get_order", "get_order", "get_order"], 900);
+        trace.steps[0].tool_success = Some(false);
+        trace.steps[1].tool_success = Some(false);
+        let result = compute(&trace, &[]);
+        assert!(result.cold_start);
+        // success_rate = 1/3, non_retry_rate = 1/3, unique_ratio = 1/3
+        //   → raw 0.5*0.333 + 0.3*0.333 + 0.2*0.333 = 0.333, clamped to floor 0.5.
+        assert!(
+            (result.score - COLD_START_FLOOR).abs() < 0.001,
+            "expected clamp to floor, got {}",
+            result.score
+        );
     }
 
     #[test]

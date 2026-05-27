@@ -1,9 +1,16 @@
 [package]
 name = "tracerazor-core"
-version = "0.1.0"
-edition = "2021"
 description = "Core graph engine, metrics, and scoring for TraceRazor"
-license = "Apache-2.0"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
 serde = { workspace = true }
@@ -14,3 +21,11 @@ petgraph = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
 tokio = { workspace = true }
+flate2 = { workspace = true }
+
+[dev-dependencies]
+criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }
+
+[[bench]]
+name = "analyse"
+harness = false

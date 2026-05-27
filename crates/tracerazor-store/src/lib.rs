@@ -1,15 +1,23 @@
-/// Persistent trace storage using SurrealDB.
-///
-/// Two modes:
-///   `TraceStore::connect_mem()`       — in-memory, for CLI sessions and tests.
-///   `TraceStore::connect_file(path)`  — persistent (kv-surrealkv), for the server.
-pub mod kb;
-pub use kb::{KgpEntry, KgpMatch, KgpStep, KGP_CAPTURE_THRESHOLD, build_kb_entry};
+//! Persistent trace storage backed by SQLite (via tokio-rusqlite).
+//!
+//! Two modes:
+//!   `TraceStore::connect_mem()`       — in-memory SQLite, for CLI sessions and tests.
+//!   `TraceStore::connect_file(path)`  — file-backed SQLite, for the server.
+//!
+//! Schema is two simple `id TEXT PRIMARY KEY, data TEXT` tables (`traces` and
+//! `kb_entries`) holding serialised JSON. Cross-row analytics (agent stats,
+//! anomaly baselines) load rows and aggregate in Rust — the data volumes here
+//! are small (audits, not events), so a query-and-filter pass is fast enough
+//! and keeps the query layer trivial to inspect.
 
-use anyhow::Result;
+pub mod kb;
+pub use kb::{KGP_CAPTURE_THRESHOLD, KgpEntry, KgpMatch, KgpStep, build_kb_entry};
+
+use anyhow::{Context, Result};
 use chrono::Utc;
+use rusqlite::OptionalExtension;
 use serde::{Deserialize, Serialize};
-use surrealdb::Surreal;
+use tokio_rusqlite::Connection;
 use tracerazor_core::{
     metrics::dbo::HistoricalSequence,
     report::{Anomaly, TraceReport},
@@ -84,26 +92,56 @@ pub struct AgentBaseline {
     pub sample_count: usize,
 }
 
-/// The TraceRazor store — wraps SurrealDB with a stable API.
+/// The TraceRazor store — a thin async wrapper around SQLite.
+///
+/// `Connection` from `tokio-rusqlite` runs all SQL on a single dedicated
+/// background thread, so concurrent `&self` callers are serialised internally
+/// and individual queries do not block the tokio runtime.
 pub struct TraceStore {
-    db: Surreal<surrealdb::engine::local::Db>,
+    pub(crate) conn: Connection,
+}
+
+/// DDL executed at startup. Both tables share the same `(id TEXT PK, data TEXT)`
+/// shape so reads stay trivial.
+const SCHEMA: &str = "
+    CREATE TABLE IF NOT EXISTS traces (
+        id   TEXT PRIMARY KEY,
+        data TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS kb_entries (
+        id   TEXT PRIMARY KEY,
+        data TEXT NOT NULL
+    );
+";
+
+async fn init_schema(conn: &Connection) -> Result<()> {
+    conn.call(|c| {
+        c.execute_batch(SCHEMA)?;
+        Ok(())
+    })
+    .await
+    .context("failed to initialise sqlite schema")?;
+    Ok(())
 }
 
 impl TraceStore {
     /// In-memory store (no persistence across restarts). Used by the CLI and tests.
     pub async fn connect_mem() -> Result<Self> {
-        use surrealdb::engine::local::Mem;
-        let db = Surreal::new::<Mem>(()).await?;
-        db.use_ns("tracerazor").use_db("traces").await?;
-        Ok(TraceStore { db })
+        let conn = Connection::open_in_memory()
+            .await
+            .context("failed to open in-memory sqlite")?;
+        init_schema(&conn).await?;
+        Ok(TraceStore { conn })
     }
 
-    /// Persistent file-backed store using SurrealKV. Used by the server.
+    /// Persistent file-backed store. Used by the server.
     pub async fn connect_file(path: &str) -> Result<Self> {
-        use surrealdb::engine::local::SurrealKv;
-        let db = Surreal::new::<SurrealKv>(path).await?;
-        db.use_ns("tracerazor").use_db("traces").await?;
-        Ok(TraceStore { db })
+        let owned = path.to_string();
+        let conn = Connection::open(owned)
+            .await
+            .with_context(|| format!("failed to open sqlite at {path}"))?;
+        init_schema(&conn).await?;
+        Ok(TraceStore { conn })
     }
 
     // ── Write ──────────────────────────────────────────────────────────────
@@ -115,11 +153,19 @@ impl TraceStore {
             trace: trace.clone(),
             report: report.cloned(),
         };
-        let _: Option<StoredTrace> = self
-            .db
-            .upsert(("traces", trace.trace_id.as_str()))
-            .content(entry)
-            .await?;
+        let id = trace.trace_id.clone();
+        let json = serde_json::to_string(&entry).context("serialise StoredTrace")?;
+        self.conn
+            .call(move |c| {
+                c.execute(
+                    "INSERT INTO traces (id, data) VALUES (?1, ?2) \
+                     ON CONFLICT(id) DO UPDATE SET data = excluded.data",
+                    rusqlite::params![id, json],
+                )?;
+                Ok(())
+            })
+            .await
+            .context("save_trace")?;
         Ok(())
     }
 
@@ -127,13 +173,50 @@ impl TraceStore {
 
     /// Retrieve a stored trace by ID.
     pub async fn get_trace(&self, trace_id: &str) -> Result<Option<StoredTrace>> {
-        Ok(self.db.select(("traces", trace_id)).await?)
+        let tid = trace_id.to_string();
+        let raw: Option<String> = self
+            .conn
+            .call(move |c| {
+                let row = c
+                    .query_row(
+                        "SELECT data FROM traces WHERE id = ?1",
+                        rusqlite::params![tid],
+                        |r| r.get::<_, String>(0),
+                    )
+                    .optional()?;
+                Ok(row)
+            })
+            .await
+            .context("get_trace")?;
+        match raw {
+            Some(s) => Ok(Some(
+                serde_json::from_str(&s).context("deserialise StoredTrace")?,
+            )),
+            None => Ok(None),
+        }
+    }
+
+    /// Internal: load every stored trace into memory.
+    async fn all_stored(&self) -> Result<Vec<StoredTrace>> {
+        let raws: Vec<String> = self
+            .conn
+            .call(|c| {
+                let mut stmt = c.prepare("SELECT data FROM traces")?;
+                let rows = stmt
+                    .query_map([], |r| r.get::<_, String>(0))?
+                    .collect::<std::result::Result<Vec<_>, _>>()?;
+                Ok(rows)
+            })
+            .await
+            .context("all_stored")?;
+        raws.into_iter()
+            .map(|s| serde_json::from_str::<StoredTrace>(&s).context("deserialise StoredTrace"))
+            .collect()
     }
 
     /// List all stored trace summaries.
     pub async fn list_traces(&self) -> Result<Vec<TraceSummary>> {
-        let stored: Vec<StoredTrace> = self.db.select("traces").await?;
-        Ok(stored.into_iter().map(Self::to_summary).collect())
+        Ok(self.all_stored().await?.into_iter().map(Self::to_summary).collect())
     }
 
     /// Aggregate statistics for a specific agent.
@@ -175,7 +258,7 @@ impl TraceStore {
 
     /// Historical median step count for an agent (used for RDA accuracy).
     pub async fn historical_median_steps(&self, agent_name: &str) -> Result<Option<f64>> {
-        let stored: Vec<StoredTrace> = self.db.select("traces").await?;
+        let stored = self.all_stored().await?;
         let mut step_counts: Vec<usize> = stored
             .iter()
             .filter(|st| st.trace.agent_name == agent_name)
@@ -197,7 +280,7 @@ impl TraceStore {
         &self,
         agent_name: &str,
     ) -> Result<Vec<HistoricalSequence>> {
-        let stored: Vec<StoredTrace> = self.db.select("traces").await?;
+        let stored = self.all_stored().await?;
         let sequences = stored
             .into_iter()
             .filter(|st| st.trace.agent_name == agent_name)
@@ -219,7 +302,14 @@ impl TraceStore {
 
     /// Delete a trace by ID.
     pub async fn delete_trace(&self, trace_id: &str) -> Result<()> {
-        let _: Option<StoredTrace> = self.db.delete(("traces", trace_id)).await?;
+        let tid = trace_id.to_string();
+        self.conn
+            .call(move |c| {
+                c.execute("DELETE FROM traces WHERE id = ?1", rusqlite::params![tid])?;
+                Ok(())
+            })
+            .await
+            .context("delete_trace")?;
         Ok(())
     }
 
@@ -280,7 +370,7 @@ impl TraceStore {
         agent_name: &str,
         report: &tracerazor_core::report::TraceReport,
     ) -> Result<Vec<Anomaly>> {
-        let stored: Vec<StoredTrace> = self.db.select("traces").await?;
+        let stored = self.all_stored().await?;
 
         // Collect historical normalised-metric vectors for this agent.
         let history: Vec<[f64; 9]> = stored
@@ -550,8 +640,8 @@ mod tests {
             store.save_trace(&dummy_trace(&format!("t{i}"), "agent-b"), None).await.unwrap();
         }
         // Build a minimal report with defaults.
-        use tracerazor_core::{analyse, scoring::ScoringConfig};
         use tracerazor_core::types::{StepType, TraceStep};
+        use tracerazor_core::{analyse, scoring::ScoringConfig};
         let mut trace = dummy_trace("probe", "agent-b");
         // Add enough steps for analysis.
         trace.steps = (1..=6).map(|id| TraceStep {
@@ -574,5 +664,21 @@ mod tests {
         let report = analyse(&mut trace, |_, _| 0.0_f64, &config).unwrap();
         let anomalies = store.detect_all_anomalies("agent-b", &report).await.unwrap();
         assert!(anomalies.is_empty(), "should be empty with < 5 historical reports");
+    }
+
+    #[tokio::test]
+    async fn test_persistence_across_connections() {
+        // Round-trip: write to a file-backed store, drop, reopen, read back.
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("tracerazor.db");
+        let path_str = path.to_str().unwrap();
+        {
+            let store = TraceStore::connect_file(path_str).await.unwrap();
+            store.save_trace(&dummy_trace("persist", "agent-p"), None).await.unwrap();
+        }
+        let reopened = TraceStore::connect_file(path_str).await.unwrap();
+        let got = reopened.get_trace("persist").await.unwrap();
+        assert!(got.is_some());
+        assert_eq!(got.unwrap().trace.agent_name, "agent-p");
     }
 }

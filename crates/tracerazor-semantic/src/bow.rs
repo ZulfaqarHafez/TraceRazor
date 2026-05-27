@@ -1,8 +1,10 @@
-/// TF-IDF weighted bag-of-words cosine similarity.
+/// Term-frequency bag-of-words cosine similarity.
 ///
 /// This is the Phase 1 semantic similarity implementation. It tokenises text
-/// into word unigrams, weights them by TF-IDF, and computes cosine similarity
-/// between the resulting sparse vectors.
+/// into word unigrams (stop-words removed), builds a length-normalised term
+/// frequency vector, and computes cosine similarity between the resulting
+/// sparse vectors. No corpus-wide IDF weighting is applied; pairwise scoring
+/// has no document corpus to draw IDF from.
 ///
 /// It detects near-duplicate reasoning steps reliably when similarity > 0.85:
 ///   - "Parse the user request about refund" vs

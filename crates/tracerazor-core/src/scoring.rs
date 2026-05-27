@@ -55,32 +55,40 @@ impl std::fmt::Display for Grade {
     }
 }
 
-/// Weight configuration for the eleven-metric composite score.
+/// Weight configuration for the thirteen-metric composite score.
 ///
-/// Weights are normalised by their sum in `compute()`, so they do not need to
-/// equal exactly 1.0. The relative proportions determine each metric's
-/// contribution to TAS. Defaults match the v2 distribution from the product
-/// spec (structural metrics reduced to make room for three verbosity metrics).
+/// **TAS is ordinal, not cardinal.** These weights are preliminary heuristics
+/// chosen by the author; they have not been calibrated against a labelled
+/// corpus. Use TAS to compare traces *within a single project over time*, not
+/// to compare projects against each other or against an absolute scale.
+///
+/// The values below sum to 1.20 pre-normalisation (`compute()` divides by the
+/// sum), so each per-metric percentage you see in this file is `weight / 1.20`
+/// — e.g. SRR's 0.17 contributes 14.2 % of the composite, not 17 %.
+/// Override via `ScoringConfig.weights` if your workload values different
+/// metrics; the per-metric `Code` constants in each metrics module document
+/// the metric's intent so you can rebalance with eyes open.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Weights {
+    // Comments show the post-normalisation share of the composite (weight / 1.20).
     // Structural metrics (reduced from v1).
-    pub srr: f64, // 17%
-    pub ldi: f64, // 13%
-    pub tca: f64, // 13%
+    pub srr: f64, // 14.2 %
+    pub ldi: f64, // 10.8 %
+    pub tca: f64, // 10.8 %
     // Context / semantic metrics (unchanged from v1).
-    pub rda: f64, // 10%
-    pub isr: f64, // 10%
-    pub tur: f64, // 10%
-    pub cce: f64, // 10%
-    pub dbo: f64, //  9%
+    pub rda: f64, //  8.3 %
+    pub isr: f64, //  8.3 %
+    pub tur: f64, //  8.3 %
+    pub cce: f64, //  8.3 %
+    pub dbo: f64, //  7.5 %
     // Verbosity metrics (new in v2).
-    pub vdi: f64, //  8%
-    pub shl: f64, //  5%
-    pub ccr: f64, //  3%
+    pub vdi: f64, //  6.7 %
+    pub shl: f64, //  4.2 %
+    pub ccr: f64, //  2.5 %
     // Goal advancement (M1).
-    pub gar: f64, //  6%
+    pub gar: f64, //  5.8 %
     // Semantic path coherence (M4).
-    pub csd: f64, //  5%
+    pub csd: f64, //  4.2 %
 }
 
 impl Default for Weights {
@@ -104,7 +112,7 @@ impl Default for Weights {
 }
 
 /// The composite TraceRazor Score and all component results.
-/// All eleven metrics are always present — no Option wrappers.
+/// All thirteen metrics are always present — no Option wrappers.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TasScore {
     /// Composite score (0–100), **after** the Task Value Integration multiplier.
@@ -181,7 +189,7 @@ impl Default for ScoringConfig {
     }
 }
 
-/// Compute the composite TAS score from all twelve metrics.
+/// Compute the composite TAS score from all thirteen metrics.
 #[allow(clippy::too_many_arguments)]
 pub fn compute(
     srr: SrrResult,

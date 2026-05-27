@@ -198,15 +198,30 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore) -> Vec<Fix> {
                 .map(|s| (s.tokens as f64 * (1.0 - score.vdi.score)).round() as u32)
                 .sum();
             if wasted > 0 {
+                // Quote the top three filler phrases actually observed in this
+                // trace, with their counts, so the patch is trace-specific and
+                // the agent's prompt names real offenders rather than a static
+                // dictionary of "basically / actually / essentially".
+                let observed = score
+                    .vdi
+                    .top_offenders
+                    .iter()
+                    .take(3)
+                    .map(|(phrase, n)| format!("\"{phrase}\" ({n}x)"))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                let offenders_clause = if observed.is_empty() {
+                    "filler adverbs and vague qualifiers".to_string()
+                } else {
+                    format!("the highest-frequency filler patterns observed in this trace: {observed}")
+                };
                 fixes.push(Fix {
                     fix_type: FixType::VerbosityReduction,
                     target: "system_prompt".into(),
                     patch: format!(
                         "Add to system prompt: \"Every reasoning step must consist of \
-                         substantive content only. Do not use filler adverbs (basically, \
-                         actually, essentially, literally), articles in non-essential positions, \
-                         or vague qualifiers. Steps [{low_steps_str}] had VDI below target.\"\
-                         ",
+                         substantive content only. In particular, eliminate {offenders_clause}. \
+                         Steps [{low_steps_str}] had VDI below target.\"",
                         low_steps_str = low_steps
                             .iter()
                             .map(|id| id.to_string())
@@ -362,5 +377,59 @@ mod tests {
         let fixes = generate_fixes(&trace, &report.score);
         // Clean trace with no misfire, no bloat, no loops → likely empty or only RDA.
         assert!(fixes.iter().all(|f| !matches!(f.fix_type, FixType::ToolSchema)));
+    }
+
+    #[test]
+    fn test_verbosity_fix_quotes_observed_offenders() {
+        // Build a verbose trace stuffed with specific filler patterns so the
+        // VerbosityReduction patch should quote them by name.
+        let verbose_step = |id: u32| TraceStep {
+            id,
+            step_type: StepType::Reasoning,
+            content:
+                "Let me think through this carefully. I'd be happy to help. \
+                 Basically the order is, actually, essentially in the system. \
+                 Basically I will now proceed. Actually let me also confirm. \
+                 Essentially we should basically actually proceed actually now."
+                    .into(),
+            tokens: 600,
+            tool_name: None,
+            tool_params: None,
+            tool_success: None,
+            tool_error: None,
+            agent_id: None,
+            input_context: None,
+            output: None,
+            flags: vec![],
+            flag_details: vec![],
+        };
+        let trace = make_trace(vec![
+            verbose_step(1),
+            verbose_step(2),
+            verbose_step(3),
+            verbose_step(4),
+            verbose_step(5),
+        ]);
+        let mut t = trace.clone();
+        let config = ScoringConfig::default();
+        let sim = |_: &str, _: &str| 0.0_f64;
+        let report = crate::analyse(&mut t, sim, &config).unwrap();
+        let fixes = generate_fixes(&trace, &report.score);
+        let verbosity_fix = fixes
+            .iter()
+            .find(|f| matches!(f.fix_type, FixType::VerbosityReduction))
+            .expect("verbosity fix should be emitted");
+        // The patch must quote at least one of the observed offenders with a count.
+        assert!(
+            verbosity_fix.patch.contains("\"basically\"")
+                || verbosity_fix.patch.contains("\"actually\"")
+                || verbosity_fix.patch.contains("\"essentially\""),
+            "patch should quote observed filler with count, got: {}",
+            verbosity_fix.patch
+        );
+        assert!(
+            verbosity_fix.patch.contains("x)"),
+            "patch should include the (Nx) count format"
+        );
     }
 }

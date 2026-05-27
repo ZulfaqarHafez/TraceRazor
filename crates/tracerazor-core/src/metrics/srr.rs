@@ -54,6 +54,11 @@ pub const LOW_CONFIDENCE: f64 = 0.55;
 pub const TARGET_PERCENT: f64 = 15.0;
 /// Critical flag threshold.
 pub const CRITICAL_PERCENT: f64 = 30.0;
+/// Maximum number of prior steps each step is compared against.
+/// Caps the worst-case pair scan at O(n·LOOKBACK_WINDOW) so very long
+/// traces (>~500 steps) stay responsive. A duplicate appearing further
+/// back than this window will not be flagged.
+pub const LOOKBACK_WINDOW: usize = 256;
 
 /// Compute the SRR metric for a trace.
 ///
@@ -71,12 +76,13 @@ where
     let mut pairs: Vec<SrrRedundantPair> = Vec::new();
     let mut redundant_step_ids: std::collections::HashSet<u32> = std::collections::HashSet::new();
 
-    // Compare every step against all prior steps.
+    // Compare every step against its most recent LOOKBACK_WINDOW prior steps.
     for i in 1..steps.len() {
         let curr = &steps[i];
         let curr_text = curr.semantic_content();
+        let window_start = i.saturating_sub(LOOKBACK_WINDOW);
 
-        for prev in steps.iter().take(i) {
+        for prev in &steps[window_start..i] {
             let prev_text = prev.semantic_content();
 
             let sim = similarity_fn(&curr_text, &prev_text);
@@ -197,5 +203,29 @@ mod tests {
         assert_eq!(result.redundant_count, 1);
         assert_eq!(result.redundant_steps[0].step_a, 1);
         assert_eq!(result.redundant_steps[0].step_b, 3);
+    }
+
+    #[test]
+    fn test_srr_respects_lookback_window() {
+        // A duplicate outside the lookback window should not be flagged;
+        // a duplicate inside it should be.
+        let dup = "parse the user request about order details";
+        let filler = "unique filler content";
+        let mut contents: Vec<String> = vec![dup.to_string()];
+        for _ in 0..(LOOKBACK_WINDOW + 5) {
+            contents.push(filler.to_string());
+        }
+        contents.push(dup.to_string());
+        let refs: Vec<&str> = contents.iter().map(|s| s.as_str()).collect();
+        let trace = make_trace(&refs);
+        let result = compute(&trace, exact_sim, None);
+        // The repeating filler within the window is still detected, but the
+        // first `dup` (step 1) is outside the window of the last `dup`.
+        let last_id = contents.len() as u32;
+        let flagged_last = result
+            .redundant_steps
+            .iter()
+            .any(|p| p.step_b == last_id && p.step_a == 1);
+        assert!(!flagged_last, "step 1 should be outside the lookback window of the last step");
     }
 }

@@ -1,12 +1,18 @@
 [package]
 name = "tracerazor-store"
-version = "0.1.0"
-edition = "2021"
-description = "Persistent trace storage for TraceRazor using SurrealDB"
-license = "Apache-2.0"
+description = "Persistent trace storage for TraceRazor (SQLite via tokio-rusqlite)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
 
 [dependencies]
-tracerazor-core = { path = "../tracerazor-core" }
+tracerazor-core = { path = "../tracerazor-core", version = "0.1.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
@@ -14,6 +20,11 @@ anyhow = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
 tokio = { workspace = true }
-# kv-mem: in-memory (tests/CLI session)
-# kv-surrealkv: persistent embedded (server/production)
-surrealdb = { version = "2", features = ["kv-mem", "kv-surrealkv"] }
+# tokio-rusqlite wraps rusqlite in an async-friendly worker thread so the
+# existing async TraceStore API can keep its signatures. `bundled` builds
+# SQLite statically so we don't need the system library.
+rusqlite = { version = "0.32", features = ["bundled"] }
+tokio-rusqlite = "0.6"
+
+[dev-dependencies]
+tempfile = "3"

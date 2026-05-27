@@ -444,13 +444,13 @@ satisfies the criteria:
 
 ```bash
 # Generate more training data
-python -m redundancy.generate_data --n 1000 --run-id run_synthetic
+python -m tracerazor.redundancy.generate_data --n 1000 --run-id run_synthetic
 
 # Generate a held-out test set
-python -m redundancy.generate_data --n 200 --run-id run_v3 --out results/run_v3/judge_transcripts.jsonl
+python -m tracerazor.redundancy.generate_data --n 200 --run-id run_v3 --out results/run_v3/judge_transcripts.jsonl
 
 # Run full evaluation (all tiers)
-python -m redundancy.evaluate_full --results-dir results --test-run run_v3
+python -m tracerazor.redundancy.evaluate_full --results-dir results --test-run run_v3
 ```
 
 ---
@@ -459,8 +459,8 @@ python -m redundancy.evaluate_full --results-dir results --test-run run_v3
 
 ```python
 import sys, pandas as pd
-sys.path.insert(0, 'src')
-from redundancy.substitutability import build_features
+# import directly; redundancy is part of the installed tracerazor package
+from tracerazor.redundancy.substitutability import build_features
 
 # pair to evaluate
 df = pd.DataFrame([{
