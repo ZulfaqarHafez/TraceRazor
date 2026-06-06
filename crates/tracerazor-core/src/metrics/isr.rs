@@ -41,6 +41,13 @@ impl IsrResult {
 const TARGET: f64 = 80.0;
 /// Steps with less than this information gain are flagged.
 const NOVELTY_THRESHOLD: f64 = 0.10;
+/// Novelty is measured against the most recent `NOVELTY_LOOKBACK` steps rather
+/// than the entire prefix. Information sufficiency is about whether a step
+/// restates *recent* context, and an unbounded prefix scan makes `analyse`
+/// quadratic (the dominant cost on long traces). A 64-step window keeps the
+/// metric near-linear while leaving results identical for any trace up to that
+/// length; longer traces compare against a sliding recent window.
+const NOVELTY_LOOKBACK: usize = 64;
 
 /// Compute ISR using pre-computed embeddings.
 ///
@@ -69,11 +76,22 @@ pub fn compute_from_similarities(
 
         let curr_text = steps[i].semantic_content();
 
-        // Compute max similarity to any prior step.
-        let max_sim = steps[..i]
-            .iter()
-            .map(|prev| similarity_fn(&curr_text, &prev.semantic_content()))
-            .fold(0.0_f64, f64::max);
+        // Compute max similarity to any recent prior step (bounded window).
+        // Early-exit once a prior step already exceeds the novelty cut-off,
+        // since the only decision that depends on `max_sim` is whether it
+        // crosses `1 - NOVELTY_THRESHOLD`.
+        let window_start = i.saturating_sub(NOVELTY_LOOKBACK);
+        let novelty_cutoff = 1.0 - NOVELTY_THRESHOLD;
+        let mut max_sim = 0.0_f64;
+        for prev in &steps[window_start..i] {
+            let sim = similarity_fn(&curr_text, &prev.semantic_content());
+            if sim > max_sim {
+                max_sim = sim;
+            }
+            if max_sim >= novelty_cutoff {
+                break;
+            }
+        }
 
         // Information gain = 1 - max_similarity
         let novelty = 1.0 - max_sim;

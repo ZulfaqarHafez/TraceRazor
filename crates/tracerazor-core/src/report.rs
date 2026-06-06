@@ -109,6 +109,11 @@ pub struct TraceReport {
     /// Per-agent thread breakdown (populated for multi-agent traces only).
     #[serde(default)]
     pub per_agent: Vec<AgentBreakdown>,
+    /// Trajectory Path Entropy — an information-theoretic "staying on the path"
+    /// diagnostic. Reported alongside TAS but **not** folded into the composite
+    /// score (see `metrics::tpe`).
+    #[serde(default)]
+    pub path_entropy: crate::metrics::TpeResult,
     /// Instruction Adherence Rate (M5) — populated only when comparing before/after reports.
     #[serde(default)]
     pub iar: Option<IarResult>,
@@ -510,13 +515,38 @@ impl TraceReport {
             out += &format!("{sep}\n");
         }
 
-        // Savings
+        // Path Entropy (information-theoretic on-path diagnostic)
+        let tpe = &self.path_entropy;
+        if tpe.goal_origin != crate::metrics::GoalOrigin::NotApplicable {
+            let goal_src = match tpe.goal_origin {
+                crate::metrics::GoalOrigin::TaskGoal => "task goal",
+                crate::metrics::GoalOrigin::FinalStep => "final step (no task goal in trace)",
+                crate::metrics::GoalOrigin::NotApplicable => "n/a",
+            };
+            out += &format!(
+                "PATH ENTROPY  (staying-on-path diagnostic, not part of TAS)\n\
+                 Path entropy:      {:.3}   (0 = directed, 1 = random walk)\n\
+                 Focus score:       {:.3}   [{}]   target ≥ {:.2}\n\
+                 Trajectory:        {} advance / {} stall / {} regress   (vs {})\n\
+                 {sep}\n",
+                tpe.path_entropy,
+                tpe.focus_score,
+                tpe.interpretation(),
+                tpe.target,
+                tpe.advances,
+                tpe.stalls,
+                tpe.regresses,
+                goal_src,
+            );
+        }
+
+        // Savings (heuristic projection — see note below)
         let sv = &self.savings;
         out += &format!(
-            "SAVINGS ESTIMATE\n\
+            "SAVINGS ESTIMATE  (heuristic projection from flagged waste, not a measured re-run)\n\
              Tokens saved:      {}  ({:.1}% reduction)\n\
              Cost saved:        ${:.4} per run\n\
-             At 50K runs/month: ${:.2}/month saved\n\
+             Projected/month:   ${:.2}  (at the configured run count & token price)\n\
              Latency saved:     ~{:.1}s per run\n\
              {sep}\n",
             sv.tokens_saved,
@@ -712,8 +742,9 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
 
     let savings_text = if savings.tokens_saved > 0 {
         format!(
-            " Applying the recommended fixes would save {} tokens per run \
-             (${:.4}/run, ${:.2}/month at 50K runs).",
+            " Applying the recommended fixes is estimated to save ~{} tokens per run \
+             (${:.4}/run; ~${:.0}/month projected at 50K runs — a heuristic estimate, \
+             not a measured re-run).",
             savings.tokens_saved,
             savings.cost_saved_per_run_usd,
             savings.monthly_savings_usd
@@ -747,7 +778,7 @@ pub fn generate_oneliner(trace: &Trace, score: &TasScore, savings: &SavingsEstim
     if savings.monthly_savings_usd > 0.0 {
         format!(
             "{} scores {:.0}/100 [{}]. Biggest issue: {}. \
-             Apply fixes to save ${:.0}/month at 50K runs.",
+             Est. ~${:.0}/month at 50K runs (heuristic projection).",
             trace.agent_name,
             score.score,
             score.grade,
