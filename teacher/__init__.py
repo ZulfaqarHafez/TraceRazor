@@ -24,6 +24,7 @@ from .interventions import apply, from_auditor_fixes, propose
 from .memory import Playbook
 from .report import CoachReport, Recommendation, config_diff, render
 from .runner import Task, evaluate, run_task
+from .runners import OfflineRunner, Runner
 from .stats import GateEvidence, StatGate
 from .schemas import (
     AgentConfig,
@@ -46,7 +47,7 @@ __all__ = [
     "propose", "from_auditor_fixes", "apply", "evaluate", "run_task",
     "render", "config_diff", "CoachReport", "Recommendation",
     "LangGraphAdapter", "RunRecorder", "FrameworkAdapter",
-    "StatGate", "GateEvidence",
+    "StatGate", "GateEvidence", "Runner", "OfflineRunner",
 ]
 
 # Online verification (teacher.online) is intentionally NOT imported here so the

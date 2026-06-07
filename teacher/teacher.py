@@ -24,7 +24,8 @@ from .diagnose import Diagnoser
 from .gate import QualityGate
 from .interventions import apply, propose
 from .memory import Playbook
-from .runner import Task, evaluate, run_task
+from .runner import Task
+from .runners import OfflineRunner, Runner
 from .schemas import (
     AgentConfig,
     Decision,
@@ -50,6 +51,7 @@ class TeacherResult:
     tokens_trajectory: list[float]
     mode: Mode
     promoted: bool
+    runner: str = "offline"
 
     @property
     def total_token_saving_pct(self) -> float:
@@ -77,9 +79,23 @@ class Teacher:
         self.patience = patience
 
     # -- main entry point --------------------------------------------------- #
-    def improve(self, tasks: list[Task], max_rounds: int = 8) -> TeacherResult:
+    def improve(self, tasks: "list[Task] | None" = None, max_rounds: int = 8,
+                runner: "Runner | None" = None) -> TeacherResult:
+        """Run the curriculum.
+
+        Pass ``runner`` to choose how candidates are exercised + measured:
+          * default / ``OfflineRunner(tasks, ...)`` -- deterministic mock agent;
+          * ``teacher.online.OnlineRunner(agent, holdout, ...)`` -- real HTTP
+            agent loop (pair the Teacher with ``gate=StatGate()``).
+        ``tasks`` is only needed when no ``runner`` is supplied.
+        """
+        if runner is None:
+            if not tasks:
+                raise ValueError("improve() needs `tasks` or a `runner`")
+            runner = OfflineRunner(tasks, self.diagnoser)
+
         cfg = self.base_config.clone()
-        baseline = evaluate(cfg, tasks, self.diagnoser)
+        baseline = runner.evaluate(cfg)
         history: list[VerifiedResult] = []
         tas_traj = [baseline.tas]
         tok_traj = [baseline.mean_tokens]
@@ -89,7 +105,7 @@ class Teacher:
 
         for _ in range(max_rounds):
             # PERCEIVE + DIAGNOSE on a fresh trace from the current config.
-            sample_trace = run_task(cfg, tasks[0])["trace"]
+            sample_trace = runner.sample_trace(cfg)
             diagnosis = self.diagnoser.diagnose(sample_trace)
             candidates = [
                 iv for iv in propose(diagnosis) if iv.id not in tried_keys
@@ -104,7 +120,7 @@ class Teacher:
 
             # ACT: apply to a candidate config and RE-RUN on the holdout.
             trial_cfg = apply(iv, cfg)
-            trial = evaluate(trial_cfg, tasks, self.diagnoser)
+            trial = runner.evaluate(trial_cfg)
 
             # VERIFY: quality-preservation gate.
             decision = self.gate.decide(baseline, trial)
@@ -141,7 +157,7 @@ class Teacher:
         return TeacherResult(
             base_config=self.base_config, final_config=cfg, history=history,
             tas_trajectory=tas_traj, tokens_trajectory=tok_traj,
-            mode=self.mode, promoted=promote)
+            mode=self.mode, promoted=promote, runner=getattr(runner, "name", "offline"))
 
     # -- COACH over real, non-rerunnable captured traces -------------------- #
     def coach(self, traces: list[dict]):

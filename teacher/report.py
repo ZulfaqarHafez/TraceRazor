@@ -81,7 +81,8 @@ def config_diff(before: AgentConfig, after: AgentConfig) -> str:
 def render(result: TeacherResult) -> str:
     out: list[str] = []
     out.append("=" * 66)
-    out.append(f"TRACERAZOR TEACHER  --  mode: {result.mode.value}")
+    out.append(f"TRACERAZOR TEACHER  --  mode: {result.mode.value}  "
+               f"runner: {result.runner}")
     out.append("=" * 66)
 
     out.append("\nPER-ROUND DECISIONS")

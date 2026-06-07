@@ -199,6 +199,20 @@ without regressing success.
   (loop_breaker, EFFICIENCY_RULES, STEP_BUDGET), unsupported ones rejected as
   no-gain, and an aggressive `step_cap` rejected for breaking success
   (100%→0%) — **49.8% net verified token reduction, success preserved**.
+- **Wired into the curriculum:** `Teacher.improve` takes a pluggable `runner`.
+  Pass `teacher.online.OnlineRunner(agent, holdout, ...)` (with
+  `gate=StatGate()`) to drive the whole perceive→diagnose→plan→verify→remember
+  loop **live**, re-diagnosing from real traces each round; omit it to use the
+  deterministic `OfflineRunner` (default). Same Teacher, same Playbook, either
+  backend.
+
+```python
+from teacher import Teacher, Mode, StatGate, AgentConfig
+from teacher.online import OnlineRunner, OnlineAgent, LLMClient
+agent  = OnlineAgent(LLMClient.from_env(), tools)
+runner = OnlineRunner(agent, holdout, diagnoser, repeats=3)
+result = Teacher(AgentConfig(), mode=Mode.CURRICULUM, gate=StatGate()).improve(runner=runner)
+```
 
 > Note: `api.openai.com` / `api.anthropic.com` are network-reachable from this
 > environment, but no credential is present, so the **live** path is exercised

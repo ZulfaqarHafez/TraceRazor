@@ -127,3 +127,30 @@ def test_verify_online_accepts_safe_rejects_unsafe():
         if "step_cap" in verdicts:
             assert verdicts["step_cap"] is Decision.REJECT_QUALITY
     _with_agent(check)
+
+
+def test_teacher_improve_wired_to_online_runner():
+    """The full curriculum runs live through the OnlineRunner + StatGate."""
+    if not _HAVE_REQUESTS:
+        print("skip: no requests"); return
+    from teacher import Mode, Playbook, Teacher
+    from teacher.online import OnlineRunner, OnlineTask
+
+    def check(agent):
+        holdout = [
+            OnlineTask("ORD-1", "refund", ["get_order", "check_eligibility", "refund"]),
+            OnlineTask("ORD-2", "status", ["get_order", "get_status"]),
+        ]
+        pb = Playbook()
+        runner = OnlineRunner(agent, holdout, Diagnoser(prefer_auditor=True), repeats=3)
+        teacher = Teacher(AgentConfig(), mode=Mode.CURRICULUM, gate=StatGate(),
+                          playbook=pb, diagnoser=Diagnoser(prefer_auditor=True))
+        result = teacher.improve(runner=runner, max_rounds=8)
+        assert result.runner == "online"
+        assert result.total_token_saving_pct > 0
+        assert all(vr.success_after >= 0.99 for vr in result.accepted)
+        assert pb.entries, "playbook should record online outcomes"
+        # tiers tried in non-decreasing order (curriculum escalation)
+        tiers = [int(vr.intervention.tier) for vr in result.history]
+        assert tiers == sorted(tiers)
+    _with_agent(check)

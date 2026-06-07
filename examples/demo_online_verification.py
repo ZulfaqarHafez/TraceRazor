@@ -86,7 +86,25 @@ def main() -> None:
         print(f"\n  verified net token reduction: {saved:.1f}% "
               f"({base_tokens} -> {final_tokens} tokens), success preserved")
         assert saved > 0
-        print("\n[OK] real HTTP agent loop, real usage tokens, statistical gate.")
+
+        # ---- Same thing, but driven by the full Teacher curriculum online ---- #
+        from teacher import Mode, Playbook, Teacher, render
+        from teacher.online import OnlineRunner
+
+        print("\n" + "-" * 74)
+        print("Now driving the FULL Teacher curriculum live (online runner):")
+        runner = OnlineRunner(agent, holdout, diagnoser, repeats=3)
+        teacher = Teacher(AgentConfig(), framework="openai", mode=Mode.CURRICULUM,
+                          gate=StatGate(min_savings_pct=3.0, success_delta=0.05),
+                          playbook=Playbook(), diagnoser=diagnoser)
+        result = teacher.improve(runner=runner, max_rounds=8)
+        print(render(result))
+        assert result.runner == "online"
+        assert result.total_token_saving_pct > 0
+        assert all(vr.success_after >= 0.99 for vr in result.accepted)
+
+        print("\n[OK] real HTTP agent loop, real usage tokens, statistical gate, "
+              "wired into Teacher.improve().")
     finally:
         if server is not None:
             server.shutdown()

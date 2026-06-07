@@ -210,6 +210,37 @@ def evaluate_online(agent: OnlineAgent, cfg: AgentConfig, holdout: list[OnlineTa
     return EvalResult(tokens=tokens, success=success)
 
 
+class OnlineRunner:
+    """Real HTTP agent runner -- a drop-in ``Runner`` for ``Teacher.improve``.
+
+    Pair it with ``gate=StatGate()`` on the Teacher so the curriculum is gated
+    by the statistical non-inferiority test on live re-runs.
+    """
+    name = "online"
+
+    def __init__(self, agent: "OnlineAgent", holdout: list[OnlineTask],
+                 diagnoser, repeats: int = 3, seed: int = 0):
+        if not holdout:
+            raise ValueError("OnlineRunner needs at least one OnlineTask")
+        self.agent = agent
+        self.holdout = holdout
+        self.diagnoser = diagnoser
+        self.repeats = repeats
+        self.seed = seed
+
+    def evaluate(self, cfg: AgentConfig) -> EvalResult:
+        res = evaluate_online(self.agent, cfg, self.holdout, self.repeats)
+        try:
+            sample = self.agent.run(cfg, self.holdout[0], seed=self.seed).trace
+            res.tas = self.diagnoser.diagnose(sample).tas_score
+        except Exception:
+            pass
+        return res
+
+    def sample_trace(self, cfg: AgentConfig) -> dict:
+        return self.agent.run(cfg, self.holdout[0], seed=self.seed).trace
+
+
 @dataclass
 class OnlineVerification:
     base_config: AgentConfig
