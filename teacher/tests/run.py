@@ -9,7 +9,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-MODULES = ["teacher.tests.test_teacher", "teacher.tests.test_layers"]
+MODULES = ["teacher.tests.test_teacher", "teacher.tests.test_layers",
+           "teacher.tests.test_online"]
 
 
 def main() -> int:

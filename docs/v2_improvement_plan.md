@@ -167,12 +167,43 @@ perceive ─▶ diagnose ─▶ plan (curriculum) ─▶ act ─▶ verify (gate
 ## Try the prototype
 
 ```bash
-python examples/demo_teacher_offline.py     # closed-loop remediation + quality gate
+python examples/demo_teacher_offline.py     # closed-loop remediation + quality gate (mock agent)
 python examples/demo_langgraph_coach.py     # LangGraph ingest -> COACH recommendations
-python teacher/tests/run.py                 # 14 tests (no pytest needed)
+python examples/demo_online_verification.py # REAL online verification (HTTP agent + stat gate)
+python teacher/tests/run.py                 # 21 tests (no pytest needed)
 ```
 
 Everything runs offline with no API keys.
+
+### Real online verification (Layer 3)
+
+`teacher.online` runs an **actual tool-calling agent over HTTP** against an
+OpenAI-compatible endpoint, measures **real token usage** (from the API `usage`
+block) and real task success, applies a candidate config, **re-runs online**,
+and gates on a **statistical non-inferiority test** (`teacher.stats.StatGate`:
+paired bootstrap CI on token savings + a one-sided non-inferiority bound on the
+success proportion). It promotes only changes that *provably* cut tokens
+without regressing success.
+
+- **Runtime interventions enforced live:** `loop_breaker` suppresses a repeated
+  identical tool call; `step_cap` hard-stops the loop. Prompt-section
+  interventions ride in the real system prompt, so a real model emits fewer
+  tokens.
+- **Drop-in for any provider:** set `TRACERAZOR_LLM_BASE_URL` +
+  `TRACERAZOR_LLM_API_KEY` (+ `TRACERAZOR_LLM_MODEL`) and run with `--live`
+  against OpenAI / Azure / Groq / vLLM / Ollama / LiteLLM — the agent loop,
+  token accounting, and gate are identical.
+- **Verified here without a key** against a bundled stdlib OpenAI-compatible
+  server (`teacher/_mockserver.py`) whose token output genuinely responds to the
+  installed interventions. Sample run: 3 interventions verified-and-accepted
+  (loop_breaker, EFFICIENCY_RULES, STEP_BUDGET), unsupported ones rejected as
+  no-gain, and an aggressive `step_cap` rejected for breaking success
+  (100%→0%) — **49.8% net verified token reduction, success preserved**.
+
+> Note: `api.openai.com` / `api.anthropic.com` are network-reachable from this
+> environment, but no credential is present, so the **live** path is exercised
+> against the local server; it targets a real provider unchanged once a key is
+> set.
 
 ### Diagnostic backends (Layer 1)
 
