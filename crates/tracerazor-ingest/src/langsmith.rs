@@ -72,7 +72,10 @@ pub fn parse(data: &str) -> Result<Trace> {
         .unwrap_or("langgraph")
         .to_string();
 
-    let total_tokens: u32 = steps.iter().map(|s| s.tokens).sum();
+    let total_tokens: u32 = steps
+        .iter()
+        .map(|s| s.tokens)
+        .fold(0u32, u32::saturating_add);
 
     Ok(Trace {
         trace_id: root.id.clone(),
@@ -169,7 +172,8 @@ fn extract_tokens(extra: &Option<serde_json::Value>) -> u32 {
                 .or_else(|| u.get("totalTokens"))
                 .and_then(|t| t.as_u64())
         })
-        .map(|t| t as u32)
+        // Saturate rather than silently truncating the upper 32 bits.
+        .map(|t| u32::try_from(t).unwrap_or(u32::MAX))
         .unwrap_or(0)
 }
 

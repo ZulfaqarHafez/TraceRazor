@@ -155,7 +155,7 @@ pub fn parse(data: &str) -> Result<Trace> {
             }
         };
 
-        let tokens = attrs
+        let tokens_i64 = attrs
             .get("gen_ai.usage.total_tokens")
             .and_then(|v| v.as_i64())
             .or_else(|| {
@@ -164,9 +164,13 @@ pub fn parse(data: &str) -> Result<Trace> {
                     .get("gen_ai.usage.output_tokens")
                     .and_then(|v| v.as_i64())
                     .unwrap_or(0);
-                Some(i + o)
+                // saturating_add: avoid overflow on pathological inputs.
+                Some(i.saturating_add(o))
             })
-            .unwrap_or(0) as u32;
+            .unwrap_or(0);
+        // Clamp negatives to 0 and saturate at u32::MAX instead of silently
+        // truncating the upper bits of an attacker-supplied token count.
+        let tokens = u32::try_from(tokens_i64.max(0)).unwrap_or(u32::MAX);
 
         let tool_name = if step_type == StepType::ToolCall {
             attrs
@@ -218,7 +222,10 @@ pub fn parse(data: &str) -> Result<Trace> {
         counter += 1;
     }
 
-    let total_tokens: u32 = steps.iter().map(|s| s.tokens).sum();
+    let total_tokens: u32 = steps
+        .iter()
+        .map(|s| s.tokens)
+        .fold(0u32, u32::saturating_add);
 
     Ok(Trace {
         trace_id,

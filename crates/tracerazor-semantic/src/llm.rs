@@ -21,6 +21,21 @@
 use anyhow::{bail, Context, Result};
 use serde::{Deserialize, Serialize};
 
+/// Bound an upstream provider's error body before surfacing it in an error
+/// chain (which may end up in logs or an API response). Keeps enough for
+/// debugging without dumping an arbitrarily large or sensitive response body
+/// wholesale.
+pub(crate) fn truncate_error_body(body: &str) -> String {
+    const MAX: usize = 300;
+    let trimmed = body.trim();
+    if trimmed.chars().count() > MAX {
+        let head: String = trimmed.chars().take(MAX).collect();
+        format!("{head}… [truncated]")
+    } else {
+        trimmed.to_string()
+    }
+}
+
 /// The wire format the backend speaks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Provider {
@@ -260,7 +275,7 @@ async fn complete_openai(
     if !response.status().is_success() {
         let status = response.status();
         let txt = response.text().await.unwrap_or_default();
-        bail!("LLM API error {status}: {txt}");
+        bail!("LLM API error {status}: {}", truncate_error_body(&txt));
     }
 
     let chat: OpenaiChatResponse = response
@@ -338,7 +353,7 @@ async fn complete_anthropic(
     if !response.status().is_success() {
         let status = response.status();
         let txt = response.text().await.unwrap_or_default();
-        bail!("Anthropic API error {status}: {txt}");
+        bail!("Anthropic API error {status}: {}", truncate_error_body(&txt));
     }
 
     let parsed: AnthropicResponse = response
@@ -399,7 +414,7 @@ async fn embed_openai(
     if !response.status().is_success() {
         let status = response.status();
         let txt = response.text().await.unwrap_or_default();
-        bail!("embeddings API error {status}: {txt}");
+        bail!("embeddings API error {status}: {}", truncate_error_body(&txt));
     }
 
     let parsed: EmbedResponse = response

@@ -48,7 +48,11 @@ pub async fn embed_batch(texts: &[String], api_key: &str, model: &str) -> Result
     if !response.status().is_success() {
         let status = response.status();
         let body = response.text().await.unwrap_or_default();
-        anyhow::bail!("OpenAI API error {}: {}", status, body);
+        anyhow::bail!(
+            "OpenAI API error {}: {}",
+            status,
+            crate::llm::truncate_error_body(&body)
+        );
     }
 
     let embed_response: EmbedResponse = response
