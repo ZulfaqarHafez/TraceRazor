@@ -634,34 +634,49 @@ function app() {
 
     tracesTable(rows) {
       // Lightweight table HTML for the dashboard recent traces section.
+      // All trace-derived values are HTML-escaped — trace_id / agent_name are
+      // attacker-controlled (any caller can POST /api/audit) so unescaped
+      // interpolation here would be a stored-XSS sink.
+      const esc = this.esc
       const ths = ['Trace ID','Agent','Steps','Tokens','TAS','Grade','Stored']
-        .map(h => `<th>${h}</th>`).join('')
+        .map(h => `<th>${esc(h)}</th>`).join('')
       const trs = rows.map(t => {
-        const badge = t.grade ? `<span class="badge badge-${t.grade}">${t.grade}</span>` : '—'
-        return `<tr class="clickable" onclick="document.dispatchEvent(new CustomEvent('open-trace',{detail:'${t.trace_id}'}))">
-          <td class="mono">${t.trace_id}</td>
-          <td>${t.agent_name}</td>
+        const badge = t.grade ? `<span class="badge badge-${esc(t.grade)}">${esc(t.grade)}</span>` : '—'
+        return `<tr class="clickable" data-trace-id="${esc(t.trace_id)}">
+          <td class="mono">${esc(t.trace_id)}</td>
+          <td>${esc(t.agent_name)}</td>
           <td>${t.total_steps}</td>
           <td>${this.fmtNum(t.total_tokens)}</td>
           <td>${t.tas_score != null ? t.tas_score.toFixed(1) : '—'}</td>
           <td>${badge}</td>
-          <td>${(t.stored_at||'').slice(0,10)}</td>
+          <td>${esc((t.stored_at||'').slice(0,10))}</td>
         </tr>`
       }).join('')
       return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`
+    },
+
+    // HTML-escape a value for safe interpolation into markup (text or
+    // double-quoted attribute context).
+    esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[c]))
     },
 
     fmtNum: n => Number(n||0).toLocaleString(),
   }
 }
 
-// Bridge for tracesTable click → Alpine tab change
-document.addEventListener('open-trace', e => {
-  // Walk up to find the Alpine component
+// Delegated click for trace rows → open trace detail. Using a data-attribute +
+// delegation (instead of an inline onclick built from trace data) keeps
+// attacker-controlled trace_ids out of any executable context.
+document.addEventListener('click', e => {
+  const row = e.target.closest('tr.clickable[data-trace-id]')
+  if (!row) return
   const root = document.querySelector('[x-data]')
   if (root && root._x_dataStack) {
     const data = root._x_dataStack[0]
-    data.openTrace && data.openTrace(e.detail)
+    data.openTrace && data.openTrace(row.getAttribute('data-trace-id'))
   }
 })
 </script>
