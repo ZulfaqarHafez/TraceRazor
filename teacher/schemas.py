@@ -57,7 +57,16 @@ class Diagnosis:
     total_tokens: int
     patterns: list[WastePattern]
     source: str = "builtin"     # "auditor" if produced by the Rust binary
+    backend: str = "builtin"    # "native" | "subprocess" | "builtin"
+    auditor_fixes: list[dict] = field(default_factory=list)   # raw fixes[] from the auditor
+    savings: dict[str, Any] = field(default_factory=dict)      # raw savings{} from the auditor
     raw: dict[str, Any] = field(default_factory=dict)
+
+    def pattern(self, kind: "WasteKind") -> Optional["WastePattern"]:
+        for p in self.patterns:
+            if p.kind is kind:
+                return p
+        return None
 
 
 # --------------------------------------------------------------------------- #

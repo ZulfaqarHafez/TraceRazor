@@ -17,11 +17,12 @@ Quickstart (offline, no API keys):
 See ``examples/demo_teacher_offline.py`` for an end-to-end demo, and
 ``docs/v2_improvement_plan.md`` for the full production roadmap.
 """
+from .adapters import FrameworkAdapter, LangGraphAdapter, RunRecorder
 from .diagnose import Diagnoser
 from .gate import QualityGate
-from .interventions import apply, propose
+from .interventions import apply, from_auditor_fixes, propose
 from .memory import Playbook
-from .report import config_diff, render
+from .report import CoachReport, Recommendation, config_diff, render
 from .runner import Task, evaluate, run_task
 from .schemas import (
     AgentConfig,
@@ -41,5 +42,7 @@ __all__ = [
     "AgentConfig", "Task", "QualityGate", "Playbook", "Diagnoser",
     "Intervention", "Diagnosis", "WastePattern", "WasteKind",
     "Target", "Tier", "Decision", "VerifiedResult",
-    "propose", "apply", "evaluate", "run_task", "render", "config_diff",
+    "propose", "from_auditor_fixes", "apply", "evaluate", "run_task",
+    "render", "config_diff", "CoachReport", "Recommendation",
+    "LangGraphAdapter", "RunRecorder", "FrameworkAdapter",
 ]

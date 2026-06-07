@@ -1,0 +1,19 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "tracerazor-native"
+description = "Native PyO3 bindings for the TraceRazor auditor core."
+requires-python = ">=3.8"
+license = { text = "MIT" }
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dynamic = ["version"]
+
+[tool.maturin]
+manifest-path = "Cargo.toml"
+module-name = "tracerazor_native"
+features = ["pyo3/extension-module"]

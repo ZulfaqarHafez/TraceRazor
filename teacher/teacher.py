@@ -143,6 +143,50 @@ class Teacher:
             tas_trajectory=tas_traj, tokens_trajectory=tok_traj,
             mode=self.mode, promoted=promote)
 
+    # -- COACH over real, non-rerunnable captured traces -------------------- #
+    def coach(self, traces: list[dict]):
+        """Diagnose captured traces, rank interventions by predicted savings +
+        playbook prior, and return a ``CoachReport``. Promotes nothing.
+
+        Used for traces from a live agent (e.g. via the LangGraph adapter) that
+        cannot be re-run offline, so the closed-loop gate does not apply; we
+        rank by the auditor's own ``estimated_token_savings`` instead.
+        """
+        from .report import CoachReport, Recommendation
+
+        diagnoses = [self.diagnoser.diagnose(t) for t in traces]
+        backend = diagnoses[0].backend if diagnoses else "builtin"
+
+        # Aggregate interventions across traces (sum predicted savings, count).
+        agg: dict[str, dict] = {}
+        for d in diagnoses:
+            for iv in propose(d):
+                slot = agg.setdefault(iv.id, {"iv": iv, "save": 0, "n": 0, "sig": ""})
+                slot["save"] += iv.predicted_savings
+                slot["n"] += 1
+                slot["sig"] = self._signature(iv, d)
+
+        recs = []
+        for slot in agg.values():
+            iv = slot["iv"]
+            prior = self.playbook.prior_winrate(slot["sig"], iv.key)
+            recs.append(Recommendation(iv, slot["save"], slot["n"], prior))
+        recs.sort(key=lambda r: (r.total_predicted_savings * r.prior_winrate),
+                  reverse=True)
+
+        # Build a proposed config: apply the applicable (non-STRUCT) edits.
+        proposed = self.base_config.clone()
+        for r in recs:
+            if r.intervention.tier is not Tier.STRUCT:
+                proposed = apply(r.intervention, proposed)
+
+        mean_tas = sum(d.tas_score for d in diagnoses) / max(len(diagnoses), 1)
+        total_tokens = sum(d.total_tokens for d in diagnoses)
+        return CoachReport(
+            n_traces=len(diagnoses), mean_tas=round(mean_tas, 1),
+            total_tokens=total_tokens, recommendations=recs,
+            base_config=self.base_config, proposed_config=proposed, backend=backend)
+
     # -- planning helpers --------------------------------------------------- #
     def _select(self, candidates: list[Intervention], diagnosis) -> Intervention:
         lowest = min(c.tier for c in candidates)

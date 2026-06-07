@@ -167,10 +167,41 @@ perceive ─▶ diagnose ─▶ plan (curriculum) ─▶ act ─▶ verify (gate
 ## Try the prototype
 
 ```bash
-python examples/demo_teacher_offline.py     # offline, no API keys
-python -m pytest teacher/tests/             # 7 tests
+python examples/demo_teacher_offline.py     # closed-loop remediation + quality gate
+python examples/demo_langgraph_coach.py     # LangGraph ingest -> COACH recommendations
+python teacher/tests/run.py                 # 14 tests (no pytest needed)
 ```
 
-The demo uses the **real Rust auditor** as its diagnostic backend when
-`target/release/tracerazor` is built, and a transparent built-in heuristic
-otherwise — so it runs anywhere.
+Everything runs offline with no API keys.
+
+### Diagnostic backends (Layer 1)
+
+`teacher.Diagnoser` selects a backend automatically and parses the auditor's
+**full** report — all 13 metric blobs (with `pass`/`target` and detail like
+`srr.redundant_steps`, `tca.misfires`, `cce.bloated_steps`), the step-level
+`diff`, `savings`, and the ready-made `fixes[]` — into `WastePattern`s with real
+severity + step-id + token attribution, and maps the auditor's own fixes into
+applicable interventions.
+
+| Backend | When | How |
+|---|---|---|
+| **native** | `import tracerazor_native` succeeds | PyO3 binding (`crates/tracerazor-py`), in-process — no subprocess |
+| **subprocess** | `tracerazor` binary present | shells `tracerazor audit --format json` |
+| **builtin** | neither | transparent pure-Python heuristic (CI/offline) |
+
+> The PyO3 crate (`crates/tracerazor-py`) is **excluded from the Cargo
+> workspace** so `cargo build --workspace`/CI never depend on `pyo3`. It was
+> authored against the real core API but is **not compiled in this sandbox** (no
+> crates.io access); build it where crates.io is reachable with
+> `maturin develop -m crates/tracerazor-py/Cargo.toml`. The subprocess backend
+> is the verified default until then.
+
+### Framework adapters (Layer 2)
+
+`teacher.LangGraphAdapter` ingests real LangGraph/LangChain runs into
+auditor-schema traces — via a dependency-free `RunRecorder` (works with no
+langchain installed) or `from_tracerazor_callback(cb)` to reuse the official
+`tracerazor` LangGraph integration. Because captured live traces can't be
+re-run offline, `Teacher.coach(traces)` ranks interventions by the auditor's
+own predicted savings + playbook priors and emits a proposed config diff for
+human approval — promoting nothing.

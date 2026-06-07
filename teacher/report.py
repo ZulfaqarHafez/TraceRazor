@@ -1,10 +1,67 @@
 """Human-readable rendering of a teaching run (COACH mode output + diffs)."""
 from __future__ import annotations
 
-from .schemas import AgentConfig
+from dataclasses import dataclass, field
+
+from .schemas import AgentConfig, Intervention
 from .teacher import TeacherResult
 
 _TIER_NAME = {0: "INLINE", 1: "PROMPT", 2: "TOOL", 3: "STRUCT"}
+
+
+@dataclass
+class Recommendation:
+    intervention: Intervention
+    total_predicted_savings: int
+    n_traces: int                 # how many traces exhibited this
+    prior_winrate: float          # from the playbook (0.5 == no history)
+
+
+@dataclass
+class CoachReport:
+    """Output of COACH mode over real, non-rerunnable captured traces.
+
+    Promotes nothing -- it ranks the auditor's own + taxonomy interventions by
+    predicted savings (and playbook prior) and emits a proposed config diff for
+    a human to approve.
+    """
+    n_traces: int
+    mean_tas: float
+    total_tokens: int
+    recommendations: list[Recommendation] = field(default_factory=list)
+    base_config: AgentConfig = field(default_factory=AgentConfig)
+    proposed_config: AgentConfig = field(default_factory=AgentConfig)
+    backend: str = "builtin"
+
+    @property
+    def total_predicted_savings(self) -> int:
+        return sum(r.total_predicted_savings for r in self.recommendations)
+
+    def render(self) -> str:
+        out = ["=" * 70,
+               f"TRACERAZOR TEACHER -- COACH report   (backend: {self.backend})",
+               "=" * 70,
+               f"  traces analysed : {self.n_traces}",
+               f"  mean TAS        : {self.mean_tas:.1f}",
+               f"  total tokens    : {self.total_tokens}",
+               f"  predicted save  : {self.total_predicted_savings} tokens "
+               f"({100*self.total_predicted_savings/max(self.total_tokens,1):.1f}%)",
+               "",
+               "RECOMMENDED INTERVENTIONS (ranked; promote nothing automatically)",
+               f"  {'tier':<7}{'intervention':<22}{'save~':>7}{'traces':>7}{'prior':>7}"]
+        for r in self.recommendations:
+            tier = _TIER_NAME.get(int(r.intervention.tier), "?")
+            out.append(
+                f"  {tier:<7}{r.intervention.key:<22}{r.total_predicted_savings:>7}"
+                f"{r.n_traces:>7}{r.prior_winrate*100:>6.0f}%")
+            if r.intervention.rationale:
+                out.append(f"          - {r.intervention.rationale}")
+        out.append("")
+        out.append("PROPOSED CONFIG DIFF (for human approval)")
+        out.append("  " + config_diff(self.base_config, self.proposed_config)
+                   .replace("\n", "\n  "))
+        out.append("=" * 70)
+        return "\n".join(out)
 
 
 def config_diff(before: AgentConfig, after: AgentConfig) -> str:
