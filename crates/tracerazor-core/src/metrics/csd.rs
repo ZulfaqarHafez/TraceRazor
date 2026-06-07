@@ -201,7 +201,7 @@ mod tests {
         assert_eq!(result.score, 0.8);
         assert!(result.pass); // 0.8 >= 0.60
         assert_eq!(result.step_results.len(), 2);
-        assert!(!result.high_drift_pairs.is_empty() == false); // no high drift pairs
+        assert!(result.high_drift_pairs.is_empty(), "no high drift pairs expected");
     }
 
     #[test]

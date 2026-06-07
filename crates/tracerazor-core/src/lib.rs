@@ -209,7 +209,11 @@ fn compute_per_agent_scores(
                     steps,
                     total_tokens: agent_tokens,
                     task_value_score: trace.task_value_score,
-                    metadata: Default::default(),
+                    // Carry the parent's metadata so per-agent GAR/TPE anchor on
+                    // the same task goal as the top-level analysis (otherwise the
+                    // sub-traces silently fall back to last-step anchoring and
+                    // disagree with the parent's goal-advancement scores).
+                    metadata: trace.metadata.clone(),
                 };
                 // analyse_dyn is a concrete (non-generic) function — no recursion risk.
                 match analyse_dyn(&mut sub, similarity_fn, config) {

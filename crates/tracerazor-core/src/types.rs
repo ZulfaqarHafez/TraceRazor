@@ -195,15 +195,17 @@ impl Trace {
     ];
 
     /// Returns the task goal text from `metadata` if present and non-empty.
+    ///
+    /// Only genuine string values are accepted. A non-string value (array,
+    /// object, number, bool, null) is *not* coerced into goal text — stringifying
+    /// e.g. an empty array to `"[]"` and anchoring goal-progress metrics on it
+    /// would silently corrupt GAR/TPE.
     pub fn task_goal(&self) -> Option<String> {
         for key in Self::GOAL_KEYS {
-            if let Some(v) = self.metadata.get(key) {
-                let text = match v {
-                    serde_json::Value::String(s) => s.trim().to_string(),
-                    other => other.to_string(),
-                };
-                if !text.is_empty() && text != "null" {
-                    return Some(text);
+            if let Some(serde_json::Value::String(s)) = self.metadata.get(key) {
+                let text = s.trim();
+                if !text.is_empty() {
+                    return Some(text.to_string());
                 }
             }
         }

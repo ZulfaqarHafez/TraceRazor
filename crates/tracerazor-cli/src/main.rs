@@ -158,7 +158,7 @@ enum Commands {
     ///
     /// By default only "safe" patches (system_prompt-only, non-functional)
     /// are applied: hedge_reduction, verbosity_reduction, caveman_prompt_insert,
-    /// reformulation_guard. Pass `--all` to apply every fix in the file.
+    /// reformulation_guard, goal_anchor. Pass `--all` to apply every fix in the file.
     ///
     /// The input JSON may be either a raw `[Fix, ...]` array or a full audit
     /// report (output of `tracerazor audit --format json`).
@@ -822,6 +822,7 @@ fn is_safe_fix(fix: &Fix) -> bool {
             | FixType::VerbosityReduction
             | FixType::CavemanPromptInsert
             | FixType::ReformulationGuard
+            | FixType::GoalAnchor
     ) && fix.target == "system_prompt"
 }
 

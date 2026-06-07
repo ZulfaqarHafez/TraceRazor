@@ -20,6 +20,9 @@ use crate::scoring::TasScore;
 use crate::types::{StepFlag, Trace};
 
 const AVS_FIX_THRESHOLD: f64 = 0.40;
+/// Fraction of a drifting agent's off-path token spend assumed recoverable once
+/// it is re-anchored on its goal. Deliberately conservative; see `GoalAnchor`.
+const GOAL_ANCHOR_RECOVERY_FRACTION: f64 = 0.25;
 
 /// The kind of fix generated.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -328,9 +331,31 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
             .filter(|s| score.gar.low_advancement_steps.contains(&s.id))
             .map(|s| s.tokens)
             .sum();
+        // When drift is detected purely by TPE (GAR passing, so no
+        // low-advancement steps), fall back to the trajectory's regressing-step
+        // count × the mean reasoning-step size as the off-path proxy, so the
+        // estimate is non-degenerate rather than a misleading 0.
+        let off_path_tokens = if off_path_tokens == 0 && tpe.regresses > 0 {
+            let reasoning_tokens: u32 = trace
+                .steps
+                .iter()
+                .filter(|s| s.step_type == crate::types::StepType::Reasoning)
+                .map(|s| s.tokens)
+                .sum();
+            let reasoning_steps = trace
+                .steps
+                .iter()
+                .filter(|s| s.step_type == crate::types::StepType::Reasoning)
+                .count()
+                .max(1);
+            let avg = reasoning_tokens / reasoning_steps as u32;
+            avg.saturating_mul(tpe.regresses as u32)
+        } else {
+            off_path_tokens
+        };
         // Conservative: assume a quarter of off-path step tokens are recoverable
         // exploration once the agent is re-anchored. Never inflate beyond that.
-        let estimated = (off_path_tokens as f64 * 0.25).round() as u32;
+        let estimated = (off_path_tokens as f64 * GOAL_ANCHOR_RECOVERY_FRACTION).round() as u32;
 
         let goal_clause = match trace.task_goal() {
             Some(g) => {

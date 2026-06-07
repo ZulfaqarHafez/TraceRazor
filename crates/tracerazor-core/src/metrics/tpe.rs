@@ -14,11 +14,14 @@
 /// * **STALL**   — `|Δ_i| ≤ ε` (the step neither advanced nor regressed)
 /// * **REGRESS** — `Δ_i < −ε`  (the step moved *away* from the goal)
 ///
-/// Over that three-symbol alphabet we compute the normalised Shannon entropy
+/// Over the move-classes that actually occur we compute the normalised Shannon
+/// entropy (Pielou's evenness — the entropy is normalised by `log2(k)` where
+/// `k` is the number of *distinct* classes observed, so a trajectory that only
+/// ever advances-and-regresses can still reach 1.0):
 ///
 /// ```text
-/// H = − Σ p(s) · log2 p(s)          (s ∈ {ADVANCE, STALL, REGRESS})
-/// path_entropy = H / log2(3)        ∈ [0, 1]
+/// H = − Σ p(s) · log2 p(s)          (s ∈ observed ⊆ {ADVANCE, STALL, REGRESS})
+/// path_entropy = H / log2(k)        ∈ [0, 1]   (k = |observed|, 0 when k ≤ 1)
 /// ```
 ///
 /// `path_entropy → 0` means the trajectory is *predictable* — the agent makes
@@ -54,7 +57,7 @@
 /// records which was used so the number is never silently mis-anchored.
 use serde::{Deserialize, Serialize};
 
-use crate::types::{StepType, Trace};
+use crate::types::{StepType, Trace, TraceStep};
 
 /// Similarity delta below this magnitude counts as a STALL (similarity noise floor).
 pub const ADVANCE_EPSILON: f64 = 0.02;
@@ -217,8 +220,17 @@ pub fn compute(
         None => (reasoning.last().unwrap().content.clone(), GoalOrigin::FinalStep),
     };
 
+    // Steps that form the trajectory toward the goal. When the goal IS the final
+    // step (no external goal), exclude it — scoring it against itself would
+    // manufacture a spurious final ADVANCE (sim(last, last) ≈ 1.0) and bias the
+    // trajectory toward "focused". This mirrors GAR's None-path handling.
+    let trajectory: &[&TraceStep] = match goal_origin {
+        GoalOrigin::FinalStep => &reasoning[..reasoning.len() - 1],
+        _ => &reasoning[..],
+    };
+
     // Per-step similarity to the goal.
-    let g: Vec<f64> = reasoning
+    let g: Vec<f64> = trajectory
         .iter()
         .map(|s| similarity_fn(&s.content, &goal_text).clamp(0.0, 1.0))
         .collect();
@@ -303,13 +315,6 @@ mod tests {
             task_value_score: 1.0,
             metadata: HashMap::new(),
         }
-    }
-
-    // A similarity function driven by an explicit goal-distance ramp encoded in
-    // the step content as a leading float, e.g. "0.4 some text". This lets each
-    // test script an exact goal-progress sequence.
-    fn scripted_sim(_a: &str, _b: &str) -> f64 {
-        0.0
     }
 
     /// Helper: build a trace whose i-th reasoning step has goal-similarity g[i]
@@ -438,7 +443,22 @@ mod tests {
         let d = TpeResult::default();
         assert!(d.pass);
         assert_eq!(d.focus_score, 1.0);
-        // scripted_sim is unused but kept for symmetry; reference it so clippy is quiet.
-        let _ = scripted_sim("a", "b");
+        assert_eq!(d.goal_origin, GoalOrigin::NotApplicable);
+    }
+
+    #[test]
+    fn final_step_path_excludes_goal_step_from_trajectory() {
+        // No task goal → the final step IS the goal and must be excluded from
+        // the trajectory, otherwise sim(last, last) ≈ 1.0 fabricates an extra
+        // final increment (the self-comparison bug). With 4 reasoning steps the
+        // trajectory is the first 3, giving exactly 2 increments, not 3.
+        let trace = progress_trace(&[0.2, 0.5, 0.8, 0.95]);
+        let r = compute(&trace, goal_progress_sim, None);
+        assert_eq!(r.goal_origin, GoalOrigin::FinalStep);
+        let increments = r.advances + r.stalls + r.regresses;
+        assert_eq!(increments, 2, "goal step must be excluded from the trajectory");
+        assert_eq!(r.advances, 2);
+        assert_eq!(r.regresses, 0);
+        assert_eq!(r.stalls, 0);
     }
 }

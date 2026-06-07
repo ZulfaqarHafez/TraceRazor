@@ -4,8 +4,9 @@
 /// information versus restating or paraphrasing prior context.
 ///
 /// Formula: ISR = (steps_with_novel_info / total_steps) * 100
-/// Detection: For each step, compute cosine distance from the union of
-///            all prior steps using embeddings. Steps with < 10% novel
+/// Detection: For each step, compute cosine distance from the most recent
+///            prior steps (a bounded `NOVELTY_LOOKBACK`-step window, not the
+///            full prefix — see that constant). Steps with < 10% novel
 ///            information content are flagged.
 /// Target: > 80%. An ISR below 60% suggests the agent is verbose.
 use serde::{Deserialize, Serialize};
