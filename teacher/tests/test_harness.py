@@ -110,6 +110,72 @@ def test_kvstore_last_write_wins_and_persist():
     kv2.close()
 
 
+def test_kvstore_reopen_then_append_offsets_correct():
+    # Regression: append offset must be the true EOF after reopening a
+    # non-empty log (not a stale tell()/0).
+    tmp = tempfile.mkdtemp()
+    path = os.path.join(tmp, "kv.log")
+    kv = KVStore(path); kv.put("a", b"first"); kv.close()
+    kv2 = KVStore(path)
+    kv2.put("b", b"second")          # append after reopen
+    assert kv2.get("a") == b"first"
+    assert kv2.get("b") == b"second"
+    kv2.close()
+    kv3 = KVStore(path)              # rebuild from the (now 2-record) log
+    assert kv3.get("a") == b"first" and kv3.get("b") == b"second"
+    kv3.close()
+
+
+def test_appendlog_scan_tolerates_torn_tail():
+    tmp = tempfile.mkdtemp()
+    path = os.path.join(tmp, "a.log")
+    log = AppendLog(path); log.append(b"good"); log.close()
+    with open(path, "ab") as fh:      # simulate a crash mid-append: prefix only
+        fh.write(b"\xff\xff\x00\x00")
+    log2 = AppendLog(path)
+    recs = [r for _, r in log2.scan()]
+    assert recs == [b"good"]          # torn tail ignored, no crash
+    log2.close()
+
+
+def test_read_at_rejects_out_of_range_offset():
+    tmp = tempfile.mkdtemp()
+    log = AppendLog(os.path.join(tmp, "a.log"))
+    log.append(b"x")
+    try:
+        log.read_at(9999)
+        assert False, "expected IndexError"
+    except IndexError:
+        pass
+    log.close()
+
+
+def test_kvstore_compact_ignores_leftover_tmp():
+    tmp = tempfile.mkdtemp()
+    path = os.path.join(tmp, "kv.log")
+    open(path + ".compact", "wb").write(b"GARBAGE-from-crashed-compaction")
+    kv = KVStore(path); kv.put("k", b"v")
+    kv.compact()                      # must not append after the stale tmp
+    assert kv.get("k") == b"v"
+    kv.close()
+
+
+def test_caching_diagnoser_falls_back_on_malformed_report():
+    class BadAuditor:
+        backend = "bad"; _audit = True
+        def __init__(self): self.audit_calls = 0
+        def audit(self, trace):
+            self.audit_calls += 1
+            return {"score": "not-a-dict"}      # parse will choke on this
+        def _parse_auditor(self, data, trace):
+            return Diagnosis("t", "a", "f", float(data["score"]["score"]), 0, [])
+        def _diagnose_builtin(self, trace):
+            return Diagnosis("t", "a", "f", 50.0, 0, [], source="builtin")
+    cd = CachingDiagnoser(BadAuditor(), DiagnosisCache())
+    d = cd.diagnose(_TRACE)           # must not crash -> graceful builtin
+    assert d.source == "builtin" and d.tas_score == 50.0
+
+
 def test_kvstore_compact_reclaims_and_preserves():
     tmp = tempfile.mkdtemp()
     path = os.path.join(tmp, "kv.log")

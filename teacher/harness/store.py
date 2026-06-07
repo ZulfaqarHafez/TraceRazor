@@ -33,30 +33,42 @@ _LEN = struct.Struct("<I")        # 4-byte little-endian length prefix
 class AppendLog:
     """Append-only, length-prefixed record log with mmap random reads."""
 
+    _MAX_RECORD = (1 << 32) - 1            # 4-byte length prefix limit
+
     def __init__(self, path: str):
         self.path = path
         if not os.path.exists(path):
             open(path, "ab").close()
         self._wf = open(path, "ab")            # sequential append handle
+        # Track the write offset explicitly from the file size rather than
+        # relying on tell() in append mode (its value before the first write is
+        # platform-dependent), so reopen+append computes correct offsets.
+        self._end = os.path.getsize(path)
         self._mm: Optional[mmap.mmap] = None
         self._mm_len = 0
 
     # -- writes (sequential) ------------------------------------------------ #
     def append(self, record: bytes) -> int:
         """Append one record; return its byte offset. Sequential write."""
-        offset = self._wf.tell()
+        if len(record) > self._MAX_RECORD:
+            raise ValueError(f"record {len(record)} bytes exceeds 4GB length prefix")
+        offset = self._end
         self._wf.write(_LEN.pack(len(record)))
         self._wf.write(record)
         self._wf.flush()
+        self._end += 4 + len(record)
         return offset
 
     def append_many(self, records: list[bytes]) -> list[int]:
         """Batch append -- one flush amortised over many records."""
         offsets = []
         for rec in records:
-            offsets.append(self._wf.tell())
+            if len(rec) > self._MAX_RECORD:
+                raise ValueError(f"record {len(rec)} bytes exceeds 4GB length prefix")
+            offsets.append(self._end)
             self._wf.write(_LEN.pack(len(rec)))
             self._wf.write(rec)
+            self._end += 4 + len(rec)
         self._wf.flush()
         return offsets
 
@@ -78,8 +90,14 @@ class AppendLog:
         mm = self._ensure_map()
         if mm is None:
             raise IndexError("empty log")
+        if offset < 0 or offset + 4 > self._mm_len:
+            raise IndexError(f"offset {offset} past end of log ({self._mm_len})")
         (length,) = _LEN.unpack(mm[offset:offset + 4])
         start = offset + 4
+        if start + length > self._mm_len:
+            # Guards against a torn/partial tail (e.g. a concurrent in-flight
+            # append) being read back as a silently truncated record.
+            raise ValueError("record extends past end of log (torn write?)")
         return mm[start:start + length]
 
     def scan(self) -> Iterator[tuple[int, bytes]]:
@@ -88,11 +106,13 @@ class AppendLog:
         if mm is None:
             return
         pos = 0
-        while pos < self._mm_len:
+        while pos + 4 <= self._mm_len:
             (length,) = _LEN.unpack(mm[pos:pos + 4])
-            rec = mm[pos + 4:pos + 4 + length]
-            yield pos, rec
-            pos += 4 + length
+            end = pos + 4 + length
+            if end > self._mm_len:
+                break          # torn/incomplete tail record -> stop (crash recovery)
+            yield pos, mm[pos + 4:end]
+            pos = end
 
     def close(self) -> None:
         if self._mm is not None:
@@ -147,6 +167,8 @@ class KVStore:
     def compact(self) -> None:
         """Rewrite the log with only live records; rebuild the index."""
         tmp = self.log.path + ".compact"
+        if os.path.exists(tmp):
+            os.remove(tmp)        # discard any leftover from a crashed compaction
         new = AppendLog(tmp)
         live = {k: self.get(k) for k in self._index}
         for k, v in live.items():

@@ -78,8 +78,10 @@ class DiagnosisCache:
             self._lru.move_to_end(key)
             while len(self._lru) > self.capacity:
                 self._lru.popitem(last=False)        # evict LRU
-        if self.journal_path is not None:
-            self._append_journal(key, report)
+            # Journal inside the lock so on-disk order matches in-memory order
+            # and there is no lost-update window between memory and disk.
+            if self.journal_path is not None:
+                self._append_journal(key, report)
 
     # -- append-only journal (sequential writes) ---------------------------- #
     def _append_journal(self, key: str, report: dict) -> None:
@@ -145,11 +147,15 @@ class CachingDiagnoser:
         if getattr(self.inner, "_audit", None) is None:
             return self.inner.diagnose(trace)
         key = content_hash(trace)
-        data = self.cache.get(key)
-        if data is None:
-            try:
+        # Mirror Diagnoser.diagnose: any backend/parse failure degrades to the
+        # builtin heuristic instead of crashing. The parse is inside the try so
+        # a malformed (or None) report -- cached or fresh -- still falls back.
+        try:
+            data = self.cache.get(key)
+            if data is None:
                 data = self.inner.audit(trace)
-                self.cache.put(key, data)
-            except Exception:
-                return self.inner._diagnose_builtin(trace)
-        return self.inner._parse_auditor(data, trace)
+                if data is not None:        # never cache a None/empty report
+                    self.cache.put(key, data)
+            return self.inner._parse_auditor(data, trace)
+        except Exception:
+            return self.inner._diagnose_builtin(trace)
