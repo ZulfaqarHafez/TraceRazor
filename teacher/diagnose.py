@@ -191,6 +191,7 @@ class Diagnoser:
         self.binary = _find_binary() if prefer_auditor else None
         self._audit = None
         self.backend = "builtin"
+        self.audit_calls = 0          # instrumentation: real backend invocations
         if prefer_auditor:
             native = _native_backend()
             if native is not None:
@@ -199,17 +200,29 @@ class Diagnoser:
                 self._audit, self.backend = _subprocess_backend(self.binary), "subprocess"
 
     # -- public ------------------------------------------------------------- #
+    def audit(self, trace: dict):
+        """Run the EXPENSIVE backend audit (subprocess/native) -> raw report dict.
+
+        Separated from parsing so a content-addressed cache can memoise it.
+        Returns None when only the builtin heuristic is available.
+        """
+        if self._audit is None:
+            return None
+        self.audit_calls += 1
+        return self._audit(trace)
+
     def diagnose(self, trace: dict) -> Diagnosis:
         if self._audit is not None:
             try:
-                return self._diagnose_auditor(trace)
+                data = self.audit(trace)
+                return self._parse_auditor(data, trace)
             except Exception:
                 pass  # fall through to builtin on any backend hiccup
         return self._diagnose_builtin(trace)
 
     # -- real auditor (native or subprocess), rich structured parse --------- #
-    def _diagnose_auditor(self, trace: dict) -> Diagnosis:
-        data = self._audit(trace)
+    def _parse_auditor(self, data: dict, trace: dict) -> Diagnosis:
+        """Cheap, pure parse of a raw auditor report into a Diagnosis."""
         score = data.get("score", {})
         tas = float(score.get("score", 0.0))
 
