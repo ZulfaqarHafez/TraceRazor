@@ -527,8 +527,7 @@ impl TraceReport {
                 "PATH ENTROPY  (staying-on-path diagnostic, not part of TAS)\n\
                  Path entropy:      {:.3}   (0 = directed, 1 = random walk)\n\
                  Focus score:       {:.3}   [{}]   target ≥ {:.2}\n\
-                 Trajectory:        {} advance / {} stall / {} regress   (vs {})\n\
-                 {sep}\n",
+                 Trajectory:        {} advance / {} stall / {} regress   (vs {})\n",
                 tpe.path_entropy,
                 tpe.focus_score,
                 tpe.interpretation(),
@@ -538,6 +537,13 @@ impl TraceReport {
                 tpe.regresses,
                 goal_src,
             );
+            // On the default lexical (BoW) backend, step-to-goal similarity is
+            // noisy, so a genuinely on-track agent can still read as "scattered".
+            // Point drifting traces at the embedding backend before trusting it.
+            if tpe.high_drift {
+                out += "   note:           lexical backend — re-run with --enhanced for embedding-based drift\n";
+            }
+            out += &format!("{sep}\n");
         }
 
         // Savings (heuristic projection — see note below)
