@@ -8,6 +8,9 @@ members = [
     "crates/tracerazor-proxy",
     "crates/tracerazor-cli",
 ]
+# tracerazor-py is an opt-in PyO3 extension built with maturin; keep it out of
+# the default workspace build/CI so they never depend on pyo3 / crates.io.
+exclude = ["crates/tracerazor-py"]
 resolver = "2"
 
 [workspace.package]
