@@ -1322,7 +1322,9 @@ fn render_optimize_markdown(
         projected_tokens as i64 - original_tokens as i64
     );
     let waste_pct = if original_tokens > 0 {
-        (original_tokens - projected_tokens) as f64 / original_tokens as f64 * 100.0
+        // saturating_sub: a simulation can in principle project MORE tokens than
+        // the original; plain u32 subtraction would underflow and panic.
+        original_tokens.saturating_sub(projected_tokens) as f64 / original_tokens as f64 * 100.0
     } else { 0.0 };
     let _ = writeln!(s, "| Est. waste removed | — | — | {:.0}% |", waste_pct);
     let _ = writeln!(s);
@@ -1431,7 +1433,9 @@ async fn export_otel(
     trace: &tracerazor_core::types::Trace,
     endpoint: &str,
 ) -> Result<()> {
-    let span_id = format!("{:016x}", report.score.score as u64 * 100);
+    // Clamp + saturating_mul: guard against a NaN/inf/out-of-range score
+    // producing an overflowing u64 multiply (panic in debug).
+    let span_id = format!("{:016x}", (report.score.score.max(0.0) as u64).saturating_mul(100));
     let trace_id_hex = report
         .trace_id
         .chars()
@@ -1488,4 +1492,25 @@ async fn export_otel(
         .with_context(|| format!("OTEL export to {otel_url} failed"))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Regression: a simulation can project MORE tokens than the original, so
+    /// the waste-percentage math must not underflow on u32 subtraction.
+    #[test]
+    fn optimize_markdown_survives_projection_larger_than_original() {
+        let md = render_optimize_markdown("agent", 50.0, 100, 60.0, 500, &[], &[]);
+        assert!(md.contains("Est. waste removed"));
+        assert!(md.contains("0%"), "larger projection => 0% waste removed");
+    }
+
+    /// Zero original tokens must not divide by zero.
+    #[test]
+    fn optimize_markdown_survives_zero_original_tokens() {
+        let md = render_optimize_markdown("agent", 0.0, 0, 0.0, 0, &[], &[]);
+        assert!(md.contains("0%"));
+    }
 }
