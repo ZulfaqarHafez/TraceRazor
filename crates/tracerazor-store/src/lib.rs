@@ -146,6 +146,19 @@ impl TraceStore {
 
     // ── Write ──────────────────────────────────────────────────────────────
 
+    /// Readiness probe: confirms the underlying SQLite connection is alive and
+    /// answering queries. Cheap enough to call from an HTTP readiness endpoint.
+    pub async fn health_check(&self) -> Result<()> {
+        self.conn
+            .call(|c| {
+                c.query_row("SELECT 1", [], |row| row.get::<_, i64>(0))?;
+                Ok(())
+            })
+            .await
+            .context("sqlite health check failed")?;
+        Ok(())
+    }
+
     /// Store a trace and optionally its report.
     pub async fn save_trace(&self, trace: &Trace, report: Option<&TraceReport>) -> Result<()> {
         let entry = StoredTrace {

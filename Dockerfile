@@ -73,7 +73,8 @@ VOLUME ["/app/data"]
 
 USER appuser
 
+# Use the server binary's own probe mode — no curl/wget needed in the image.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8080/api/ || exit 1
+  CMD ["/app/tracerazor-server", "--health-check"]
 
 CMD ["./tracerazor-server"]

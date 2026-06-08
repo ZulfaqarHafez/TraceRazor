@@ -999,6 +999,24 @@ mod tests {
         assert!(entries.is_empty(), "KB should start empty");
     }
 
+    #[tokio::test]
+    async fn test_healthz_liveness() {
+        let server = test_app().await;
+        let resp = server.get("/healthz").await;
+        resp.assert_status_ok();
+        let body: serde_json::Value = resp.json();
+        assert_eq!(body["status"], "ok");
+    }
+
+    #[tokio::test]
+    async fn test_readyz_readiness() {
+        let server = test_app().await;
+        let resp = server.get("/readyz").await;
+        resp.assert_status_ok();
+        let body: serde_json::Value = resp.json();
+        assert_eq!(body["status"], "ready");
+    }
+
     #[test]
     fn test_validate_export_url_rejects_ssrf_targets() {
         // Non-http schemes

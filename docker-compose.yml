@@ -18,7 +18,8 @@ services:
         required: false
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/"]
+      # Reuse the binary's built-in probe — the slim image has no curl/wget.
+      test: ["CMD", "/app/tracerazor-server", "--health-check"]
       interval: 30s
       timeout: 5s
       retries: 3
