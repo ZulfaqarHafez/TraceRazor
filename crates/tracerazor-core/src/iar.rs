@@ -149,6 +149,8 @@ fn metric_score(fix_type: &FixType, report: &TraceReport) -> f64 {
         FixType::HedgeReduction => report.score.shl.normalised(),
         FixType::CavemanPromptInsert => report.score.ccr.normalised(),
         FixType::ReformulationGuard => report.score.isr.normalised(),
+        // A goal-anchor fix targets on-path advancement: validate it against GAR.
+        FixType::GoalAnchor => report.score.gar.normalised(),
     }
 }
 
@@ -312,6 +314,7 @@ mod tests {
             summary_oneliner: String::new(),
             anomalies: vec![],
             per_agent: vec![],
+            path_entropy: Default::default(),
             iar: None,
         }
     }

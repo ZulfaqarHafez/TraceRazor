@@ -13,12 +13,13 @@ use std::time::Instant;
 use anyhow::Result;
 
 use crate::fixes::generate_fixes;
-use crate::metrics::{ccr, cce, csd, dbo, gar, isr, ldi, rda, reformulation, shl, srr, tca, tur, vdi};
+use crate::metrics::{ccr, cce, csd, dbo, gar, isr, ldi, rda, reformulation, shl, srr, tca, tpe, tur, vdi};
 use crate::report::{AgentBreakdown, TraceReport, generate_oneliner, generate_summary};
 use crate::scoring::{ScoringConfig, estimate_savings};
 use crate::types::{MIN_TRACE_STEPS, Trace};
 
-/// Analyse a trace and compute all eight TAS metrics.
+/// Analyse a trace and compute all thirteen TAS metrics plus the Trajectory
+/// Path Entropy diagnostic.
 ///
 /// All metrics are local — no network calls required. RDA uses the heuristic
 /// complexity classifier (falling back to historical median if provided in
@@ -83,10 +84,16 @@ fn analyse_dyn(
     reformulation::annotate_steps(&mut trace.steps, &reformulation_detected);
 
     // ── M1: Goal Advancement Ratio ────────────────────────────────────────────
-    let gar_result = gar::compute(trace, similarity_fn);
+    // Anchor on the real task goal when the trace carries one; otherwise fall
+    // back to the agent's final step (legacy behaviour).
+    let task_goal = trace.task_goal();
+    let gar_result = gar::compute_with_goal(trace, similarity_fn, task_goal.as_deref());
 
     // ── M4: Cross-Step Semantic Drift ─────────────────────────────────────────
     let csd_result = csd::compute(trace, similarity_fn);
+
+    // ── Trajectory Path Entropy (information-theoretic on-path diagnostic) ────
+    let tpe_result = tpe::compute(trace, similarity_fn, task_goal.as_deref());
 
     let score = scoring::compute(
         srr_result,
@@ -124,7 +131,7 @@ fn analyse_dyn(
     };
 
     // ── E-01: auto-fix generation ─────────────────────────────────────────────
-    let generated_fixes = generate_fixes(trace, &score);
+    let generated_fixes = generate_fixes(trace, &score, &tpe_result);
 
     // ── E-08: template-based NL summaries ────────────────────────────────────
     let summary = generate_summary(trace, &score, &savings);
@@ -149,6 +156,7 @@ fn analyse_dyn(
         summary_oneliner,
         anomalies: vec![], // populated by the store layer after analysis
         per_agent,
+        path_entropy: tpe_result,
         iar: None, // populated by explicit IAR comparison, not during fresh analysis
     })
 }
@@ -201,7 +209,11 @@ fn compute_per_agent_scores(
                     steps,
                     total_tokens: agent_tokens,
                     task_value_score: trace.task_value_score,
-                    metadata: Default::default(),
+                    // Carry the parent's metadata so per-agent GAR/TPE anchor on
+                    // the same task goal as the top-level analysis (otherwise the
+                    // sub-traces silently fall back to last-step anchoring and
+                    // disagree with the parent's goal-advancement scores).
+                    metadata: trace.metadata.clone(),
                 };
                 // analyse_dyn is a concrete (non-generic) function — no recursion risk.
                 match analyse_dyn(&mut sub, similarity_fn, config) {

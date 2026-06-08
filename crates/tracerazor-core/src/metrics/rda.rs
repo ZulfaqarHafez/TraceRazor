@@ -7,8 +7,8 @@
 ///   1. Tool surface area — number of distinct tools called
 ///   2. Keyword analysis — conditional vs. simple query patterns in first step
 ///   3. Content length — longer first-step content suggests higher complexity
-///   4. Historical baseline — median step count for this agent (improves accuracy
-///      over time; 80–85% agreement with GPT-4o-mini judge on 500-trace benchmark)
+///   4. Historical baseline — median step count for this agent (improves
+///      accuracy over time when populated from the store)
 ///
 /// Formula: RDA = 1 - |actual_depth - expected_depth| / max(actual_depth, expected_depth)
 /// Score of 1.0 means perfectly calibrated. Target: > 0.75.
@@ -132,9 +132,10 @@ const SIMPLE_KEYWORDS: &[&str] = &[
 
 /// Classify task complexity from trace signals alone — no LLM required.
 ///
-/// Validated against a 500-trace benchmark: 80–85% agreement with
-/// GPT-4o-mini judge classification. Agreement improves as historical
-/// median step data accumulates.
+/// This is a deterministic heuristic (tool surface area, first-step keywords,
+/// content length); it has not been calibrated against a labelled corpus.
+/// Accuracy improves when an agent-specific historical median step count is
+/// supplied via `ScoringConfig.historical_median_steps`.
 pub fn classify_complexity(trace: &Trace) -> TaskComplexity {
     let first_content = trace.steps.first().map(|s| s.content.as_str()).unwrap_or("");
     let lower = first_content.to_lowercase();

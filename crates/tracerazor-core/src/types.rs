@@ -177,6 +177,41 @@ impl Trace {
         }
     }
 
+    /// The real task objective for this trace, if one was supplied in metadata.
+    ///
+    /// Goal-oriented metrics (GAR, TPE) score progress *toward* this text. When
+    /// it is absent they fall back to the agent's own final step, which cannot
+    /// distinguish converging on the right answer from the wrong one — so a
+    /// trace that carries its objective produces strictly more trustworthy
+    /// path metrics. Recognised keys, in priority order:
+    const GOAL_KEYS: [&'static str; 7] = [
+        "task",
+        "goal",
+        "objective",
+        "user_request",
+        "query",
+        "question",
+        "instruction",
+    ];
+
+    /// Returns the task goal text from `metadata` if present and non-empty.
+    ///
+    /// Only genuine string values are accepted. A non-string value (array,
+    /// object, number, bool, null) is *not* coerced into goal text — stringifying
+    /// e.g. an empty array to `"[]"` and anchoring goal-progress metrics on it
+    /// would silently corrupt GAR/TPE.
+    pub fn task_goal(&self) -> Option<String> {
+        for key in Self::GOAL_KEYS {
+            if let Some(serde_json::Value::String(s)) = self.metadata.get(key) {
+                let text = s.trim();
+                if !text.is_empty() {
+                    return Some(text.to_string());
+                }
+            }
+        }
+        None
+    }
+
     /// All unique agent IDs in this trace (empty for single-agent).
     pub fn agent_ids(&self) -> Vec<String> {
         let mut ids: Vec<String> = self

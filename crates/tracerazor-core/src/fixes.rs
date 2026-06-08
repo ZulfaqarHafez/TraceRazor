@@ -12,12 +12,17 @@
 ///   - `HedgeReduction`     — strip sycophantic preambles and hedging phrases
 ///   - `CavemanPromptInsert`— add a directive to keep output maximally concise
 ///   - `ReformulationGuard` — prevent the agent from re-stating its input context
+///   - `GoalAnchor`         — re-anchor a drifting agent on its task objective
 use serde::{Deserialize, Serialize};
 
+use crate::metrics::TpeResult;
 use crate::scoring::TasScore;
 use crate::types::{StepFlag, Trace};
 
 const AVS_FIX_THRESHOLD: f64 = 0.40;
+/// Fraction of a drifting agent's off-path token spend assumed recoverable once
+/// it is re-anchored on its goal. Deliberately conservative; see `GoalAnchor`.
+const GOAL_ANCHOR_RECOVERY_FRACTION: f64 = 0.25;
 
 /// The kind of fix generated.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -39,6 +44,8 @@ pub enum FixType {
     CavemanPromptInsert,
     /// Prevent the agent from re-stating its input context verbatim.
     ReformulationGuard,
+    /// Re-anchor a drifting agent on its stated task objective.
+    GoalAnchor,
 }
 
 impl std::fmt::Display for FixType {
@@ -52,6 +59,7 @@ impl std::fmt::Display for FixType {
             FixType::HedgeReduction => write!(f, "hedge_reduction"),
             FixType::CavemanPromptInsert => write!(f, "caveman_prompt_insert"),
             FixType::ReformulationGuard => write!(f, "reformulation_guard"),
+            FixType::GoalAnchor => write!(f, "goal_anchor"),
         }
     }
 }
@@ -70,8 +78,10 @@ pub struct Fix {
 
 /// Generate fixes for all flagged issues in the trace.
 ///
-/// Returns an empty vec if no actionable issues were found.
-pub fn generate_fixes(trace: &Trace, score: &TasScore) -> Vec<Fix> {
+/// Returns an empty vec if no actionable issues were found. `tpe` is the
+/// Trajectory Path Entropy diagnostic; together with GAR it drives the
+/// `GoalAnchor` remediation for off-path trajectories.
+pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<Fix> {
     let mut fixes = Vec::new();
 
     // ── TCA: tool misfires → tool schema fixes ──────────────────────────────
@@ -305,6 +315,79 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore) -> Vec<Fix> {
         });
     }
 
+    // ── GAR / TPE: off-path drift → goal-anchoring directive ─────────────────
+    // Previously GAR and the trajectory metrics were detection-only: they could
+    // tell you an agent wandered but emitted no remediation. A GoalAnchor fix is
+    // produced when the trajectory drifts (high path entropy / low focus) or the
+    // agent fails to advance toward its goal. Savings are estimated
+    // conservatively from the tokens spent on concretely low-advancement steps —
+    // this is primarily a *coherence* fix, not a verbosity trim.
+    let drifting = tpe.high_drift || !score.gar.pass;
+    if drifting {
+        // Tokens in steps GAR flagged as not advancing toward the goal.
+        let off_path_tokens: u32 = trace
+            .steps
+            .iter()
+            .filter(|s| score.gar.low_advancement_steps.contains(&s.id))
+            .map(|s| s.tokens)
+            .sum();
+        // When drift is detected purely by TPE (GAR passing, so no
+        // low-advancement steps), fall back to the trajectory's regressing-step
+        // count × the mean reasoning-step size as the off-path proxy, so the
+        // estimate is non-degenerate rather than a misleading 0.
+        let off_path_tokens = if off_path_tokens == 0 && tpe.regresses > 0 {
+            let reasoning_tokens: u32 = trace
+                .steps
+                .iter()
+                .filter(|s| s.step_type == crate::types::StepType::Reasoning)
+                .map(|s| s.tokens)
+                .sum();
+            let reasoning_steps = trace
+                .steps
+                .iter()
+                .filter(|s| s.step_type == crate::types::StepType::Reasoning)
+                .count()
+                .max(1);
+            let avg = reasoning_tokens / reasoning_steps as u32;
+            avg.saturating_mul(tpe.regresses as u32)
+        } else {
+            off_path_tokens
+        };
+        // Conservative: assume a quarter of off-path step tokens are recoverable
+        // exploration once the agent is re-anchored. Never inflate beyond that.
+        let estimated = (off_path_tokens as f64 * GOAL_ANCHOR_RECOVERY_FRACTION).round() as u32;
+
+        let goal_clause = match trace.task_goal() {
+            Some(g) => {
+                let snippet: String = g.chars().take(120).collect();
+                format!("the stated task objective (\"{}\")", snippet.trim())
+            }
+            None => "the task objective established at the start of the trace".to_string(),
+        };
+        let drift_note = if tpe.goal_origin == crate::metrics::GoalOrigin::NotApplicable {
+            format!("goal advancement is below target ({:.2})", score.gar.score)
+        } else {
+            format!(
+                "trajectory path entropy {:.2} / focus {:.2} ({})",
+                tpe.path_entropy,
+                tpe.focus_score,
+                tpe.interpretation()
+            )
+        };
+
+        fixes.push(Fix {
+            fix_type: FixType::GoalAnchor,
+            target: "system_prompt".into(),
+            patch: format!(
+                "Add to system prompt: \"Before each reasoning step, restate {goal_clause} \
+                 in one sentence and verify the step moves measurably closer to it. If a step \
+                 does not advance the objective, skip it and proceed to the next concrete action.\" \
+                 (Detected drift: {drift_note}.)"
+            ),
+            estimated_token_savings: estimated,
+        });
+    }
+
     fixes
 }
 
@@ -374,7 +457,7 @@ mod tests {
         let config = ScoringConfig::default();
         let sim = |_: &str, _: &str| 0.0_f64;
         let report = crate::analyse(&mut t, sim, &config).unwrap();
-        let fixes = generate_fixes(&trace, &report.score);
+        let fixes = generate_fixes(&trace, &report.score, &report.path_entropy);
         // Clean trace with no misfire, no bloat, no loops → likely empty or only RDA.
         assert!(fixes.iter().all(|f| !matches!(f.fix_type, FixType::ToolSchema)));
     }
@@ -414,7 +497,7 @@ mod tests {
         let config = ScoringConfig::default();
         let sim = |_: &str, _: &str| 0.0_f64;
         let report = crate::analyse(&mut t, sim, &config).unwrap();
-        let fixes = generate_fixes(&trace, &report.score);
+        let fixes = generate_fixes(&trace, &report.score, &report.path_entropy);
         let verbosity_fix = fixes
             .iter()
             .find(|f| matches!(f.fix_type, FixType::VerbosityReduction))
