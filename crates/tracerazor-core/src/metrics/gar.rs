@@ -8,8 +8,10 @@
 ///
 /// 1. The **goal proxy** is the content of the last reasoning step in the trace
 ///    (the final conclusion the agent produced).
-/// 2. For every intermediate reasoning step (all except the last), compute its
-///    cosine similarity to the goal proxy using the supplied `similarity_fn`.
+/// 2. For every intermediate reasoning-bearing step (all except the last),
+///    compute its cosine similarity to the goal proxy using `similarity_fn`.
+///    Reasoning-bearing means any reasoning step plus ReAct tool-call turns
+///    that embed a substantive thought (a bare tool invocation is ignored).
 /// 3. GAR is the token-weighted mean of those per-step similarities, clamped
 ///    to [0, 1].
 ///
@@ -37,12 +39,14 @@
 /// Weight in TAS composite: 6% (replaces half of CCR's duplicate signal).
 use serde::{Deserialize, Serialize};
 
-use crate::types::{StepType, Trace, TraceStep};
+use crate::types::{Trace, TraceStep};
 
 /// Target: weighted-mean goal similarity must be at least this value.
 pub const TARGET: f64 = 0.40;
 /// Steps below this similarity to the goal are flagged as "low advancement".
 pub const LOW_ADVANCEMENT_THRESHOLD: f64 = 0.20;
+
+use crate::metrics::carries_reasoning;
 
 /// Per-step GAR result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,11 +107,14 @@ pub fn compute_with_goal(
     similarity_fn: impl Fn(&str, &str) -> f64,
     goal: Option<&str>,
 ) -> GarResult {
-    // Collect reasoning steps in order.
+    // Collect reasoning-bearing steps in order. This includes ReAct tool-call
+    // turns whose content embeds the agent's thought, so goal advancement is
+    // measured on tool-using agents instead of collapsing to the few bare
+    // final-answer steps.
     let reasoning: Vec<_> = trace
         .steps
         .iter()
-        .filter(|s| s.step_type == StepType::Reasoning)
+        .filter(|s| carries_reasoning(s))
         .collect();
 
     // Need at least 2 reasoning steps to measure advancement (1 when we have an
@@ -364,20 +371,67 @@ mod tests {
     // ── non-reasoning steps are ignored ──────────────────────────────────────
 
     #[test]
-    fn tool_calls_ignored_in_computation() {
+    fn bare_tool_calls_ignored_in_computation() {
         use crate::types::StepType;
+        // A bare tool invocation (few words, no embedded reasoning) is ignored.
         let mut tool_step = step(2, "tool call content", 500);
         tool_step.step_type = StepType::ToolCall;
 
         let trace = make_trace(vec![
             step(1, "reasoning one", 100),
-            tool_step,                    // should be ignored
+            tool_step,                    // bare invocation → ignored
             step(3, "goal step", 100),
         ]);
         let result = compute(&trace, const_sim(0.5));
         // Only reasoning steps: 1 and 3. Step 3 is goal → only step 1 in results.
         assert_eq!(result.step_results.len(), 1);
         assert_eq!(result.step_results[0].step_id, 1);
+    }
+
+    #[test]
+    fn react_tool_reasoning_counts_toward_gar() {
+        use crate::types::StepType;
+        // ReAct turns fuse thought + action into a tool-call step. The embedded
+        // reasoning must be scored for goal advancement (it was previously
+        // invisible, collapsing GAR on tool-using agents).
+        let goal = "locate text files containing the string Linux and count occurrences";
+        let mut think1 = step(
+            1,
+            "Think: First I need to locate all text files that contain the string \
+             Linux in the home directory before counting occurrences. Act: bash grep",
+            120,
+        );
+        think1.step_type = StepType::ToolCall;
+        let mut think2 = step(
+            2,
+            "Think: Now I will count the occurrences of the string Linux in each of \
+             the text files I located and sum them. Act: bash grep -o Linux wc -l",
+            120,
+        );
+        think2.step_type = StepType::ToolCall;
+        let trace = make_trace(vec![
+            think1,
+            think2,
+            step(3, "the answer is 6 occurrences", 40),
+        ]);
+        // Word-overlap similarity so the embedded reasoning genuinely matches.
+        let sim = |a: &str, b: &str| {
+            use std::collections::HashSet;
+            let wa: HashSet<&str> = a.split_whitespace().collect();
+            let wb: HashSet<&str> = b.split_whitespace().collect();
+            if wa.is_empty() || wb.is_empty() {
+                return 0.0;
+            }
+            wa.intersection(&wb).count() as f64 / wa.union(&wb).count() as f64
+        };
+        let with_goal = compute_with_goal(&trace, sim, Some(goal));
+        // The two ReAct tool-call steps are now scored against the goal.
+        assert_eq!(with_goal.step_results.len(), 3);
+        assert!(
+            with_goal.score > 0.10,
+            "ReAct tool reasoning should advance the goal, got {}",
+            with_goal.score
+        );
     }
 
     // ── sim clamping ─────────────────────────────────────────────────────────

@@ -5,6 +5,30 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 ## [Unreleased]
 
 ### Added
+- **Hugging Face real-data audit harness** — sourced real ReAct agent
+  trajectories from the Hugging Face dataset `zai-org/AgentInstruct` (bash + SQL
+  splits), a converter (`tools/convert_agentinstruct.py`), a bundled/disk/live
+  loader (`benchmark/hf_loader.py`), a statistics harness
+  (`benchmark/hf_audit_stats.py` → `docs/huggingface_agentinstruct_audit.md`),
+  and a `cargo test` statistics gate
+  (`crates/tracerazor-cli/tests/huggingface_real_data.rs`) that audits the
+  corpus end-to-end. Establishes measured behaviour on tool-using agents
+  (mean TAS 80.6, all "Good").
+
+### Changed
+- **LDI now detects parametric loops** — loop detection previously keyed on an
+  exact tool+params state hash and missed the dominant real loop shape for
+  tool-using agents: the same command template run once per argument (e.g. a
+  shell command repeated per file). A parametric detector abstracts argument
+  literals into a command skeleton and flags ≥3 repeats, scoped to command-style
+  tools so structured tools are unaffected. Surfaced by the AgentInstruct corpus.
+- **GAR/CSD are reasoning-aware on ReAct agents** — goal-advancement and
+  cross-step-drift scored only `Reasoning`-typed steps, so they collapsed on
+  ReAct agents whose reasoning is fused into the tool-call turn ("Think: … Act:
+  …"). They now also score tool-call steps that carry substantive reasoning
+  prose (≥12 words) while still ignoring bare invocations.
+
+### Added (earlier in this cycle)
 - **OBS metric (Observation Token Share)** — the fraction of tokens spent on
   tool I/O, promoted into the composite (weight 0.06, ~4.8% share) after it was
   the one candidate feature that predicted real recoverable token waste and
