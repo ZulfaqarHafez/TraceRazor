@@ -18,12 +18,11 @@ COPY crates/tracerazor-ingest/Cargo.toml    crates/tracerazor-ingest/Cargo.toml
 COPY crates/tracerazor-semantic/Cargo.toml  crates/tracerazor-semantic/Cargo.toml
 COPY crates/tracerazor-store/Cargo.toml     crates/tracerazor-store/Cargo.toml
 COPY crates/tracerazor-server/Cargo.toml    crates/tracerazor-server/Cargo.toml
-COPY crates/tracerazor-proxy/Cargo.toml     crates/tracerazor-proxy/Cargo.toml
 COPY crates/tracerazor-cli/Cargo.toml       crates/tracerazor-cli/Cargo.toml
 
 # Stub every lib/main so cargo can resolve the dependency graph.
 RUN for crate in tracerazor-core tracerazor-ingest tracerazor-semantic \
-        tracerazor-store tracerazor-proxy; do \
+        tracerazor-store; do \
       mkdir -p crates/$crate/src && echo "pub fn _stub() {}" > crates/$crate/src/lib.rs; \
     done && \
     mkdir -p crates/tracerazor-server/src && echo "fn main() {}" > crates/tracerazor-server/src/main.rs && \

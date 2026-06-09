@@ -2549,19 +2549,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracerazor-proxy"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
- "tracerazor-core",
- "tracerazor-semantic",
-]
-
-[[package]]
 name = "tracerazor-semantic"
 version = "0.1.0"
 dependencies = [
@@ -2592,7 +2579,6 @@ dependencies = [
  "tower-http 0.5.2",
  "tracerazor-core",
  "tracerazor-ingest",
- "tracerazor-proxy",
  "tracerazor-semantic",
  "tracerazor-store",
  "uuid",

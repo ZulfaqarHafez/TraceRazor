@@ -16,7 +16,7 @@ pip install tracerazor
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────┐
-  │                           TraceRazor v1.0.0                               │
+  │                           TraceRazor v1.1.0                               │
   │                                                                           │
   │   ┌──────────────┐    ┌──────────────────┐    ┌────────────────────────┐ │
   │   │   1. AUDIT   │    │   2. SAMPLING    │    │  3. SUBSTITUTABILITY   │ │
@@ -28,8 +28,8 @@ pip install tracerazor
   │   │ metrics.     │    │ winner.          │    │ correct prediction.    │ │
   │   │              │    │                  │    │                        │ │
   │   │ Offline.     │    │ Drop-in for      │    │ MiniLM embeddings +    │ │
-  │   │ Sub-5 ms    │    │ LangGraph.       │    │ sklearn classifier.    │ │
-  │   │ on the bench.│    │                  │    │                        │ │
+  │   │ ~2 ms on a   │    │ LangGraph.       │    │ sklearn classifier.    │ │
+  │   │ typical run. │    │                  │    │                        │ │
   │   └──────────────┘    └──────────────────┘    └────────────────────────┘ │
   └───────────────────────────────────────────────────────────────────────────┘
 ```
@@ -58,7 +58,7 @@ Mainstream observability tools (LangSmith, Langfuse, Arize, Phoenix) record runs
 
 ## Pillar 1 — Audit
 
-> Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Sub-5 ms target per trace — reproduce locally with `cargo bench -p tracerazor-core`.
+> Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Typical traces (tens of steps) audit in a few milliseconds; cost scales roughly linearly with step count. Reproduce locally with `cargo bench -p tracerazor-core`.
 
 ### How It Works
 
@@ -140,32 +140,47 @@ tracerazor audit traces/support-agent-run-2847.json
 ```
 TRACERAZOR REPORT
 ------------------------------------------------------
-Trace:     support-agent-run-2847    Agent: support-agent
-Steps:     9                         Tokens: 18420
+Trace:     support-agent-run-2847
+Agent:     customer-support-v3
+Framework: langgraph
+Steps:     11   Tokens: 14280
+Analysed:  13ms
 ------------------------------------------------------
-TRACERAZOR SCORE:  64 / 100  [FAIR]
-------------------------------------------------------
-!! VERBOSITY ALERT  AVS: 0.52  Primary driver: SHL (sycophancy/hedging)
-   Est. verbose tokens: 9578
+TRACERAZOR SCORE:  76 / 100  [GOOD]  (raw structural: 79, task value: 0.90)
+VAE SCORE:         0.71
+MVTG:              49.1%  (trace is 49.1% above minimum viable token count)
+Note: TAS is an *ordinal* heuristic score — compare runs within one
+project over time, not as an absolute efficiency percentage.
 ------------------------------------------------------
 METRIC BREAKDOWN
 Code   Metric                         Score    Target   Status
 SRR    Step Redundancy Rate           18.2%    <15%     FAIL
 LDI    Loop Detection Index           0.182    <0.10    FAIL
 TCA    Tool Call Accuracy             83.3%    >85%     FAIL
-RDA    Reasoning Depth Approp.        0.820    >0.75    PASS
-ISR    Info Sufficiency Rate          88.0%    >80%     PASS
-TUR    Token Utilisation Ratio        0.714    >0.35    PASS
-CCE    Context Carry-over Eff.        0.880    >0.60    PASS
-VDI    Verbosity Density Index        0.512    >0.60    FAIL
-SHL    Sycophancy/Hedging Level       0.380    <0.20    FAIL
-CCR    Caveman Compression Ratio      0.412    <0.30    FAIL
+RDA    Reasoning Depth Approp.        0.917    >0.75    PASS
+ISR    Info Sufficiency Rate          100.0%   >80%     PASS
+TUR    Token Utilisation Ratio        0.793    >0.35    PASS
+CCE    Context Carry-over Eff.        0.613    >0.60    PASS
+DBO    Decision Branch Optimality     0.750    >0.70    PASS [cold]
+-- Verbosity Metrics ----------------------------------
+VDI    Verbosity Density Index        0.775    >0.60    PASS
+SHL    Sycophancy/Hedging Level       0.219    <0.20    FAIL
+CCR    Caveman Compression Ratio      0.384    <0.30    FAIL
+-- Goal Advancement -----------------------------------
+GAR    Goal Advancement Ratio         0.403    ≥0.40    PASS
+-- Semantic Path --------------------------------------
+CSD    Cross-Step Semantic Drift      0.438    ≥0.60    FAIL  [drifting pairs: 3→6]
 ------------------------------------------------------
-SAVINGS ESTIMATE
-Tokens saved:      9,840  (53.4% reduction)
-Cost saved:        $0.0295 per run
-At 50K runs/month: $1,477.20/month saved
+SAVINGS ESTIMATE   (estimated, not a measured re-run — see Limitations)
+Tokens saved:      7006  (49.1% reduction)
+Cost saved:        $0.0210 per run
+At 50K runs/month: $1050.90/month saved
 ```
+
+> Savings figures are **estimates** derived from per-fix heuristics, not a
+> measured before/after re-run. Use `tracerazor bench` to validate a specific
+> patch set against an actual re-run. Numbers above are reproducible from the
+> shipped trace with the command shown.
 
 ### Automated Fix Patches
 
@@ -205,20 +220,34 @@ Every audit produces machine-applicable patches tied to the metrics that failed:
 
 ### Quickstart — Audit
 
+> TraceRazor needs **at least 5 steps** to compute its metrics; shorter traces
+> are skipped with a notice.
+
 ```python
 from tracerazor import Tracer
 
 with Tracer(agent_name="support-agent", framework="openai") as t:
-    response = llm.invoke(prompt)
-    t.reasoning(response.text, tokens=response.usage.total_tokens)
+    t.reasoning("Parse the refund request for order ORD-123.", tokens=180)
 
-    result = lookup_order(order_id="ORD-123")
+    order = lookup_order(order_id="ORD-123")
     t.tool("lookup_order", params={"order_id": "ORD-123"},
-           output=str(result), success=True, tokens=80)
+           output=str(order), success=True, tokens=90)
+
+    t.reasoning("Order is within the 30-day window; it is eligible.", tokens=160)
+
+    eligible = check_eligibility(order_id="ORD-123")
+    t.tool("check_eligibility", params={"order_id": "ORD-123"},
+           output=str(eligible), success=True, tokens=110)
+
+    refund = process_refund(order_id="ORD-123")
+    t.tool("process_refund", params={"order_id": "ORD-123"},
+           output=str(refund), success=True, tokens=140)
+
+    t.reasoning("Refund processed; confirm to the customer.", tokens=120)
 
 report = t.analyse()
 print(report.summary())
-# TAS 81.4/100 [Good] | 2 steps, 900 tokens | Saved 140 tokens (16%)
+# TAS 96.1/100 [Excellent] | 6 steps, 800 tokens | Saved 0 tokens (0%)
 
 report.assert_passes()   # raises AssertionError in CI if TAS < 70
 ```
@@ -631,7 +660,7 @@ Commands:
 ```bash
 tracerazor compare before.json after.json
 tracerazor simulate trace.json --remove 3,8 --merge 6,7
-tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs-per-month 50000
+tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs 50000
 tracerazor optimize trace.json --system-prompt agent.txt --output agent_v2.txt --target-tas 85
 ```
 
@@ -676,7 +705,6 @@ tracerazor/
 │   ├── tracerazor-semantic/   # BoW similarity + LLM backend (OpenAI / Anthropic / compatible)
 │   ├── tracerazor-store/      # SQLite: traces, KB, baselines, anomaly detection
 │   ├── tracerazor-server/     # Axum REST + WebSocket + embedded dashboard
-│   ├── tracerazor-proxy/      # Four-layer guardrail proxy
 │   └── tracerazor-cli/        # CLI entry point; persistent store at ~/.tracerazor/
 │
 ├── tracerazor/                # Single Python package (pip install tracerazor)
@@ -708,23 +736,25 @@ tracerazor/
 └── .github/                   # CI workflow + composite GitHub Action
 ```
 
-`tracerazor-core` has zero network dependencies — offline analysis never pulls in `reqwest`. The semantic, server, proxy and substitutability components are opt-in and call out to LLM / embedding services; `--enhanced` activates at runtime without recompiling.
+`tracerazor-core` has zero network dependencies — offline analysis never pulls in `reqwest`. The semantic, server and substitutability components are opt-in and call out to LLM / embedding services; `--enhanced` activates at runtime without recompiling.
 
 ---
 
 ## Test Coverage
 
+Reproduce with `cargo test --workspace` and `pytest`.
+
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 126 |
+| tracerazor-core | 121 |
 | tracerazor-ingest | 3 |
 | tracerazor-semantic | 21 |
 | tracerazor-store | 10 |
-| tracerazor-server | 13 |
-| tracerazor-proxy | 12 |
-| tracerazor-cli (integration) | 9 |
-| Python v2 (pytest) | 9 suites |
-| **Total Rust** | **194, all pass** |
+| tracerazor-server | 17 |
+| tracerazor-cli (2 unit + 9 integration) | 11 |
+| Doc-tests | 9 |
+| **Total Rust** | **192, all pass** |
+| **Python** (pytest) | **214 pass, 1 skipped** |
 
 ---
 
@@ -733,16 +763,53 @@ tracerazor/
 | # | Paper | Informs |
 |---|---|---|
 | [1] | Han et al. (2024). **Token-Budget-Aware LLM Reasoning (TALE)**. ACL 2025. | TUR, CCE |
-| [2] | Zhao et al. (2025). **SelfBudgeter: Adaptive Token Allocation**. | Proxy Layer 3 |
+| [2] | Zhao et al. (2025). **SelfBudgeter: Adaptive Token Allocation**. | Adaptive sampling |
 | [3] | Lee et al. (2025). **Evaluating Step-by-step Reasoning Traces: A Survey**. | Framework basis |
 | [4] | Su et al. (2024). **Dualformer: Controllable Fast and Slow Thinking**. | RDA |
 | [5] | Wu et al. (2025). **Step Pruner: Efficient Reasoning in LLMs**. | Optimal path diff |
 | [6] | Feng et al. (2025). **Efficient Reasoning Models: A Survey**. | Metric validation |
 | [7] | Pan et al. (2024). **ToolChain*: A* Search for Tool Sequences**. NeurIPS 2024. | DBO, KB design |
-| [8] | Hassid et al. (2025). **Reasoning on a Budget**. | VAE score, proxy |
+| [8] | Hassid et al. (2025). **Reasoning on a Budget**. | VAE score |
 | [9] | (2025). **Balanced Thinking (SCALe-SFT)**. | Efficiency without accuracy loss |
 | [10] | Mohammadi et al. (2025). **Evaluation and Benchmarking of LLM Agents**. KDD 2025. | Composite scoring |
 | [11] | Shi et al. (2024). **Verbosity Bias in LLM Responses**. | VDI, SHL, CCR design |
+
+---
+
+## Limitations & Honest Caveats
+
+TraceRazor is a useful, fast heuristic tool. It is **not** a validated scientific
+instrument, and we want to be precise about what it does and does not establish:
+
+- **TAS is an ordinal heuristic, not a calibrated measurement.** The composite
+  weights are preliminary and have not been fit against a labelled corpus. Use
+  TAS to compare runs of the *same* agent over time, not as an absolute
+  cross-agent efficiency percentage. Some sub-metrics intentionally pull in
+  opposite directions (e.g. redundancy vs. continuity), so there is no single
+  optimal point.
+- **Savings and dollar figures are estimates, not measurements.** They are the
+  sum of per-fix heuristic projections, *not* a measured before/after re-run at
+  constant task quality. To validate a concrete patch set, capture a real
+  "after" trace and use `tracerazor bench`.
+- **The sampling benchmark is preliminary.** The published numbers are
+  single-seed over 50 tasks with no confidence intervals; small differences
+  between strategies are within noise. Treat the "Pareto" framing as
+  directional, and re-run with multiple seeds (`--seeds`) before drawing firm
+  conclusions. The in-package `SelfConsistencyBaseline` selects answers by
+  honest majority vote (no oracle).
+- **The substitutability classifier result is a pipeline smoke test, not a
+  generalisation estimate.** It is trained and evaluated on synthetic templated
+  pairs where the label is essentially topic identity; the headline AUC reflects
+  label leakage by construction. See the dedicated section above.
+- **IAR (adherence) is closed-loop self-validation** — it checks whether the
+  tool's own fixes improved the tool's own metrics, with no external ground
+  truth such as task success or human judgement.
+- **Performance** is a few milliseconds for typical traces (tens of steps) and
+  scales roughly linearly with step count; multi-thousand-step traces take
+  proportionally longer.
+
+For a fuller, paper-style treatment of the methodology and its limitations, see
+[`paper/tracerazor.tex`](paper/tracerazor.tex).
 
 ---
 

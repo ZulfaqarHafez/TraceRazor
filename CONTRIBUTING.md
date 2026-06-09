@@ -32,7 +32,6 @@ crates/
   tracerazor-semantic/  # BoW + optional OpenAI embeddings
   tracerazor-store/     # SQLite persistence layer (via tokio-rusqlite)
   tracerazor-server/    # Axum REST + WebSocket server
-  tracerazor-proxy/     # Four-layer guardrail interceptor
   tracerazor-cli/       # CLI entry point
 integrations/           # Python adapters (CrewAI, OpenAI Agents, LangGraph)
 ```
