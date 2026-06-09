@@ -86,6 +86,51 @@ python -m calibration.calibrate --dataset manifest.json \
 sane behaviour when a metric is under-represented in your sample. Drop the prior
 flags for a pure fit once you have enough data.
 
+## Using public trajectory datasets
+
+If you would rather calibrate on public agent runs than your own, the right
+sources are multi-config trajectory datasets where the same task is solved by
+several models/scaffolds with a resolved/correct label, which gives before/after
+pairs (verbose run vs lean run, both successful):
+
+- `nebius/SWE-agent-trajectories` (80k runs, many models on shared SWE-bench
+  instances, with correctness)
+- `zai-org/CC-Bench-trajectories` (74 tasks, all models, full trajectories)
+- `SWE-bench/SWE-smith-trajectories`, `open-thoughts/AgentTrove`
+
+These live on Hugging Face. **This Claude Code environment's network policy must
+allow Hugging Face for the download to work** (by default only PyPI, apt, and
+GitHub are reachable; `huggingface.co` returns "Host not in allowlist"). Allow
+these hosts on the environment, or download elsewhere and copy the file in:
+
+```
+huggingface.co
+cdn-lfs.huggingface.co
+cdn-lfs-us-1.huggingface.co
+datasets-server.huggingface.co
+```
+
+Then dump the split to JSONL and run the connector (which converts the standard
+OpenAI/ShareGPT messages format into traces and pairs same-instance resolved
+runs):
+
+```bash
+pip install -e ".[calibrate]" && pip install datasets
+python - <<'PY'
+from datasets import load_dataset
+load_dataset("nebius/SWE-agent-trajectories", split="train").to_json("traj.jsonl")
+PY
+python -m calibration.sources.from_messages --jsonl traj.jsonl \
+  --out-dir calibration/converted --manifest manifest.json \
+  --id-field instance_id --model-field model --resolved-field resolved --messages-field messages
+python -m calibration.calibrate --dataset manifest.json \
+  --out config/tas_weights.json --report config/calibration_report.md --prior default --l2 0.1
+```
+
+Field names (`--id-field` etc.) are adjustable to match the dataset's columns.
+The connector and the full pipeline are tested end to end on the messages
+format; the only thing they need is the data file present locally.
+
 ## Fastest way to unblock me
 
 If exporting is involved, just paste **one** of your harness's records (one CSV
