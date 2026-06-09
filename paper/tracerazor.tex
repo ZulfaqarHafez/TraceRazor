@@ -244,6 +244,27 @@ Calibrated (this tool) & 0.65 & \textbf{0.64} \\
 \end{tabular}
 \end{table}
 
+\begin{table}[t]
+\centering
+\caption{Default vs.\ calibrated weight on each sub-metric (normalised shares,
+summing to 1). The fit moves mass onto redundancy (SRR) and context
+carry-over (CCE), the metrics that track the injected waste, and zeroes metrics
+that do not vary with it. Metrics calibrated to $0.00$ are omitted.}
+\label{tab:calibweights}
+\begin{tabular}{lrr}
+\toprule
+Metric & Default & Calibrated \\
+\midrule
+CCE (context carry-over)   & 0.083 & \textbf{0.544} \\
+SRR (step redundancy)      & 0.142 & \textbf{0.376} \\
+RDA (reasoning depth)      & 0.083 & 0.054 \\
+LDI (loop detection)       & 0.108 & 0.019 \\
+DBO (decision branch)      & 0.075 & 0.006 \\
+\emph{others (TCA, ISR, TUR, VDI, SHL, CCR, GAR, CSD)} & -- & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \paragraph{Scope.} This is a controlled validation of the calibration
 \emph{procedure}: it shows that, given measured recoverable-waste labels, the
 fit recovers a weighting that predicts them far better than the heuristic
