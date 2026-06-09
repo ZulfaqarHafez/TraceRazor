@@ -1,0 +1,11 @@
+# LaTeX build artifacts — the PDF is produced by CI (see the `paper` job in
+# .github/workflows/tracerazor.yml) and uploaded as the `tracerazor-paper`
+# artifact, so it is not committed.
+*.pdf
+*.aux
+*.log
+*.out
+*.toc
+*.fls
+*.fdb_latexmk
+*.synctex.gz

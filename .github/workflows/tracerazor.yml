@@ -149,3 +149,23 @@ jobs:
             traces/support-agent-run-2847.json \
             --threshold 60
         # Exit code 1 if TAS < threshold — fails the build
+
+  # ── Paper: compile the LaTeX technical report to a PDF artifact ───────────────
+  paper:
+    name: Paper (build PDF)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile LaTeX
+        uses: xu-cheng/latex-action@v3
+        with:
+          working_directory: paper
+          root_file: tracerazor.tex
+
+      - name: Upload PDF artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tracerazor-paper
+          path: paper/tracerazor.pdf
+          if-no-files-found: error
