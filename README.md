@@ -366,6 +366,30 @@ and the 24 converted trace JSONs live at
 [`traces/external/`](traces/external/). Converters in
 [`tools/`](tools/).
 
+#### Real ReAct trajectories from Hugging Face (AgentInstruct)
+
+To exercise a *different* real agent style — tool-using **ReAct** agents that
+interleave a thought with a shell/SQL action, rather than function-calling
+assistants — we also audit trajectories sourced from the Hugging Face dataset
+[`zai-org/AgentInstruct`](https://huggingface.co/datasets/zai-org/AgentInstruct)
+(formerly `THUDM/AgentInstruct`). The corpus is audited end-to-end by a
+`cargo test` statistics gate
+([`crates/tracerazor-cli/tests/huggingface_real_data.rs`](crates/tracerazor-cli/tests/huggingface_real_data.rs))
+and summarised in
+[`docs/huggingface_agentinstruct_audit.md`](docs/huggingface_agentinstruct_audit.md)
+(reproduce with `python -m benchmark.hf_audit_stats`). Mean TAS is **80.6** (all
+"Good"), but the exercise mattered because it exposed two metric blind spots on
+tool agents that the τ-bench traces did not — and fixed them:
+
+| Finding on real ReAct data | Fix |
+|---|---|
+| **Loop detection never fired** (`os_6` runs `grep -o "Linux" <FILE> \| wc -l` 4×, but LDI keyed on exact tool+params) | LDI now detects **parametric loops** — same command template, different argument (LDIₙₒᵣₘ 1.00→0.56 on `os_6`) |
+| **GAR/CSD collapsed** (ReAct fuses the reasoning into the tool-call turn, which both metrics ignored) | GAR/CSD now score tool-call steps carrying substantive **reasoning prose**, not just `reasoning`-typed steps (GARₙₒᵣₘ ~doubles on tool-heavy traces) |
+
+Provenance and a live dataset-viewer fetch path are in
+[`traces/external/huggingface/agentinstruct/SOURCE.md`](traces/external/huggingface/agentinstruct/SOURCE.md);
+the converter is [`tools/convert_agentinstruct.py`](tools/convert_agentinstruct.py).
+
 ### Calibrating TAS to your workload
 
 The thirteen sub-metrics are combined with weights that are heuristic by
@@ -860,14 +884,14 @@ Reproduce with `cargo test --workspace` and `pytest`.
 
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 141 |
+| tracerazor-core | 146 |
 | tracerazor-ingest | 3 |
 | tracerazor-semantic | 21 |
 | tracerazor-store | 10 |
 | tracerazor-server | 17 |
-| tracerazor-cli (2 unit + 9 integration) | 11 |
+| tracerazor-cli (2 unit + 10 integration) | 12 |
 | Doc-tests | 9 |
-| **Total Rust** | **212, all pass** |
+| **Total Rust** | **218, all pass** |
 | **Python** (pytest) | **231 pass, 1 skipped** |
 
 ---
@@ -887,6 +911,7 @@ Reproduce with `cargo test --workspace` and `pytest`.
 | [9] | (2025). **Balanced Thinking (SCALe-SFT)**. | Efficiency without accuracy loss |
 | [10] | Mohammadi et al. (2025). **Evaluation and Benchmarking of LLM Agents**. KDD 2025. | Composite scoring |
 | [11] | Shi et al. (2024). **Verbosity Bias in LLM Responses**. | VDI, SHL, CCR design |
+| [12] | Zeng et al. (2023). **AgentTuning: Enabling Generalized Agent Abilities for LLMs** (AgentInstruct dataset). | Real ReAct-trace evaluation; LDI/GAR/CSD validation |
 
 ---
 

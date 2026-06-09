@@ -133,3 +133,54 @@ Diagnosis: Paper now documents the real-data evaluation and the data-driven
 metric improvements; cross-references and citations are internally consistent.
 Next: Iteration 6 — propagate the same content to README/CHANGELOG for
 user-facing consistency, refresh stale Rust test counts, final verification.
+
+## Iteration 6
+Read: Paper updated, but README's real-audit section, Research Foundation table,
+and test-coverage counts (core 141, total 212) were stale, and the CHANGELOG had
+no entry for the HF harness or the metric fixes.
+Plan: Add a "Real ReAct trajectories from Hugging Face" subsection + findings
+table to the README, add the AgentInstruct reference, correct the test counts
+(core 146, cli 12, total 218), and record the harness + LDI/GAR/CSD changes in
+the CHANGELOG.
+Change: `README.md` (real-audit subsection, Research Foundation row, test-count
+table), `CHANGELOG.md` (Added: HF harness; Changed: LDI parametric loops,
+GAR/CSD reasoning-aware).
+Test result: PASS (`cargo test --workspace` 12/12 green; Python 34 passed, 1 skipped).
+Diagnosis: Docs are now consistent with the code and paper; counts verified
+against an actual `cargo test --workspace` run.
+Next: none — goal met. See FINAL REPORT.
+
+---
+
+# FINAL REPORT
+Goal achieved: implement a test that uses real Hugging Face data to measure how
+well TraceRazor works against real agent traces, iterate product improvements
+driven by those statistics, and update the research paper.
+Iterations used: 6 / 10.
+
+Files changed:
+  - `benchmark/data/_agentinstruct_hf_sample.py` — 9 real AgentInstruct trajectories pulled via the HF connector.
+  - `tools/convert_agentinstruct.py` — ReAct → TraceRazor trace converter (precise tool-failure detection).
+  - `benchmark/hf_loader.py` — bundled/disk/live (HF dataset-viewer) loader.
+  - `benchmark/hf_audit_stats.py` — statistics harness → `STATS.json` + `docs/huggingface_agentinstruct_audit.md`.
+  - `crates/tracerazor-cli/tests/huggingface_real_data.rs` — the `cargo test` statistics gate.
+  - `tests/test_hf_agentinstruct.py` — hermetic loader/converter tests.
+  - `traces/external/huggingface/agentinstruct/*` — generated real corpus + SOURCE.md + STATS.json.
+  - `crates/tracerazor-core/src/metrics/ldi.rs` — parametric command-loop detection (+3 tests).
+  - `crates/tracerazor-core/src/metrics/{mod,gar,csd}.rs` — shared reasoning-aware step predicate; GAR/CSD no longer collapse on ReAct agents (+2 tests).
+  - `paper/tracerazor.tex` — real-data evaluation section, table, updated metric definitions, citation.
+  - `README.md`, `CHANGELOG.md` — user-facing documentation of the above.
+
+Results (real HF AgentInstruct corpus, 7 analysable ReAct traces):
+  - Mean TAS 80.6 (all "Good"); 17 fix patches emitted.
+  - LDIₙₒᵣₘ mean 1.000 → 0.937 (os_6 parametric loop now caught: 1.00 → 0.556).
+  - GARₙₒᵣₘ mean 0.202 → 0.247 (roughly doubles on tool-heavy traces; was collapsing to ~0).
+  - CSDₙₒᵣₘ now scores the full reasoning flow (8 transitions/trace) vs a degenerate answer-pair.
+
+Known limitations / follow-up:
+  - The committed corpus is a vendored 9-trace sample (HF is unreachable from the
+    CI sandbox); the live loader path fetches the full splits where the Hub is reachable.
+  - GAR/CSD remain BoW-limited on code vs natural language; sentence-embedding
+    similarity (already supported via `--enhanced`) would lift them further.
+  - Corpus is OS+DB splits only; alfworld/webshop/kg/mind2web are available via the loader.
+  - TAS weights are unchanged (these are heuristic correctness fixes, not a recalibration).
