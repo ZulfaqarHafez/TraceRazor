@@ -32,7 +32,7 @@ carry-over. We present \textbf{TraceRazor}, an offline, dependency-light tool
 that ingests an agent execution trace and produces (i) a composite
 \emph{Trace Auditing Score} (TAS) decomposed into thirteen interpretable
 sub-metrics, (ii) concrete fix suggestions with \emph{estimated} token savings,
-and (iii) two optional companion pillars --- consensus-based adaptive sampling
+and (iii) two optional companion pillars: consensus-based adaptive sampling
 and a substitutability classifier. TraceRazor is fast (a few milliseconds for
 typical traces) and runs without API keys for its core analysis.
 
@@ -60,9 +60,9 @@ need to know \emph{where} tokens were wasted and \emph{what} to change.
 TraceRazor targets this gap. It treats a trace as a sequence of typed steps
 (reasoning, tool call, etc.) with token counts and optional tool-success flags,
 and scores it along thirteen efficiency dimensions. The design goals are: (1)
-\emph{offline by default} --- the core analysis pulls in no network
-dependencies; (2) \emph{interpretable} --- every point of the composite maps to
-a named sub-metric and a per-step annotation; and (3) \emph{actionable} --- the
+\emph{offline by default}, the core analysis pulls in no network
+dependencies; (2) \emph{interpretable}, every point of the composite maps to
+a named sub-metric and a per-step annotation; and (3) \emph{actionable}, the
 output includes fix patches and an ``optimal path'' diff.
 
 \paragraph{Contributions.}
@@ -197,8 +197,8 @@ with the composite weights, these coefficients and threshold are heuristic.
 \subsection{Calibrating the weights}
 \label{sec:calib}
 Because the default weights are heuristic, we provide a calibration procedure
-that fits them to data for a stated objective --- here, \emph{recoverable token
-waste}. Given a dataset of traces each labelled with a measured recoverable
+that fits them to data for a stated objective (here, \emph{recoverable token
+waste}). Given a dataset of traces each labelled with a measured recoverable
 fraction $r\in[0,1]$ (from before/after re-runs at constant task quality), we set
 the target efficiency $y = 1-r$ and the feature vector $x$ to the thirteen
 normalised sub-metrics, then solve the simplex-constrained least squares

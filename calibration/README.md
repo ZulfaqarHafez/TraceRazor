@@ -13,7 +13,7 @@ replaces them with weights that are **fit on data**, so the score becomes
 choice. The calibration objective is the honest one for our use case:
 
 > make `raw_efficiency` predict the **measured recoverable token waste** of a run
-> (`efficiency = 1 − recoverable_fraction`).
+> (`efficiency = 1 - recoverable_fraction`).
 
 ## 1. Provide ground truth
 
@@ -29,12 +29,12 @@ Create a dataset manifest. Two entry forms are supported:
 }
 ```
 
-- `{"trace", "recoverable_fraction"}` — you supply the measured fraction
-  directly (0–1).
-- `{"before", "after"}` — the fraction is computed from measured token totals:
-  `(before_tokens − after_tokens) / before_tokens`. The **before** run (the real,
+- `{"trace", "recoverable_fraction"}`, you supply the measured fraction
+  directly (0-1).
+- `{"before", "after"}`, the fraction is computed from measured token totals:
+  `(before_tokens - after_tokens) / before_tokens`. The **before** run (the real,
   un-optimised trace) is the one that gets scored. This is the recommended form
-  when you have measured before/after re-runs at constant task quality — e.g.
+  when you have measured before/after re-runs at constant task quality, e.g.
   from running your products against industry multi-agent solutions.
 
 The key property: the target must come from **measurement**, not from
@@ -71,7 +71,7 @@ tracerazor audit run.json
 ```
 
 The default built-in weights are **left unchanged** in the engine until you
-calibrate on your own data — shipping synthetic-fit weights as the default would
+calibrate on your own data, shipping synthetic-fit weights as the default would
 just trade one arbitrary choice for another.
 
 ## Worked example (synthetic, reproducible)
@@ -90,3 +90,22 @@ actually track the injected waste (SRR, VDI, LDI) and the cross-validated fit
 beats the default weights by a wide margin (the defaults can even
 *anti-correlate* with recoverable waste). See `config/calibration_report.md` for
 the numbers. Swap in your real dataset to calibrate for production.
+
+## Why the example is synthetic, not public data
+
+A fair question is why we calibrate on synthetic traces instead of real data
+pulled from the internet. The reason is the target, not the features. Auditing
+runs on real public traces works fine, and the repo already audits 24 of them
+(tau-bench, SWE-agent). Calibration needs something those datasets do not carry:
+a measured recoverable-waste label per trace, ideally from a before/after re-run
+of the same task at equal quality. Public agent datasets are not published as
+matched lean/verbose pairs. In this repo, for instance, only one SWE-agent task
+ships in multiple edit-format variants, and the tau-bench traces are different
+tasks across different models, so neither gives matched pairs at any useful
+scale. Manufacturing a label from TraceRazor's own savings estimate would be
+circular and would defeat the point of calibration.
+
+So the honest path is the one wired up here: the synthetic example proves the
+mechanism with ground truth that is known by construction, and you supply real
+measured before/after pairs (for example from running your products against
+industry multi-agent baselines) to calibrate for production.

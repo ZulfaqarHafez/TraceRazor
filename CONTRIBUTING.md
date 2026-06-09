@@ -5,8 +5,8 @@ Thank you for considering contributing. This guide covers everything you need to
 ## Prerequisites
 
 - **Rust 1.82+** (`rustup update stable`)
-- **Node 20+** (optional — only for the React dashboard build)
-- **Python 3.10+** (optional — only for integration adapters)
+- **Node 20+** (optional, only for the React dashboard build)
+- **Python 3.10+** (optional, only for integration adapters)
 
 ## Setup
 
@@ -27,7 +27,7 @@ cargo clippy --workspace -- -D warnings
 
 ```
 crates/
-  tracerazor-core/      # Metrics, scoring, simulation — zero network deps
+  tracerazor-core/      # Metrics, scoring, simulation - zero network deps
   tracerazor-ingest/    # Trace parsers (raw JSON, LangSmith, OTEL)
   tracerazor-semantic/  # BoW + optional OpenAI embeddings
   tracerazor-store/     # SQLite persistence layer (via tokio-rusqlite)
@@ -50,7 +50,7 @@ integrations/           # Python adapters (CrewAI, OpenAI Agents, LangGraph)
 ## Code Style
 
 - Follow existing patterns in the crate you're modifying.
-- No `unwrap()` in production code — use `?`, `unwrap_or()`, or `expect()` with a message explaining the invariant.
+- No `unwrap()` in production code, use `?`, `unwrap_or()`, or `expect()` with a message explaining the invariant.
 - No `unsafe` blocks.
 - Add doc comments (`///`) for public functions and types.
 - Prefer descriptive error messages over generic ones.
