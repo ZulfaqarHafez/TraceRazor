@@ -411,6 +411,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
         per_agent: vec![],
         path_entropy: Default::default(),
         iar: None,
+        features: Default::default(),
     }
 }
 

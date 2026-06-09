@@ -23,6 +23,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -164,7 +165,11 @@ def main(argv=None) -> int:
             continue
         instance, model = trace.pop("_instance"), trace.pop("_model")
         total = sum(s["tokens"] for s in trace["steps"])
-        path = args.out_dir / f"{re.sub(r'[^A-Za-z0-9_.-]', '_', instance+'__'+model)}.json"
+        # Cap the filename: sanitized prefix + short hash of the full key, so
+        # very long task ids (e.g. tau2 telecom) don't overflow the FS limit.
+        safe = re.sub(r"[^A-Za-z0-9_.-]", "_", f"{instance}__{model}")[:120]
+        digest = hashlib.sha1(f"{instance}__{model}".encode()).hexdigest()[:10]
+        path = args.out_dir / f"{safe}_{digest}.json"
         path.write_text(json.dumps(trace, indent=2))
         n_written += 1
         by_instance[instance].append({"path": str(path.resolve()), "tokens": total, "model": model})

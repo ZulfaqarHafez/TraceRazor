@@ -1,4 +1,5 @@
 pub mod cost;
+pub mod features;
 pub mod fixes;
 pub mod graph;
 pub mod iar;
@@ -140,6 +141,9 @@ fn analyse_dyn(
     // ── Decision 7: per-agent breakdown for multi-agent traces ────────────────
     let per_agent = compute_per_agent_scores(trace, similarity_fn, config, total_tokens);
 
+    // Experimental context-accumulation features (diagnostic; not in the composite).
+    let features = features::compute(trace);
+
     Ok(TraceReport {
         trace_id: trace.trace_id.clone(),
         agent_name: trace.agent_name.clone(),
@@ -158,6 +162,7 @@ fn analyse_dyn(
         per_agent,
         path_entropy: tpe_result,
         iar: None, // populated by explicit IAR comparison, not during fresh analysis
+        features,
     })
 }
 

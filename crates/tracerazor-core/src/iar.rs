@@ -317,6 +317,7 @@ mod tests {
             per_agent: vec![],
             path_entropy: Default::default(),
             iar: None,
+            features: Default::default(),
         }
     }
 
