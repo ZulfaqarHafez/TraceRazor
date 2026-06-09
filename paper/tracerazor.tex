@@ -194,6 +194,31 @@ $\textit{AVS} = 0.45(1-\textit{VDI}) + 0.30\,\textit{SHL} + 0.25\,\textit{CCR}$
 is reported alongside TAS; $\textit{AVS} > 0.40$ raises a verbosity alert. As
 with the composite weights, these coefficients and threshold are heuristic.
 
+\subsection{Calibrating the weights}
+\label{sec:calib}
+Because the default weights are heuristic, we provide a calibration procedure
+that fits them to data for a stated objective --- here, \emph{recoverable token
+waste}. Given a dataset of traces each labelled with a measured recoverable
+fraction $r\in[0,1]$ (from before/after re-runs at constant task quality), we set
+the target efficiency $y = 1-r$ and the feature vector $x$ to the thirteen
+normalised sub-metrics, then solve the simplex-constrained least squares
+\begin{equation}
+\min_{\mathbf{w}}\; \lVert X\mathbf{w} - \mathbf{y}\rVert_2^2 + \lambda\lVert \mathbf{w}-\tfrac{1}{13}\mathbf{1}\rVert_2^2
+\quad\text{s.t.}\quad \mathbf{w}\ge 0,\ \textstyle\sum_k w_k = 1 ,
+\end{equation}
+where the constraint $\sum_k w_k = 1$ makes the engine's normalised composite
+equal $X\mathbf{w}$ exactly, and $\lambda$ optionally regularises toward uniform
+weights for small datasets. The tool reports in-sample $R^2$, $k$-fold
+cross-validated $R^2$, and the default-weights baseline, and emits a weights file
+the engine loads at runtime. On a synthetic worked example with \emph{known}
+injected waste ($n{=}36$), the default weights anti-correlate with recoverable
+waste ($R^2 \approx -0.33$) while calibrated weights reach cross-validated
+$R^2 \approx 0.32$, concentrating mass on the redundancy/verbosity metrics that
+actually track the injected waste. Crucially, the shipped defaults are
+\emph{not} replaced by synthetic-fit weights: calibration is opt-in on the
+user's own measured data, which is the only way to obtain a defensible cardinal
+score.
+
 \section{Fix Generation and Savings Estimation}
 \label{sec:fixes}
 For each detected inefficiency, TraceRazor emits a typed fix patch
@@ -323,11 +348,15 @@ external criterion (human-labelled ``recoverable waste,'' or measured token
 reduction at constant task success). It should be treated as an \emph{ordinal,
 within-project} indicator, not a cross-agent or absolute efficiency percentage.
 
-\paragraph{Uncalibrated weights and thresholds.} The composite weights
-(Table~\ref{tab:metrics}), the TVI constants in Eq.~\eqref{eq:tvi}, the AVS
-coefficients, and per-metric thresholds (e.g. the $0.65$ similarity cutoff) are
-author-chosen. We have not fit them to labelled data nor performed a sensitivity
-analysis showing conclusions are robust to perturbing them.
+\paragraph{Uncalibrated weights and thresholds (by default).} The \emph{default}
+composite weights (Table~\ref{tab:metrics}), the TVI constants in
+Eq.~\eqref{eq:tvi}, the AVS coefficients, and per-metric thresholds (e.g. the
+$0.65$ similarity cutoff) are author-chosen. The weights can now be replaced with
+data-fit values via the calibration procedure of Section~\ref{sec:calib}; until a
+user calibrates on their own labelled data, the shipped score remains an ordinal
+heuristic, and the TVI/AVS constants and thresholds are still uncalibrated. We
+have not performed a sensitivity analysis showing conclusions are robust to
+perturbing the latter.
 
 \paragraph{Internally competing sub-metrics.} Some sub-metrics optimise in
 opposite directions on the same similarity signal (redundancy penalises
@@ -377,8 +406,9 @@ substitutability pillars. Its engineering is solid and its outputs are
 actionable, but its central score is an uncalibrated ordinal heuristic and its
 quantitative claims are either estimates or preliminary. We have tried to be
 explicit about this throughout. The clear path to turning TraceRazor into a
-defensible measurement is: (1) collect human-labelled efficiency judgements and
-calibrate (or learn) the weights; (2) replace estimated savings with measured
+defensible measurement is: (1) apply the calibration procedure of
+Section~\ref{sec:calib} to a real labelled corpus (the tooling now exists; what
+is missing is the data); (2) replace estimated savings with measured
 before/after re-runs at constant task success; (3) re-run the sampling study
 multi-seed with confidence intervals and a deployable (non-oracle) selector; and
 (4) define and label substitutability on real data. Until then, TraceRazor is

@@ -86,6 +86,12 @@ enum Commands {
         /// TRACERAZOR_LLM_* / OPENAI_API_KEY / ANTHROPIC_API_KEY env vars.
         #[arg(long, default_value = "false")]
         enhanced: bool,
+
+        /// Path to a calibrated weights JSON file (as produced by the
+        /// calibration tool, `calibration/calibrate.py`). Falls back to the
+        /// TRACERAZOR_WEIGHTS env var, then the built-in default weights.
+        #[arg(long, value_name = "FILE")]
+        weights: Option<PathBuf>,
     },
 
     /// List all stored traces in the current session.
@@ -305,8 +311,8 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, enhanced } => {
-            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, enhanced).await?;
+        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, enhanced, weights } => {
+            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, enhanced, weights).await?;
         }
         Commands::List { agent } => {
             cmd_list(agent).await?;
@@ -339,6 +345,7 @@ async fn main() -> Result<()> {
 
 // ── audit ─────────────────────────────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)] // CLI dispatch mirrors the clap subcommand fields
 async fn cmd_audit(
     file: PathBuf,
     format: OutputFormat,
@@ -347,6 +354,7 @@ async fn cmd_audit(
     cost_per_million: f64,
     do_store: bool,
     enhanced: bool,
+    weights: Option<PathBuf>,
 ) -> Result<()> {
     let data = std::fs::read_to_string(&file)
         .with_context(|| format!("Cannot read file: {}", file.display()))?;
@@ -372,6 +380,14 @@ async fn cmd_audit(
     };
     if let Some(t) = threshold {
         config.threshold = t;
+    }
+    // Calibrated weights: --weights flag, else TRACERAZOR_WEIGHTS env var.
+    if let Some(path) = weights.or_else(|| std::env::var_os("TRACERAZOR_WEIGHTS").map(PathBuf::from)) {
+        let raw = std::fs::read_to_string(&path)
+            .with_context(|| format!("Cannot read weights file: {}", path.display()))?;
+        config.weights = serde_json::from_str(&raw)
+            .with_context(|| format!("Invalid weights JSON: {}", path.display()))?;
+        eprintln!("Using calibrated weights from {}", path.display());
     }
     if let Ok(Some(baseline)) = store.baseline_tokens(&trace.agent_name).await {
         config.baseline_tokens = Some(baseline);

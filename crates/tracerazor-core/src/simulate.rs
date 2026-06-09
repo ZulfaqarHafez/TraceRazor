@@ -373,6 +373,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
             vae: 0.0,
             passes_threshold: false,
             avs: 0.0,
+            metric_normalised: Default::default(),
             srr: zero_srr,
             ldi: zero_ldi,
             tca: zero_tca,

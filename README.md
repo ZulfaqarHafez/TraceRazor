@@ -291,6 +291,37 @@ and the 24 converted trace JSONs live at
 [`traces/external/`](traces/external/). Converters in
 [`tools/`](tools/).
 
+### Calibrating TAS to your workload
+
+The thirteen sub-metrics are combined with weights that are heuristic by
+default. If you want TAS to be a *calibrated* indicator for your use case rather
+than an ordinal one, fit the weights to ground truth with the calibration tool
+in [`calibration/`](calibration/). The supported objective is **recoverable
+token waste**: the weights are fit so that efficiency (`raw TAS / 100`) predicts
+`1 − recoverable_fraction`, where the fraction comes from measured before/after
+re-runs at constant task quality (e.g. your products vs. industry multi-agent
+baselines).
+
+```bash
+pip install -e ".[calibrate]"
+cargo build --release -p tracerazor
+
+# Your data: a manifest of traces with measured recoverable waste
+python -m calibration.calibrate --dataset path/to/manifest.json \
+  --out config/tas_weights.json --report config/calibration_report.md
+
+# Use the fitted weights
+tracerazor audit run.json --weights config/tas_weights.json
+# or globally:  export TRACERAZOR_WEIGHTS=config/tas_weights.json
+```
+
+The tool reports **train R², cross-validated R², and the default-weights
+baseline**, so recalibration is only adopted when it demonstrably helps. The
+built-in defaults are left unchanged until you calibrate on your own data —
+shipping synthetic-fit weights as the default would just swap one arbitrary
+choice for another. A reproducible synthetic worked example (known injected
+waste) ships in `calibration/`; see [`calibration/README.md`](calibration/README.md).
+
 ---
 
 ## Pillar 2 — Adaptive Sampling
@@ -781,12 +812,13 @@ Reproduce with `cargo test --workspace` and `pytest`.
 TraceRazor is a useful, fast heuristic tool. It is **not** a validated scientific
 instrument, and we want to be precise about what it does and does not establish:
 
-- **TAS is an ordinal heuristic, not a calibrated measurement.** The composite
-  weights are preliminary and have not been fit against a labelled corpus. Use
-  TAS to compare runs of the *same* agent over time, not as an absolute
-  cross-agent efficiency percentage. Some sub-metrics intentionally pull in
-  opposite directions (e.g. redundancy vs. continuity), so there is no single
-  optimal point.
+- **TAS is an ordinal heuristic by default.** The built-in composite weights are
+  author-chosen and not fit against a labelled corpus, so out of the box TAS is
+  best used to compare runs of the *same* agent over time, not as an absolute
+  cross-agent percentage. Some sub-metrics intentionally pull in opposite
+  directions (e.g. redundancy vs. continuity), so there is no single optimal
+  point. **You can replace the heuristic weights with data-calibrated ones** —
+  see [Calibrating TAS](#calibrating-tas-to-your-workload).
 - **Savings and dollar figures are estimates, not measurements.** They are the
   sum of per-fix heuristic projections, *not* a measured before/after re-run at
   constant task quality. To validate a concrete patch set, capture a real

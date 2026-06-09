@@ -184,6 +184,7 @@ mod tests {
             vae: 0.60,
             passes_threshold: false,
             avs: 0.3,
+            metric_normalised: Default::default(),
             srr: SrrResult {
                 score: 10.0,
                 redundant_steps: vec![],

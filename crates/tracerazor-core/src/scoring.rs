@@ -137,6 +137,13 @@ pub struct TasScore {
     /// AVS > 0.40 triggers a VERBOSITY ALERT in the report.
     pub avs: f64,
 
+    /// Per-metric normalised efficiency values (0.0–1.0) exactly as they enter
+    /// the weighted composite, keyed by metric code (srr, ldi, …). Exposed so
+    /// the calibration tool can fit weights against the same inputs the engine
+    /// uses. Populated by `compute()`.
+    #[serde(default)]
+    pub metric_normalised: std::collections::BTreeMap<String, f64>,
+
     // Structural metrics.
     pub srr: SrrResult,
     pub ldi: LdiResult,
@@ -291,6 +298,22 @@ pub fn compute(
     let grade = Grade::from_score(tas);
     let passes = tas >= config.threshold;
 
+    let metric_normalised = std::collections::BTreeMap::from([
+        ("srr".to_string(), srr_n),
+        ("ldi".to_string(), ldi_n),
+        ("tca".to_string(), tca_n),
+        ("tur".to_string(), tur_n),
+        ("cce".to_string(), cce_n),
+        ("rda".to_string(), rda_n),
+        ("isr".to_string(), isr_n),
+        ("dbo".to_string(), dbo_n),
+        ("vdi".to_string(), vdi_n),
+        ("shl".to_string(), shl_n),
+        ("ccr".to_string(), ccr_n),
+        ("gar".to_string(), gar_n),
+        ("csd".to_string(), csd_n),
+    ]);
+
     TasScore {
         score: tas,
         raw_tas,
@@ -299,6 +322,7 @@ pub fn compute(
         vae,
         passes_threshold: passes,
         avs,
+        metric_normalised,
         srr,
         ldi,
         tca,
