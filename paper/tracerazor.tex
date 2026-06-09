@@ -116,6 +116,7 @@ by an injected backend; the default is a bag-of-words cosine, with an optional
 embedding backend.
 
 \subsection{Sub-metrics}
+\label{sec:metrics}
 Each sub-metric maps a trace to $[0,1]$ (or a percentage), higher being more
 efficient. Table~\ref{tab:metrics} lists all fourteen with their default
 composite weight. Representative definitions:
@@ -127,7 +128,12 @@ composite weight. Representative definitions:
         bounded look-back window of the last $256$ steps to keep the cost
         $O(n\cdot 256)$ rather than $O(n^2)$.
   \item \textbf{LDI (Loop Detection Index).} Degree to which the
-        reasoning/tool-call sequence revisits previously seen cycles.
+        reasoning/tool-call sequence revisits previously seen cycles. Loops are
+        detected both by exact state hashing (tool name $+$ serialised
+        parameters) and, for command-style tools, by a \emph{parametric}
+        detector that abstracts argument literals into a command skeleton so
+        that the same command template repeated for different arguments (a loop
+        shape common in tool-using agents) is caught (Section~\ref{sec:hf-agentinstruct}).
   \item \textbf{TCA (Tool Call Accuracy).} Fraction of tool calls that
         succeeded on first attempt.
   \item \textbf{ISR (Information Sufficiency Rate).} Fraction of steps that add
@@ -145,6 +151,11 @@ composite weight. Representative definitions:
   \item \textbf{Verbosity: VDI, SHL, CCR.} Verbosity-density, sycophancy/hedging
         level, and a compression-ratio proxy.
   \item \textbf{GAR, CSD.} Goal-advancement ratio and cross-step semantic drift.
+        Both score reasoning-bearing steps against the goal (GAR) or each other
+        (CSD); the scored set includes ReAct tool-call turns whose content embeds
+        a substantive thought, not just steps typed as reasoning, so the metrics
+        do not collapse on tool-using agents whose reasoning is fused with action
+        (Section~\ref{sec:hf-agentinstruct}).
 \end{itemize}
 
 \begin{table}[t]
@@ -406,6 +417,74 @@ Claude 3.5 Sonnet & retail  & 80.6 & 16.5\% \\
 \end{tabular}
 \end{table}
 
+\subsection{Real ReAct trajectories from Hugging Face (AgentInstruct)}
+\label{sec:hf-agentinstruct}
+The $\tau$-bench traces above are function-calling assistants. To test the
+auditor against a different real agent style --- tool-using \emph{ReAct} agents
+that interleave a natural-language thought with a shell or SQL action --- we
+sourced trajectories from the Hugging Face dataset \code{zai-org/AgentInstruct}
+(formerly \code{THUDM/AgentInstruct})~\cite{agentinstruct}, a corpus of
+$1{,}866$ ReAct interactions across six task domains. We converted a sample
+spanning the operating-system (bash) and database (SQL) splits into the trace
+schema (\code{tools/convert\_agentinstruct.py}); the resulting corpus of nine
+traces (seven analysable at $\ge 5$ steps) is audited end-to-end by a
+\code{cargo test} statistics gate
+(\code{crates/tracerazor-cli/tests/huggingface\_real\_data.rs}) and summarised by
+\code{benchmark/hf\_audit\_stats.py}. Provenance and a live dataset-viewer fetch
+path are documented in the repository.
+
+Auditing this corpus exposed two metric blind spots the function-calling traces
+had not, both rooted in ReAct's fusion of thought and action into one tool-call
+turn. They drove two heuristic fixes (the composite weights are unchanged):
+
+\paragraph{Loop detection missed parametric loops.} LDI originally keyed loops on
+an exact state hash, so it never fired ($\mathrm{LDI_{norm}}=1.0$ on every trace)
+even on \code{os\_6}, which runs the same template once per file
+(\code{grep -o "Linux" <FILE> | wc -l}, four times). The parametric detector
+(Section~\ref{sec:metrics}) abstracts argument literals into a command skeleton
+and flags $\ge 3$ repeats, scoped to command-style tools so a structured call
+issued for two arguments (e.g.\ a flight search for two routes) is untouched.
+\code{os\_6} now reports a length-4 loop ($\mathrm{LDI_{norm}}:1.0\to 0.556$) and
+emits a loop-termination fix, while progressive pipelines (\code{os\_0}) are
+correctly \emph{not} flagged.
+
+\paragraph{Goal/continuity metrics ignored embedded reasoning.} GAR and CSD
+scored only reasoning-typed steps, but a ReAct agent's goal-relevant reasoning
+lives inside the tool-call turn (``Think: \dots\ Act: bash \dots''); both metrics
+saw only the sparse final-answer steps and collapsed ($\mathrm{GAR_{norm}}$ as
+low as $0.0$). Scoring a tool-call step when its content carries substantive
+reasoning prose ($\ge 12$ words) --- capturing ``Think'' turns while still
+ignoring bare invocations --- raised corpus mean $\mathrm{GAR_{norm}}$ from
+$0.20$ to $0.25$ (roughly doubling on the most tool-heavy traces) and changed CSD
+from a single degenerate answer-pair comparison to scoring all reasoning
+transitions, localising drift to the few-shot-example$\to$task boundary.
+
+Table~\ref{tab:agentinstruct} reports the corpus statistics after the fixes. Mean
+TAS is $80.6$ (all ``Good''); the value here is not the headline score but the
+two corrected blind spots, which neither a synthetic benchmark nor a
+function-calling-only evaluation would have surfaced --- concrete evidence for
+testing heuristic auditors against \emph{diverse} real agent styles.
+
+\begin{table}[t]
+\centering
+\caption{TraceRazor on the real Hugging Face AgentInstruct corpus (seven
+analysable ReAct traces). Normalised metric means ($1.0=$ no waste detected).}
+\label{tab:agentinstruct}
+\begin{tabular}{lrl}
+\toprule
+Quantity & Value & Note \\
+\midrule
+Mean TAS              & 80.6  & all ``Good'' \\
+Mean SRR$_\text{norm}$ & 0.674 & step redundancy detected \\
+Mean LDI$_\text{norm}$ & 0.937 & was $1.000$; parametric loop in \code{os\_6} \\
+Mean GAR$_\text{norm}$ & 0.247 & was $0.202$; reasoning-aware \\
+Mean CSD$_\text{norm}$ & 0.415 & full reasoning flow (was a degenerate pair) \\
+Mean OBS$_\text{norm}$ & 0.913 & high tool-I/O share \\
+Fix patches (sum)     & 17    & across the seven traces \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Benchmark on real traces}
 The repository benchmark runs the auditor over the 24 real public traces above
 (tau-bench airline/retail; SWE-agent edit-format variants) and records TAS,
@@ -555,6 +634,7 @@ how it is documented and shipped.
 \bibitem{verbosity} W. Shi et al. \emph{Verbosity Bias in Preference Labeling / LLM Responses}. 2024.
 \bibitem{selfconsistency} X. Wang et al. \emph{Self-Consistency Improves Chain-of-Thought Reasoning in Language Models}. ICLR, 2023.
 \bibitem{taubench} S. Yao et al. \emph{tau-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains}. Sierra Research, 2024. \url{https://github.com/sierra-research/tau-bench}
+\bibitem{agentinstruct} A. Zeng et al. \emph{AgentTuning: Enabling Generalized Agent Abilities for LLMs}. arXiv:2310.12823, 2023. Dataset: \url{https://huggingface.co/datasets/zai-org/AgentInstruct}
 \end{thebibliography}
 
 \end{document}

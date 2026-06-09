@@ -114,3 +114,22 @@ Next: Iteration 5 — update the research paper (`paper/tracerazor.tex`) with th
 HuggingFace AgentInstruct real-data evaluation and the three data-driven
 improvements (LDI parametric loops, GAR/CSD reasoning-aware). Also refresh
 README/CHANGELOG.
+
+## Iteration 5
+Read: The paper's Evaluation section covers only the 24 tau-bench/SWE-agent
+trajectories (function-calling assistants); no HuggingFace/ReAct content, and the
+LDI/GAR/CSD definitions predate the iteration 2–4 fixes.
+Plan: Add an Evaluation subsection (`sec:hf-agentinstruct`) reporting the
+AgentInstruct real-data corpus + the two blind spots it exposed and the fixes;
+update the LDI and GAR/CSD sub-metric definitions; add a results table and an
+AgentInstruct bibliography entry. Final deliverable of the goal.
+Change:
+  - `paper/tracerazor.tex` — new subsection + Table~\ref{tab:agentinstruct};
+    updated LDI and GAR/CSD definitions; `\label{sec:metrics}`; `\bibitem{agentinstruct}`.
+Test result: PASS (`cargo test --workspace` 12/12 green; paper change is inert to
+tests; LaTeX environments balanced, all \ref/\cite resolve — verified by script
+since no pdflatex in this environment).
+Diagnosis: Paper now documents the real-data evaluation and the data-driven
+metric improvements; cross-references and citations are internally consistent.
+Next: Iteration 6 — propagate the same content to README/CHANGELOG for
+user-facing consistency, refresh stale Rust test counts, final verification.
