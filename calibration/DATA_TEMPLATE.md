@@ -26,8 +26,8 @@ analysis, you can skip pairing and give a single trace plus that number instead.
 
 Aim for **50 to 200 pairs**, spanning a range of waste levels (some near 0%
 recoverable, some high) and ideally more than one agent/domain. The more the
-metrics vary independently across samples, the more of the 13 metrics get real
-weight (this is exactly what the synthetic data could not provide).
+metrics vary independently across samples, the more of the metrics get real
+weight.
 
 ## Trace format
 
@@ -74,7 +74,8 @@ Pick whichever is easiest for your harness:
      --trace-col path --label-col recoverable_fraction --out manifest.json
    ```
 
-See `calibration/template/` for a runnable two-pair example. Then:
+See `calibration/examples/swe_agent_pairs.json` for a runnable real example
+(SWE-agent edit-format variants, in-repo). Then:
 
 ```bash
 python -m calibration.calibrate --dataset manifest.json \
@@ -148,13 +149,14 @@ python -m calibration.calibrate --dataset manifest.json \
   --prior default --l2 0.1
 ```
 
-Honest result on this real data (233 within-agent before/after pairs): the
-calibrated cross-validated R^2 is **negative (-0.11)**, i.e. the current TAS
-metrics do not predict real recoverable token waste, in contrast to the
-controlled synthetic benchmark. See `config/calibration_report_taubench.md` and
-the paper's "Real-data calibration" section. This is the kind of finding only
-real data surfaces, and it is why the shipped weights stay a within-trace
-diagnostic rather than a calibrated savings predictor.
+Result on this real data (233 within-agent before/after pairs): the original 13
+metrics did not predict recoverable waste (negative cross-validated R^2), but
+adding the observation-accumulation features raised it into the positive range
+(about **+0.08**), which is why one of them (observation token share) was promoted
+into the composite as the OBS metric. The absolute R^2 is still modest (~0.1), so
+the score is better grounded but not yet a strong predictor. See
+`config/calibration_report.md` and the paper's "Real-data calibration" and
+"Better features" sections.
 
 ## Fastest way to unblock me
 

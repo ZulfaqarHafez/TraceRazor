@@ -106,41 +106,46 @@ The default built-in weights are **left unchanged** in the engine until you
 calibrate on your own data, shipping synthetic-fit weights as the default would
 just trade one arbitrary choice for another.
 
-## Worked example (synthetic, reproducible)
+## Worked examples (real data)
 
-`make_example_dataset.py` builds traces by injecting a *known* amount of
-duplicate + verbose waste into clean base runs, so the recoverable fraction is
-ground truth by construction (not derived from TraceRazor):
+Two real, reproducible examples ship with the repo:
+
+**1. In-repo, no network** — the SWE-agent edit-format variants (the same
+SWE-bench task solved at different token cost, leanest = `xml`):
 
 ```bash
-python -m calibration.make_example_dataset --out calibration/example_data --n 36
-python -m calibration.calibrate --dataset calibration/example_data/manifest.json
+python -m calibration.calibrate \
+  --dataset calibration/examples/swe_agent_pairs.json \
+  --out config/tas_weights.json --report config/calibration_report.md \
+  --cv 3 --prior default --l2 0.1
 ```
 
-The default generator builds 200 traces with six categories of injected waste
-(duplicate reasoning, tool loops, failed tool calls, verbose filler, hedging,
-restated context). On this controlled set the calibrated weights reach
-cross-validated `R^2 = 0.64` against recoverable waste while the heuristic
-defaults reach only `R^2 = 0.09`, and the fit concentrates mass on the metrics
-that track the injected waste (SRR and CCE). See `config/calibration_report.md`
-for the full table. This validates the procedure; swap in your real measured
-dataset to calibrate for production.
+**2. Larger, from GitHub** — tau-bench real trajectories (233 within-agent
+before/after pairs):
 
-## Why the example is synthetic, not public data
+```bash
+git clone --depth 1 https://github.com/sierra-research/tau-bench
+python -m calibration.sources.from_taubench \
+  --dir tau-bench/historical_trajectories --out taubench.jsonl --within-model
+python -m calibration.sources.from_messages --jsonl taubench.jsonl \
+  --out-dir converted --manifest manifest.json
+python -m calibration.calibrate --dataset manifest.json \
+  --out config/tas_weights.json --report config/calibration_report.md \
+  --cv 5 --prior default --l2 0.1 --features
+```
 
-A fair question is why we calibrate on synthetic traces instead of real data
-pulled from the internet. The reason is the target, not the features. Auditing
-runs on real public traces works fine, and the repo already audits 24 of them
-(tau-bench, SWE-agent). Calibration needs something those datasets do not carry:
-a measured recoverable-waste label per trace, ideally from a before/after re-run
-of the same task at equal quality. Public agent datasets are not published as
-matched lean/verbose pairs. In this repo, for instance, only one SWE-agent task
-ships in multiple edit-format variants, and the tau-bench traces are different
-tasks across different models, so neither gives matched pairs at any useful
-scale. Manufacturing a label from TraceRazor's own savings estimate would be
-circular and would defeat the point of calibration.
+On the tau-bench pairs the calibrated cross-validated `R^2` is about `+0.08`
+against recoverable waste (default-weights baseline negative), and the
+`--features` flag shows the observation-accumulation signals that drove the
+improvement (see the paper and `config/calibration_report.md`). Swap in your own
+measured before/after pairs to calibrate for production.
 
-So the honest path is the one wired up here: the synthetic example proves the
-mechanism with ground truth that is known by construction, and you supply real
-measured before/after pairs (for example from running your products against
-industry multi-agent baselines) to calibrate for production.
+## Why real before/after pairs (not synthetic)
+
+Calibration needs a measured recoverable-waste label per trace, ideally from a
+before/after re-run of the same task at equal quality. The examples above get
+that from real runs: SWE-agent solves one task under several edit formats, and
+tau-bench solves each task across models and repeated trials, so successful runs
+of the same task at differing token cost form genuine pairs. Manufacturing a
+label from TraceRazor's own savings estimate would be circular, which is why we
+calibrate on measured token deltas from real runs.

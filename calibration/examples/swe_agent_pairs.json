@@ -1,0 +1,9 @@
+{
+  "name": "swe-agent-edit-formats",
+  "_comment": "Real in-repo before/after pairs: the same SWE-bench task (marshmallow) solved by SWE-agent under different edit formats, all resolved, at different token cost. The leanest (xml) is the 'after'. A small, network-free worked example for the calibration pipeline.",
+  "entries": [
+    {"before": "../../traces/external/swe_agent/marshmallow_cursors.json", "after": "../../traces/external/swe_agent/marshmallow_xml.json"},
+    {"before": "../../traces/external/swe_agent/marshmallow_default.json", "after": "../../traces/external/swe_agent/marshmallow_xml.json"},
+    {"before": "../../traces/external/swe_agent/marshmallow_fn_calling.json", "after": "../../traces/external/swe_agent/marshmallow_xml.json"}
+  ]
+}
