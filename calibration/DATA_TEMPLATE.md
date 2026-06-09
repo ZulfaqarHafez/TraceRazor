@@ -131,6 +131,31 @@ Field names (`--id-field` etc.) are adjustable to match the dataset's columns.
 The connector and the full pipeline are tested end to end on the messages
 format; the only thing they need is the data file present locally.
 
+## A reachable real source: tau-bench (GitHub)
+
+Unlike Hugging Face, GitHub is reachable from a locked-down environment, and
+tau-bench commits real agent runs in-repo. This is what was used for the
+real-data calibration reported in the paper:
+
+```bash
+git clone --depth 1 https://github.com/sierra-research/tau-bench
+python -m calibration.sources.from_taubench \
+  --dir tau-bench/historical_trajectories --out taubench.jsonl --within-model
+python -m calibration.sources.from_messages --jsonl taubench.jsonl \
+  --out-dir converted --manifest manifest.json
+python -m calibration.calibrate --dataset manifest.json \
+  --out config/tas_weights.json --report config/calibration_report_taubench.md \
+  --prior default --l2 0.1
+```
+
+Honest result on this real data (233 within-agent before/after pairs): the
+calibrated cross-validated R^2 is **negative (-0.11)**, i.e. the current TAS
+metrics do not predict real recoverable token waste, in contrast to the
+controlled synthetic benchmark. See `config/calibration_report_taubench.md` and
+the paper's "Real-data calibration" section. This is the kind of finding only
+real data surfaces, and it is why the shipped weights stay a within-trace
+diagnostic rather than a calibrated savings predictor.
+
 ## Fastest way to unblock me
 
 If exporting is involved, just paste **one** of your harness's records (one CSV

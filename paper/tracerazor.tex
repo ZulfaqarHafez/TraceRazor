@@ -37,11 +37,13 @@ and a substitutability classifier. TraceRazor is fast (a few milliseconds for
 typical traces) and runs without API keys for its core analysis.
 
 We are deliberate about what this work does and does not establish. TAS is an
-\emph{ordinal heuristic} whose composite weights are author-chosen and have not
-been calibrated against a labelled corpus; reported token ``savings'' are
-heuristic projections rather than measured before/after re-runs; and the
-sampling and substitutability results are preliminary (single-seed and
-synthetic, respectively). We therefore present TraceRazor as a useful
+\emph{ordinal heuristic} whose composite weights are author-chosen; when we
+calibrate them on real agent runs (tau-bench), no fit of the current metrics
+predicts recoverable token waste (negative cross-validated $R^2$), so TAS is a
+within-trace diagnostic, not a validated predictor of cross-run savings. Reported
+token ``savings'' are heuristic projections rather than measured before/after
+re-runs, and the sampling and substitutability results are preliminary
+(single-seed and synthetic, respectively). We therefore present TraceRazor as a useful
 engineering instrument and a reproducible measurement harness, not as a
 validated scientific claim, and we devote a substantial Threats-to-Validity
 section to its limitations. All numbers in this report are reproducible from the
@@ -276,6 +278,54 @@ and data format for that are provided, and the shipped engine defaults are left
 heuristic until such a fit is performed, so no synthetic weighting is passed off
 as a general-purpose metric.
 
+\subsection{Real-data calibration on \texorpdfstring{$\tau$}{tau}-bench (a negative result)}
+\label{sec:realcalib}
+We then calibrated on real agent runs. tau-bench~\cite{taubench} publishes
+trajectories for GPT-4o and Claude~3.5 Sonnet on the airline and retail domains;
+of $1{,}980$ episodes, $1{,}183$ succeed (reward $=1$). Because the same task is
+solved by multiple models and repeated trials, successful runs of one task at
+differing token cost form before/after pairs \emph{at equal quality} (both
+completed the task). Restricting to same-model, different-trial pairs (the purest
+within-agent signal) yields $233$ pairs; allowing cross-model pairs yields $147$.
+
+The result is negative and we report it as such. Table~\ref{tab:realcalib} shows
+that on real data the calibrated weights reach a \emph{negative} cross-validated
+$R^2$ ($-0.11$), i.e.\ no convex combination of the thirteen sub-metrics predicts
+real recoverable token waste better than predicting the mean. Every individual
+sub-metric correlates weakly with the target ($|r|<0.3$; the strongest is CCE at
+$-0.29$). This is in sharp contrast to the controlled benchmark
+(Table~\ref{tab:calib}), and the contrast is the point: the synthetic $R^2=0.64$
+was achievable only because the injected waste was, by construction, the kind of
+within-trace redundancy the metrics measure.
+
+\begin{table}[t]
+\centering
+\caption{Calibration on real tau-bench before/after pairs (5-fold CV). Negative
+$R^2$ means the fit does not beat predicting the mean; TAS's metrics do not
+predict real recoverable waste here.}
+\label{tab:realcalib}
+\begin{tabular}{lrr}
+\toprule
+Weights & Train $R^2$ & CV $R^2$ \\
+\midrule
+Default (heuristic)    & --     & $-0.37$ \\
+Calibrated (best fit)  & $-0.09$ & $-0.11$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Interpretation.} The likely cause is a target/score mismatch: the
+cross-run token delta between a verbose and a lean successful run is driven
+mostly by how many steps the agent took and which path it chose, whereas TAS
+measures \emph{within-trace} structural redundancy. A run can be internally
+non-redundant (good TAS) yet still take a longer valid path than a leaner run
+(high recoverable fraction), which breaks the correlation. The honest conclusion
+is that TAS is a within-trace diagnostic, useful for flagging redundancy inside a
+single run, but it is \emph{not}, as currently defined, a validated predictor of
+how many tokens are recoverable relative to a leaner run. Closing that gap needs
+richer or non-linear features (e.g.\ path-level and step-count modelling) and a
+target measured on within-agent optimisation rather than cross-run comparison.
+
 \section{Fix Generation and Savings Estimation}
 \label{sec:fixes}
 For each detected inefficiency, TraceRazor emits a typed fix patch
@@ -408,12 +458,14 @@ within-project} indicator, not a cross-agent or absolute efficiency percentage.
 \paragraph{Uncalibrated weights and thresholds (by default).} The \emph{default}
 composite weights (Table~\ref{tab:metrics}), the TVI constants in
 Eq.~\eqref{eq:tvi}, the AVS coefficients, and per-metric thresholds (e.g. the
-$0.65$ similarity cutoff) are author-chosen. The weights can now be replaced with
-data-fit values via the calibration procedure of Section~\ref{sec:calib}; until a
-user calibrates on their own labelled data, the shipped score remains an ordinal
-heuristic, and the TVI/AVS constants and thresholds are still uncalibrated. We
-have not performed a sensitivity analysis showing conclusions are robust to
-perturbing the latter.
+$0.65$ similarity cutoff) are author-chosen. The calibration procedure
+(Section~\ref{sec:calib}) can fit them to data, but the real-data test on
+tau-bench (Section~\ref{sec:realcalib}) found that no fit of the current metrics
+predicts real recoverable waste (negative cross-validated $R^2$). So the shipped
+score remains an ordinal within-trace heuristic by design, not a calibrated
+predictor of cross-run savings, and the TVI/AVS constants and thresholds are
+likewise uncalibrated. We have not performed a sensitivity analysis showing
+conclusions are robust to perturbing them.
 
 \paragraph{Internally competing sub-metrics.} Some sub-metrics optimise in
 opposite directions on the same similarity signal (redundancy penalises
@@ -462,10 +514,15 @@ explaining token waste in LLM agent traces, with optional sampling and
 substitutability pillars. Its engineering is solid and its outputs are
 actionable, but its central score is an uncalibrated ordinal heuristic and its
 quantitative claims are either estimates or preliminary. We have tried to be
-explicit about this throughout. The clear path to turning TraceRazor into a
-defensible measurement is: (1) apply the calibration procedure of
-Section~\ref{sec:calib} to a real labelled corpus (the tooling now exists; what
-is missing is the data); (2) replace estimated savings with measured
+explicit about this throughout. Notably, when we calibrated on real tau-bench
+runs (Section~\ref{sec:realcalib}) the metrics did not predict recoverable waste
+(negative cross-validated $R^2$), which is the most important finding here: the
+score is a useful within-trace diagnostic, not a validated predictor of cross-run
+savings. The path to a defensible measurement is: (1) develop features that
+actually predict recoverable waste on real data (the calibration procedure of
+Section~\ref{sec:calib} is in place, but the current metrics are insufficient, so
+this needs richer/non-linear features, not just more data); (2) replace estimated
+savings with measured
 before/after re-runs at constant task success; (3) re-run the sampling study
 multi-seed with confidence intervals and a deployable (non-oracle) selector; and
 (4) define and label substitutability on real data. Until then, TraceRazor is
@@ -485,6 +542,7 @@ how it is documented and shipped.
 \bibitem{agenteval} A. Mohammadi et al. \emph{Evaluation and Benchmarking of LLM Agents}. KDD, 2025.
 \bibitem{verbosity} W. Shi et al. \emph{Verbosity Bias in Preference Labeling / LLM Responses}. 2024.
 \bibitem{selfconsistency} X. Wang et al. \emph{Self-Consistency Improves Chain-of-Thought Reasoning in Language Models}. ICLR, 2023.
+\bibitem{taubench} S. Yao et al. \emph{tau-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains}. Sierra Research, 2024. \url{https://github.com/sierra-research/tau-bench}
 \end{thebibliography}
 
 \end{document}

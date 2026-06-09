@@ -245,3 +245,26 @@ def test_from_messages_builds_before_after_pairs(tmp_path):
     _, samples = load_dataset(manifest)
     assert len(samples) == 2
     assert all(s.after_path is not None for s in samples)
+
+
+from calibration.sources.from_taubench import main as tb_main  # noqa: E402
+
+
+def test_from_taubench_emits_successful_episodes(tmp_path):
+    # tau-bench shape: <model>-<domain>.json, list of episodes with reward/traj/task_id
+    eps = [
+        {"task_id": 0, "reward": 1.0, "trial": 0, "traj": _convo(True)},
+        {"task_id": 0, "reward": 0.0, "trial": 1, "traj": _convo(False)},  # failed -> dropped
+        {"task_id": 1, "reward": 1.0, "trial": 0, "traj": _convo(False)},
+    ]
+    d = tmp_path / "historical_trajectories"
+    d.mkdir()
+    (d / "gpt4o-airline.json").write_text(json.dumps(eps))
+    out = tmp_path / "tb.jsonl"
+    rc = tb_main(["--dir", str(d), "--out", str(out)])
+    assert rc == 0
+    rows = [json.loads(l) for l in out.read_text().splitlines() if l.strip()]
+    assert len(rows) == 2  # only the two reward=1 episodes
+    assert all(r["resolved"] is True for r in rows)
+    assert rows[0]["instance_id"] == "airline-0"
+    assert rows[0]["model"].startswith("gpt4o")
