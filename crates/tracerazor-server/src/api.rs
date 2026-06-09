@@ -71,6 +71,9 @@ pub struct AuditRequest {
 pub struct AuditResponse {
     pub trace_id: String,
     pub agent_name: String,
+    pub framework: String,
+    pub total_steps: usize,
+    pub total_tokens: u32,
     pub tas_score: f64,
     pub grade: String,
     pub tokens_saved: u32,
@@ -97,6 +100,16 @@ async fn audit(
 
     let mut trace = parse(&trace_str, TraceFormat::Auto)
         .map_err(|e| AppError::bad_request(format!("Ingest error: {e}")))?;
+
+    // Bound per-request analysis cost. Even with windowed metrics, an enormous
+    // step count is a CPU-DoS vector on a public endpoint.
+    const MAX_STEPS: usize = 50_000;
+    if trace.steps.len() > MAX_STEPS {
+        return Err(AppError::bad_request(format!(
+            "Trace has {} steps; maximum is {MAX_STEPS}",
+            trace.steps.len()
+        )));
+    }
 
     // ── Build historical context for local-first RDA/DBO ─────────────────────
     let historical_sequences = state
@@ -165,6 +178,9 @@ async fn audit(
         Json(AuditResponse {
             trace_id: trace.trace_id.clone(),
             agent_name: trace.agent_name.clone(),
+            framework: trace.framework.clone(),
+            total_steps: trace.steps.len(),
+            total_tokens: report.total_tokens,
             tas_score,
             grade,
             tokens_saved,

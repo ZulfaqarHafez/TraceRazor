@@ -67,6 +67,57 @@ jobs:
       - name: npm build
         run: npm run build
 
+  # ── Python: build CLI, install package, run pytest + integration smoke ───────
+  python:
+    name: Python (pytest + integration smoke)
+    runs-on: ubuntu-latest
+    env:
+      TRACERAZOR_BIN: ${{ github.workspace }}/target/release/tracerazor
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Build CLI (needed for end-to-end audit)
+        run: cargo build -p tracerazor --release
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install package + test deps
+        # dev = pytest/pytest-asyncio; langgraph = langchain-core for the
+        # langgraph integration test; http = requests for HTTP-mode tests.
+        run: pip install -e ".[dev,langgraph,http]"
+
+      - name: Run pytest
+        run: pytest -q
+
+      - name: End-to-end audit via real binary
+        run: |
+          python - <<'PY'
+          import json
+          from tracerazor import TraceRazorClient
+          trace = json.load(open("traces/support-agent-run-2847.json"))
+          report = TraceRazorClient().analyse(trace)
+          assert 0 <= report.tas_score <= 100, report.tas_score
+          assert report.total_steps > 0, report.total_steps
+          print("E2E OK:", report.summary())
+          PY
+
   # ── TAS gate: run sample trace and fail if score < 60 ────────────────────────
   tas-gate:
     name: TAS Gate (sample trace)

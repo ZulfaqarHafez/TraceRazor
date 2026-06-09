@@ -177,7 +177,7 @@ where
     SimulationResult {
         original_tas,
         projected_tas,
-        tas_delta: (projected_tas - original_tas * 10.0).round() / 10.0,
+        tas_delta: ((projected_tas - original_tas) * 10.0).round() / 10.0,
         original_tokens: original_report.total_tokens,
         projected_tokens: projected_report.total_tokens,
         token_delta: projected_report.total_tokens as i64 - original_report.total_tokens as i64,

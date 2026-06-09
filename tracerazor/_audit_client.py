@@ -236,21 +236,29 @@ class TraceRazorClient:
 
     def _parse_http_report(self, data: Dict[str, Any]) -> TraceRazorReport:
         tas = data.get("tas_score", 0.0)
+        # Map the full server AuditResponse so HTTP mode is on par with CLI mode
+        # (fixes/savings/markdown were previously discarded).
+        savings: Dict[str, Any] = {}
+        if "tokens_saved" in data:
+            savings["tokens_saved"] = data.get("tokens_saved", 0)
+        metrics: Dict[str, Any] = {}
+        if data.get("avs") is not None:
+            metrics["avs"] = data["avs"]
         return TraceRazorReport(
             trace_id=data.get("trace_id", ""),
             agent_name=data.get("agent_name", ""),
             framework=data.get("framework", ""),
-            total_steps=0,
-            total_tokens=0,
+            total_steps=data.get("total_steps", 0),
+            total_tokens=data.get("total_tokens", 0),
             tas_score=tas,
             grade=data.get("grade", "Unknown"),
             passes=tas >= self._threshold,
             threshold=self._threshold,
-            metrics={},
-            savings={},
-            fixes=[],
+            metrics=metrics,
+            savings=savings,
+            fixes=data.get("fixes", []),
             anomalies=data.get("anomalies", []),
-            raw=data,
+            raw=data,  # markdown() reads report_markdown from here
         )
 
     @staticmethod

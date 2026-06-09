@@ -41,6 +41,11 @@ impl IsrResult {
 const TARGET: f64 = 80.0;
 /// Steps with less than this information gain are flagged.
 const NOVELTY_THRESHOLD: f64 = 0.10;
+/// Maximum number of prior steps each step's novelty is judged against. Caps the
+/// worst-case scan at O(n·LOOKBACK_WINDOW) instead of O(n²) so very long traces
+/// stay responsive (mirrors SRR's window). A duplicate further back than this
+/// window will not reduce novelty.
+const LOOKBACK_WINDOW: usize = 256;
 
 /// Compute ISR using pre-computed embeddings.
 ///
@@ -69,8 +74,9 @@ pub fn compute_from_similarities(
 
         let curr_text = steps[i].semantic_content();
 
-        // Compute max similarity to any prior step.
-        let max_sim = steps[..i]
+        // Compute max similarity to the most recent LOOKBACK_WINDOW prior steps.
+        let window_start = i.saturating_sub(LOOKBACK_WINDOW);
+        let max_sim = steps[window_start..i]
             .iter()
             .map(|prev| similarity_fn(&curr_text, &prev.semantic_content()))
             .fold(0.0_f64, f64::max);

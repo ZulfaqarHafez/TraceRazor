@@ -67,7 +67,7 @@ class TraceRazorHooks:
         self._framework = framework
         self._threshold = threshold
         self._task_value_score = task_value_score
-        self._client = TraceRazorClient(bin_path=tracerazor_bin)
+        self._client = TraceRazorClient(bin_path=tracerazor_bin, threshold=threshold)
         self._report: Optional[TraceRazorReport] = None
 
         self._trace_id: str = str(uuid.uuid4())
@@ -172,7 +172,7 @@ class TraceRazorHooks:
             "task_value_score": self._task_value_score,
             "steps": self._steps,
         }
-        self._report = self._client.analyse(trace=trace, threshold=self._threshold)
+        self._report = self._client.analyse(trace=trace)
         return self._report
 
     def assert_passes(self) -> None:
