@@ -72,8 +72,19 @@ DEFAULT_WEIGHTS = {
 @dataclass
 class Sample:
     trace_path: Path
-    target_fraction: float  # recoverable waste fraction in [0,1]
+    # Recoverable-waste fraction in [0,1]. Either given directly, or computed at
+    # audit time from a before/after token delta (when after_path is set).
+    target_fraction: Optional[float] = None
+    after_path: Optional[Path] = None
     features: Optional[np.ndarray] = None  # 13 normalised metric values
+    before_tokens: Optional[int] = None
+
+
+def recoverable_fraction(before_tokens: int, after_tokens: int) -> float:
+    """Measured recoverable fraction from a before/after token delta, clamped."""
+    if before_tokens <= 0:
+        return 0.0
+    return max(0.0, min(1.0, (before_tokens - after_tokens) / before_tokens))
 
 
 # ── Binary discovery ────────────────────────────────────────────────────────
@@ -98,10 +109,17 @@ def find_binary(explicit: Optional[str]) -> str:
 
 
 def _trace_tokens(path: Path) -> int:
-    data = json.loads(path.read_text())
-    if "total_tokens" in data and data["total_tokens"]:
+    """Best-effort token total from a raw-schema trace file. Returns 0 (rather
+    than raising) when the file is missing or not raw JSON, so the caller can
+    fall back to auditing the file."""
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return 0
+    if isinstance(data, dict) and data.get("total_tokens"):
         return int(data["total_tokens"])
-    return int(sum(int(s.get("tokens", 0)) for s in data.get("steps", [])))
+    steps = data.get("steps", []) if isinstance(data, dict) else []
+    return int(sum(int(s.get("tokens", 0)) for s in steps))
 
 
 # ── Dataset loading ─────────────────────────────────────────────────────────
@@ -116,41 +134,98 @@ def load_dataset(manifest_path: Path) -> Tuple[str, List[Sample]]:
             if "recoverable_fraction" not in e:
                 sys.exit(f"entry {i}: 'trace' entries need 'recoverable_fraction'")
             frac = float(e["recoverable_fraction"])
+            if not 0.0 <= frac <= 1.0:
+                sys.exit(f"entry {i}: recoverable_fraction {frac} out of [0,1]")
+            samples.append(Sample(trace_path=tp, target_fraction=frac))
         elif "before" in e and "after" in e:
-            tp = (base / e["before"]).resolve()
-            bt = _trace_tokens(tp)
-            at = _trace_tokens((base / e["after"]).resolve())
-            frac = 0.0 if bt <= 0 else max(0.0, (bt - at) / bt)
+            # Fraction is computed at audit time from the measured token totals,
+            # so this works for any trace format the auditor understands.
+            samples.append(Sample(
+                trace_path=(base / e["before"]).resolve(),
+                after_path=(base / e["after"]).resolve(),
+            ))
         else:
             sys.exit(f"entry {i}: need either 'trace'+'recoverable_fraction' or 'before'+'after'")
-        if not 0.0 <= frac <= 1.0:
-            sys.exit(f"entry {i}: recoverable_fraction {frac} out of [0,1]")
-        samples.append(Sample(trace_path=tp, target_fraction=frac))
     if not samples:
         sys.exit("dataset has no entries")
     return name, samples
 
 
 # ── Feature extraction (run the auditor, read metric_normalised) ────────────
-def extract_features(binary: str, samples: List[Sample]) -> None:
+def _try_audit(binary: str, path: Path, env: dict) -> Optional[dict]:
+    """Audit a trace and return the report dict, or None if it produced no JSON
+    (e.g. fewer than the minimum steps) or could not be run/parsed."""
+    try:
+        proc = subprocess.run(
+            [binary, "audit", str(path), "--format", "json"],
+            capture_output=True, text=True, env=env, timeout=120,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if proc.returncode not in (0, 1) or not proc.stdout.strip():
+        return None
+    try:
+        return json.loads(proc.stdout)
+    except ValueError:
+        return None
+
+
+def _measure_tokens(binary: str, path: Path, env: dict) -> Optional[int]:
+    """Total tokens for a trace, measured the same way regardless of size:
+    raw schema is read directly (works for any step count), other formats are
+    audited. Returns None when the total cannot be determined."""
+    t = _trace_tokens(path)
+    if t > 0:
+        return t
+    rep = _try_audit(binary, path, env)
+    if rep is None:
+        return None
+    return int(rep.get("total_tokens", 0)) or None
+
+
+def extract_features(binary: str, samples: List[Sample]) -> List[Sample]:
+    """Populate features and targets, returning only the usable samples. Samples
+    that cannot be scored or measured are skipped with a warning rather than
+    aborting the whole run (one bad pair should not kill the dataset)."""
+    usable: List[Sample] = []
+    skipped: List[Tuple[Path, str]] = []
     # Use a throwaway HOME so the audit's persistent store is not touched.
     with tempfile.TemporaryDirectory() as tmp_home:
         env = dict(os.environ, HOME=tmp_home)
         for s in samples:
-            proc = subprocess.run(
-                [binary, "audit", str(s.trace_path), "--format", "json"],
-                capture_output=True, text=True, env=env, timeout=120,
-            )
-            if proc.returncode not in (0, 1) or not proc.stdout.strip():
-                sys.exit(f"audit failed for {s.trace_path}:\n{proc.stderr.strip()}")
-            score = json.loads(proc.stdout)["score"]
-            mn = score.get("metric_normalised")
+            report = _try_audit(binary, s.trace_path, env)
+            if report is None:
+                skipped.append((s.trace_path, "not analysable (need >= 5 steps) or unreadable"))
+                continue
+            mn = report.get("score", {}).get("metric_normalised")
             if not mn:
                 sys.exit(
                     "audit output has no 'metric_normalised' field; rebuild the "
                     "binary from this revision (`cargo build --release -p tracerazor`)."
                 )
             s.features = np.array([float(mn[k]) for k in METRICS], dtype=float)
+            # before/after entries: derive the target from measured token totals,
+            # measuring both sides the same way so they are comparable.
+            if s.after_path is not None:
+                before_tok = _measure_tokens(binary, s.trace_path, env)
+                after_tok = _measure_tokens(binary, s.after_path, env)
+                if not before_tok or after_tok is None:
+                    skipped.append((s.trace_path, "could not measure before/after token totals"))
+                    continue
+                s.before_tokens = before_tok
+                s.target_fraction = recoverable_fraction(before_tok, after_tok)
+            if s.target_fraction is None:
+                skipped.append((s.trace_path, "no recoverable-waste target"))
+                continue
+            usable.append(s)
+
+    for path, why in skipped:
+        print(f"  skipped {path}: {why}", file=sys.stderr)
+    if len(usable) < 2:
+        sys.exit(f"only {len(usable)} usable sample(s) after skips; need at least 2 to fit.")
+    if skipped:
+        print(f"Using {len(usable)} samples ({len(skipped)} skipped).", file=sys.stderr)
+    return usable
 
 
 # ── Fitting: convex weights minimising prediction error ─────────────────────
@@ -259,8 +334,8 @@ def main(argv=None) -> int:
 
     binary = find_binary(args.binary)
     name, samples = load_dataset(args.dataset)
-    print(f"Dataset '{name}': {len(samples)} samples. Auditing with {binary} ...")
-    extract_features(binary, samples)
+    print(f"Dataset '{name}': {len(samples)} entries. Auditing with {binary} ...")
+    samples = extract_features(binary, samples)
 
     X = np.vstack([s.features for s in samples])
     y = np.array([1.0 - s.target_fraction for s in samples])

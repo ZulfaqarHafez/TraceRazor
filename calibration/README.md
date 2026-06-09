@@ -40,6 +40,34 @@ Create a dataset manifest. Two entry forms are supported:
 The key property: the target must come from **measurement**, not from
 TraceRazor's own savings estimate (that would be circular).
 
+### Import adapter (build the manifest from your harness export)
+
+You usually do not hand-write the manifest. `adapt.py` converts the shapes a
+harness typically emits into one, with configurable field names so it fits your
+columns. Trace files may be raw, LangSmith, or OTEL JSON; the auditor detects
+the format, and before/after fractions are computed from the measured token
+totals of each run, so this works across formats.
+
+```bash
+# CSV or JSONL, before/after pairs:
+python -m calibration.adapt --csv runs.csv \
+  --before-col before_path --after-col after_path --out manifest.json
+
+# CSV or JSONL, traces with a measured recoverable fraction:
+python -m calibration.adapt --jsonl runs.jsonl \
+  --trace-col path --label-col recoverable_fraction --out manifest.json
+
+# A directory of files paired by name:
+python -m calibration.adapt --pair-dir runs/ \
+  --before-suffix _before.json --after-suffix _after.json --out manifest.json
+```
+
+Paths are resolved (relative to the source file's directory, or `--base-dir`)
+and written as absolute paths. Use `--allow-missing` to skip rows whose files
+are absent. If your export has a different shape, point the `*-col` flags at your
+field names; if it still does not fit, send a sample and the adapter can grow a
+mode for it.
+
 ## 2. Fit the weights
 
 ```bash
