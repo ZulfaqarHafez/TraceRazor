@@ -62,3 +62,30 @@ at LDI 1.0 — no false positives on progressive pipelines (os_0). Mean LDI(norm
 Next: Iteration 3 — second weakness: GAR(norm) collapses to ~0.20 on tool agents
 because BoW similarity between shell/SQL code and an NL goal ≈ 0. Investigate and
 make goal-advancement robust for tool-using traces.
+
+## Iteration 3
+Read: GAR (`gar.rs`) only scores `StepType::Reasoning` steps. In ReAct traces
+the reasoning ("Think: …") lives inside `tool_call` steps, so GAR saw only the
+sparse final-answer turns (plus the few-shot example's "answer(220)") and
+collapsed — even though the Think text shares vocabulary with the goal (os_6
+literally greps for "Linux"). The existing `tool_calls_ignored_in_computation`
+test pins the old behaviour with a terse 3-word tool step.
+Plan: Score a tool-call step for goal advancement when its content carries
+substantive reasoning prose (≥12 words) — capturing ReAct "Think+Act" turns
+while still ignoring bare invocations, so the existing terse-tool test still
+passes. Difference from iteration 2: targets the goal/similarity metric, not
+loop detection.
+Change:
+  - `crates/tracerazor-core/src/metrics/gar.rs` — `carries_reasoning()` +
+    `MIN_TOOL_REASONING_WORDS`; broadened the scored-step filter; updated
+    docstring; renamed the terse-tool test to `bare_tool_calls_ignored…` and
+    added `react_tool_reasoning_counts_toward_gar`.
+  - Regenerated `STATS.json` + report.
+Test result: PASS (`cargo test --workspace` 12/12 green; GAR module 19/19).
+Diagnosis: GAR(norm) no longer collapses on tool agents — os_1 0.00→0.254,
+os_6 0.126→0.268; corpus mean 0.202→0.247. Still modest (BoW vs code is
+inherently weak; embeddings would lift it further, as the docstring notes), but
+the systematic blind spot is gone. No regressions (bare invocations still
+ignored).
+Next: Iteration 4 — apply the same reasoning-aware fix to CSD (cross-step drift,
+0.480, the next-lowest and same root cause), then update the paper.
