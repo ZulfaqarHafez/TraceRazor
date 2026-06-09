@@ -58,14 +58,14 @@ except ImportError:  # pragma: no cover - dependency guard
 
 # Metric codes in the canonical order used by the weights config / engine.
 METRICS = ["srr", "ldi", "tca", "rda", "isr", "tur", "cce", "dbo",
-           "vdi", "shl", "ccr", "gar", "csd"]
+           "vdi", "shl", "ccr", "gar", "csd", "obs"]
 
 # Built-in default weights (crates/tracerazor-core/src/scoring.rs::Weights::default),
 # used as the baseline to beat in the report.
 DEFAULT_WEIGHTS = {
     "srr": 0.17, "ldi": 0.13, "tca": 0.13, "rda": 0.10, "isr": 0.10,
     "tur": 0.10, "cce": 0.10, "dbo": 0.09, "vdi": 0.08, "shl": 0.05,
-    "ccr": 0.03, "gar": 0.07, "csd": 0.05,
+    "ccr": 0.03, "gar": 0.07, "csd": 0.05, "obs": 0.06,
 }
 
 
@@ -77,6 +77,7 @@ class Sample:
     target_fraction: Optional[float] = None
     after_path: Optional[Path] = None
     features: Optional[np.ndarray] = None  # 13 normalised metric values
+    extra: Optional[dict] = None           # experimental report.features map
     before_tokens: Optional[int] = None
 
 
@@ -204,6 +205,7 @@ def extract_features(binary: str, samples: List[Sample]) -> List[Sample]:
                     "binary from this revision (`cargo build --release -p tracerazor`)."
                 )
             s.features = np.array([float(mn[k]) for k in METRICS], dtype=float)
+            s.extra = report.get("features", {}) or {}
             # before/after entries: derive the target from measured token totals,
             # measuring both sides the same way so they are comparable.
             if s.after_path is not None:
@@ -338,6 +340,11 @@ def main(argv=None) -> int:
     ap.add_argument("--prior", choices=["uniform", "default"], default="uniform",
                     help="shrinkage target: 'default' = the heuristic weights, so "
                          "calibration is a data update of the domain prior")
+    ap.add_argument("--features", action="store_true",
+                    help="also evaluate the experimental report.features (context "
+                         "accumulation signals) and report whether they raise CV R^2")
+    ap.add_argument("--feature-keys", default=None,
+                    help="comma-separated subset of feature keys to evaluate (default: all)")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args(argv)
 
@@ -370,6 +377,53 @@ def main(argv=None) -> int:
         "train_r2": round(fit["r2"], 4), "cv_r2": round(cv_r2, 4),
         "baseline_r2": round(baseline["r2"], 4), "l2": args.l2, "prior": args.prior,
     }
+
+    # ── Experimental features: do the context-accumulation signals predict better?
+    if args.features:
+        # keys present in every sample (so the matrix is not ragged)
+        sets = [set((s.extra or {}).keys()) for s in samples]
+        feat_names = sorted(set.intersection(*sets)) if sets and all(sets) else []
+        if args.feature_keys:
+            wanted = {k.strip() for k in args.feature_keys.split(",")}
+            feat_names = [k for k in feat_names if k in wanted]
+        if not feat_names:
+            print("--features: no feature keys common to all samples; nothing to evaluate.",
+                  file=sys.stderr)
+        else:
+            Xf = np.array([[float(s.extra[k]) for k in feat_names] for s in samples])
+            Xmf = np.hstack([X, Xf])
+            # metrics-only CV is `cv_r2` above. Features-only and combined:
+            f_cv, _ = kfold_r2(Xf, y, args.l2, args.cv, args.seed, prior=None)
+            mf_prior = None
+            if args.prior == "default":
+                eps = 0.1
+                mf_prior = np.concatenate([
+                    base_vec * (1.0 - eps),
+                    np.full(len(feat_names), eps / len(feat_names)),
+                ])
+                mf_prior = mf_prior / mf_prior.sum()
+            mf_cv, _ = kfold_r2(Xmf, y, args.l2, args.cv, args.seed, prior=mf_prior)
+            mf_w = fit_weights(Xmf, y, l2=args.l2, prior=mf_prior)
+            per_feat_corr = {
+                k: round(float(np.corrcoef(Xf[:, i], y)[0, 1]), 3) if Xf[:, i].std() > 0 else 0.0
+                for i, k in enumerate(feat_names)
+            }
+            payload["_features"] = {
+                "names": feat_names,
+                "weights": {k: round(float(w), 4) for k, w in zip(feat_names, mf_w[len(METRICS):])},
+                "per_feature_corr": per_feat_corr,
+                "cv_r2_metrics_only": round(cv_r2, 4),
+                "cv_r2_features_only": round(f_cv, 4),
+                "cv_r2_metrics_plus_features": round(mf_cv, 4),
+            }
+            print("\n── Experimental features ──")
+            print(f"  CV R²  metrics-only        : {cv_r2:+.3f}")
+            print(f"  CV R²  features-only       : {f_cv:+.3f}")
+            print(f"  CV R²  metrics + features  : {mf_cv:+.3f}")
+            print("  per-feature corr with target:")
+            for k in feat_names:
+                print(f"    {k:<28} {per_feat_corr[k]:+.3f}")
+
     args.out.write_text(json.dumps(payload, indent=2) + "\n")
     write_report(args.report, name, len(samples), weights, fit, baseline, cv, args.l2)
 

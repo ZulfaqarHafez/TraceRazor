@@ -37,3 +37,4 @@ v2/results/*.json
 # Teacher demo artifacts
 examples/teacher_playbook.json
 teacher/**/__pycache__/
+.claude/settings.local.json

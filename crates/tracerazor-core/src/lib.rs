@@ -1,4 +1,5 @@
 pub mod cost;
+pub mod features;
 pub mod fixes;
 pub mod graph;
 pub mod iar;
@@ -13,7 +14,7 @@ use std::time::Instant;
 use anyhow::Result;
 
 use crate::fixes::generate_fixes;
-use crate::metrics::{ccr, cce, csd, dbo, gar, isr, ldi, rda, reformulation, shl, srr, tca, tpe, tur, vdi};
+use crate::metrics::{ccr, cce, csd, dbo, gar, isr, ldi, obs, rda, reformulation, shl, srr, tca, tpe, tur, vdi};
 use crate::report::{AgentBreakdown, TraceReport, generate_oneliner, generate_summary};
 use crate::scoring::{ScoringConfig, estimate_savings};
 use crate::types::{MIN_TRACE_STEPS, Trace};
@@ -92,6 +93,9 @@ fn analyse_dyn(
     // ── M4: Cross-Step Semantic Drift ─────────────────────────────────────────
     let csd_result = csd::compute(trace, similarity_fn);
 
+    // ── OBS: Observation token share (validated on real data) ─────────────────
+    let obs_result = obs::compute(trace);
+
     // ── Trajectory Path Entropy (information-theoretic on-path diagnostic) ────
     let tpe_result = tpe::compute(trace, similarity_fn, task_goal.as_deref());
 
@@ -109,6 +113,7 @@ fn analyse_dyn(
         ccr_result,
         gar_result,
         csd_result,
+        obs_result,
         trace.task_value_score,
         total_tokens,
         config,
@@ -140,6 +145,9 @@ fn analyse_dyn(
     // ── Decision 7: per-agent breakdown for multi-agent traces ────────────────
     let per_agent = compute_per_agent_scores(trace, similarity_fn, config, total_tokens);
 
+    // Experimental context-accumulation features (diagnostic; not in the composite).
+    let features = features::compute(trace);
+
     Ok(TraceReport {
         trace_id: trace.trace_id.clone(),
         agent_name: trace.agent_name.clone(),
@@ -158,6 +166,7 @@ fn analyse_dyn(
         per_agent,
         path_entropy: tpe_result,
         iar: None, // populated by explicit IAR comparison, not during fresh analysis
+        features,
     })
 }
 

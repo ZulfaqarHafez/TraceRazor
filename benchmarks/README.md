@@ -1,16 +1,21 @@
 # TraceRazor Benchmarks
 
-A small, reproducible suite of synthetic traces that each isolate a specific class of token waste. The goal is not to match real-world agent distributions — it is to prove that every TraceRazor metric fires on the pattern it was built to detect, and to give users a concrete baseline they can re-run locally.
+The benchmark runs `tracerazor audit` over **real public agent trajectories** and
+records the measured TAS, grade, tokens, waste, and estimated savings for each.
+Results are in [`RESULTS.md`](RESULTS.md).
 
-## Scenarios
+## Data
 
-| Trace | What it isolates | Expected dominant metric |
-|---|---|---|
-| `clean-agent.json` | Baseline — nothing wrong | High TAS, no fixes |
-| `looping-agent.json` | Three identical tool calls with the same params | LDI, `termination_guard` fix |
-| `verbose-agent.json` | Hedging, preamble, over-explained reasoning | VDI / SHL / CCR, AVS alert |
-| `reformulator-agent.json` | Re-states the user's request verbatim before answering | `reformulation_guard` fix |
-| `bloated-agent.json` | Ever-growing context window plus a tool misfire | CCE + TCA, `tool_schema` + `context_compression` fixes |
+The traces live in [`traces/external/`](../traces/external/) and are real runs,
+not synthetic scenarios:
+
+| Source | What it is |
+|---|---|
+| `tau_bench` | tau-bench airline + retail episodes for GPT-4o and Claude 3.5 Sonnet |
+| `swe_agent` | SWE-agent solving the same SWE-bench task under different edit formats (cursors / default / fn_calling / xml) |
+
+The SWE-agent edit-format variants are a useful within-task comparison: the same
+task solved with very different token costs (e.g. `xml` ~3.6k vs `cursors` ~7.6k).
 
 ## Run
 
@@ -19,12 +24,17 @@ cargo build --release -p tracerazor
 python benchmarks/run_benchmarks.py
 ```
 
-The script runs `tracerazor audit --format json` on every `.json` under `benchmarks/traces/`, compiles a markdown table of TAS / grade / tokens / estimated savings / fix count, and writes it to `benchmarks/RESULTS.md`.
+The script audits every `.json` under `traces/external/` and writes the markdown
+table to `RESULTS.md`. Traces under the 5-step minimum are skipped.
 
 ## Adding your own traces
 
-Drop any [trace JSON](../traces/support-agent-run-2847.json) into `benchmarks/traces/`. The benchmark runner picks it up on the next invocation — no script changes needed. Traces under 2 steps are skipped by the core analyser.
+Drop any [trace JSON](../traces/support-agent-run-2847.json) (raw, LangSmith, or
+OTEL format) under `traces/external/<source>/` and re-run; the runner picks it up.
 
-## Why synthetic
+## Caveat
 
-Published agent datasets (AgentBench, ToolBench, SWE-Bench agents) each ship in different trace formats and licenses, and many don't record tool-level parameters. The synthetic suite here lets anyone reproduce the numbers in `RESULTS.md` with zero setup. A second benchmark pass over real external datasets is on the roadmap once the ingest layer gets adapters for each.
+Estimated savings are per-fix projections, not measured re-runs, and token counts
+for some external sources are approximated where the source did not record them.
+Read the relative ordering rather than absolute totals. For a measured before/after
+saving use `tracerazor bench`.

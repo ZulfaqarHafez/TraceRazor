@@ -180,3 +180,91 @@ def test_adapt_pair_dir_rejects_equal_suffixes(tmp_path):
         adapt_main(["--pair-dir", str(tmp_path),
                     "--before-suffix", ".json", "--after-suffix", ".json",
                     "--out", str(tmp_path / "m.json")])
+
+
+# ── Connector: messages-format trajectories -> traces + manifest ─────────────
+from calibration.sources.from_messages import main as fm_main, messages_to_trace  # noqa: E402
+import argparse as _argparse  # noqa: E402
+
+
+def _convo(verbose: bool):
+    """A short agent conversation in OpenAI messages format (>=5 agent steps)."""
+    pad = " carefully reconsidering every detail to be thorough" if verbose else ""
+    return [
+        {"role": "system", "content": "you are an agent"},
+        {"role": "user", "content": "fix the bug"},
+        {"role": "assistant", "content": "Inspect the failing test." + pad},
+        {"role": "assistant", "content": "",
+         "tool_calls": [{"function": {"name": "open_file", "arguments": "test_x.py"}}]},
+        {"role": "tool", "content": "file contents ok"},
+        {"role": "assistant", "content": "Apply the fix to the handler." + pad},
+        {"role": "assistant", "content": "",
+         "tool_calls": [{"function": {"name": "edit", "arguments": "patch"}}]},
+        {"role": "tool", "content": "tests passed"},
+    ]
+
+
+def test_messages_to_trace_maps_steps():
+    rec = {"instance_id": "i1", "model": "m", "resolved": True, "messages": _convo(False)}
+    ns = _argparse.Namespace(messages_field="messages", id_field="instance_id",
+                             model_field="model")
+    trace = messages_to_trace(rec, ns)
+    assert trace is not None
+    types = {s["step_type"] for s in trace["steps"]}
+    assert "reasoning" in types and "tool_call" in types
+    assert all(s["tokens"] > 0 for s in trace["steps"])
+
+
+def test_from_messages_builds_before_after_pairs(tmp_path):
+    # 2 instances, each solved by a verbose and a lean model -> 2 before/after pairs
+    records = []
+    for inst in ("i1", "i2"):
+        records.append({"instance_id": inst, "model": "verbose", "resolved": True,
+                        "messages": _convo(True)})
+        records.append({"instance_id": inst, "model": "lean", "resolved": True,
+                        "messages": _convo(False)})
+    # an unresolved run that must be ignored
+    records.append({"instance_id": "i3", "model": "x", "resolved": False,
+                    "messages": _convo(True)})
+    jsonl = tmp_path / "traj.jsonl"
+    jsonl.write_text("\n".join(json.dumps(r) for r in records))
+
+    manifest = tmp_path / "m.json"
+    rc = fm_main(["--jsonl", str(jsonl), "--out-dir", str(tmp_path / "conv"),
+                  "--manifest", str(manifest)])
+    assert rc == 0
+    entries = json.loads(manifest.read_text())["entries"]
+    assert len(entries) == 2
+    for e in entries:
+        before = json.loads(Path(e["before"]).read_text())
+        after = json.loads(Path(e["after"]).read_text())
+        bt = sum(s["tokens"] for s in before["steps"])
+        at = sum(s["tokens"] for s in after["steps"])
+        assert bt > at, "verbose run should have more tokens than lean run"
+    # the manifest must load in the calibrator
+    _, samples = load_dataset(manifest)
+    assert len(samples) == 2
+    assert all(s.after_path is not None for s in samples)
+
+
+from calibration.sources.from_taubench import main as tb_main  # noqa: E402
+
+
+def test_from_taubench_emits_successful_episodes(tmp_path):
+    # tau-bench shape: <model>-<domain>.json, list of episodes with reward/traj/task_id
+    eps = [
+        {"task_id": 0, "reward": 1.0, "trial": 0, "traj": _convo(True)},
+        {"task_id": 0, "reward": 0.0, "trial": 1, "traj": _convo(False)},  # failed -> dropped
+        {"task_id": 1, "reward": 1.0, "trial": 0, "traj": _convo(False)},
+    ]
+    d = tmp_path / "historical_trajectories"
+    d.mkdir()
+    (d / "gpt4o-airline.json").write_text(json.dumps(eps))
+    out = tmp_path / "tb.jsonl"
+    rc = tb_main(["--dir", str(d), "--out", str(out)])
+    assert rc == 0
+    rows = [json.loads(l) for l in out.read_text().splitlines() if l.strip()]
+    assert len(rows) == 2  # only the two reward=1 episodes
+    assert all(r["resolved"] is True for r in rows)
+    assert rows[0]["instance_id"] == "airline-0"
+    assert rows[0]["model"].startswith("gpt4o")

@@ -24,7 +24,7 @@ pip install tracerazor
   │   │              │    │                  │    │                        │ │
   │   │ Score your   │    │ Run K parallel   │    │ Predict when a cached  │ │
   │   │ agent traces │    │ LLM calls per    │    │ response can replace a │ │
-  │   │ across 13    │    │ step. Pick the   │    │ fresh LLM call, saving │ │
+  │   │ across 14    │    │ step. Pick the   │    │ fresh LLM call, saving │ │
   │   │ efficiency   │    │ consensus        │    │ one round-trip per     │ │
   │   │ metrics.     │    │ winner.          │    │ correct prediction.    │ │
   │   │              │    │                  │    │                        │ │
@@ -77,7 +77,7 @@ flowchart TD
     T[Trace JSON] --> P[Parse & Ingest]
     P --> M
 
-    subgraph M["13 Efficiency Signals (post-normalisation share of TAS)"]
+    subgraph M["14 Efficiency Signals (post-normalisation share of TAS)"]
         direction LR
         S1["Step Redundancy\n14.2%"]
         S2["Loop Detection\n10.8%"]
@@ -100,37 +100,45 @@ flowchart TD
     M --> AVS["Verbosity Alert if AVS > 0.40"]
 ```
 
-> **TAS is ordinal, not cardinal.** Weights are preliminary heuristics, not
-> calibrated against a labelled corpus. Use TAS to track *one project over
-> time*, not as an absolute efficiency percentage. Override via
-> `ScoringConfig.weights` if your workload values differ.
+> **TAS is ordinal, not cardinal.** Most weights are heuristics, not calibrated.
+> The exception is OBS, added after it was the one feature that predicted real
+> recoverable waste and replicated across two datasets (see
+> [Better features](#better-features-observation-accumulation)). Use TAS to track
+> *one project over time*, not as an absolute percentage. Override via
+> `ScoringConfig.weights`.
 
-### The 13 Metrics
+### The 14 Metrics
 
-All shares are *post-normalisation* (the raw weights below sum to 1.20; `compute()` divides by the sum).
+All shares are *post-normalisation* (the raw weights below sum to 1.26; `compute()` divides by the sum).
 
 **Structural Efficiency**
 
 | Metric | Share | What It Detects |
 |---|---|---|
-| Step Redundancy Rate (SRR) | 14.2% | Near-duplicate steps wasting tokens |
-| Loop Detection Index (LDI) | 10.8% | Repeated tool calls re-attempting the same action |
-| Tool Call Accuracy (TCA) | 10.8% | Failed tool calls and retries |
-| Reasoning Depth (RDA) |  8.3% | Over-deep reasoning for simple tasks |
-| Information Sufficiency (ISR) |  8.3% | Steps adding no novel information |
-| Token Utilisation (TUR) |  8.3% | Off-task token spending |
-| Context Efficiency (CCE) |  8.3% | Duplicate context across steps |
-| Decision Optimality (DBO) |  7.5% | Sub-optimal tool call sequences |
-| Goal Advancement (GAR) |  5.8% | Steps that fail to move toward the stated goal |
-| Semantic Drift (CSD) |  4.2% | Reasoning drift mid-trace |
+| Step Redundancy Rate (SRR) | 13.5% | Near-duplicate steps wasting tokens |
+| Loop Detection Index (LDI) | 10.3% | Repeated tool calls re-attempting the same action |
+| Tool Call Accuracy (TCA) | 10.3% | Failed tool calls and retries |
+| Reasoning Depth (RDA) |  7.9% | Over-deep reasoning for simple tasks |
+| Information Sufficiency (ISR) |  7.9% | Steps adding no novel information |
+| Token Utilisation (TUR) |  7.9% | Off-task token spending |
+| Context Efficiency (CCE) |  7.9% | Duplicate context across steps |
+| Decision Optimality (DBO) |  7.1% | Sub-optimal tool call sequences |
+| Goal Advancement (GAR) |  5.6% | Steps that fail to move toward the stated goal |
+| Semantic Drift (CSD) |  4.0% | Reasoning drift mid-trace |
 
 **Verbosity and Presentation**
 
 | Metric | Share | What It Detects |
 |---|---|---|
-| Verbosity Density (VDI) | 6.7% | Filler words and low-substance content |
-| Sycophancy/Hedging (SHL) | 4.2% | Excessive politeness and caution |
-| Compression Ratio (CCR) | 2.5% | Highly compressible text |
+| Verbosity Density (VDI) | 6.3% | Filler words and low-substance content |
+| Sycophancy/Hedging (SHL) | 4.0% | Excessive politeness and caution |
+| Compression Ratio (CCR) | 2.4% | Highly compressible text |
+
+**Observation accumulation** (data-validated, see [Better features](#better-features-observation-accumulation))
+
+| Metric | Share | What It Detects |
+|---|---|---|
+| Observation Token Share (OBS) | 4.8% | Share of tokens spent on tool I/O vs recoverable reasoning |
 
 **TAS Grade Scale**
 
@@ -140,6 +148,28 @@ All shares are *post-normalisation* (the raw weights below sum to 1.20; `compute
 | Good | 70-89 | Addressable inefficiency |
 | Fair | 50-69 | Significant structural waste |
 | Poor | 0-49 | Fundamental reasoning issues |
+
+### Better features (observation accumulation)
+
+When the original 13 metrics were calibrated against real recoverable token waste
+(tau-bench before/after pairs), no weighting predicted it (negative cross-validated
+R²). The literature points to context accumulation, verbose/redundant/stale tool
+observations, as the real cost driver, so we added candidate features measuring it
+and tested them on two independent real datasets:
+
+| Dataset (pairs) | metrics only | metrics + features |
+|---|---|---|
+| tau-bench (233) | -0.11 | **+0.08** |
+| tau2-bench (1,055) | +0.01 | **+0.12** |
+
+Adding the features flips real-data cross-validated R² positive on both, with
+`obs_token_share` the consistent driver (r = +0.28, +0.33). It is promoted into
+the composite as the OBS metric. The absolute R² is still modest (~0.1), so this
+improves the score's grounding without making TAS a strong predictor yet; the
+remaining candidate features (stale-observation retention, context growth) stay
+diagnostic in `report.features`. Reproduce via `calibration/` (see
+[DATA_TEMPLATE.md](calibration/DATA_TEMPLATE.md)); details in the
+[paper](paper/tracerazor.tex).
 
 ### Sample Output
 
@@ -156,8 +186,8 @@ Framework: langgraph
 Steps:     11   Tokens: 14280
 Analysed:  13ms
 ------------------------------------------------------
-TRACERAZOR SCORE:  76 / 100  [GOOD]  (raw structural: 79, task value: 0.90)
-VAE SCORE:         0.71
+TRACERAZOR SCORE:  74 / 100  [GOOD]  (raw structural: 77, task value: 0.90)
+VAE SCORE:         0.69
 MVTG:              49.1%  (trace is 49.1% above minimum viable token count)
 Note: TAS is an *ordinal* heuristic score - compare runs within one
 project over time, not as an absolute efficiency percentage.
@@ -180,6 +210,7 @@ CCR    Caveman Compression Ratio      0.384    <0.30    FAIL
 GAR    Goal Advancement Ratio         0.403    ≥0.40    PASS
 -- Semantic Path --------------------------------------
 CSD    Cross-Step Semantic Drift      0.438    ≥0.60    FAIL  [drifting pairs: 3→6]
+OBS    Observation Token Share        0.377    ≥0.30    PASS
 ------------------------------------------------------
 SAVINGS ESTIMATE   (estimated, not a measured re-run - see Limitations)
 Tokens saved:      7006  (49.1% reduction)
@@ -829,15 +860,15 @@ Reproduce with `cargo test --workspace` and `pytest`.
 
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 121 |
+| tracerazor-core | 141 |
 | tracerazor-ingest | 3 |
 | tracerazor-semantic | 21 |
 | tracerazor-store | 10 |
 | tracerazor-server | 17 |
 | tracerazor-cli (2 unit + 9 integration) | 11 |
 | Doc-tests | 9 |
-| **Total Rust** | **192, all pass** |
-| **Python** (pytest) | **214 pass, 1 skipped** |
+| **Total Rust** | **212, all pass** |
+| **Python** (pytest) | **231 pass, 1 skipped** |
 
 ---
 

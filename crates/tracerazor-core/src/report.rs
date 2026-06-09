@@ -117,6 +117,11 @@ pub struct TraceReport {
     /// Instruction Adherence Rate (M5) — populated only when comparing before/after reports.
     #[serde(default)]
     pub iar: Option<IarResult>,
+    /// Experimental context-accumulation features (see `crate::features`).
+    /// Diagnostic only — emitted next to the score for calibration research, and
+    /// **not** part of the TAS composite. Keys are stable snake_case strings.
+    #[serde(default)]
+    pub features: std::collections::BTreeMap<String, f64>,
 }
 
 impl TraceReport {
@@ -425,6 +430,13 @@ impl TraceReport {
             pass_str(s.csd.pass),
             csd_drift_note,
         );
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}\n",
+            "OBS", "Observation Token Share",
+            format!("{:.3}", s.obs.score),
+            "≥0.30",
+            pass_str(s.obs.pass),
+        );
 
         out += &format!("{sep}\n");
 
@@ -635,6 +647,8 @@ fn worst_metric(score: &TasScore) -> (&'static str, f64) {
         ("SHL (sycophancy/hedging)", score.shl.normalised()),
         ("CCR (compression ratio)", score.ccr.normalised()),
         ("GAR (goal advancement)", score.gar.normalised()),
+        ("CSD (semantic drift)", score.csd.normalised()),
+        ("OBS (observation share)", score.obs.normalised()),
     ];
     metrics
         .iter()

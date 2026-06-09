@@ -291,6 +291,7 @@ mod tests {
                 pass: false,
                 target: 0.60,
             },
+            obs: Default::default(),
         };
 
         TraceReport {
@@ -317,6 +318,7 @@ mod tests {
             per_agent: vec![],
             path_entropy: Default::default(),
             iar: None,
+            features: Default::default(),
         }
     }
 

@@ -394,6 +394,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
                 target: 0.40,
             },
             csd: zero_csd,
+            obs: Default::default(),
         },
         diff: vec![],
         savings: SavingsEstimate {
@@ -411,6 +412,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
         per_agent: vec![],
         path_entropy: Default::default(),
         iar: None,
+        features: Default::default(),
     }
 }
 

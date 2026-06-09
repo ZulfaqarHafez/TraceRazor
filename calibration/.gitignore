@@ -1,2 +1,3 @@
-# Generated worked-example traces (regenerate with make_example_dataset.py).
-example_data/
+# Local conversion outputs (regenerate from the source datasets).
+converted/
+*.local.jsonl

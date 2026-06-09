@@ -99,10 +99,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install package + test deps
-        # dev = pytest/pytest-asyncio; langgraph = langchain-core for the
-        # langgraph integration test; http = requests for HTTP-mode tests;
-        # calibrate = numpy/scipy for the weight-calibration tool + tests.
-        run: pip install -e ".[dev,langgraph,http,calibrate]"
+        # dev = pytest/pytest-asyncio; langgraph = langchain-core and agents =
+        # openai-agents for the real-framework integration tests; http = requests
+        # for HTTP-mode tests; calibrate = numpy/scipy for the calibration tool.
+        run: pip install -e ".[dev,langgraph,agents,http,calibrate]"
 
       - name: Run pytest
         run: pytest -q
@@ -119,12 +119,11 @@ jobs:
           print("E2E OK:", report.summary())
           PY
 
-      - name: Calibration smoke (generate dataset + fit weights)
+      - name: Calibration smoke (real in-repo before/after pairs)
         run: |
-          python -m calibration.make_example_dataset --out /tmp/caldata --n 24
           python -m calibration.calibrate \
-            --dataset /tmp/caldata/manifest.json \
-            --out /tmp/weights.json --report /tmp/report.md --cv 4
+            --dataset calibration/examples/swe_agent_pairs.json \
+            --out /tmp/weights.json --report /tmp/report.md --cv 3 --features
           # The fitted weights must load back into the engine.
           ./target/release/tracerazor audit traces/support-agent-run-2847.json \
             --weights /tmp/weights.json --format json > /dev/null

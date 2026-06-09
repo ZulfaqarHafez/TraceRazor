@@ -1,25 +1,24 @@
 {
-  "srr": 0.0,
-  "ldi": 0.0,
-  "tca": 0.129169,
-  "rda": 0.101812,
+  "srr": 0.061699,
+  "ldi": 0.093679,
+  "tca": 0.0,
+  "rda": 0.250725,
   "isr": 0.0,
-  "tur": 0.032341,
+  "tur": 0.0,
   "cce": 0.0,
-  "dbo": 0.133959,
+  "dbo": 0.420022,
   "vdi": 0.0,
-  "shl": 0.025122,
-  "ccr": 0.097852,
-  "gar": 0.081548,
-  "csd": 0.065674,
-  "obs": 0.332524,
+  "shl": 0.0,
+  "ccr": 0.173875,
+  "gar": 0.0,
+  "csd": 0.0,
   "_meta": {
     "dataset": "tb",
     "samples": 233,
     "target": "recoverable_token_waste",
-    "train_r2": 0.104,
-    "cv_r2": 0.083,
-    "baseline_r2": -0.2437,
+    "train_r2": -0.0864,
+    "cv_r2": -0.1145,
+    "baseline_r2": -0.3727,
     "l2": 0.1,
     "prior": "default"
   },
@@ -31,8 +30,8 @@
       "repeated_obs_rate"
     ],
     "weights": {
-      "obs_gzip_compressibility": 0.1589,
-      "obs_token_share": 0.1212,
+      "obs_gzip_compressibility": 0.1627,
+      "obs_token_share": 0.2386,
       "redundant_tool_call_rate": 0.0,
       "repeated_obs_rate": 0.0
     },
@@ -42,8 +41,8 @@
       "redundant_tool_call_rate": 0.023,
       "repeated_obs_rate": 0.237
     },
-    "cv_r2_metrics_only": 0.083,
+    "cv_r2_metrics_only": -0.1145,
     "cv_r2_features_only": -0.1789,
-    "cv_r2_metrics_plus_features": 0.0746
+    "cv_r2_metrics_plus_features": 0.0747
   }
 }

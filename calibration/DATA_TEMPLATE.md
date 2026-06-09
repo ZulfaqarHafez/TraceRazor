@@ -26,8 +26,8 @@ analysis, you can skip pairing and give a single trace plus that number instead.
 
 Aim for **50 to 200 pairs**, spanning a range of waste levels (some near 0%
 recoverable, some high) and ideally more than one agent/domain. The more the
-metrics vary independently across samples, the more of the 13 metrics get real
-weight (this is exactly what the synthetic data could not provide).
+metrics vary independently across samples, the more of the metrics get real
+weight.
 
 ## Trace format
 
@@ -74,7 +74,8 @@ Pick whichever is easiest for your harness:
      --trace-col path --label-col recoverable_fraction --out manifest.json
    ```
 
-See `calibration/template/` for a runnable two-pair example. Then:
+See `calibration/examples/swe_agent_pairs.json` for a runnable real example
+(SWE-agent edit-format variants, in-repo). Then:
 
 ```bash
 python -m calibration.calibrate --dataset manifest.json \
@@ -85,6 +86,77 @@ python -m calibration.calibrate --dataset manifest.json \
 `--prior default --l2 0.1` shrinks gently toward the current weights, which keeps
 sane behaviour when a metric is under-represented in your sample. Drop the prior
 flags for a pure fit once you have enough data.
+
+## Using public trajectory datasets
+
+If you would rather calibrate on public agent runs than your own, the right
+sources are multi-config trajectory datasets where the same task is solved by
+several models/scaffolds with a resolved/correct label, which gives before/after
+pairs (verbose run vs lean run, both successful):
+
+- `nebius/SWE-agent-trajectories` (80k runs, many models on shared SWE-bench
+  instances, with correctness)
+- `zai-org/CC-Bench-trajectories` (74 tasks, all models, full trajectories)
+- `SWE-bench/SWE-smith-trajectories`, `open-thoughts/AgentTrove`
+
+These live on Hugging Face. **This Claude Code environment's network policy must
+allow Hugging Face for the download to work** (by default only PyPI, apt, and
+GitHub are reachable; `huggingface.co` returns "Host not in allowlist"). Allow
+these hosts on the environment, or download elsewhere and copy the file in:
+
+```
+huggingface.co
+cdn-lfs.huggingface.co
+cdn-lfs-us-1.huggingface.co
+datasets-server.huggingface.co
+```
+
+Then dump the split to JSONL and run the connector (which converts the standard
+OpenAI/ShareGPT messages format into traces and pairs same-instance resolved
+runs):
+
+```bash
+pip install -e ".[calibrate]" && pip install datasets
+python - <<'PY'
+from datasets import load_dataset
+load_dataset("nebius/SWE-agent-trajectories", split="train").to_json("traj.jsonl")
+PY
+python -m calibration.sources.from_messages --jsonl traj.jsonl \
+  --out-dir calibration/converted --manifest manifest.json \
+  --id-field instance_id --model-field model --resolved-field resolved --messages-field messages
+python -m calibration.calibrate --dataset manifest.json \
+  --out config/tas_weights.json --report config/calibration_report.md --prior default --l2 0.1
+```
+
+Field names (`--id-field` etc.) are adjustable to match the dataset's columns.
+The connector and the full pipeline are tested end to end on the messages
+format; the only thing they need is the data file present locally.
+
+## A reachable real source: tau-bench (GitHub)
+
+Unlike Hugging Face, GitHub is reachable from a locked-down environment, and
+tau-bench commits real agent runs in-repo. This is what was used for the
+real-data calibration reported in the paper:
+
+```bash
+git clone --depth 1 https://github.com/sierra-research/tau-bench
+python -m calibration.sources.from_taubench \
+  --dir tau-bench/historical_trajectories --out taubench.jsonl --within-model
+python -m calibration.sources.from_messages --jsonl taubench.jsonl \
+  --out-dir converted --manifest manifest.json
+python -m calibration.calibrate --dataset manifest.json \
+  --out config/tas_weights.json --report config/calibration_report_taubench.md \
+  --prior default --l2 0.1
+```
+
+Result on this real data (233 within-agent before/after pairs): the original 13
+metrics did not predict recoverable waste (negative cross-validated R^2), but
+adding the observation-accumulation features raised it into the positive range
+(about **+0.08**), which is why one of them (observation token share) was promoted
+into the composite as the OBS metric. The absolute R^2 is still modest (~0.1), so
+the score is better grounded but not yet a strong predictor. See
+`config/calibration_report.md` and the paper's "Real-data calibration" and
+"Better features" sections.
 
 ## Fastest way to unblock me
 

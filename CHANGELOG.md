@@ -5,6 +5,60 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 ## [Unreleased]
 
 ### Added
+- **OBS metric (Observation Token Share)** — the fraction of tokens spent on
+  tool I/O, promoted into the composite (weight 0.06, ~4.8% share) after it was
+  the one candidate feature that predicted real recoverable token waste and
+  replicated across two real datasets. Default raw weights now sum to 1.26.
+- **Weight calibration toolkit (`calibration/`)** — `calibrate.py` fits
+  non-negative composite weights to measured recoverable waste (target
+  `1 - recoverable_fraction`) with k-fold CV and a `--features` mode; `adapt.py`
+  builds manifests from CSV/JSONL/paired-dir exports; `sources/from_messages.py`
+  and `sources/from_taubench.py` convert OpenAI/ShareGPT trajectory datasets into
+  before/after pairs. `report.features` exposes experimental context-accumulation
+  signals (observation share/compressibility, stale-observation retention,
+  context growth, redundant/repeated tool calls) for calibration research.
+- **Real-data calibration results** — on real tau-bench/tau2-bench before/after
+  pairs the original metrics did not predict recoverable waste (negative CV R²);
+  adding the observation features raised it positive (+0.08 / +0.12), which is
+  what justified promoting OBS. Documented in the paper (`paper/tracerazor.tex`).
+- **Feature/ceiling exploration** — path/length features (`step_count_norm`,
+  `mean_step_tokens_norm`, `reasoning_run_max`, `revisit_rate`, `tool_diversity`)
+  added to `report.features` and a `--feature-keys` flag added to the calibrator.
+  Tested with non-linear models (ridge, gradient boosting): none beat the
+  regularised convex fit, so the structural-feature ceiling for predicting
+  recoverable waste is ~0.1; richer semantic signal is needed to exceed it
+  (recorded in the paper).
+- **Real-framework integration tests** (`tests/test_integrations_real.py`) —
+  drive the LangGraph callback with real `langchain_core` events and the
+  OpenAI-Agents hooks bound to the real `RunHooks` base, auditing against the
+  binary. CI installs the framework extras so they run there.
+- **HTTP server health checks** — `GET /healthz` (liveness) and `/readyz`
+  (readiness, checks the store) plus a `--health-check` binary probe used by the
+  container HEALTHCHECK (no curl needed).
+- **Python CI job** — builds the CLI, installs the package, runs `pytest`, an
+  end-to-end audit, and a calibration smoke on real in-repo pairs.
+- **`paper/tracerazor.tex`** — an honest technical report (metrics, calibration,
+  real-data results, threats to validity), built to a PDF artifact in CI.
+
+### Security
+- Server hardening: SSRF guard on the export endpoints, dashboard XSS escaping,
+  loopback-by-default bind, restricted CORS, 16 MiB request-body limit, and a
+  50k-step audit cap. Docker image runs as a non-root user and pins its tag.
+
+### Changed
+- **Benchmarks are now real** — `benchmarks/` audits the real public traces in
+  `traces/external/` (tau-bench + SWE-agent); the synthetic scenario traces and
+  the synthetic calibration worked-example were removed in favour of real data.
+- **HTTP mode parity** — the Python client now maps the full server response
+  (`total_steps`/`total_tokens`/`fixes`/`savings`) instead of dropping fields.
+- **Framework integrations fixed** — the LangGraph/CrewAI/OpenAI-Agents callbacks
+  passed an unsupported `threshold=` to `analyse()`; they now set it on the
+  client, so the integrations work at runtime (regression-tested).
+
+### Removed
+- **Dead `tracerazor-proxy` crate** — was declared as a server dependency but
+  never used; dropped from the workspace, Dockerfile, and docs.
+
 - **Trajectory Path Entropy (TPE)** — a genuine information-theoretic
   "staying on the path" diagnostic (`metrics::tpe`). Classifies step-to-step
   goal-progress increments as advance/stall/regress and reports the normalised
