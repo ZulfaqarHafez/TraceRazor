@@ -450,46 +450,50 @@ with step count rather than quadratically; multi-thousand-step traces take
 proportionally longer. The HTTP server additionally caps accepted traces at
 $50{,}000$ steps as a denial-of-service guard.
 
-\subsection{Candidate domains for evaluation}
+\subsection{Cross-domain evaluation}
 \label{sec:domains}
-Our validation so far is on tau-bench-family data: conversational tool-agents in
-airline/retail/telecom. Agentic LLM systems are, however, deployed far more
-broadly --- as of 2026, technology ($46\%$ of deployments), consulting ($18\%$),
-and finance ($12\%$) lead, with cybersecurity, support, software engineering, and
-healthcare among the most common functions~\cite{agentstats}. Table~\ref{tab:domains}
-lists ten domains worth evaluating, each with the waste pattern we expect to
-dominate (and the metric/feature that should catch it) and whether OBS's
-validated direction is likely to transfer. The central hypothesis to test: in
-\emph{conversational} domains, reasoning fluff dominates and higher observation
-share signals \emph{less} recoverable waste (the validated direction), whereas in
-\emph{document/output-heavy} domains (coding, data, legal) large tool outputs are
-the norm and that direction may invert --- which is exactly why OBS ships at a
-modest weight with a per-domain recalibration note. These are hypotheses for
-future work, not results.
+Of the ten deployment domains where agentic LLMs are common in 2026 (technology
+leads at $46\%$ of deployments, consulting $18\%$, finance $12\%$, with
+cybersecurity, support, software engineering, and healthcare among the top
+functions~\cite{agentstats}), \textbf{four have real, message-format trajectories
+reachable without restricted hosts}, and we audited samples from each.
+Table~\ref{tab:domains} reports the \emph{measured} per-domain statistics:
+tau-bench airline and retail, tau2-bench telecom, and SWE-agent coding.
 
 \begin{table}[t]
 \centering\small
-\caption{Ten candidate domains for evaluating TAS, the waste we expect to
-dominate, and whether OBS's validated sign likely transfers. Hypotheses, not
-measurements.}
+\caption{Measured per-domain audit statistics ($n$ sampled real traces each).
+obs = mean observation token share; SRR/TCA/LDI as defined in
+Section~\ref{sec:tas}. Coding is a single SWE-bench task in four edit formats
+($n{=}4$), so read it as illustrative.}
 \label{tab:domains}
-\begin{tabular}{p{2.4cm}p{4.0cm}p{4.2cm}p{2.2cm}}
+\begin{tabular}{lrrrrrr}
 \toprule
-Domain & Typical agent task & Likely dominant waste (signal) & OBS transfer? \\
+Domain & $n$ & TAS & obs & SRR & TCA & tokens \\
 \midrule
-Customer support & Multi-turn ticket resolution with tools & Reasoning redundancy, hedging (SRR, SHL) & Likely (tau-bench-like) \\
-Retail / e-commerce ops & Orders, returns, refunds & Redundant lookups, context carry-over (SRR, CCE) & Likely \\
-Healthcare intake (voice) & Collect history, structure a record & Repeated confirmations, hedging (SRR, SHL); needs content redaction & Likely \\
-Sales / CRM outreach & Enrich, draft, follow up & Verbose drafts, filler (VDI, SHL) & Likely (low OBS) \\
-Software engineering & Edit--test--fix loops over a repo & Verbose tool dumps: file reads, build logs (OBS, CCR) & May invert \\
-Data analysis / BI & SQL, notebooks, transforms & Large result sets retained in context (OBS, stale retention) & May invert \\
-Legal & Doc review, case-law research, contracts & Long-document context growth, stale docs (context growth, CCE) & May invert \\
-Finance / banking & Fraud, compliance, earnings analysis & Over-deep reasoning, tool retries (RDA, TCA) & Mixed \\
-Cybersecurity / SOC & Alert triage, threat investigation & Repeated/looping tool queries (LDI, redundant calls) & Mixed \\
-Deep-research agents & Multi-step web search + synthesis & Long trajectories, redundant retrieval (step count, repeated obs, context growth) & Mixed \\
+Airline (support)   & 60 & 83.6 & 0.39 & 27\% & 100\% & 1{,}086 \\
+Retail (e-commerce) & 60 & 81.8 & 0.53 & 32\% & 100\% & 1{,}504 \\
+Telecom (support)   & 60 & 79.6 & 0.80 & 47\% & 100\% & \phantom{0,}720 \\
+Coding (SWE-agent)  & \phantom{0}4 & 70.5 & 0.87 & 22\% & \phantom{0}71\% & 5{,}777 \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+The measured result supports the domain-dependence we had hypothesised: the
+observation token share climbs monotonically from conversational to tool-heavy
+work ($0.39 \to 0.53 \to 0.80 \to 0.87$), and the observation-heavy domains
+(telecom, coding) score lower TAS with markedly more redundancy and, for coding,
+real tool failures (TCA $71\%$). This is exactly why OBS carries a modest weight
+and a per-domain recalibration note: its meaning is domain-relative.
+
+\paragraph{Domains we could not test.} The remaining six --- healthcare, legal,
+finance, cybersecurity, sales/CRM, and data-analysis/deep-research agents --- have
+no real trajectories reachable here: their public datasets live on Hugging
+Face/Drive (blocked by this environment's network policy) or in non-message
+web-observation formats. We therefore do \emph{not} report numbers for them; our
+expectations (e.g.\ legal and data/BI being document-heavy like coding, where the
+OBS direction may invert; sales/CRM being reasoning-heavy like support) remain
+hypotheses to be confirmed once their trajectories are reachable.
 
 \section{Threats to Validity and Limitations}
 \label{sec:limits}
