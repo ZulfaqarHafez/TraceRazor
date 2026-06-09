@@ -13,6 +13,7 @@ pub mod ccr;
 pub mod reformulation;
 pub mod gar;
 pub mod csd;
+pub mod obs;
 pub mod tpe;
 
 pub use srr::{SrrResult, SrrRedundantPair};
@@ -29,4 +30,5 @@ pub use ccr::{CcrResult, CcrStepResult};
 pub use reformulation::ReformulationStep;
 pub use gar::{GarResult, GarStepResult};
 pub use csd::{CsdResult, CsdStepResult};
+pub use obs::ObsResult;
 pub use tpe::{GoalOrigin, TpeResult};

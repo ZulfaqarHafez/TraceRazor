@@ -30,7 +30,7 @@ Large language model (LLM) agents routinely spend tokens on redundant
 reasoning, repeated tool calls, verbose hedging, and unnecessary context
 carry-over. We present \textbf{TraceRazor}, an offline, dependency-light tool
 that ingests an agent execution trace and produces (i) a composite
-\emph{Trace Auditing Score} (TAS) decomposed into thirteen interpretable
+\emph{Trace Auditing Score} (TAS) decomposed into fourteen interpretable
 sub-metrics, (ii) concrete fix suggestions with \emph{estimated} token savings,
 and (iii) two optional companion pillars: consensus-based adaptive sampling
 and a substitutability classifier. TraceRazor is fast (a few milliseconds for
@@ -64,7 +64,7 @@ need to know \emph{where} tokens were wasted and \emph{what} to change.
 
 TraceRazor targets this gap. It treats a trace as a sequence of typed steps
 (reasoning, tool call, etc.) with token counts and optional tool-success flags,
-and scores it along thirteen efficiency dimensions. The design goals are: (1)
+and scores it along fourteen efficiency dimensions. The design goals are: (1)
 \emph{offline by default}, the core analysis pulls in no network
 dependencies; (2) \emph{interpretable}, every point of the composite maps to
 a named sub-metric and a per-step annotation; and (3) \emph{actionable}, the
@@ -72,7 +72,7 @@ output includes fix patches and an ``optimal path'' diff.
 
 \paragraph{Contributions.}
 \begin{enumerate}[leftmargin=*]
-  \item A decomposable token-efficiency score (TAS) over thirteen sub-metrics,
+  \item A decomposable token-efficiency score (TAS) over fourteen sub-metrics,
         with explicit, overridable weights (Section~\ref{sec:tas}).
   \item A heuristic fix generator and savings \emph{estimator}, plus an optimal-path
         recommendation (Section~\ref{sec:fixes}).
@@ -117,7 +117,7 @@ embedding backend.
 
 \subsection{Sub-metrics}
 Each sub-metric maps a trace to $[0,1]$ (or a percentage), higher being more
-efficient. Table~\ref{tab:metrics} lists all thirteen with their default
+efficient. Table~\ref{tab:metrics} lists all fourteen with their default
 composite weight. Representative definitions:
 
 \begin{itemize}[leftmargin=*]
@@ -149,30 +149,33 @@ composite weight. Representative definitions:
 
 \begin{table}[t]
 \centering
-\caption{The thirteen TAS sub-metrics and their default weights. Weights sum to
-$1.20$ and are normalised by their sum at scoring time, so the rightmost column
-(\,weight\,$/1.20$) is the actual share of the composite. \textbf{These weights
-are author-chosen heuristics, not calibrated} (Section~\ref{sec:limits}).}
+\caption{The fourteen TAS sub-metrics and their default weights. Weights sum to
+$1.26$ and are normalised by their sum at scoring time, so the rightmost column
+(\,weight\,$/1.26$) is the actual share of the composite. All weights are
+author-chosen heuristics except OBS, which was added after it predicted real
+recoverable waste across two datasets (Section~\ref{sec:betterfeatures}); the
+rest remain uncalibrated (Section~\ref{sec:limits}).}
 \label{tab:metrics}
 \begin{tabular}{llrr}
 \toprule
 Code & Metric & Weight & Share \\
 \midrule
-SRR & Step Redundancy Rate            & 0.17 & 14.2\% \\
-LDI & Loop Detection Index            & 0.13 & 10.8\% \\
-TCA & Tool Call Accuracy              & 0.13 & 10.8\% \\
-RDA & Reasoning Depth Appropriateness & 0.10 & \phantom{0}8.3\% \\
-ISR & Information Sufficiency Rate     & 0.10 & \phantom{0}8.3\% \\
-TUR & Token Utilisation Ratio         & 0.10 & \phantom{0}8.3\% \\
-CCE & Context Carry-over Efficiency   & 0.10 & \phantom{0}8.3\% \\
-DBO & Decision Branch Optimality      & 0.09 & \phantom{0}7.5\% \\
-VDI & Verbosity Density Index         & 0.08 & \phantom{0}6.7\% \\
-GAR & Goal Advancement Ratio          & 0.07 & \phantom{0}5.8\% \\
-SHL & Sycophancy/Hedging Level        & 0.05 & \phantom{0}4.2\% \\
-CSD & Cross-Step Semantic Drift       & 0.05 & \phantom{0}4.2\% \\
-CCR & Caveman Compression Ratio       & 0.03 & \phantom{0}2.5\% \\
+SRR & Step Redundancy Rate            & 0.17 & 13.5\% \\
+LDI & Loop Detection Index            & 0.13 & 10.3\% \\
+TCA & Tool Call Accuracy              & 0.13 & 10.3\% \\
+RDA & Reasoning Depth Appropriateness & 0.10 & \phantom{0}7.9\% \\
+ISR & Information Sufficiency Rate     & 0.10 & \phantom{0}7.9\% \\
+TUR & Token Utilisation Ratio         & 0.10 & \phantom{0}7.9\% \\
+CCE & Context Carry-over Efficiency   & 0.10 & \phantom{0}7.9\% \\
+DBO & Decision Branch Optimality      & 0.09 & \phantom{0}7.1\% \\
+VDI & Verbosity Density Index         & 0.08 & \phantom{0}6.3\% \\
+GAR & Goal Advancement Ratio          & 0.07 & \phantom{0}5.6\% \\
+OBS & Observation Token Share         & 0.06 & \phantom{0}4.8\% \\
+SHL & Sycophancy/Hedging Level        & 0.05 & \phantom{0}4.0\% \\
+CSD & Cross-Step Semantic Drift       & 0.05 & \phantom{0}4.0\% \\
+CCR & Caveman Compression Ratio       & 0.03 & \phantom{0}2.4\% \\
 \midrule
-    & \textbf{Total}                  & \textbf{1.20} & 100\% \\
+    & \textbf{Total}                  & \textbf{1.26} & 100\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -182,7 +185,7 @@ Let $m_k\in[0,100]$ be the $k$-th sub-metric and $w_k$ its weight. The raw
 structural score is the normalised weighted mean
 \begin{equation}
 \textit{raw} \;=\; \frac{\sum_k w_k\, m_k}{\sum_k w_k},
-\qquad \sum_k w_k = 1.20 .
+\qquad \sum_k w_k = 1.26 .
 \end{equation}
 The reported TAS applies a \emph{Task Value Integration} (TVI) multiplier so that
 a structurally clean trace that nonetheless \emph{failed} its task is penalised:
@@ -205,7 +208,7 @@ Because the default weights are heuristic, we provide a calibration procedure
 that fits them to data for a stated objective (here, \emph{recoverable token
 waste}). Given a dataset of traces each labelled with a measured recoverable
 fraction $r\in[0,1]$ (from before/after re-runs at constant task quality), we set
-the target efficiency $y = 1-r$ and the feature vector $x$ to the thirteen
+the target efficiency $y = 1-r$ and the feature vector $x$ to the
 normalised sub-metrics, then solve the simplex-constrained least squares
 \begin{equation}
 \min_{\mathbf{w}}\; \lVert X\mathbf{w} - \mathbf{y}\rVert_2^2 + \lambda\lVert \mathbf{w}-\tfrac{1}{13}\mathbf{1}\rVert_2^2
@@ -360,13 +363,18 @@ tau2-bench (1055)  & $-0.15$ & $+0.01$ & $\mathbf{+0.12}$ \\
 \end{tabular}
 \end{table}
 
-\paragraph{Honest magnitude.} The absolute $R^2$ is still modest (about $0.1$):
-these features improve the score's grounding and cross the ``better than the
-mean'' bar consistently, but they do not yet make TAS a strong predictor of
-recoverable waste. They are validated enough to promote into the weighted
-composite (per the evidence-gated policy), while the realistic next step is
-further feature and modelling work (path-level structure, non-linear models) and
-calibration on a target's own production runs.
+\paragraph{Promotion and honest magnitude.} Having cleared the evidence-gated bar
+on both datasets, the consistent driver, observation token share, is promoted
+into the composite as the OBS metric (Table~\ref{tab:metrics}, weight $0.06$,
+$4.8\%$ share); the remaining candidate features (stale-observation retention,
+context growth) stay diagnostic in the report. The absolute $R^2$ is still modest
+(about $0.1$): OBS improves the score's grounding and crosses the ``better than
+the mean'' bar consistently, but it does not yet make TAS a strong predictor of
+recoverable waste. The realistic next step is further feature and modelling work
+(path-level structure, non-linear models) and calibration on a target's own
+production runs. We keep OBS at a deliberately modest weight, and note its
+positive direction was validated on conversational tool-agent datasets and should
+be re-checked on other domains (e.g.\ coding agents) via the calibration tool.
 
 \section{Fix Generation and Savings Estimation}
 \label{sec:fixes}

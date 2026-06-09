@@ -291,6 +291,7 @@ mod tests {
                 pass: false,
                 target: 0.60,
             },
+            obs: Default::default(),
         };
 
         TraceReport {

@@ -430,6 +430,13 @@ impl TraceReport {
             pass_str(s.csd.pass),
             csd_drift_note,
         );
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}\n",
+            "OBS", "Observation Token Share",
+            format!("{:.3}", s.obs.score),
+            "≥0.30",
+            pass_str(s.obs.pass),
+        );
 
         out += &format!("{sep}\n");
 
@@ -641,6 +648,7 @@ fn worst_metric(score: &TasScore) -> (&'static str, f64) {
         ("CCR (compression ratio)", score.ccr.normalised()),
         ("GAR (goal advancement)", score.gar.normalised()),
         ("CSD (semantic drift)", score.csd.normalised()),
+        ("OBS (observation share)", score.obs.normalised()),
     ];
     metrics
         .iter()

@@ -394,6 +394,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
                 target: 0.40,
             },
             csd: zero_csd,
+            obs: Default::default(),
         },
         diff: vec![],
         savings: SavingsEstimate {

@@ -56,40 +56,43 @@ impl std::fmt::Display for Grade {
     }
 }
 
-/// Weight configuration for the thirteen-metric composite score.
+/// Weight configuration for the fourteen-metric composite score.
 ///
-/// **TAS is ordinal, not cardinal.** These weights are preliminary heuristics
-/// chosen by the author; they have not been calibrated against a labelled
-/// corpus. Use TAS to compare traces *within a single project over time*, not
-/// to compare projects against each other or against an absolute scale.
+/// **TAS is ordinal, not cardinal.** Most weights are heuristics chosen by the
+/// author. The one exception is OBS (observation token share), added after it
+/// was the single feature that predicted real recoverable waste and replicated
+/// across two datasets (see `metrics::obs`); the rest are uncalibrated. Use TAS
+/// to compare traces *within a single project over time*, not across projects.
 ///
-/// The values below sum to 1.20 pre-normalisation (`compute()` divides by the
-/// sum), so each per-metric percentage you see in this file is `weight / 1.20`
-/// — e.g. SRR's 0.17 contributes 14.2 % of the composite, not 17 %.
+/// The values below sum to 1.26 pre-normalisation (`compute()` divides by the
+/// sum), so each per-metric percentage you see in this file is `weight / 1.26`
+/// — e.g. SRR's 0.17 contributes 13.5 % of the composite, not 17 %.
 /// Override via `ScoringConfig.weights` if your workload values different
 /// metrics; the per-metric `Code` constants in each metrics module document
 /// the metric's intent so you can rebalance with eyes open.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Weights {
-    // Comments show the post-normalisation share of the composite (weight / 1.20).
-    // Structural metrics (reduced from v1).
-    pub srr: f64, // 14.2 %
-    pub ldi: f64, // 10.8 %
-    pub tca: f64, // 10.8 %
-    // Context / semantic metrics (unchanged from v1).
-    pub rda: f64, //  8.3 %
-    pub isr: f64, //  8.3 %
-    pub tur: f64, //  8.3 %
-    pub cce: f64, //  8.3 %
-    pub dbo: f64, //  7.5 %
-    // Verbosity metrics (new in v2).
-    pub vdi: f64, //  6.7 %
-    pub shl: f64, //  4.2 %
-    pub ccr: f64, //  2.5 %
+    // Comments show the post-normalisation share of the composite (weight / 1.26).
+    // Structural metrics.
+    pub srr: f64, // 13.5 %
+    pub ldi: f64, // 10.3 %
+    pub tca: f64, // 10.3 %
+    // Context / semantic metrics.
+    pub rda: f64, //  7.9 %
+    pub isr: f64, //  7.9 %
+    pub tur: f64, //  7.9 %
+    pub cce: f64, //  7.9 %
+    pub dbo: f64, //  7.1 %
+    // Verbosity metrics.
+    pub vdi: f64, //  6.3 %
+    pub shl: f64, //  4.0 %
+    pub ccr: f64, //  2.4 %
     // Goal advancement (M1).
-    pub gar: f64, //  5.8 %
+    pub gar: f64, //  5.6 %
     // Semantic path coherence (M4).
-    pub csd: f64, //  4.2 %
+    pub csd: f64, //  4.0 %
+    // Observation token share (validated on real data; see metrics::obs).
+    pub obs: f64, //  4.8 %
 }
 
 impl Default for Weights {
@@ -108,6 +111,7 @@ impl Default for Weights {
             ccr: 0.03,
             gar: 0.07,
             csd: 0.05,
+            obs: 0.06,
         }
     }
 }
@@ -163,6 +167,9 @@ pub struct TasScore {
     pub gar: GarResult,
     // Semantic path coherence (M4).
     pub csd: CsdResult,
+    // Observation token share (validated on real data; metrics::obs).
+    #[serde(default)]
+    pub obs: crate::metrics::ObsResult,
 }
 
 /// Configuration for the scoring engine.
@@ -213,6 +220,7 @@ pub fn compute(
     ccr: CcrResult,
     gar: GarResult,
     csd: CsdResult,
+    obs: crate::metrics::ObsResult,
     task_value_score: f64,
     total_tokens: u32,
     config: &ScoringConfig,
@@ -233,6 +241,7 @@ pub fn compute(
     let ccr_n = ccr.normalised();
     let gar_n = gar.normalised();
     let csd_n = csd.normalised();
+    let obs_n = obs.normalised();
 
     // Sum weights so the composite remains in [0, 1] even if weights don't
     // add up to exactly 1.0.  GAR uses 7% of the composite; CCR reduced from
@@ -249,7 +258,8 @@ pub fn compute(
         + w.shl
         + w.ccr
         + w.gar
-        + w.csd;
+        + w.csd
+        + w.obs;
 
     let weighted_sum = srr_n * w.srr
         + ldi_n * w.ldi
@@ -263,7 +273,8 @@ pub fn compute(
         + shl_n * w.shl
         + ccr_n * w.ccr
         + gar_n * w.gar
-        + csd_n * w.csd;
+        + csd_n * w.csd
+        + obs_n * w.obs;
 
     let raw_efficiency = weighted_sum / weight_total;
 
@@ -313,6 +324,7 @@ pub fn compute(
         ("ccr".to_string(), ccr_n),
         ("gar".to_string(), gar_n),
         ("csd".to_string(), csd_n),
+        ("obs".to_string(), obs_n),
     ]);
 
     TasScore {
@@ -337,6 +349,7 @@ pub fn compute(
         ccr,
         gar,
         csd,
+        obs,
     }
 }
 

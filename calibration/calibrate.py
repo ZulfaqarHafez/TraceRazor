@@ -58,14 +58,14 @@ except ImportError:  # pragma: no cover - dependency guard
 
 # Metric codes in the canonical order used by the weights config / engine.
 METRICS = ["srr", "ldi", "tca", "rda", "isr", "tur", "cce", "dbo",
-           "vdi", "shl", "ccr", "gar", "csd"]
+           "vdi", "shl", "ccr", "gar", "csd", "obs"]
 
 # Built-in default weights (crates/tracerazor-core/src/scoring.rs::Weights::default),
 # used as the baseline to beat in the report.
 DEFAULT_WEIGHTS = {
     "srr": 0.17, "ldi": 0.13, "tca": 0.13, "rda": 0.10, "isr": 0.10,
     "tur": 0.10, "cce": 0.10, "dbo": 0.09, "vdi": 0.08, "shl": 0.05,
-    "ccr": 0.03, "gar": 0.07, "csd": 0.05,
+    "ccr": 0.03, "gar": 0.07, "csd": 0.05, "obs": 0.06,
 }
 
 
