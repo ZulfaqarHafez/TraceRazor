@@ -1,0 +1,42 @@
+{
+  "trace_id": "run02_after",
+  "agent_name": "support-agent",
+  "framework": "raw",
+  "task_value_score": 1.0,
+  "steps": [
+    {
+      "id": 1,
+      "step_type": "reasoning",
+      "content": "Determine whether the order qualifies for a replacement.",
+      "tokens": 200
+    },
+    {
+      "id": 2,
+      "step_type": "tool_call",
+      "content": "look up inventory",
+      "tokens": 120,
+      "tool_name": "lookup_inventory",
+      "tool_success": true
+    },
+    {
+      "id": 3,
+      "step_type": "reasoning",
+      "content": "The item is in stock, so a replacement is possible.",
+      "tokens": 200
+    },
+    {
+      "id": 4,
+      "step_type": "tool_call",
+      "content": "schedule replacement",
+      "tokens": 150,
+      "tool_name": "schedule_replacement",
+      "tool_success": true
+    },
+    {
+      "id": 5,
+      "step_type": "reasoning",
+      "content": "Close the ticket.",
+      "tokens": 90
+    }
+  ]
+}

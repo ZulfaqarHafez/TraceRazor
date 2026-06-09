@@ -229,29 +229,34 @@ def extract_features(binary: str, samples: List[Sample]) -> List[Sample]:
 
 
 # ── Fitting: convex weights minimising prediction error ─────────────────────
-def fit_weights(X: np.ndarray, y: np.ndarray, l2: float = 0.0) -> np.ndarray:
-    """Minimise ||X w - y||^2 + l2*||w - uniform||^2 s.t. w >= 0, sum(w) = 1.
+def fit_weights(X: np.ndarray, y: np.ndarray, l2: float = 0.0,
+                prior: Optional[np.ndarray] = None) -> np.ndarray:
+    """Minimise ||X w - y||^2 + l2*||w - prior||^2 s.t. w >= 0, sum(w) = 1.
 
     The engine computes raw_efficiency = sum(w*m)/sum(w); fixing sum(w)=1 makes
-    that exactly X w, so this fits the engine's actual prediction.
+    that exactly X w, so this fits the engine's actual prediction. `prior` is the
+    shrinkage target (defaults to uniform); pass the heuristic default weights to
+    treat calibration as a data update of the domain prior, which keeps every
+    metric in play instead of collapsing onto a couple of collinear ones.
     """
     n_features = X.shape[1]
-    uniform = np.full(n_features, 1.0 / n_features)
+    if prior is None:
+        prior = np.full(n_features, 1.0 / n_features)
 
     def obj(w):
         resid = X @ w - y
-        return float(resid @ resid + l2 * ((w - uniform) @ (w - uniform)))
+        return float(resid @ resid + l2 * ((w - prior) @ (w - prior)))
 
     def grad(w):
-        return 2.0 * (X.T @ (X @ w - y) + l2 * (w - uniform))
+        return 2.0 * (X.T @ (X @ w - y) + l2 * (w - prior))
 
     cons = ({"type": "eq", "fun": lambda w: np.sum(w) - 1.0},)
     bounds = [(0.0, 1.0)] * n_features
-    res = minimize(obj, uniform, jac=grad, bounds=bounds, constraints=cons,
+    res = minimize(obj, prior, jac=grad, bounds=bounds, constraints=cons,
                    method="SLSQP", options={"maxiter": 1000, "ftol": 1e-12})
     w = np.clip(res.x, 0.0, None)
     s = w.sum()
-    return w / s if s > 0 else uniform
+    return w / s if s > 0 else prior
 
 
 def predict(X: np.ndarray, w: np.ndarray) -> np.ndarray:
@@ -270,7 +275,8 @@ def pearson(y: np.ndarray, yhat: np.ndarray) -> float:
     return float(np.corrcoef(y, yhat)[0, 1])
 
 
-def kfold_r2(X: np.ndarray, y: np.ndarray, l2: float, folds: int, seed: int) -> Tuple[float, float]:
+def kfold_r2(X: np.ndarray, y: np.ndarray, l2: float, folds: int, seed: int,
+             prior: Optional[np.ndarray] = None) -> Tuple[float, float]:
     n = len(y)
     folds = min(folds, n)
     if folds < 2:
@@ -282,7 +288,7 @@ def kfold_r2(X: np.ndarray, y: np.ndarray, l2: float, folds: int, seed: int) -> 
     for f in range(folds):
         test = parts[f]
         train = np.concatenate([parts[j] for j in range(folds) if j != f])
-        w = fit_weights(X[train], y[train], l2=l2)
+        w = fit_weights(X[train], y[train], l2=l2, prior=prior)
         preds[test] = predict(X[test], w)
     return r2(y, preds), pearson(y, preds)
 
@@ -295,7 +301,7 @@ def write_report(path: Path, name: str, n: int, weights: dict,
         "",
         f"- Samples: **{n}**",
         f"- Target: efficiency = `1 - recoverable_token_fraction`",
-        f"- L2 regularisation toward uniform: `{l2}`",
+        f"- L2 ridge toward prior: `{l2}`",
         "",
         "## Fit quality (calibrated weights)",
         "",
@@ -328,9 +334,16 @@ def main(argv=None) -> int:
     ap.add_argument("--binary", default=None, help="path to the tracerazor binary")
     ap.add_argument("--cv", type=int, default=5, help="cross-validation folds")
     ap.add_argument("--l2", type=float, default=0.0,
-                    help="ridge penalty toward uniform weights (helps with small n)")
+                    help="ridge penalty toward the prior (helps with small/narrow data)")
+    ap.add_argument("--prior", choices=["uniform", "default"], default="uniform",
+                    help="shrinkage target: 'default' = the heuristic weights, so "
+                         "calibration is a data update of the domain prior")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args(argv)
+
+    base_vec = np.array([DEFAULT_WEIGHTS[k] for k in METRICS])
+    base_vec = base_vec / base_vec.sum()  # normalised heuristic prior (sums to 1)
+    prior = base_vec if args.prior == "default" else None
 
     binary = find_binary(args.binary)
     name, samples = load_dataset(args.dataset)
@@ -340,15 +353,14 @@ def main(argv=None) -> int:
     X = np.vstack([s.features for s in samples])
     y = np.array([1.0 - s.target_fraction for s in samples])
 
-    weights_vec = fit_weights(X, y, l2=args.l2)
+    weights_vec = fit_weights(X, y, l2=args.l2, prior=prior)
     weights = {k: float(round(v, 6)) for k, v in zip(METRICS, weights_vec)}
 
     yhat = predict(X, weights_vec)
     fit = {"r2": r2(y, yhat), "r": pearson(y, yhat)}
-    base_vec = np.array([DEFAULT_WEIGHTS[k] for k in METRICS])
     bpred = predict(X, base_vec)
     baseline = {"r2": r2(y, bpred), "r": pearson(y, bpred)}
-    cv_r2, cv_r = kfold_r2(X, y, args.l2, args.cv, args.seed)
+    cv_r2, cv_r = kfold_r2(X, y, args.l2, args.cv, args.seed, prior=prior)
     cv = {"r2": cv_r2, "r": cv_r, "folds": min(args.cv, len(y))}
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -356,7 +368,7 @@ def main(argv=None) -> int:
     payload["_meta"] = {
         "dataset": name, "samples": len(samples), "target": "recoverable_token_waste",
         "train_r2": round(fit["r2"], 4), "cv_r2": round(cv_r2, 4),
-        "baseline_r2": round(baseline["r2"], 4), "l2": args.l2,
+        "baseline_r2": round(baseline["r2"], 4), "l2": args.l2, "prior": args.prior,
     }
     args.out.write_text(json.dumps(payload, indent=2) + "\n")
     write_report(args.report, name, len(samples), weights, fit, baseline, cv, args.l2)

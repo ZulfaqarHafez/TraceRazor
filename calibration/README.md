@@ -17,6 +17,10 @@ choice. The calibration objective is the honest one for our use case:
 
 ## 1. Provide ground truth
 
+For the exact data spec (what a before/after pair is, how much to provide, the
+trace schema, and a runnable two-pair example under `calibration/template/`),
+see [DATA_TEMPLATE.md](DATA_TEMPLATE.md). In short:
+
 Create a dataset manifest. Two entry forms are supported:
 
 ```json
