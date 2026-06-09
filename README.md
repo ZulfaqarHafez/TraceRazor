@@ -17,6 +17,7 @@ pip install tracerazor
 ```
   ┌───────────────────────────────────────────────────────────────────────────┐
   │                           TraceRazor v1.1.0                               │
+  │                           TraceRazor v0.1.0                               │
   │                                                                           │
   │   ┌──────────────┐    ┌──────────────────┐    ┌────────────────────────┐ │
   │   │   1. AUDIT   │    │   2. SAMPLING    │    │  3. SUBSTITUTABILITY   │ │
@@ -30,6 +31,9 @@ pip install tracerazor
   │   │ Offline.     │    │ Drop-in for      │    │ MiniLM embeddings +    │ │
   │   │ ~2 ms on a   │    │ LangGraph.       │    │ sklearn classifier.    │ │
   │   │ typical run. │    │                  │    │                        │ │
+  │   │ ~2 ms / 50   │    │ LangGraph.       │    │ sklearn classifier     │ │
+  │   │ steps; see   │    │                  │    │ (Python).              │ │
+  │   │ benchmark.   │    │                  │    │                        │ │
   │   └──────────────┘    └──────────────────┘    └────────────────────────┘ │
   └───────────────────────────────────────────────────────────────────────────┘
 ```
@@ -41,6 +45,7 @@ Each pillar is independent. Use one, two, or all three.
 ## The Problem
 
 Independent surveys and our own audits suggest a substantial fraction, commonly **30-60%**, of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. Exact share is workload-dependent.
+A substantial fraction of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. The exact share is workload-dependent and we do not claim a universal figure. The most concrete number we can stand behind is our own measurement: on 24 public τ-bench / SWE-agent traces, **step redundancy alone runs 36–41%** (see [`docs/external_agent_audits.md`](docs/external_agent_audits.md)). Treat any broader "30–60%" rule of thumb as an unvalidated heuristic, not a measured constant.
 
 A typical production support agent handling 8 tool calls across 3 loops consumes **15,000-40,000 tokens per resolution**:
 
@@ -62,7 +67,8 @@ Most tools in this space are observability and cost dashboards: LangSmith, Langf
 
 ## Pillar 1: Audit
 
-> Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Typical traces (tens of steps) audit in a few milliseconds; cost scales roughly linearly with step count. Reproduce locally with `cargo bench -p tracerazor-core`.
+.> Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Typical traces (tens of steps) audit in a few milliseconds; cost scales roughly linearly with step count. Reproduce locally with `cargo bench -p tracerazor-core`.
+> Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Fast on typical traces — low single-digit milliseconds up to ~50 steps; cost grows with trace length (see the [Performance](#performance) note). Reproduce locally with `cargo bench -p tracerazor-core`.
 
 ### How It Works
 
@@ -221,6 +227,40 @@ Every audit produces machine-applicable patches tied to the metrics that failed:
 | `verbosity_reduction` | VDI fail | Filler-word elimination |
 | `hedge_reduction` | SHL fail | Sycophancy/hedging directive |
 | `reformulation_guard` | Reformulation flag | Skip re-stating input context |
+| `goal_anchor` | GAR/TPE drift | Re-anchor the agent on its task objective |
+
+### Path Entropy — a real "staying on the path" signal
+
+Most "drift" metrics (including TraceRazor's own GAR and CSD) reduce to a *mean cosine similarity*. **Trajectory Path Entropy (TPE)** is different: it is a genuine information-theoretic measure of how *directed* an agent's run is toward its goal. Each step is scored for goal-progress, the step-to-step increments are classified as **advance / stall / regress**, and TraceRazor computes the normalised Shannon entropy of that distribution:
+
+```text
+H = − Σ p(s)·log2 p(s)      path_entropy = H / log2(3)  ∈ [0, 1]
+focus_score = clamp( (directedness + 1)/2 − 0.25·path_entropy , 0, 1 )
+```
+
+| Trajectory | path_entropy | focus_score | Reading |
+|---|---:|---:|---|
+| Monotonic climb to goal | 0.0 | 1.00 | focused |
+| Steady drift away | 0.0 | 0.00 | regressing |
+| No movement | 0.0 | 0.50 | wandering |
+| Erratic lurching | ~1.0 | 0.25 | scattered |
+
+TPE is anchored on the **real task goal** when the trace carries one in `metadata` (`task` / `goal` / `objective` / …) — otherwise it falls back to the agent's final step and says so via `goal_origin`. It is reported as a **diagnostic alongside TAS, not folded into the composite score**, so the published per-metric shares are unchanged. When TPE (or GAR) detects drift, the audit now emits a `goal_anchor` fix instead of only flagging it.
+
+> Honesty note: TPE measures whether a trajectory is *directed*; it does not by itself prove a fix keeps an agent on task. Use `tracerazor bench` on a captured before/after trace pair to validate that.
+
+### Performance
+
+`analyse()` is fast on typical traces and scales close to linearly in trace length. Indicative `cargo bench -p tracerazor-core` numbers (single trace, BoW backend stand-in):
+
+| Trace length | Time (measured) |
+|---:|---:|
+| 10 steps | ~0.13 ms |
+| 50 steps | ~1.2 ms |
+| 200 steps | ~8.6 ms |
+| 1000 steps | ~140 ms |
+
+The earlier "sub-5 ms per trace" headline only held below ~70 steps; novelty scanning (ISR) was quadratic. ISR is now bounded to a recent-context window, which roughly halved the 200-step cost and cut the 1000-step cost ~3×. Long traces still grow super-linearly (similarity-based redundancy detection dominates), so we no longer print a single universal figure — run the bench on your own hardware for exact numbers.
 
 ### Quickstart: Audit
 

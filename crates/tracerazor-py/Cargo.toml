@@ -1,0 +1,23 @@
+[package]
+name = "tracerazor-py"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Native PyO3 bindings for the TraceRazor auditor core."
+publish = false
+
+# This crate is intentionally NOT a member of the root workspace (see the
+# `exclude` entry in the top-level Cargo.toml). It builds a Python extension
+# module via maturin and pulls in pyo3, which the main `cargo build --workspace`
+# and CI gate should not depend on. Build it explicitly with `maturin develop`.
+
+[lib]
+name = "tracerazor_native"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module", "abi3-py38"] }
+serde_json = "1"
+tracerazor-core = { path = "../tracerazor-core" }
+tracerazor-ingest = { path = "../tracerazor-ingest" }
+tracerazor-semantic = { path = "../tracerazor-semantic" }

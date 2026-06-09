@@ -37,7 +37,7 @@
 /// Weight in TAS composite: 6% (replaces half of CCR's duplicate signal).
 use serde::{Deserialize, Serialize};
 
-use crate::types::{StepType, Trace};
+use crate::types::{StepType, Trace, TraceStep};
 
 /// Target: weighted-mean goal similarity must be at least this value.
 pub const TARGET: f64 = 0.40;
@@ -77,11 +77,32 @@ impl GarResult {
     }
 }
 
-/// Compute the GAR metric for a trace.
+/// Compute the GAR metric for a trace, using the agent's final reasoning step
+/// as the goal proxy.
 ///
 /// `similarity_fn` accepts two text strings and returns a cosine similarity
 /// in [0.0, 1.0].  The same closure used by SRR and ISR works here.
+///
+/// Prefer [`compute_with_goal`] when the trace carries the real task objective —
+/// scoring against the agent's own final step rewards an agent that confidently
+/// converges on the *wrong* answer.
 pub fn compute(trace: &Trace, similarity_fn: impl Fn(&str, &str) -> f64) -> GarResult {
+    compute_with_goal(trace, similarity_fn, None)
+}
+
+/// Compute GAR against an explicit goal when known, falling back to the final
+/// reasoning step when `goal` is `None`.
+///
+/// When `goal` is supplied (the real task objective), **every** reasoning step
+/// is scored against it — including the last — because the goal is no longer the
+/// trace's own endpoint. When `goal` is `None` the behaviour is identical to the
+/// historical [`compute`]: the last reasoning step is the proxy and only the
+/// preceding steps are scored.
+pub fn compute_with_goal(
+    trace: &Trace,
+    similarity_fn: impl Fn(&str, &str) -> f64,
+    goal: Option<&str>,
+) -> GarResult {
     // Collect reasoning steps in order.
     let reasoning: Vec<_> = trace
         .steps
@@ -89,8 +110,10 @@ pub fn compute(trace: &Trace, similarity_fn: impl Fn(&str, &str) -> f64) -> GarR
         .filter(|s| s.step_type == StepType::Reasoning)
         .collect();
 
-    // Need at least 2 reasoning steps to measure advancement.
-    if reasoning.len() < 2 {
+    // Need at least 2 reasoning steps to measure advancement (1 when we have an
+    // external goal, since the final step is no longer "the answer").
+    let min_steps = if goal.is_some() { 1 } else { 2 };
+    if reasoning.len() < min_steps {
         return GarResult {
             score: 1.0,
             step_results: vec![],
@@ -101,16 +124,28 @@ pub fn compute(trace: &Trace, similarity_fn: impl Fn(&str, &str) -> f64) -> GarR
         };
     }
 
-    // Goal proxy = last reasoning step.
-    let goal_step = *reasoning.last().unwrap();
-    let goal_text = &goal_step.content;
+    // Resolve the goal text and the set of steps to score against it.
+    // External goal → score all reasoning steps; internal proxy → all but last.
+    let (goal_text, goal_step_id, scored): (String, Option<u32>, &[&TraceStep]) =
+        match goal {
+            Some(g) => (g.to_string(), None, &reasoning[..]),
+            None => {
+                let goal_step = *reasoning.last().unwrap();
+                (
+                    goal_step.content.clone(),
+                    Some(goal_step.id),
+                    &reasoning[..reasoning.len() - 1],
+                )
+            }
+        };
+    let goal_text = goal_text.as_str();
 
-    // Score each intermediate step (all except the last).
-    let mut step_results = Vec::with_capacity(reasoning.len() - 1);
+    // Score each step against the goal.
+    let mut step_results = Vec::with_capacity(scored.len());
     let mut weighted_sum = 0.0_f64;
     let mut total_weight = 0.0_f64;
 
-    for step in &reasoning[..reasoning.len() - 1] {
+    for step in scored {
         let raw_sim = similarity_fn(&step.content, goal_text);
         let sim = raw_sim.clamp(0.0, 1.0);
         let weight = (step.tokens as f64).max(1.0);
@@ -142,7 +177,7 @@ pub fn compute(trace: &Trace, similarity_fn: impl Fn(&str, &str) -> f64) -> GarR
         score,
         step_results,
         low_advancement_steps,
-        goal_step_id: Some(goal_step.id),
+        goal_step_id,
         pass: score >= TARGET,
         target: TARGET,
     }

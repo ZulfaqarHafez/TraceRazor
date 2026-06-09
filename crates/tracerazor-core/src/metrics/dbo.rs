@@ -68,7 +68,10 @@ pub struct DboResult {
 
 impl DboResult {
     pub fn normalised(&self) -> f64 {
-        self.score
+        // Clamp defensively: every construction path already keeps `score` in
+        // [0, 1], but a future code path must not be able to skew the composite
+        // by emitting an out-of-range DBO score.
+        self.score.clamp(0.0, 1.0)
     }
 }
 

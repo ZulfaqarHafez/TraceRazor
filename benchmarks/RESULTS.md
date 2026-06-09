@@ -1,6 +1,10 @@
 # TraceRazor Benchmark Results
+# TraceRazor Benchmark Results (crate v0.1.0)
 
-Measured by running `tracerazor audit` on every trace under `benchmarks/traces/`. Each trace is a synthetic scenario that isolates a specific class of token waste. Reproduce with `python benchmarks/run_benchmarks.py`.
+Measured by running `tracerazor audit` on every trace under `benchmarks/traces/`. Each trace is a **synthetic scenario authored to isolate a specific class of token waste** — this table is a *smoke test* proving each metric fires on the pattern it was built to detect, **not** a generalisation benchmark on real-world traces. The "Est. savings" column is the sum of per-fix heuristic estimates (see `estimated_token_savings`), not a measured reduction from re-running an agent; validate real savings with `tracerazor bench` on a captured before/after trace pair. Reproduce with `python benchmarks/run_benchmarks.py`.
+
+**Updated:** 2026-04-16  
+**Metric set:** Semantic Continuity (CSD) detects reasoning drift; Adherence Scoring (IAR) validates optimization effectiveness; Trajectory Path Entropy (TPE) reports on-path directedness.
 
 | Trace | Agent | TAS | Grade | Tokens | Waste | Est. savings | Fixes |
 |---|---|---:|:-:|---:|---:|---:|---:|

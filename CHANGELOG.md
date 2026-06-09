@@ -4,7 +4,41 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Added
+- **Trajectory Path Entropy (TPE)** — a genuine information-theoretic
+  "staying on the path" diagnostic (`metrics::tpe`). Classifies step-to-step
+  goal-progress increments as advance/stall/regress and reports the normalised
+  Shannon entropy of that distribution plus a directed `focus_score`. Reported
+  alongside TAS (and in the `PATH ENTROPY` report section) but **not** folded
+  into the composite, so published per-metric shares are unchanged.
+- **`goal_anchor` fix type** — GAR/TPE drift was previously detection-only;
+  the audit now emits a goal-re-anchoring prompt patch when a trajectory
+  drifts off its objective.
+- **`Trace::task_goal()`** — resolves the real task objective from trace
+  `metadata` (`task`/`goal`/`objective`/…) so goal-oriented metrics can score
+  progress toward the actual goal rather than the agent's own final step.
+
 ### Changed
+- **GAR** now anchors on the real task goal via `gar::compute_with_goal` when
+  the trace provides one (falling back to the final-step proxy otherwise).
+  Scoring against the agent's own last step rewarded confident convergence on
+  the *wrong* answer.
+- **ISR** novelty scan is bounded to a 64-step recent-context window instead of
+  the full prefix, removing the dominant quadratic term in `analyse()`
+  (200-step traces ~2.5× faster, 1000-step ~3.3× faster). Results are identical
+  for traces up to the window length.
+- **DBO** `normalised()` now clamps to [0, 1] defensively.
+- **Honesty pass on claims**: README version banner corrected `v1.0.0 → v0.1.0`
+  (matches `Cargo.toml`); the unsourced and mutually-contradictory "30–60%"
+  (README) / "40–70%" (Overview) redundancy figures replaced with the
+  actually-measured 36–41% step-redundancy number from
+  `docs/external_agent_audits.md`; the unsupported RDA "80–85% agreement on a
+  500-trace benchmark" claim removed (no such dataset exists in the repo); the
+  "sub-5 ms per trace" headline replaced with measured, size-qualified
+  benchmark numbers; savings output and the synthetic benchmark table
+  relabelled as heuristic projections rather than measured re-runs.
+
+### Changed (earlier)
 - **License**: project relicensed under MIT (was Apache-2.0); LICENSE, all
   `Cargo.toml` files and CONTRIBUTING aligned with the README/PyPI metadata
   that already advertised MIT.
