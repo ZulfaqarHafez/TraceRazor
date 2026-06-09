@@ -68,8 +68,14 @@ def test_openai_agents_real_runhooks():
     hooks = TraceRazorHooks(agent_name="oa-real", tracerazor_bin=binary)
 
     # When the SDK is installed, our hooks should actually subclass RunHooks.
+    # In openai-agents >=0.17 RunHooks is a generic alias; use __origin__ to
+    # get the real class for the isinstance/MRO check.
     if hasattr(agents, "RunHooks"):
-        assert any(b.__name__ == "RunHooks" for b in type(hooks).__mro__)
+        rh_class = getattr(agents.RunHooks, "__origin__", agents.RunHooks)
+        assert issubclass(type(hooks), rh_class), (
+            f"TraceRazorHooks should subclass {rh_class.__name__}; "
+            f"got MRO {[b.__name__ for b in type(hooks).__mro__]}"
+        )
 
     class _Named:
         def __init__(self, name):

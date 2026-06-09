@@ -245,10 +245,13 @@ class TraceRazorHooks:
 # still working as a duck-typed object when openai-agents isn't present.
 
 try:
-    from agents import RunHooks  # type: ignore[import-untyped]
+    from agents import RunHooks as _RunHooks  # type: ignore[import-untyped]
+    # In openai-agents ≥0.17, RunHooks is a generic alias (RunHooksBase[TContext, Agent]).
+    # Extract the origin class so we inherit from the real class, not the alias.
+    _RunHooksBase = getattr(_RunHooks, "__origin__", _RunHooks)
 
-    class TraceRazorHooks(TraceRazorHooks, RunHooks):  # type: ignore[no-redef]
+    class TraceRazorHooks(TraceRazorHooks, _RunHooksBase):  # type: ignore[no-redef]
         """TraceRazorHooks with openai-agents RunHooks as base class."""
 
-except ImportError:
+except (ImportError, TypeError):
     pass  # TraceRazorHooks already defined above as a standalone class
