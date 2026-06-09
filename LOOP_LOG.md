@@ -89,3 +89,28 @@ the systematic blind spot is gone. No regressions (bare invocations still
 ignored).
 Next: Iteration 4 — apply the same reasoning-aware fix to CSD (cross-step drift,
 0.480, the next-lowest and same root cause), then update the paper.
+
+## Iteration 4
+Read: CSD (`csd.rs`) filters to `StepType::Reasoning` "(same as GAR)" — so after
+fixing GAR it diverged from its own stated contract, and on tool agents it
+compared only the 1 pair formed by the two sparse answer steps (the few-shot
+example answer vs the real answer): a degenerate, unrepresentative measurement.
+Plan: Promote the `carries_reasoning` predicate to `metrics/mod.rs`, reuse it in
+both GAR and CSD so they stay aligned, and have CSD measure continuity across
+the real reasoning flow (ReAct Think turns). The terse-tool CSD test ("tool
+call", 2 words) still excludes bare invocations, so it passes unchanged.
+Change:
+  - `crates/tracerazor-core/src/metrics/mod.rs` — shared `carries_reasoning()` + `MIN_TOOL_REASONING_WORDS`.
+  - `gar.rs` — use the shared helper (removed the local copy + now-unused import).
+  - `csd.rs` — reasoning-aware filter; docstring; added `react_tool_reasoning_pairs_are_scored`.
+  - Regenerated stats.
+Test result: PASS (`cargo test --workspace` 12/12 green; CSD 12/12, GAR 19/19; no warnings).
+Diagnosis: CSD now scores **8** consecutive transitions per os trace (the full
+reasoning flow) instead of 1 degenerate answer-pair, and correctly localises the
+drift to the few-shot-example→task boundary (high-drift pairs [2,3],[3,4]).
+Corpus mean CSD(norm) 0.480→0.415 — lower but representative (it was previously
+comparing two unrelated answer steps). GAR and CSD are once again consistent.
+Next: Iteration 5 — update the research paper (`paper/tracerazor.tex`) with the
+HuggingFace AgentInstruct real-data evaluation and the three data-driven
+improvements (LDI parametric loops, GAR/CSD reasoning-aware). Also refresh
+README/CHANGELOG.

@@ -4,13 +4,17 @@
 /// High drift = agent is wandering. This is the complement to SRR (which flags
 /// re-visiting the same ground — CSD flags leaving necessary ground without resolution).
 ///
-/// For each consecutive pair of reasoning steps, compute cosine similarity.
-/// Score = mean(similarities) ∈ [0,1], where 1.0 = perfect semantic continuity.
+/// For each consecutive pair of reasoning-bearing steps, compute cosine
+/// similarity. Score = mean(similarities) ∈ [0,1], where 1.0 = perfect semantic
+/// continuity. Reasoning-bearing steps include ReAct tool-call turns that embed
+/// a substantive thought, so continuity is measured on tool-using agents
+/// instead of jumping between the few bare final-answer steps.
 ///
 /// Requires Phase 2 embedding backend (similarity_fn).
 use serde::{Deserialize, Serialize};
 
-use crate::types::{Trace, StepType};
+use crate::metrics::carries_reasoning;
+use crate::types::Trace;
 
 pub const TARGET: f64 = 0.60;
 const HIGH_DRIFT_THRESHOLD: f64 = 0.30;
@@ -59,11 +63,12 @@ pub fn compute<F>(trace: &Trace, similarity_fn: F) -> CsdResult
 where
     F: Fn(&str, &str) -> f64,
 {
-    // Filter to reasoning steps only (same as GAR).
+    // Filter to reasoning-bearing steps (same predicate as GAR): reasoning
+    // steps plus ReAct tool-call turns that embed a substantive thought.
     let reasoning_steps: Vec<_> = trace
         .steps
         .iter()
-        .filter(|s| s.step_type == StepType::Reasoning)
+        .filter(|s| carries_reasoning(s))
         .collect();
 
     // Fewer than 2 reasoning steps → no pairs possible.
@@ -272,10 +277,27 @@ mod tests {
             step(3, "reasoning 2", StepType::Reasoning),
         ]);
         let result = compute(&trace, |_, _| 0.7);
-        // Only one reasoning pair: (1, 3)
+        // Bare tool call (2 words) is ignored → only one reasoning pair: (1, 3)
         assert_eq!(result.step_results.len(), 1);
         assert_eq!(result.step_results[0].step_id_from, 1);
         assert_eq!(result.step_results[0].step_id_to, 3);
+    }
+
+    #[test]
+    fn react_tool_reasoning_pairs_are_scored() {
+        // ReAct tool-call turns carry the agent's thought; consecutive thoughts
+        // form continuity pairs that were previously invisible to CSD.
+        let long = "Think: I will inspect the configuration files and then filter \
+                    out the comment lines before counting the directives carefully";
+        let trace = make_trace(vec![
+            step(1, long, StepType::ToolCall),
+            step(2, long, StepType::ToolCall),
+            step(3, long, StepType::ToolCall),
+        ]);
+        let result = compute(&trace, |a, b| if a == b { 1.0 } else { 0.0 });
+        // Three reasoning-bearing tool steps → two consecutive pairs.
+        assert_eq!(result.step_results.len(), 2);
+        assert_eq!(result.score, 1.0);
     }
 
     #[test]

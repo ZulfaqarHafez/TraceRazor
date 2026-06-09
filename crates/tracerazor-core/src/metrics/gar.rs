@@ -39,31 +39,14 @@
 /// Weight in TAS composite: 6% (replaces half of CCR's duplicate signal).
 use serde::{Deserialize, Serialize};
 
-use crate::types::{StepType, Trace, TraceStep};
+use crate::types::{Trace, TraceStep};
 
 /// Target: weighted-mean goal similarity must be at least this value.
 pub const TARGET: f64 = 0.40;
 /// Steps below this similarity to the goal are flagged as "low advancement".
 pub const LOW_ADVANCEMENT_THRESHOLD: f64 = 0.20;
-/// A tool-call step is only scored for goal advancement when its content
-/// carries at least this many words of reasoning prose. ReAct agents fuse the
-/// thought and the action into one turn ("Think: … Act: bash …"), so the
-/// reasoning that advances the goal lives inside tool-call steps; a bare tool
-/// invocation ("Calling get_order …") stays below this bar and is ignored.
-const MIN_TOOL_REASONING_WORDS: usize = 12;
 
-/// Whether a step carries natural-language reasoning that should be scored for
-/// goal advancement: any reasoning step, plus tool-call steps whose content is
-/// substantive prose (ReAct "Think:" turns) rather than a bare invocation.
-fn carries_reasoning(step: &TraceStep) -> bool {
-    match step.step_type {
-        StepType::Reasoning => true,
-        StepType::ToolCall => {
-            step.content.split_whitespace().count() >= MIN_TOOL_REASONING_WORDS
-        }
-        _ => false,
-    }
-}
+use crate::metrics::carries_reasoning;
 
 /// Per-step GAR result.
 #[derive(Debug, Clone, Serialize, Deserialize)]

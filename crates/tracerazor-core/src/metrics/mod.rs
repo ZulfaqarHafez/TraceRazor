@@ -32,3 +32,25 @@ pub use gar::{GarResult, GarStepResult};
 pub use csd::{CsdResult, CsdStepResult};
 pub use obs::ObsResult;
 pub use tpe::{GoalOrigin, TpeResult};
+
+use crate::types::{StepType, TraceStep};
+
+/// Minimum words of prose for a tool-call step to count as reasoning-bearing.
+/// ReAct agents fuse the thought and the action into one turn ("Think: … Act:
+/// bash …"); a bare invocation ("Calling get_order …") stays below this bar.
+pub(crate) const MIN_TOOL_REASONING_WORDS: usize = 12;
+
+/// Whether a step carries natural-language reasoning worth scoring for the
+/// goal/continuity metrics (GAR, CSD): any reasoning step, plus ReAct tool-call
+/// turns whose content embeds a substantive thought rather than a bare tool
+/// invocation. Without this, those metrics see only the sparse final-answer
+/// steps of a tool-using agent and collapse toward zero.
+pub(crate) fn carries_reasoning(step: &TraceStep) -> bool {
+    match step.step_type {
+        StepType::Reasoning => true,
+        StepType::ToolCall => {
+            step.content.split_whitespace().count() >= MIN_TOOL_REASONING_WORDS
+        }
+        _ => false,
+    }
+}
