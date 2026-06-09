@@ -210,7 +210,9 @@ where the constraint $\sum_k w_k = 1$ makes the engine's normalised composite
 equal $X\mathbf{w}$ exactly, and $\lambda$ optionally regularises toward uniform
 weights. The tool reports in-sample $R^2$, $k$-fold cross-validated $R^2$, and
 the default-weights baseline, and emits a weights file the engine loads at
-runtime.
+runtime. Measured before/after pairs may be supplied as raw, LangSmith, or OTEL
+traces through an import adapter; token totals are read from the auditor so the
+two sides are comparable across formats.
 
 \paragraph{Controlled calibration experiment.}
 To validate the procedure we built a benchmark of $n{=}200$ traces in which a
