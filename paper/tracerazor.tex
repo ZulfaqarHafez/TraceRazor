@@ -312,11 +312,22 @@ $4.8\%$ share); the remaining candidate features (stale-observation retention,
 context growth) stay diagnostic in the report. The absolute $R^2$ is still modest
 (about $0.1$): OBS improves the score's grounding and crosses the ``better than
 the mean'' bar consistently, but it does not yet make TAS a strong predictor of
-recoverable waste. The realistic next step is further feature and modelling work
-(path-level structure, non-linear models) and calibration on a target's own
-production runs. We keep OBS at a deliberately modest weight, and note its
+recoverable waste. We keep OBS at a deliberately modest weight, and note its
 positive direction was validated on conversational tool-agent datasets and should
 be re-checked on other domains (e.g.\ coding agents) via the calibration tool.
+
+\paragraph{Where the ceiling is.} We pushed further: we added path/length
+features (step count, mean tokens per step, longest reasoning run, state-revisit
+rate, tool diversity) and tested non-linear models. None raised cross-validated
+$R^2$ above the current level on either dataset --- the extra features are largely
+collinear with the existing metrics plus OBS, and on tau2-bench ($n{=}1055$) the
+regularised convex fit ($R^2 = 0.12$) beat both ridge regression ($0.09$) and
+gradient boosting ($0.04$), so there is no hidden non-linear signal these
+features are missing. The structural-feature ceiling for predicting cross-run
+recoverable waste is therefore about $0.1$. Materially exceeding it would need
+fundamentally richer signal (semantic/path-embedding features, per-token
+attribution), which is a research effort rather than a feature add, and remains
+future work.
 
 \section{Fix Generation and Savings Estimation}
 \label{sec:fixes}
@@ -517,11 +528,13 @@ savings. Acting on that, we added observation-accumulation features
 (Section~\ref{sec:betterfeatures}) that raise the cross-validated $R^2$ into the
 positive range on two independent datasets ($+0.08$ and $+0.12$), the first
 signal here that predicts real recoverable waste and replicates; the absolute
-magnitude is still modest ($\approx 0.1$). The path to a defensible measurement
-is: (1) keep improving these features (path-level and non-linear models) and
-calibrate on the target's own production runs (the procedure of
-Section~\ref{sec:calib} is in place and now has a feature set that beats the
-mean); (2) replace estimated savings with measured
+magnitude is still modest ($\approx 0.1$), and we found that obvious extensions
+(path/length features, non-linear models) do not push past it
+(Section~\ref{sec:betterfeatures}). The path to a defensible measurement is:
+(1) richer signal beyond structural features (semantic/path-embedding features,
+per-token attribution) plus calibration on the target's own production runs (the
+procedure of Section~\ref{sec:calib} is in place and now has a feature set that
+beats the mean); (2) replace estimated savings with measured
 before/after re-runs at constant task success; (3) re-run the sampling study
 multi-seed with confidence intervals and a deployable (non-oracle) selector; and
 (4) define and label substitutability on real data. Until then, TraceRazor is

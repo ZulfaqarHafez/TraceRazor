@@ -21,6 +21,17 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
   pairs the original metrics did not predict recoverable waste (negative CV R²);
   adding the observation features raised it positive (+0.08 / +0.12), which is
   what justified promoting OBS. Documented in the paper (`paper/tracerazor.tex`).
+- **Feature/ceiling exploration** — path/length features (`step_count_norm`,
+  `mean_step_tokens_norm`, `reasoning_run_max`, `revisit_rate`, `tool_diversity`)
+  added to `report.features` and a `--feature-keys` flag added to the calibrator.
+  Tested with non-linear models (ridge, gradient boosting): none beat the
+  regularised convex fit, so the structural-feature ceiling for predicting
+  recoverable waste is ~0.1; richer semantic signal is needed to exceed it
+  (recorded in the paper).
+- **Real-framework integration tests** (`tests/test_integrations_real.py`) —
+  drive the LangGraph callback with real `langchain_core` events and the
+  OpenAI-Agents hooks bound to the real `RunHooks` base, auditing against the
+  binary. CI installs the framework extras so they run there.
 - **HTTP server health checks** — `GET /healthz` (liveness) and `/readyz`
   (readiness, checks the store) plus a `--health-check` binary probe used by the
   container HEALTHCHECK (no curl needed).
