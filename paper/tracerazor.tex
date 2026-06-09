@@ -38,9 +38,12 @@ typical traces) and runs without API keys for its core analysis.
 
 We are deliberate about what this work does and does not establish. TAS is an
 \emph{ordinal heuristic} whose composite weights are author-chosen; when we
-calibrate them on real agent runs (tau-bench), no fit of the current metrics
-predicts recoverable token waste (negative cross-validated $R^2$), so TAS is a
-within-trace diagnostic, not a validated predictor of cross-run savings. Reported
+calibrate them on real agent runs (tau-bench), no fit of the original metrics
+predicts recoverable token waste (negative cross-validated $R^2$); adding
+observation-accumulation features raises it into the positive range on two
+independent datasets, the first signal that replicates, though the magnitude is
+still modest ($\approx 0.1$). So TAS is a within-trace diagnostic, not yet a
+strong predictor of cross-run savings. Reported
 token ``savings'' are heuristic projections rather than measured before/after
 re-runs, and the sampling and substitutability results are preliminary
 (single-seed and synthetic, respectively). We therefore present TraceRazor as a useful
@@ -326,6 +329,45 @@ how many tokens are recoverable relative to a leaner run. Closing that gap needs
 richer or non-linear features (e.g.\ path-level and step-count modelling) and a
 target measured on within-agent optimisation rather than cross-run comparison.
 
+\subsection{Better features: observation-accumulation signals}
+\label{sec:betterfeatures}
+Acting on that interpretation, we added candidate features that measure
+\emph{context accumulation} rather than reasoning redundancy: the tool-observation
+token share, output compressibility, repeated observations, and redundant tool
+calls (all computed from fields the parsers already capture, emitted as
+diagnostics and not in the composite). We then tested whether they raise
+predictiveness on real data, across two independent datasets:
+tau-bench and tau2-bench (the latter adds the telecom domain and the
+Claude~3.7~Sonnet / GPT-4.1 models). Table~\ref{tab:features} shows the features
+raise the cross-validated $R^2$ over metrics-alone on both datasets, and the
+combined model is positive on both ($+0.08$ and $+0.12$) where metrics alone were
+negative or near-zero. The one consistent driver is the observation token share
+(correlation $+0.28$ and $+0.33$ with efficiency). This is the first signal here
+that predicts real recoverable waste and replicates across datasets.
+
+\begin{table}[t]
+\centering
+\caption{Adding observation-accumulation features raises cross-validated $R^2$
+against real recoverable waste on two independent datasets (5-fold CV).}
+\label{tab:features}
+\begin{tabular}{lrrr}
+\toprule
+Dataset (pairs) & default & metrics only & metrics + features \\
+\midrule
+tau-bench (233)    & $-0.37$ & $-0.11$ & $\mathbf{+0.08}$ \\
+tau2-bench (1055)  & $-0.15$ & $+0.01$ & $\mathbf{+0.12}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Honest magnitude.} The absolute $R^2$ is still modest (about $0.1$):
+these features improve the score's grounding and cross the ``better than the
+mean'' bar consistently, but they do not yet make TAS a strong predictor of
+recoverable waste. They are validated enough to promote into the weighted
+composite (per the evidence-gated policy), while the realistic next step is
+further feature and modelling work (path-level structure, non-linear models) and
+calibration on a target's own production runs.
+
 \section{Fix Generation and Savings Estimation}
 \label{sec:fixes}
 For each detected inefficiency, TraceRazor emits a typed fix patch
@@ -518,11 +560,15 @@ explicit about this throughout. Notably, when we calibrated on real tau-bench
 runs (Section~\ref{sec:realcalib}) the metrics did not predict recoverable waste
 (negative cross-validated $R^2$), which is the most important finding here: the
 score is a useful within-trace diagnostic, not a validated predictor of cross-run
-savings. The path to a defensible measurement is: (1) develop features that
-actually predict recoverable waste on real data (the calibration procedure of
-Section~\ref{sec:calib} is in place, but the current metrics are insufficient, so
-this needs richer/non-linear features, not just more data); (2) replace estimated
-savings with measured
+savings. Acting on that, we added observation-accumulation features
+(Section~\ref{sec:betterfeatures}) that raise the cross-validated $R^2$ into the
+positive range on two independent datasets ($+0.08$ and $+0.12$), the first
+signal here that predicts real recoverable waste and replicates; the absolute
+magnitude is still modest ($\approx 0.1$). The path to a defensible measurement
+is: (1) keep improving these features (path-level and non-linear models) and
+calibrate on the target's own production runs (the procedure of
+Section~\ref{sec:calib} is in place and now has a feature set that beats the
+mean); (2) replace estimated savings with measured
 before/after re-runs at constant task success; (3) re-run the sampling study
 multi-seed with confidence intervals and a deployable (non-oracle) selector; and
 (4) define and label substitutability on real data. Until then, TraceRazor is

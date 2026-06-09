@@ -1,0 +1,48 @@
+{
+  "srr": 0.003915,
+  "ldi": 0.0,
+  "tca": 0.0,
+  "rda": 0.217981,
+  "isr": 0.0,
+  "tur": 0.0,
+  "cce": 0.0,
+  "dbo": 0.384876,
+  "vdi": 0.329232,
+  "shl": 0.0,
+  "ccr": 0.063997,
+  "gar": 0.0,
+  "csd": 0.0,
+  "_meta": {
+    "dataset": "tau2",
+    "samples": 1055,
+    "target": "recoverable_token_waste",
+    "train_r2": 0.0122,
+    "cv_r2": 0.0073,
+    "baseline_r2": -0.151,
+    "l2": 0.1,
+    "prior": "default"
+  },
+  "_features": {
+    "names": [
+      "obs_gzip_compressibility",
+      "obs_token_share",
+      "redundant_tool_call_rate",
+      "repeated_obs_rate"
+    ],
+    "weights": {
+      "obs_gzip_compressibility": 0.0,
+      "obs_token_share": 0.239,
+      "redundant_tool_call_rate": 0.0736,
+      "repeated_obs_rate": 0.0
+    },
+    "per_feature_corr": {
+      "obs_gzip_compressibility": -0.071,
+      "obs_token_share": 0.331,
+      "redundant_tool_call_rate": 0.081,
+      "repeated_obs_rate": 0.059
+    },
+    "cv_r2_metrics_only": 0.0073,
+    "cv_r2_features_only": -0.6967,
+    "cv_r2_metrics_plus_features": 0.1172
+  }
+}
