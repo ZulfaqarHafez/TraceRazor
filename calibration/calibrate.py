@@ -27,7 +27,7 @@ Dataset manifest (JSON):
 
 For a ``{"before","after"}`` entry the target is computed from the measured
 token totals: ``(before_tokens - after_tokens) / before_tokens`` (a measured
-before/after re-run at constant task quality — the honest ground truth). The
+before/after re-run at constant task quality, the honest ground truth). The
 trace that is *scored* is the "before" run (the real, un-optimised trace).
 
 Usage:
@@ -147,7 +147,7 @@ def extract_features(binary: str, samples: List[Sample]) -> None:
             mn = score.get("metric_normalised")
             if not mn:
                 sys.exit(
-                    "audit output has no 'metric_normalised' field — rebuild the "
+                    "audit output has no 'metric_normalised' field; rebuild the "
                     "binary from this revision (`cargo build --release -p tracerazor`)."
                 )
             s.features = np.array([float(mn[k]) for k in METRICS], dtype=float)
@@ -216,7 +216,7 @@ def kfold_r2(X: np.ndarray, y: np.ndarray, l2: float, folds: int, seed: int) -> 
 def write_report(path: Path, name: str, n: int, weights: dict,
                  fit: dict, baseline: dict, cv: dict, l2: float) -> None:
     lines = [
-        f"# TAS Weight Calibration Report — `{name}`",
+        f"# TAS Weight Calibration Report: `{name}`",
         "",
         f"- Samples: **{n}**",
         f"- Target: efficiency = `1 - recoverable_token_fraction`",

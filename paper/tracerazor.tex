@@ -208,16 +208,50 @@ normalised sub-metrics, then solve the simplex-constrained least squares
 \end{equation}
 where the constraint $\sum_k w_k = 1$ makes the engine's normalised composite
 equal $X\mathbf{w}$ exactly, and $\lambda$ optionally regularises toward uniform
-weights for small datasets. The tool reports in-sample $R^2$, $k$-fold
-cross-validated $R^2$, and the default-weights baseline, and emits a weights file
-the engine loads at runtime. On a synthetic worked example with \emph{known}
-injected waste ($n{=}36$), the default weights anti-correlate with recoverable
-waste ($R^2 \approx -0.33$) while calibrated weights reach cross-validated
-$R^2 \approx 0.32$, concentrating mass on the redundancy/verbosity metrics that
-actually track the injected waste. Crucially, the shipped defaults are
-\emph{not} replaced by synthetic-fit weights: calibration is opt-in on the
-user's own measured data, which is the only way to obtain a defensible cardinal
-score.
+weights. The tool reports in-sample $R^2$, $k$-fold cross-validated $R^2$, and
+the default-weights baseline, and emits a weights file the engine loads at
+runtime.
+
+\paragraph{Controlled calibration experiment.}
+To validate the procedure we built a benchmark of $n{=}200$ traces in which a
+known quantity of recoverable waste is injected across six categories (duplicate
+reasoning, repeated tool loops, failed tool calls, verbose filler, hedging, and
+restated context), so the target fraction is ground truth by construction rather
+than estimated by TraceRazor. Table~\ref{tab:calib} reports the fit. Calibrated
+weights explain most of the variance in recoverable waste
+($\text{CV } R^2 = 0.64$) and generalise (train $\approx$ CV, so not over-fit),
+whereas the heuristic default weights are almost uninformative on this target
+($R^2 = 0.09$). The fit concentrates mass on the redundancy and context-carryover
+metrics (SRR $0.38$, CCE $0.54$), i.e. it recovers the metrics that actually
+track the injected waste; $\ell_2$ regularisation toward uniform does not improve
+cross-validated fit here, so the concentration is a property of the data, not
+over-fitting.
+
+\begin{table}[t]
+\centering
+\caption{Calibration on the controlled benchmark ($n{=}200$, 5-fold CV). The
+calibrated weights predict recoverable waste; the heuristic defaults barely do.}
+\label{tab:calib}
+\begin{tabular}{lrr}
+\toprule
+Weights & Train $R^2$ & CV $R^2$ \\
+\midrule
+Default (heuristic)   & --   & 0.09 \\
+Calibrated (this tool) & 0.65 & \textbf{0.64} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Scope.} This is a controlled validation of the calibration
+\emph{procedure}: it shows that, given measured recoverable-waste labels, the
+fit recovers a weighting that predicts them far better than the heuristic
+defaults. It is \emph{not} a claim that the calibrated weights predict waste in
+any particular production system, because the injected-waste distribution is a
+model, not a sample of real agents. A production-calibrated score requires
+fitting on real measured before/after runs from the target workload; the tooling
+and data format for that are provided, and the shipped engine defaults are left
+heuristic until such a fit is performed, so no synthetic weighting is passed off
+as a general-purpose metric.
 
 \section{Fix Generation and Savings Estimation}
 \label{sec:fixes}

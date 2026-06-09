@@ -4,7 +4,7 @@
 This is a stand-in for the real ground truth (traces from running your products
 against industry multi-agent solutions, with measured before/after savings). It
 builds synthetic agent traces by taking a clean base run and injecting a *known*
-amount of recoverable waste — duplicate reasoning steps and verbose filler — so
+amount of recoverable waste (duplicate reasoning steps and verbose filler) so
 the recoverable-waste fraction of each trace is known by construction and is NOT
 derived from TraceRazor's own estimates (no circularity).
 
@@ -68,30 +68,74 @@ def clean_steps(n_reason: int, n_tool: int, rng: random.Random):
     return steps
 
 
-def inject_waste(steps, waste_ratio: float, rng: random.Random):
-    """Add duplicate + verbose steps so injected tokens / total ≈ waste_ratio.
+HEDGING = (
+    " I think that maybe, possibly, this could perhaps be roughly correct, but I "
+    "am not entirely sure and I might be wrong, so apologies if this is off, it "
+    "seems like it may potentially be sort of right in some sense, I believe."
+)
 
-    Returns (new_steps, injected_tokens).
+
+def inject_waste(steps, waste_ratio: float, rng: random.Random):
+    """Inject a *known* amount of recoverable waste across several categories so
+    different sub-metrics respond. Returns (new_steps, injected_tokens).
+
+    Each added step's tokens are recoverable by construction, so the target
+    label is exact. Waste types are chosen at random per injection:
+      - dup_reason   duplicate an earlier reasoning step      (SRR, ISR)
+      - loop_tool    repeat an earlier tool call verbatim      (LDI, SRR, DBO)
+      - failed_tool  a failed tool call needing a retry        (TCA)
+      - verbose      a filler-heavy reasoning step             (VDI, CCR, TUR)
+      - hedge        a sycophantic/hedging reasoning step      (SHL)
+      - context_dup  a step that restates earlier context      (CCE, CSD)
     """
     base_tokens = sum(s["tokens"] for s in steps)
     if waste_ratio <= 0:
         return steps, 0
-    # tokens to inject so injected/(base+injected) = ratio
     target_inject = int(base_tokens * waste_ratio / (1.0 - waste_ratio))
     injected = 0
     sid = max(s["id"] for s in steps) + 1
     out = list(steps)
-    reasoning_steps = [s for s in steps if s["step_type"] == "reasoning"]
-    while injected < target_inject and reasoning_steps:
-        src = rng.choice(reasoning_steps)
-        # Duplicate a prior reasoning step (redundant) and pad it (verbose).
-        tok = min(rng.randint(150, 320), target_inject - injected + 1)
-        out.append({
-            "id": sid,
-            "step_type": "reasoning",
-            "content": src["content"] + VERBOSE_FILLER,
-            "tokens": tok,
-        })
+    reasoning = [s for s in steps if s["step_type"] == "reasoning"]
+    tools = [s for s in steps if s["step_type"] == "tool_call"]
+    # Each sample draws a subset of waste types so the dataset spans the metrics.
+    types = rng.sample(
+        ["dup_reason", "loop_tool", "failed_tool", "verbose", "hedge", "context_dup"],
+        k=rng.randint(2, 4),
+    )
+
+    while injected < target_inject:
+        wtype = rng.choice(types)
+        tok = min(rng.randint(120, 300), target_inject - injected + 1)
+        if wtype == "dup_reason" and reasoning:
+            src = rng.choice(reasoning)
+            out.append({"id": sid, "step_type": "reasoning",
+                        "content": src["content"], "tokens": tok})
+        elif wtype == "loop_tool" and tools:
+            src = rng.choice(tools)
+            out.append({"id": sid, "step_type": "tool_call", "content": src["content"],
+                        "tokens": tok, "tool_name": src["tool_name"], "tool_success": True})
+        elif wtype == "failed_tool" and tools:
+            src = rng.choice(tools)
+            out.append({"id": sid, "step_type": "tool_call",
+                        "content": src["content"], "tokens": tok,
+                        "tool_name": src["tool_name"], "tool_success": False,
+                        "tool_error": "missing required parameter"})
+        elif wtype == "verbose":
+            base = rng.choice(reasoning)["content"] if reasoning else "Reconsidering."
+            out.append({"id": sid, "step_type": "reasoning",
+                        "content": base + VERBOSE_FILLER, "tokens": tok})
+        elif wtype == "hedge":
+            base = rng.choice(reasoning)["content"] if reasoning else "Let me check."
+            out.append({"id": sid, "step_type": "reasoning",
+                        "content": base + HEDGING, "tokens": tok})
+        elif wtype == "context_dup" and reasoning:
+            src = rng.choice(reasoning)
+            out.append({"id": sid, "step_type": "reasoning",
+                        "content": "As established earlier: " + src["content"], "tokens": tok})
+        else:
+            out.append({"id": sid, "step_type": "reasoning",
+                        "content": (reasoning[0]["content"] if reasoning else "x") + VERBOSE_FILLER,
+                        "tokens": tok})
         injected += tok
         sid += 1
     return out, injected
@@ -100,7 +144,7 @@ def inject_waste(steps, waste_ratio: float, rng: random.Random):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=Path("calibration/example_data"))
-    ap.add_argument("--n", type=int, default=36)
+    ap.add_argument("--n", type=int, default=200)
     ap.add_argument("--seed", type=int, default=7)
     args = ap.parse_args(argv)
 
@@ -132,7 +176,7 @@ def main(argv=None) -> int:
     print(f"Wrote {len(entries)} traces + manifest to {args.out}")
     print(f"Recoverable fractions range "
           f"{min(e['recoverable_fraction'] for e in entries):.2f}"
-          f"–{max(e['recoverable_fraction'] for e in entries):.2f}")
+          f"-{max(e['recoverable_fraction'] for e in entries):.2f}")
     return 0
 
 

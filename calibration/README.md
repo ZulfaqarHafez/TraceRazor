@@ -85,11 +85,14 @@ python -m calibration.make_example_dataset --out calibration/example_data --n 36
 python -m calibration.calibrate --dataset calibration/example_data/manifest.json
 ```
 
-On this synthetic set the calibrated weights concentrate on the metrics that
-actually track the injected waste (SRR, VDI, LDI) and the cross-validated fit
-beats the default weights by a wide margin (the defaults can even
-*anti-correlate* with recoverable waste). See `config/calibration_report.md` for
-the numbers. Swap in your real dataset to calibrate for production.
+The default generator builds 200 traces with six categories of injected waste
+(duplicate reasoning, tool loops, failed tool calls, verbose filler, hedging,
+restated context). On this controlled set the calibrated weights reach
+cross-validated `R^2 = 0.64` against recoverable waste while the heuristic
+defaults reach only `R^2 = 0.09`, and the fit concentrates mass on the metrics
+that track the injected waste (SRR and CCE). See `config/calibration_report.md`
+for the full table. This validates the procedure; swap in your real measured
+dataset to calibrate for production.
 
 ## Why the example is synthetic, not public data
 

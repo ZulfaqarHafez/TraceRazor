@@ -320,11 +320,19 @@ tracerazor audit run.json --weights config/tas_weights.json
 ```
 
 The tool reports **train R², cross-validated R², and the default-weights
-baseline**, so recalibration is only adopted when it demonstrably helps. The
-built-in defaults are left unchanged until you calibrate on your own data,
-shipping synthetic-fit weights as the default would just swap one arbitrary
-choice for another. A reproducible synthetic worked example (known injected
-waste) ships in `calibration/`; see [`calibration/README.md`](calibration/README.md).
+baseline**, so recalibration is only adopted when it demonstrably helps. On a
+reproducible controlled benchmark of 200 traces with six categories of injected
+waste, calibrated weights reach **cross-validated R² = 0.64** against recoverable
+waste versus **R² = 0.09** for the heuristic defaults (see
+[`config/calibration_report.md`](config/calibration_report.md)). That validates
+the procedure; it is not a claim about any specific production system, which
+needs your own measured data.
+
+The built-in defaults are left unchanged until you calibrate on your own data,
+because the injected-waste distribution is a model rather than a sample of real
+agents, so shipping those weights as the default would swap one unvalidated
+choice for another. The worked example lives in `calibration/`; see
+[`calibration/README.md`](calibration/README.md).
 
 ---
 
