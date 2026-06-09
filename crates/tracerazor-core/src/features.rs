@@ -127,6 +127,47 @@ pub fn compute(trace: &Trace) -> BTreeMap<String, f64> {
         f.insert("repeated_obs_rate".into(), (dup_tokens / total_tokens).clamp(0.0, 1.0));
     }
 
+    // ── Path / length structure (the cross-run token delta is driven mostly by
+    // how long the trajectory is and how it is shaped). All token-agnostic. ──
+    // Trajectory length, soft-capped so it stays in [0,1].
+    f.insert("step_count_norm".into(), (n as f64 / 60.0).clamp(0.0, 1.0));
+    // Mean tokens per step (verbose steps), soft-capped.
+    f.insert(
+        "mean_step_tokens_norm".into(),
+        ((total_tokens / n as f64) / 500.0).clamp(0.0, 1.0),
+    );
+    // Longest run of consecutive reasoning steps (rambling without acting).
+    let mut max_run = 0usize;
+    let mut run = 0usize;
+    for s in steps {
+        if is_tool(s) {
+            run = 0;
+        } else {
+            run += 1;
+            max_run = max_run.max(run);
+        }
+    }
+    f.insert("reasoning_run_max".into(), (max_run as f64 / n as f64).clamp(0.0, 1.0));
+    // Fraction of steps whose (type, tool, params) state repeats an earlier one
+    // (path revisiting / churn), token-agnostic and over all step types.
+    let mut seen_state = std::collections::HashSet::<String>::new();
+    let mut revisits = 0usize;
+    for s in steps {
+        if !seen_state.insert(s.state_hash()) {
+            revisits += 1;
+        }
+    }
+    f.insert("revisit_rate".into(), (revisits as f64 / n as f64).clamp(0.0, 1.0));
+    // Tool diversity: distinct tools / tool calls (low = repetitive tool use).
+    if !tool_steps.is_empty() {
+        let uniq: std::collections::HashSet<&str> =
+            tool_steps.iter().filter_map(|s| s.tool_name.as_deref()).collect();
+        f.insert(
+            "tool_diversity".into(),
+            (uniq.len() as f64 / tool_steps.len() as f64).clamp(0.0, 1.0),
+        );
+    }
+
     // Context-dependent features: only when input_context is broadly populated.
     let ctx_cov = steps.iter().filter(|s| s.input_context.is_some()).count() as f64 / n as f64;
     if ctx_cov >= CTX_COVERAGE_MIN {

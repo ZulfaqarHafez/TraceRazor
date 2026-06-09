@@ -343,6 +343,8 @@ def main(argv=None) -> int:
     ap.add_argument("--features", action="store_true",
                     help="also evaluate the experimental report.features (context "
                          "accumulation signals) and report whether they raise CV R^2")
+    ap.add_argument("--feature-keys", default=None,
+                    help="comma-separated subset of feature keys to evaluate (default: all)")
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args(argv)
 
@@ -381,6 +383,9 @@ def main(argv=None) -> int:
         # keys present in every sample (so the matrix is not ragged)
         sets = [set((s.extra or {}).keys()) for s in samples]
         feat_names = sorted(set.intersection(*sets)) if sets and all(sets) else []
+        if args.feature_keys:
+            wanted = {k.strip() for k in args.feature_keys.split(",")}
+            feat_names = [k for k in feat_names if k in wanted]
         if not feat_names:
             print("--features: no feature keys common to all samples; nothing to evaluate.",
                   file=sys.stderr)

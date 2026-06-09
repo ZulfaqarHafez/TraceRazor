@@ -99,10 +99,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install package + test deps
-        # dev = pytest/pytest-asyncio; langgraph = langchain-core for the
-        # langgraph integration test; http = requests for HTTP-mode tests;
-        # calibrate = numpy/scipy for the weight-calibration tool + tests.
-        run: pip install -e ".[dev,langgraph,http,calibrate]"
+        # dev = pytest/pytest-asyncio; langgraph = langchain-core and agents =
+        # openai-agents for the real-framework integration tests; http = requests
+        # for HTTP-mode tests; calibrate = numpy/scipy for the calibration tool.
+        run: pip install -e ".[dev,langgraph,agents,http,calibrate]"
 
       - name: Run pytest
         run: pytest -q
