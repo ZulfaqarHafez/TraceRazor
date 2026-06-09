@@ -170,6 +170,14 @@ fn huggingface_agentinstruct_audit_statistics() {
         total_fixes > 0,
         "audit produced no fix patches across the entire real corpus"
     );
+    // Loop detection must fire on the real corpus: os_6 runs the same command
+    // template once per file (a parametric loop). LDI is normalised so 1.0 ==
+    // "no loop"; at least one real trace must come in below that.
+    let min_ldi = ldi.iter().cloned().fold(f64::INFINITY, f64::min);
+    assert!(
+        min_ldi < 1.0,
+        "loop detection never fired on the real corpus (min normalised LDI = {min_ldi})"
+    );
 
     // ── Emit the statistics (visible with --nocapture) ───────────────────────
     println!("\n==== Hugging Face AgentInstruct real-data audit ====");

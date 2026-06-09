@@ -9,17 +9,17 @@ the live-fetch path. Reproduce with `python -m benchmark.hf_audit_stats`.
 ## Corpus
 
 - Traces: **9** (7 analysable, 2 skipped <5 steps)
-- Mean TAS: **81.3** (median 82.0)
+- Mean TAS: **80.6** (median 82.0)
 - Grade distribution: {'Good': 7}
 - Mean MVTG (structural waste): **0.278**
-- Fix patches emitted: **16**
+- Fix patches emitted: **17**
 
 ## Mean normalised metric scores (1.0 = no waste detected)
 
 | Metric | Mean (normalised) |
 |---|---:|
 | SRR | 0.674 |
-| LDI | 1.0 |
+| LDI | 0.937 |
 | TCA | 0.959 |
 | RDA | 0.726 |
 | ISR | 0.984 |
@@ -43,4 +43,4 @@ the live-fetch path. Reproduce with `python -m benchmark.hf_audit_stats`.
 | agentinstruct-os_3 | 6 | 356 | 84.7 | Good | 0.667 | 1.0 | 0.396 | 0.879 | 1 |
 | agentinstruct-os_4 | 7 | 468 | 84.1 | Good | 0.714 | 1.0 | 0.25 | 0.921 | 1 |
 | agentinstruct-os_5 | 9 | 811 | 77.2 | Good | 0.667 | 1.0 | 0.328 | 0.936 | 4 |
-| agentinstruct-os_6 | 9 | 425 | 78.2 | Good | 0.556 | 1.0 | 0.126 | 0.892 | 1 |
+| agentinstruct-os_6 | 9 | 425 | 73.6 | Good | 0.556 | 0.556 | 0.126 | 0.892 | 2 |

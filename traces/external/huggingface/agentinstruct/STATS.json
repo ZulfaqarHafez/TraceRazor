@@ -7,16 +7,16 @@
     "agentinstruct-db_0",
     "agentinstruct-db_1"
   ],
-  "mean_tas": 81.3,
+  "mean_tas": 80.6,
   "median_tas": 82.0,
   "grade_distribution": {
     "Good": 7
   },
   "mean_mvtg": 0.278,
-  "total_fixes": 16,
+  "total_fixes": 17,
   "metric_means_normalised": {
     "srr": 0.674,
-    "ldi": 1.0,
+    "ldi": 0.937,
     "tca": 0.959,
     "rda": 0.726,
     "isr": 0.984,
@@ -185,13 +185,13 @@
       "trace_id": "agentinstruct-os_6",
       "steps": 9,
       "tokens": 425,
-      "tas": 78.2,
+      "tas": 73.6,
       "grade": "Good",
       "mvtg": 0.428,
-      "fixes": 1,
+      "fixes": 2,
       "metrics": {
         "srr": 0.556,
-        "ldi": 1.0,
+        "ldi": 0.556,
         "tca": 1.0,
         "rda": 0.778,
         "isr": 0.889,
