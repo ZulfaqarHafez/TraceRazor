@@ -142,6 +142,9 @@ def main(argv=None) -> int:
     ap.add_argument("--model-field", default="model")
     ap.add_argument("--resolved-field", default="resolved")
     ap.add_argument("--messages-field", default="messages")
+    ap.add_argument("--group-field", default="group",
+                    help="record field naming the task group for group-aware CV "
+                         "(falls back to the instance id when absent)")
     ap.add_argument("--require-resolved", action="store_true", default=True,
                     help="only pair runs marked resolved/correct (default on)")
     args = ap.parse_args(argv)
@@ -172,7 +175,10 @@ def main(argv=None) -> int:
         path = args.out_dir / f"{safe}_{digest}.json"
         path.write_text(json.dumps(trace, indent=2))
         n_written += 1
-        by_instance[instance].append({"path": str(path.resolve()), "tokens": total, "model": model})
+        by_instance[instance].append({
+            "path": str(path.resolve()), "tokens": total, "model": model,
+            "group": rec.get(args.group_field) or instance,
+        })
 
     # Pair: for each instance solved by >=2 configs, before=most tokens, after=fewest.
     entries = []
@@ -182,7 +188,8 @@ def main(argv=None) -> int:
         runs.sort(key=lambda r: r["tokens"])
         after, before = runs[0], runs[-1]
         if before["tokens"] > after["tokens"]:
-            entries.append({"before": before["path"], "after": after["path"]})
+            entries.append({"before": before["path"], "after": after["path"],
+                            "group": before["group"]})
 
     if not entries:
         sys.exit(

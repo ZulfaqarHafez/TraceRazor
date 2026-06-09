@@ -17,7 +17,6 @@ pip install tracerazor
 ```
   ┌───────────────────────────────────────────────────────────────────────────┐
   │                           TraceRazor v1.1.0                               │
-  │                           TraceRazor v0.1.0                               │
   │                                                                           │
   │   ┌──────────────┐    ┌──────────────────┐    ┌────────────────────────┐ │
   │   │   1. AUDIT   │    │   2. SAMPLING    │    │  3. SUBSTITUTABILITY   │ │
@@ -322,7 +321,7 @@ with Tracer(agent_name="support-agent", framework="openai") as t:
 
 report = t.analyse()
 print(report.summary())
-# TAS 96.1/100 [Excellent] | 6 steps, 800 tokens | Saved 0 tokens (0%)
+# TAS 82.4/100 [Good] | 6 steps, 800 tokens | Saved 250 tokens (31%)
 
 report.assert_passes()   # raises AssertionError in CI if TAS < 70
 ```

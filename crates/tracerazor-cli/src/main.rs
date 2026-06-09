@@ -730,6 +730,8 @@ async fn cmd_cost(
                 );
             }
             println!("{sep}");
+            println!("Note: per-provider input/output pricing above (differs from \
+                      the flat-rate $ in `audit`). Both are estimates, not measured re-runs.");
         }
         OutputFormat::Json => {
             println!("{}", serde_json::to_string_pretty(&projection)?);

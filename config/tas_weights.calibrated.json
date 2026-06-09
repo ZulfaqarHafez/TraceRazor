@@ -18,32 +18,9 @@
     "samples": 233,
     "target": "recoverable_token_waste",
     "train_r2": 0.104,
-    "cv_r2": 0.083,
+    "cv_r2": 0.0647,
     "baseline_r2": -0.2437,
     "l2": 0.1,
     "prior": "default"
-  },
-  "_features": {
-    "names": [
-      "obs_gzip_compressibility",
-      "obs_token_share",
-      "redundant_tool_call_rate",
-      "repeated_obs_rate"
-    ],
-    "weights": {
-      "obs_gzip_compressibility": 0.1589,
-      "obs_token_share": 0.1212,
-      "redundant_tool_call_rate": 0.0,
-      "repeated_obs_rate": 0.0
-    },
-    "per_feature_corr": {
-      "obs_gzip_compressibility": 0.162,
-      "obs_token_share": 0.276,
-      "redundant_tool_call_rate": 0.023,
-      "repeated_obs_rate": 0.237
-    },
-    "cv_r2_metrics_only": 0.083,
-    "cv_r2_features_only": -0.1789,
-    "cv_r2_metrics_plus_features": 0.0746
   }
 }

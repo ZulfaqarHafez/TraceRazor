@@ -563,8 +563,8 @@ impl TraceReport {
         out += &format!(
             "SAVINGS ESTIMATE  (heuristic projection from flagged waste, not a measured re-run)\n\
              Tokens saved:      {}  ({:.1}% reduction)\n\
-             Cost saved:        ${:.4} per run\n\
-             Projected/month:   ${:.2}  (at the configured run count & token price)\n\
+             Cost saved:        ${:.4} per run   (flat-rate estimate)\n\
+             Projected/month:   ${:.2}  (flat token price; run `tracerazor cost` for per-provider input/output pricing)\n\
              Latency saved:     ~{:.1}s per run\n\
              {sep}\n",
             sv.tokens_saved,

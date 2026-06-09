@@ -54,13 +54,14 @@ def main(argv=None) -> int:
                     continue
                 if "traj" not in ep:
                     continue
-                instance = f"{domain}-{ep.get('task_id')}"
-                if args.within_model:
-                    instance = f"{instance}-{model}"
+                task = f"{domain}-{ep.get('task_id')}"
+                instance = f"{task}-{model}" if args.within_model else task
                 out.write(json.dumps({
                     "instance_id": instance,
                     "model": f"{model}#t{ep.get('trial', 0)}",
                     "resolved": True,
+                    # Task group (no model): same task never split across CV folds.
+                    "group": task,
                     "messages": ep["traj"],
                 }) + "\n")
                 n += 1

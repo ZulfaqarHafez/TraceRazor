@@ -79,6 +79,7 @@ class Sample:
     features: Optional[np.ndarray] = None  # 13 normalised metric values
     extra: Optional[dict] = None           # experimental report.features map
     before_tokens: Optional[int] = None
+    group: Optional[str] = None            # task group for group-aware CV
 
 
 def recoverable_fraction(before_tokens: int, after_tokens: int) -> float:
@@ -137,13 +138,14 @@ def load_dataset(manifest_path: Path) -> Tuple[str, List[Sample]]:
             frac = float(e["recoverable_fraction"])
             if not 0.0 <= frac <= 1.0:
                 sys.exit(f"entry {i}: recoverable_fraction {frac} out of [0,1]")
-            samples.append(Sample(trace_path=tp, target_fraction=frac))
+            samples.append(Sample(trace_path=tp, target_fraction=frac, group=e.get("group")))
         elif "before" in e and "after" in e:
             # Fraction is computed at audit time from the measured token totals,
             # so this works for any trace format the auditor understands.
             samples.append(Sample(
                 trace_path=(base / e["before"]).resolve(),
                 after_path=(base / e["after"]).resolve(),
+                group=e.get("group"),
             ))
         else:
             sys.exit(f"entry {i}: need either 'trace'+'recoverable_fraction' or 'before'+'after'")
@@ -278,18 +280,35 @@ def pearson(y: np.ndarray, yhat: np.ndarray) -> float:
 
 
 def kfold_r2(X: np.ndarray, y: np.ndarray, l2: float, folds: int, seed: int,
-             prior: Optional[np.ndarray] = None) -> Tuple[float, float]:
+             prior: Optional[np.ndarray] = None,
+             groups: Optional[List] = None) -> Tuple[float, float]:
+    """Cross-validated R^2. When `groups` is given (and rich enough), folds are
+    group-aware: every sample of a group lands in the same fold, so the same task
+    never appears in both train and test (avoids leakage that inflates R^2)."""
     n = len(y)
     folds = min(folds, n)
     if folds < 2:
         return float("nan"), float("nan")
     rng = np.random.default_rng(seed)
-    idx = rng.permutation(n)
-    parts = np.array_split(idx, folds)
+    use_groups = groups is not None and all(g is not None for g in groups) \
+        and len(set(groups)) >= folds
+    if use_groups:
+        uniq = list(dict.fromkeys(groups))
+        rng.shuffle(uniq)
+        fold_of = {g: i % folds for i, g in enumerate(uniq)}
+        parts = [[] for _ in range(folds)]
+        for idx, g in enumerate(groups):
+            parts[fold_of[g]].append(idx)
+        parts = [np.array(p, dtype=int) for p in parts]
+    else:
+        idx = rng.permutation(n)
+        parts = np.array_split(idx, folds)
     preds = np.zeros(n)
     for f in range(folds):
         test = parts[f]
-        train = np.concatenate([parts[j] for j in range(folds) if j != f])
+        if len(test) == 0:
+            continue
+        train = np.concatenate([parts[j] for j in range(folds) if j != f and len(parts[j])])
         w = fit_weights(X[train], y[train], l2=l2, prior=prior)
         preds[test] = predict(X[test], w)
     return r2(y, preds), pearson(y, preds)
@@ -363,11 +382,15 @@ def main(argv=None) -> int:
     weights_vec = fit_weights(X, y, l2=args.l2, prior=prior)
     weights = {k: float(round(v, 6)) for k, v in zip(METRICS, weights_vec)}
 
+    groups = [s.group for s in samples]
+    grouped = all(g is not None for g in groups) and len(set(groups)) >= min(args.cv, len(groups))
+    if grouped:
+        print(f"(group-aware CV over {len(set(groups))} task groups)", file=sys.stderr)
     yhat = predict(X, weights_vec)
     fit = {"r2": r2(y, yhat), "r": pearson(y, yhat)}
     bpred = predict(X, base_vec)
     baseline = {"r2": r2(y, bpred), "r": pearson(y, bpred)}
-    cv_r2, cv_r = kfold_r2(X, y, args.l2, args.cv, args.seed, prior=prior)
+    cv_r2, cv_r = kfold_r2(X, y, args.l2, args.cv, args.seed, prior=prior, groups=groups)
     cv = {"r2": cv_r2, "r": cv_r, "folds": min(args.cv, len(y))}
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
@@ -393,7 +416,7 @@ def main(argv=None) -> int:
             Xf = np.array([[float(s.extra[k]) for k in feat_names] for s in samples])
             Xmf = np.hstack([X, Xf])
             # metrics-only CV is `cv_r2` above. Features-only and combined:
-            f_cv, _ = kfold_r2(Xf, y, args.l2, args.cv, args.seed, prior=None)
+            f_cv, _ = kfold_r2(Xf, y, args.l2, args.cv, args.seed, prior=None, groups=groups)
             mf_prior = None
             if args.prior == "default":
                 eps = 0.1
@@ -402,7 +425,7 @@ def main(argv=None) -> int:
                     np.full(len(feat_names), eps / len(feat_names)),
                 ])
                 mf_prior = mf_prior / mf_prior.sum()
-            mf_cv, _ = kfold_r2(Xmf, y, args.l2, args.cv, args.seed, prior=mf_prior)
+            mf_cv, _ = kfold_r2(Xmf, y, args.l2, args.cv, args.seed, prior=mf_prior, groups=groups)
             mf_w = fit_weights(Xmf, y, l2=args.l2, prior=mf_prior)
             per_feat_corr = {
                 k: round(float(np.corrcoef(Xf[:, i], y)[0, 1]), 3) if Xf[:, i].std() > 0 else 0.0

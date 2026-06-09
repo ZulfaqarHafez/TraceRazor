@@ -272,11 +272,16 @@ class TraceRazorClient:
             return found
 
         here = os.path.dirname(os.path.abspath(__file__))
+        # Source/editable installs: the package lives at <repo>/tracerazor/, so
+        # the cargo build output is one level up at <repo>/target/. (../../ covers
+        # a nested src/ layout.)
         for rel in [
-            "../../../../target/release/tracerazor.exe",
-            "../../../../target/release/tracerazor",
-            "../../../../target/debug/tracerazor.exe",
-            "../../../../target/debug/tracerazor",
+            "../target/release/tracerazor.exe",
+            "../target/release/tracerazor",
+            "../target/debug/tracerazor.exe",
+            "../target/debug/tracerazor",
+            "../../target/release/tracerazor",
+            "../../target/debug/tracerazor",
         ]:
             candidate = os.path.normpath(os.path.join(here, rel))
             if os.path.isfile(candidate):

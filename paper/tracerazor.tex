@@ -216,7 +216,8 @@ normalised sub-metrics, then solve the simplex-constrained least squares
 \end{equation}
 where the constraint $\sum_k w_k = 1$ makes the engine's normalised composite
 equal $X\mathbf{w}$ exactly, and $\lambda$ optionally regularises toward uniform
-weights. The tool reports in-sample $R^2$, $k$-fold cross-validated $R^2$, and
+weights. The tool reports in-sample $R^2$, group-aware $k$-fold cross-validated
+$R^2$ (folds split by task so the same task is never in train and test), and
 the default-weights baseline, and emits a weights file the engine loads at
 runtime. Measured before/after pairs may be supplied as raw, LangSmith, or OTEL
 traces through an import adapter; token totals are read from the auditor so the
@@ -248,9 +249,10 @@ recoverable token differences on real runs.
 
 \begin{table}[t]
 \centering
-\caption{Calibration on real tau-bench before/after pairs (5-fold CV). Negative
-$R^2$ means the fit does not beat predicting the mean; TAS's metrics do not
-predict real recoverable waste here.}
+\caption{The original (pre-OBS) metrics on real tau-bench before/after pairs
+(5-fold CV). Negative $R^2$ means the fit does not beat predicting the mean ---
+the original metrics do not predict real recoverable waste. This motivated the
+observation features (Section~\ref{sec:betterfeatures}).}
 \label{tab:realcalib}
 \begin{tabular}{lrr}
 \toprule
@@ -279,28 +281,32 @@ target measured on within-agent optimisation rather than cross-run comparison.
 Acting on that interpretation, we added candidate features that measure
 \emph{context accumulation} rather than reasoning redundancy: the tool-observation
 token share, output compressibility, repeated observations, and redundant tool
-calls (all computed from fields the parsers already capture, emitted as
-diagnostics and not in the composite). We then tested whether they raise
-predictiveness on real data, across two independent datasets:
-tau-bench and tau2-bench (the latter adds the telecom domain and the
-Claude~3.7~Sonnet / GPT-4.1 models). Table~\ref{tab:features} shows the features
-raise the cross-validated $R^2$ over metrics-alone on both datasets, and the
-combined model is positive on both ($+0.08$ and $+0.12$) where metrics alone were
-negative or near-zero. The one consistent driver is the observation token share
-(correlation $+0.28$ and $+0.33$ with efficiency). This is the first signal here
-that predicts real recoverable waste and replicates across datasets.
+calls (all computed from fields the parsers already capture). The one feature
+that predicted recoverable waste and replicated across both datasets was the
+observation token share (correlation $+0.28$ and $+0.33$ with efficiency), so it
+was promoted into the composite as OBS; the rest stay diagnostic.
+
+Table~\ref{tab:features} reports the shipped 14-metric score under \textbf{
+group-aware cross-validation} (folds split by task, so the same task never
+appears in train and test --- the honest setting). The default weights are
+negative on both datasets; the calibrated fit is modestly positive ($+0.07$
+tau-bench, $+0.12$ tau2-bench); and adding the remaining path/length candidate
+features does \emph{not} improve it. (An earlier random-split CV reported a
+slightly higher tau-bench number, $0.083$; the drop to $0.065$ on task-grouped
+folds is the mild leakage one would expect and changes no conclusion.)
 
 \begin{table}[t]
 \centering
-\caption{Adding observation-accumulation features raises cross-validated $R^2$
-against real recoverable waste on two independent datasets (5-fold CV).}
+\caption{Group-aware (task-split) cross-validation of the shipped 14-metric
+score against real recoverable waste. Default weights are negative; the
+calibrated fit is modestly positive; the extra path features do not help.}
 \label{tab:features}
 \begin{tabular}{lrrr}
 \toprule
-Dataset (pairs) & default & metrics only & metrics + features \\
+Dataset (pairs, groups) & default & calibrated & + path features \\
 \midrule
-tau-bench (233)    & $-0.37$ & $-0.11$ & $\mathbf{+0.08}$ \\
-tau2-bench (1055)  & $-0.15$ & $+0.01$ & $\mathbf{+0.12}$ \\
+tau-bench (233, 142)    & $-0.24$ & $\mathbf{+0.07}$ & $+0.06$ \\
+tau2-bench (1055, 382)  & $-0.08$ & $\mathbf{+0.12}$ & $+0.12$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -570,9 +576,9 @@ runs (Section~\ref{sec:realcalib}) the metrics did not predict recoverable waste
 (negative cross-validated $R^2$), which is the most important finding here: the
 score is a useful within-trace diagnostic, not a validated predictor of cross-run
 savings. Acting on that, we added observation-accumulation features
-(Section~\ref{sec:betterfeatures}) that raise the cross-validated $R^2$ into the
-positive range on two independent datasets ($+0.08$ and $+0.12$), the first
-signal here that predicts real recoverable waste and replicates; the absolute
+(Section~\ref{sec:betterfeatures}) that raise the group-aware cross-validated
+$R^2$ into the positive range on two independent datasets ($+0.07$ and $+0.12$),
+the first signal here that predicts real recoverable waste and replicates; the absolute
 magnitude is still modest ($\approx 0.1$), and we found that obvious extensions
 (path/length features, non-linear models) do not push past it
 (Section~\ref{sec:betterfeatures}). The path to a defensible measurement is:

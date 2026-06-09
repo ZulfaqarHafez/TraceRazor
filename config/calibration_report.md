@@ -9,7 +9,7 @@
 | | R² | Pearson r |
 |---|---:|---:|
 | Train (in-sample) | 0.104 | 0.326 |
-| 5-fold cross-validated | 0.083 | 0.288 |
+| 5-fold cross-validated | 0.065 | 0.256 |
 | Default weights (baseline) | -0.244 | 0.077 |
 
 Cross-validated numbers are the honest estimate of generalisation; the
