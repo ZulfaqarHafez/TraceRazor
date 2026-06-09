@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(python3 -c ':*)",
-      "Bash(python -c ':*)"
+      "Bash(python -c ':*)",
+      "Bash(pdflatex -interaction=nonstopmode -halt-on-error tracerazor.tex)",
+      "Read(//tmp/**)"
     ]
   }
 }

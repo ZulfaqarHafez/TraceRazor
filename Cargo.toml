@@ -5,7 +5,6 @@ members = [
     "crates/tracerazor-semantic",
     "crates/tracerazor-store",
     "crates/tracerazor-server",
-    "crates/tracerazor-proxy",
     "crates/tracerazor-cli",
 ]
 # tracerazor-py is an opt-in PyO3 extension built with maturin; keep it out of

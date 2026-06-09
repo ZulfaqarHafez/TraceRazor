@@ -20,7 +20,6 @@ tracerazor-core = { path = "../tracerazor-core", version = "0.1.0" }
 tracerazor-ingest = { path = "../tracerazor-ingest", version = "0.1.0" }
 tracerazor-semantic = { path = "../tracerazor-semantic", version = "0.1.0" }
 tracerazor-store = { path = "../tracerazor-store", version = "0.1.0" }
-tracerazor-proxy = { path = "../tracerazor-proxy", version = "0.1.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

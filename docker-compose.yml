@@ -1,7 +1,9 @@
 services:
   tracerazor:
     build: .
-    image: tracerazor:latest
+    # Pin to an explicit version rather than :latest so deployments are
+    # reproducible and don't silently pick up an unvetted rebuild.
+    image: tracerazor:0.1.0
     ports:
       - "${PORT:-8080}:8080"
     volumes:
@@ -16,7 +18,8 @@ services:
         required: false
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/"]
+      # Reuse the binary's built-in probe — the slim image has no curl/wget.
+      test: ["CMD", "/app/tracerazor-server", "--health-check"]
       interval: 30s
       timeout: 5s
       retries: 3

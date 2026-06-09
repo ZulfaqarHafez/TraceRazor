@@ -52,7 +52,7 @@ class TraceRazorCallback(BaseCallbackHandler):
             task_value_score=task_value_score,
         )
         self._threshold = threshold
-        self._client = TraceRazorClient(bin_path=tracerazor_bin)
+        self._client = TraceRazorClient(bin_path=tracerazor_bin, threshold=threshold)
         self._report: Optional[TraceRazorReport] = None
 
     # ── LLM events ──────────────────────────────────────────────────────────
@@ -145,10 +145,7 @@ class TraceRazorCallback(BaseCallbackHandler):
         Call this after your LangGraph invocation completes.
         """
         trace_dict = self._builder.build()
-        self._report = self._client.analyse(
-            trace=trace_dict,
-            threshold=self._threshold,
-        )
+        self._report = self._client.analyse(trace=trace_dict)
         return self._report
 
     def assert_passes(self) -> None:

@@ -71,6 +71,9 @@ pub struct AuditRequest {
 pub struct AuditResponse {
     pub trace_id: String,
     pub agent_name: String,
+    pub framework: String,
+    pub total_steps: usize,
+    pub total_tokens: u32,
     pub tas_score: f64,
     pub grade: String,
     pub tokens_saved: u32,
@@ -97,6 +100,16 @@ async fn audit(
 
     let mut trace = parse(&trace_str, TraceFormat::Auto)
         .map_err(|e| AppError::bad_request(format!("Ingest error: {e}")))?;
+
+    // Bound per-request analysis cost. Even with windowed metrics, an enormous
+    // step count is a CPU-DoS vector on a public endpoint.
+    const MAX_STEPS: usize = 50_000;
+    if trace.steps.len() > MAX_STEPS {
+        return Err(AppError::bad_request(format!(
+            "Trace has {} steps; maximum is {MAX_STEPS}",
+            trace.steps.len()
+        )));
+    }
 
     // ── Build historical context for local-first RDA/DBO ─────────────────────
     let historical_sequences = state
@@ -165,6 +178,9 @@ async fn audit(
         Json(AuditResponse {
             trace_id: trace.trace_id.clone(),
             agent_name: trace.agent_name.clone(),
+            framework: trace.framework.clone(),
+            total_steps: trace.steps.len(),
+            total_tokens: report.total_tokens,
             tas_score,
             grade,
             tokens_saved,
@@ -305,6 +321,93 @@ impl AppError {
 impl IntoResponse for AppError {
     fn into_response(self) -> axum::response::Response {
         (self.status, Json(json!({ "error": self.message }))).into_response()
+    }
+}
+
+// ── SSRF protection for outbound export targets ────────────────────────────────
+
+/// Validate a user-supplied export URL before the server makes an outbound
+/// request to it. Rejects non-http(s) schemes and any host that resolves to a
+/// private, loopback, link-local, or otherwise internal address — preventing
+/// the export endpoints from being abused to reach cloud metadata services
+/// (169.254.169.254) or internal infrastructure (SSRF).
+///
+/// Note: this resolves DNS once for validation; reqwest re-resolves when it
+/// connects, so this is not a hard guarantee against DNS-rebinding. It blocks
+/// the common cases. Treat the export endpoints as privileged regardless.
+fn validate_export_url(raw: &str) -> Result<(), AppError> {
+    use std::net::ToSocketAddrs;
+
+    let url = reqwest::Url::parse(raw)
+        .map_err(|e| AppError::bad_request(format!("Invalid URL: {e}")))?;
+
+    match url.scheme() {
+        "http" | "https" => {}
+        other => {
+            return Err(AppError::bad_request(format!(
+                "Unsupported URL scheme '{other}' (only http/https allowed)"
+            )))
+        }
+    }
+
+    let host = url
+        .host_str()
+        .ok_or_else(|| AppError::bad_request("Export URL has no host"))?;
+
+    let lowered = host.to_ascii_lowercase();
+    if lowered == "localhost" || lowered.ends_with(".localhost") || lowered.ends_with(".internal") {
+        return Err(AppError::bad_request(
+            "Refusing to export to an internal host (SSRF protection)",
+        ));
+    }
+
+    let port = url.port_or_known_default().unwrap_or(80);
+    let addrs: Vec<std::net::SocketAddr> = (host, port)
+        .to_socket_addrs()
+        .map_err(|e| AppError::bad_request(format!("Cannot resolve host '{host}': {e}")))?
+        .collect();
+
+    if addrs.is_empty() {
+        return Err(AppError::bad_request(format!(
+            "Host '{host}' did not resolve"
+        )));
+    }
+
+    for addr in &addrs {
+        if is_disallowed_ip(&addr.ip()) {
+            return Err(AppError::bad_request(
+                "Refusing to export to a private, loopback, or link-local address (SSRF protection)",
+            ));
+        }
+    }
+
+    Ok(())
+}
+
+/// Returns true for IPs that must never be the target of a server-initiated
+/// export request (loopback, private ranges, link-local incl. cloud metadata,
+/// CGNAT, unique-local IPv6, etc.).
+fn is_disallowed_ip(ip: &std::net::IpAddr) -> bool {
+    match ip {
+        std::net::IpAddr::V4(v4) => {
+            v4.is_private()
+                || v4.is_loopback()
+                || v4.is_link_local()
+                || v4.is_unspecified()
+                || v4.is_broadcast()
+                || v4.is_documentation()
+                // 100.64.0.0/10 (CGNAT / shared address space)
+                || (v4.octets()[0] == 100 && (v4.octets()[1] & 0xc0) == 64)
+        }
+        std::net::IpAddr::V6(v6) => {
+            v6.is_loopback()
+                || v6.is_unspecified()
+                || (v6.segments()[0] & 0xfe00) == 0xfc00 // unique-local fc00::/7
+                || (v6.segments()[0] & 0xffc0) == 0xfe80 // link-local fe80::/10
+                || v6
+                    .to_ipv4_mapped()
+                    .is_some_and(|m| is_disallowed_ip(&std::net::IpAddr::V4(m)))
+        }
     }
 }
 
@@ -492,6 +595,8 @@ async fn export_otel(
     State(state): State<AppState>,
     Json(req): Json<ExportOtelRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    validate_export_url(&req.endpoint)?;
+
     let stored = state
         .store
         .get_trace(&req.trace_id)
@@ -615,6 +720,8 @@ async fn export_webhook(
     State(state): State<AppState>,
     Json(req): Json<ExportWebhookRequest>,
 ) -> Result<impl IntoResponse, AppError> {
+    validate_export_url(&req.webhook_url)?;
+
     let stored = state
         .store
         .get_trace(&req.trace_id)
@@ -906,6 +1013,58 @@ mod tests {
         resp.assert_status_ok();
         let entries: Vec<serde_json::Value> = resp.json();
         assert!(entries.is_empty(), "KB should start empty");
+    }
+
+    #[tokio::test]
+    async fn test_healthz_liveness() {
+        let server = test_app().await;
+        let resp = server.get("/healthz").await;
+        resp.assert_status_ok();
+        let body: serde_json::Value = resp.json();
+        assert_eq!(body["status"], "ok");
+    }
+
+    #[tokio::test]
+    async fn test_readyz_readiness() {
+        let server = test_app().await;
+        let resp = server.get("/readyz").await;
+        resp.assert_status_ok();
+        let body: serde_json::Value = resp.json();
+        assert_eq!(body["status"], "ready");
+    }
+
+    #[test]
+    fn test_validate_export_url_rejects_ssrf_targets() {
+        // Non-http schemes
+        assert!(validate_export_url("file:///etc/passwd").is_err());
+        assert!(validate_export_url("ftp://example.com").is_err());
+        // Internal hostnames
+        assert!(validate_export_url("http://localhost:4318").is_err());
+        assert!(validate_export_url("http://foo.internal/v1/traces").is_err());
+        // Loopback / private / link-local (cloud metadata) literals
+        assert!(validate_export_url("http://127.0.0.1:4318").is_err());
+        assert!(validate_export_url("http://10.0.0.5/hook").is_err());
+        assert!(validate_export_url("http://192.168.1.10/hook").is_err());
+        assert!(validate_export_url("http://169.254.169.254/latest/meta-data").is_err());
+        assert!(validate_export_url("http://[::1]:4318").is_err());
+        // Garbage
+        assert!(validate_export_url("not a url").is_err());
+    }
+
+    #[tokio::test]
+    async fn test_export_otel_rejects_internal_endpoint() {
+        let server = test_app().await;
+        server
+            .post("/api/audit")
+            .json(&json!({"trace": sample_trace()}))
+            .await
+            .assert_status_ok();
+
+        let resp = server
+            .post("/api/export/otel")
+            .json(&json!({"trace_id": "integ-001", "endpoint": "http://169.254.169.254"}))
+            .await;
+        resp.assert_status(StatusCode::BAD_REQUEST);
     }
 
     #[tokio::test]

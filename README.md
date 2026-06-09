@@ -16,6 +16,7 @@ pip install tracerazor
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────┐
+  │                           TraceRazor v1.1.0                               │
   │                           TraceRazor v0.1.0                               │
   │                                                                           │
   │   ┌──────────────┐    ┌──────────────────┐    ┌────────────────────────┐ │
@@ -28,6 +29,8 @@ pip install tracerazor
   │   │ metrics.     │    │ winner.          │    │ correct prediction.    │ │
   │   │              │    │                  │    │                        │ │
   │   │ Offline.     │    │ Drop-in for      │    │ MiniLM embeddings +    │ │
+  │   │ ~2 ms on a   │    │ LangGraph.       │    │ sklearn classifier.    │ │
+  │   │ typical run. │    │                  │    │                        │ │
   │   │ ~2 ms / 50   │    │ LangGraph.       │    │ sklearn classifier     │ │
   │   │ steps; see   │    │                  │    │ (Python).              │ │
   │   │ benchmark.   │    │                  │    │                        │ │
@@ -41,24 +44,30 @@ Each pillar is independent. Use one, two, or all three.
 
 ## The Problem
 
+Independent surveys and our own audits suggest a substantial fraction, commonly **30-60%**, of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. Exact share is workload-dependent.
 A substantial fraction of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. The exact share is workload-dependent and we do not claim a universal figure. The most concrete number we can stand behind is our own measurement: on 24 public τ-bench / SWE-agent traces, **step redundancy alone runs 36–41%** (see [`docs/external_agent_audits.md`](docs/external_agent_audits.md)). Treat any broader "30–60%" rule of thumb as an unvalidated heuristic, not a measured constant.
 
-A typical production support agent handling 8 tool calls across 3 loops consumes **15,000–40,000 tokens per resolution**:
+A typical production support agent handling 8 tool calls across 3 loops consumes **15,000-40,000 tokens per resolution**:
 
 | Pattern | Observed Frequency | Token Impact |
 |---|---|---|
-| Redundant reasoning steps | 18–35% of traces | ~20% of tokens |
-| Sycophantic / hedging preamble | >60% of outputs | 5–15% per step |
-| Input context reformulation | 1–3 steps per trace | 300–800 tokens each |
-| Unnecessary reasoning depth | ~25% of traces | 10–30% of tokens |
+| Redundant reasoning steps | 18-35% of traces | ~20% of tokens |
+| Sycophantic / hedging preamble | >60% of outputs | 5-15% per step |
+| Input context reformulation | 1-3 steps per trace | 300-800 tokens each |
+| Unnecessary reasoning depth | ~25% of traces | 10-30% of tokens |
 | Repeated tool-call loops | ~15% of traces | Full loop cost |
 
-Mainstream observability tools (LangSmith, Langfuse, Arize, Phoenix) record runs and surface token usage. They do not decompose that usage into structural-waste categories or emit machine-applicable prompt patches. TraceRazor is complementary, not a replacement — it consumes LangSmith / OTEL trace JSON and emits a TAS score plus a fix bundle.
+Mainstream observability tools (LangSmith, Langfuse, Arize, Phoenix) record runs and surface token usage. They do not decompose that usage into structural-waste categories or emit machine-applicable prompt patches. TraceRazor is complementary, not a replacement; it consumes LangSmith / OTEL trace JSON and emits a TAS score plus a fix bundle.
+
+## How it compares
+
+Most tools in this space are observability and cost dashboards: LangSmith, Langfuse, Helicone, Arize Phoenix, MLflow, Traceloop, AgentOps, W&B Weave, Braintrust. They tell you how much a run cost and where. TraceRazor instead decomposes that cost into named waste categories, scores it, and emits fix patches, so the two work together: keep your dashboard for capture and monitoring, run TraceRazor on its trace JSON to find and remove waste. Full feature-by-feature breakdown with sources in [COMPARISON.md](COMPARISON.md).
 
 ---
 
-## Pillar 1 — Audit
+## Pillar 1: Audit
 
+.> Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Typical traces (tens of steps) audit in a few milliseconds; cost scales roughly linearly with step count. Reproduce locally with `cargo bench -p tracerazor-core`.
 > Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Fast on typical traces — low single-digit milliseconds up to ~50 steps; cost grows with trace length (see the [Performance](#performance) note). Reproduce locally with `cargo bench -p tracerazor-core`.
 
 ### How It Works
@@ -85,8 +94,8 @@ flowchart TD
         V3["Compression Ratio\n2.5%"]
     end
 
-    M --> W["Weighted Score 0–100 (ordinal)"]
-    W --> TAS["TAS — Token Audit Score"]
+    M --> W["Weighted Score 0-100 (ordinal)"]
+    W --> TAS["TAS - Token Audit Score"]
     TAS --> G["Grade: Excellent / Good / Fair / Poor"]
     M --> AVS["Verbosity Alert if AVS > 0.40"]
 ```
@@ -127,10 +136,10 @@ All shares are *post-normalisation* (the raw weights below sum to 1.20; `compute
 
 | Grade | Range | Meaning |
 |---|---|---|
-| Excellent | 90–100 | Minimal recoverable waste |
-| Good | 70–89 | Addressable inefficiency |
-| Fair | 50–69 | Significant structural waste |
-| Poor | 0–49 | Fundamental reasoning issues |
+| Excellent | 90-100 | Minimal recoverable waste |
+| Good | 70-89 | Addressable inefficiency |
+| Fair | 50-69 | Significant structural waste |
+| Poor | 0-49 | Fundamental reasoning issues |
 
 ### Sample Output
 
@@ -141,32 +150,47 @@ tracerazor audit traces/support-agent-run-2847.json
 ```
 TRACERAZOR REPORT
 ------------------------------------------------------
-Trace:     support-agent-run-2847    Agent: support-agent
-Steps:     9                         Tokens: 18420
+Trace:     support-agent-run-2847
+Agent:     customer-support-v3
+Framework: langgraph
+Steps:     11   Tokens: 14280
+Analysed:  13ms
 ------------------------------------------------------
-TRACERAZOR SCORE:  64 / 100  [FAIR]
-------------------------------------------------------
-!! VERBOSITY ALERT  AVS: 0.52  Primary driver: SHL (sycophancy/hedging)
-   Est. verbose tokens: 9578
+TRACERAZOR SCORE:  76 / 100  [GOOD]  (raw structural: 79, task value: 0.90)
+VAE SCORE:         0.71
+MVTG:              49.1%  (trace is 49.1% above minimum viable token count)
+Note: TAS is an *ordinal* heuristic score - compare runs within one
+project over time, not as an absolute efficiency percentage.
 ------------------------------------------------------
 METRIC BREAKDOWN
 Code   Metric                         Score    Target   Status
 SRR    Step Redundancy Rate           18.2%    <15%     FAIL
 LDI    Loop Detection Index           0.182    <0.10    FAIL
 TCA    Tool Call Accuracy             83.3%    >85%     FAIL
-RDA    Reasoning Depth Approp.        0.820    >0.75    PASS
-ISR    Info Sufficiency Rate          88.0%    >80%     PASS
-TUR    Token Utilisation Ratio        0.714    >0.35    PASS
-CCE    Context Carry-over Eff.        0.880    >0.60    PASS
-VDI    Verbosity Density Index        0.512    >0.60    FAIL
-SHL    Sycophancy/Hedging Level       0.380    <0.20    FAIL
-CCR    Caveman Compression Ratio      0.412    <0.30    FAIL
+RDA    Reasoning Depth Approp.        0.917    >0.75    PASS
+ISR    Info Sufficiency Rate          100.0%   >80%     PASS
+TUR    Token Utilisation Ratio        0.793    >0.35    PASS
+CCE    Context Carry-over Eff.        0.613    >0.60    PASS
+DBO    Decision Branch Optimality     0.750    >0.70    PASS [cold]
+-- Verbosity Metrics ----------------------------------
+VDI    Verbosity Density Index        0.775    >0.60    PASS
+SHL    Sycophancy/Hedging Level       0.219    <0.20    FAIL
+CCR    Caveman Compression Ratio      0.384    <0.30    FAIL
+-- Goal Advancement -----------------------------------
+GAR    Goal Advancement Ratio         0.403    ≥0.40    PASS
+-- Semantic Path --------------------------------------
+CSD    Cross-Step Semantic Drift      0.438    ≥0.60    FAIL  [drifting pairs: 3→6]
 ------------------------------------------------------
-SAVINGS ESTIMATE
-Tokens saved:      9,840  (53.4% reduction)
-Cost saved:        $0.0295 per run
-At 50K runs/month: $1,477.20/month saved
+SAVINGS ESTIMATE   (estimated, not a measured re-run - see Limitations)
+Tokens saved:      7006  (49.1% reduction)
+Cost saved:        $0.0210 per run
+At 50K runs/month: $1050.90/month saved
 ```
+
+> Savings figures are **estimates** derived from per-fix heuristics, not a
+> measured before/after re-run. Use `tracerazor bench` to validate a specific
+> patch set against an actual re-run. Numbers above are reproducible from the
+> shipped trace with the command shown.
 
 ### Automated Fix Patches
 
@@ -238,22 +262,36 @@ TPE is anchored on the **real task goal** when the trace carries one in `metadat
 
 The earlier "sub-5 ms per trace" headline only held below ~70 steps; novelty scanning (ISR) was quadratic. ISR is now bounded to a recent-context window, which roughly halved the 200-step cost and cut the 1000-step cost ~3×. Long traces still grow super-linearly (similarity-based redundancy detection dominates), so we no longer print a single universal figure — run the bench on your own hardware for exact numbers.
 
-### Quickstart — Audit
+### Quickstart: Audit
+
+> TraceRazor needs **at least 5 steps** to compute its metrics; shorter traces
+> are skipped with a notice.
 
 ```python
 from tracerazor import Tracer
 
 with Tracer(agent_name="support-agent", framework="openai") as t:
-    response = llm.invoke(prompt)
-    t.reasoning(response.text, tokens=response.usage.total_tokens)
+    t.reasoning("Parse the refund request for order ORD-123.", tokens=180)
 
-    result = lookup_order(order_id="ORD-123")
+    order = lookup_order(order_id="ORD-123")
     t.tool("lookup_order", params={"order_id": "ORD-123"},
-           output=str(result), success=True, tokens=80)
+           output=str(order), success=True, tokens=90)
+
+    t.reasoning("Order is within the 30-day window; it is eligible.", tokens=160)
+
+    eligible = check_eligibility(order_id="ORD-123")
+    t.tool("check_eligibility", params={"order_id": "ORD-123"},
+           output=str(eligible), success=True, tokens=110)
+
+    refund = process_refund(order_id="ORD-123")
+    t.tool("process_refund", params={"order_id": "ORD-123"},
+           output=str(refund), success=True, tokens=140)
+
+    t.reasoning("Refund processed; confirm to the customer.", tokens=120)
 
 report = t.analyse()
 print(report.summary())
-# TAS 81.4/100 [Good] | 2 steps, 900 tokens | Saved 140 tokens (16%)
+# TAS 96.1/100 [Excellent] | 6 steps, 800 tokens | Saved 0 tokens (0%)
 
 report.assert_passes()   # raises AssertionError in CI if TAS < 70
 ```
@@ -277,8 +315,8 @@ tracerazor bench --before trace.json --after trace_v2.json
 ### Audits on Real Public Agent Trajectories
 
 We ran TraceRazor's audit over **24 real public agent runs** sourced from
-two well-known benchmarks — τ-bench (Sierra Research) and SWE-agent
-(Princeton NLP) — to calibrate expectations against artefacts you have
+two well-known benchmarks, τ-bench (Sierra Research) and SWE-agent
+(Princeton NLP), to calibrate expectations against artefacts you have
 likely already seen.
 
 | Model | Domain | n | Avg TAS | Avg step redundancy |
@@ -297,11 +335,50 @@ and the 24 converted trace JSONs live at
 [`traces/external/`](traces/external/). Converters in
 [`tools/`](tools/).
 
+### Calibrating TAS to your workload
+
+The thirteen sub-metrics are combined with weights that are heuristic by
+default. If you want TAS to be a *calibrated* indicator for your use case rather
+than an ordinal one, fit the weights to ground truth with the calibration tool
+in [`calibration/`](calibration/). The supported objective is **recoverable
+token waste**: the weights are fit so that efficiency (`raw TAS / 100`) predicts
+`1 - recoverable_fraction`, where the fraction comes from measured before/after
+re-runs at constant task quality (e.g. your products vs. industry multi-agent
+baselines).
+
+```bash
+pip install -e ".[calibrate]"
+cargo build --release -p tracerazor
+
+# Your data: a manifest of traces with measured recoverable waste
+python -m calibration.calibrate --dataset path/to/manifest.json \
+  --out config/tas_weights.json --report config/calibration_report.md
+
+# Use the fitted weights
+tracerazor audit run.json --weights config/tas_weights.json
+# or globally:  export TRACERAZOR_WEIGHTS=config/tas_weights.json
+```
+
+The tool reports **train R², cross-validated R², and the default-weights
+baseline**, so recalibration is only adopted when it demonstrably helps. On a
+reproducible controlled benchmark of 200 traces with six categories of injected
+waste, calibrated weights reach **cross-validated R² = 0.64** against recoverable
+waste versus **R² = 0.09** for the heuristic defaults (see
+[`config/calibration_report.md`](config/calibration_report.md)). That validates
+the procedure; it is not a claim about any specific production system, which
+needs your own measured data.
+
+The built-in defaults are left unchanged until you calibrate on your own data,
+because the injected-waste distribution is a model rather than a sample of real
+agents, so shipping those weights as the default would swap one unvalidated
+choice for another. The worked example lives in `calibration/`; see
+[`calibration/README.md`](calibration/README.md).
+
 ---
 
-## Pillar 2 — Adaptive Sampling
+## Pillar 2: Adaptive Sampling
 
-> Two drop-in LangGraph strategies — `AdaptiveKNode` (per-step parallel
+> Two drop-in LangGraph strategies, `AdaptiveKNode` (per-step parallel
 > sampling) and `SelfConsistencyBaseline` (re-sample the final answer only).
 > SelfConsistency is the **default** and the **Pareto winner** on tau-bench
 > airline; AdaptiveK is a targeted tool for mid-trajectory branching
@@ -347,17 +424,17 @@ xychart-beta
 | AdaptiveKNode (K=5) | 46% | 246k | 3.9x | Per-step adaptive sampling |
 | SelfConsistency (K=5) | 48% | 137k | **2.2x** | Deterministic tools, re-sample final answer |
 
-**Pareto winner: SelfConsistency at K=5** — highest pass rate (48%) at the lowest cost multiplier (2.2x); ~285k tokens per successful task vs ~535k for AdaptiveK.
+**Pareto winner: SelfConsistency at K=5**: highest pass rate (48%) at the lowest cost multiplier (2.2x); ~285k tokens per successful task vs ~535k for AdaptiveK.
 
 ### When to use which
 
 - **`SelfConsistencyBaseline` (default).** Most failures are wrong final-answer formatting. Resampling the terminal answer at K=5 fixes them for ~1/N the cost of full-step ensembling. Pick this unless you have evidence that mid-trajectory branching is your failure mode.
-- **`AdaptiveKNode`.** Use when failures look like *mid-trajectory* problems rather than final-answer problems — symptoms include K=1 runs that loop until the step cap, agents that pick a wrong tool early and never recover, or domains where wrong mutating actions are expensive enough that catching pre-commit disagreement justifies the K× cost. On tau-bench airline AdaptiveK uniquely solved 6/50 tasks (notably one that K=1 and SelfConsistency both abandoned at the step cap), but lost 4 tasks that K=1 had passed cleanly — expect gains on the hard tail and regressions on easy tasks.
+- **`AdaptiveKNode`.** Use when failures look like *mid-trajectory* problems rather than final-answer problems. Symptoms include K=1 runs that loop until the step cap, agents that pick a wrong tool early and never recover, or domains where wrong mutating actions are expensive enough that catching pre-commit disagreement justifies the Kx cost. On tau-bench airline AdaptiveK uniquely solved 6/50 tasks (notably one that K=1 and SelfConsistency both abandoned at the step cap), but lost 4 tasks that K=1 had passed cleanly. Expect gains on the hard tail and regressions on easy tasks.
 - **`NaiveKEnsemble`.** Not recommended. Failures correlate across independent runs, so a majority vote does not recover them.
 
-The K-shrink on consensus does work — AdaptiveK uses ~42% fewer fresh (non-cached) tokens than NaiveK5 — but the saving is not enough to overcome SelfConsistency's structural advantage of skipping intermediate ensembling entirely.
+The K-shrink on consensus does work: AdaptiveK uses ~42% fewer fresh (non-cached) tokens than NaiveK5, but the saving is not enough to overcome SelfConsistency's structural advantage of skipping intermediate ensembling entirely.
 
-### Quickstart — Sampling
+### Quickstart: Sampling
 
 ```python
 from tracerazor import AdaptiveKNode, openai_llm
@@ -391,7 +468,7 @@ result = await naive.run(task)
 
 ---
 
-## Pillar 3 — Substitutability Classifier
+## Pillar 3: Substitutability Classifier
 
 > Predict whether a cached LLM response can safely replace a fresh response to a new prompt. Every correct positive saves one full LLM round-trip.
 
@@ -410,7 +487,7 @@ result = await naive.run(task)
            └─────────────────────────────────────────────────────┘
 ```
 
-**Pass criteria:** precision ≥ 80% AND recall ≥ 30% simultaneously at the same operating threshold. A wrong substitution silently corrupts the agent trajectory — that is costlier than a missed cache hit.
+**Pass criteria:** precision ≥ 80% AND recall ≥ 30% simultaneously at the same operating threshold. A wrong substitution silently corrupts the agent trajectory; that is costlier than a missed cache hit.
 
 ### Feature Tiers
 
@@ -418,33 +495,33 @@ result = await naive.run(task)
   ┌──────────┬────────────────────────────────────────────────────────────┐
   │  Tier    │  Features                                                  │
   ├──────────┼────────────────────────────────────────────────────────────┤
-  │  emb     │  cos(embed(pA), embed(pB))  — prompt semantic similarity   │
-  │          │  cos(embed(rA), embed(pB))  — response-to-new-prompt match │
-  │          │  cos(embed(rA), embed(pA))  — response quality anchor      │
+  │  emb     │  cos(embed(pA), embed(pB))  - prompt semantic similarity   │
+  │          │  cos(embed(rA), embed(pB))  - response-to-new-prompt match │
+  │          │  cos(embed(rA), embed(pA))  - response quality anchor      │
   ├──────────┼────────────────────────────────────────────────────────────┤
-  │  scalar  │  jaccard(pA, pB)            — word overlap                 │
-  │          │  len(pB) / len(pA)          — relative prompt length       │
-  │          │  len(rA) / len(pB)          — response size vs new prompt  │
-  │          │  jaccard(rA, pB)            — response word overlap        │
-  │          │  common_prefix_frac         — positional prompt similarity  │
+  │  scalar  │  jaccard(pA, pB)            - word overlap                 │
+  │          │  len(pB) / len(pA)          - relative prompt length       │
+  │          │  len(rA) / len(pB)          - response size vs new prompt  │
+  │          │  jaccard(rA, pB)            - response word overlap        │
+  │          │  common_prefix_frac         - positional prompt similarity  │
   ├──────────┼────────────────────────────────────────────────────────────┤
   │  both    │  All 8 features above                                      │
   └──────────┴────────────────────────────────────────────────────────────┘
 ```
 
-Embeddings: `all-MiniLM-L6-v2` — 22M parameters, 384-dim, fully offline.
+Embeddings: `all-MiniLM-L6-v2`, 22M parameters, 384-dim, fully offline.
 
-### Synthetic Sanity Check — NOT a generalisation estimate
+### Synthetic Sanity Check: NOT a generalisation estimate
 
 > The results below are on **186 synthetic Claude-generated records** drawn from
 > 20 airline scenario templates. Every config trivially separates this
 > distribution because the generator was instructed with the target label (a
 > form of label leakage), and templates leak across the train/test split.
 > **Treat these numbers as a pipeline-wiring smoke test, not a classifier-skill
-> estimate.** Projected real-data AUC: **0.70–0.90** (consistent with the
-> `scalar`-tier CV AUC of 0.90 ± 0.05, the only number here not corrupted by
+> estimate.** Projected real-data AUC: **0.70-0.90** (consistent with the
+> `scalar`-tier CV AUC of 0.90 +/- 0.05, the only number here not corrupted by
 > template leakage). The eval pipeline (`tracerazor/redundancy/evaluate_full.py`)
-> has been hardened to use `StratifiedGroupKFold` keyed by `template_id` — re-
+> has been hardened to use `StratifiedGroupKFold` keyed by `template_id`, re-
 > run against real tau-bench transcripts before quoting any number in production.
 
 ```mermaid
@@ -455,14 +532,14 @@ xychart-beta
     bar [1.0000, 0.9856, 1.0000, 1.0000, 0.9978, 1.0000]
 ```
 
-| Configuration | CV ROC mean±std | Test ROC | Test PR | Precision | Recall | On-synthetic |
+| Configuration | CV ROC mean+/-std | Test ROC | Test PR | Precision | Recall | On-synthetic |
 |---|---|---|---|---|---|---|
-| logreg/emb | 1.000 ± 0.000 | 1.000 | 1.000 | 81.1% | 100.0% | pass |
-| logreg/scalar | 0.900 ± 0.051 | 0.986 | 0.987 | 81.1% | 100.0% | pass |
-| logreg/both | 1.000 ± 0.000 | 1.000 | 1.000 | 81.1% | 100.0% | pass |
-| gbm/emb | 1.000 ± 0.000 | 1.000 | 1.000 | 81.1% | 100.0% | pass |
-| gbm/scalar | 0.923 ± 0.046 | 0.998 | 0.998 | 81.1% | 100.0% | pass |
-| gbm/both | 1.000 ± 0.000 | 1.000 | 1.000 | 81.1% | 100.0% | pass |
+| logreg/emb | 1.000 +/- 0.000 | 1.000 | 1.000 | 81.1% | 100.0% | pass |
+| logreg/scalar | 0.900 +/- 0.051 | 0.986 | 0.987 | 81.1% | 100.0% | pass |
+| logreg/both | 1.000 +/- 0.000 | 1.000 | 1.000 | 81.1% | 100.0% | pass |
+| gbm/emb | 1.000 +/- 0.000 | 1.000 | 1.000 | 81.1% | 100.0% | pass |
+| gbm/scalar | 0.923 +/- 0.046 | 0.998 | 0.998 | 81.1% | 100.0% | pass |
+| gbm/both | 1.000 +/- 0.000 | 1.000 | 1.000 | 81.1% | 100.0% | pass |
 
 All six configs pass on synthetic data; **none of these is a deployable
 threshold**. Re-validate on your own transcripts before production use.
@@ -482,7 +559,7 @@ synthetic data this likely means the classifier is recovering the template
 identity, not learning substitutability. Re-evaluate feature importances
 once real-data labels are in place.
 
-### Quickstart — Substitutability Classifier
+### Quickstart: Substitutability Classifier
 
 ```bash
 # Generate synthetic training data (requires ANTHROPIC_API_KEY in .env)
@@ -666,7 +743,7 @@ Commands:
 ```bash
 tracerazor compare before.json after.json
 tracerazor simulate trace.json --remove 3,8 --merge 6,7
-tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs-per-month 50000
+tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs 50000
 tracerazor optimize trace.json --system-prompt agent.txt --output agent_v2.txt --target-tas 85
 ```
 
@@ -711,7 +788,6 @@ tracerazor/
 │   ├── tracerazor-semantic/   # BoW similarity + LLM backend (OpenAI / Anthropic / compatible)
 │   ├── tracerazor-store/      # SQLite: traces, KB, baselines, anomaly detection
 │   ├── tracerazor-server/     # Axum REST + WebSocket + embedded dashboard
-│   ├── tracerazor-proxy/      # Four-layer guardrail proxy
 │   └── tracerazor-cli/        # CLI entry point; persistent store at ~/.tracerazor/
 │
 ├── tracerazor/                # Single Python package (pip install tracerazor)
@@ -743,23 +819,25 @@ tracerazor/
 └── .github/                   # CI workflow + composite GitHub Action
 ```
 
-`tracerazor-core` has zero network dependencies — offline analysis never pulls in `reqwest`. The semantic, server, proxy and substitutability components are opt-in and call out to LLM / embedding services; `--enhanced` activates at runtime without recompiling.
+`tracerazor-core` has zero network dependencies; offline analysis never pulls in `reqwest`. The semantic, server and substitutability components are opt-in and call out to LLM / embedding services; `--enhanced` activates at runtime without recompiling.
 
 ---
 
 ## Test Coverage
 
+Reproduce with `cargo test --workspace` and `pytest`.
+
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 126 |
+| tracerazor-core | 121 |
 | tracerazor-ingest | 3 |
 | tracerazor-semantic | 21 |
 | tracerazor-store | 10 |
-| tracerazor-server | 13 |
-| tracerazor-proxy | 12 |
-| tracerazor-cli (integration) | 9 |
-| Python v2 (pytest) | 9 suites |
-| **Total Rust** | **194, all pass** |
+| tracerazor-server | 17 |
+| tracerazor-cli (2 unit + 9 integration) | 11 |
+| Doc-tests | 9 |
+| **Total Rust** | **192, all pass** |
+| **Python** (pytest) | **214 pass, 1 skipped** |
 
 ---
 
@@ -768,16 +846,54 @@ tracerazor/
 | # | Paper | Informs |
 |---|---|---|
 | [1] | Han et al. (2024). **Token-Budget-Aware LLM Reasoning (TALE)**. ACL 2025. | TUR, CCE |
-| [2] | Zhao et al. (2025). **SelfBudgeter: Adaptive Token Allocation**. | Proxy Layer 3 |
+| [2] | Zhao et al. (2025). **SelfBudgeter: Adaptive Token Allocation**. | Adaptive sampling |
 | [3] | Lee et al. (2025). **Evaluating Step-by-step Reasoning Traces: A Survey**. | Framework basis |
 | [4] | Su et al. (2024). **Dualformer: Controllable Fast and Slow Thinking**. | RDA |
 | [5] | Wu et al. (2025). **Step Pruner: Efficient Reasoning in LLMs**. | Optimal path diff |
 | [6] | Feng et al. (2025). **Efficient Reasoning Models: A Survey**. | Metric validation |
 | [7] | Pan et al. (2024). **ToolChain*: A* Search for Tool Sequences**. NeurIPS 2024. | DBO, KB design |
-| [8] | Hassid et al. (2025). **Reasoning on a Budget**. | VAE score, proxy |
+| [8] | Hassid et al. (2025). **Reasoning on a Budget**. | VAE score |
 | [9] | (2025). **Balanced Thinking (SCALe-SFT)**. | Efficiency without accuracy loss |
 | [10] | Mohammadi et al. (2025). **Evaluation and Benchmarking of LLM Agents**. KDD 2025. | Composite scoring |
 | [11] | Shi et al. (2024). **Verbosity Bias in LLM Responses**. | VDI, SHL, CCR design |
+
+---
+
+## Limitations & Honest Caveats
+
+TraceRazor is a useful, fast heuristic tool. It is **not** a validated scientific
+instrument, and we want to be precise about what it does and does not establish:
+
+- **TAS is an ordinal heuristic by default.** The built-in composite weights are
+  author-chosen and not fit against a labelled corpus, so out of the box TAS is
+  best used to compare runs of the *same* agent over time, not as an absolute
+  cross-agent percentage. Some sub-metrics intentionally pull in opposite
+  directions (e.g. redundancy vs. continuity), so there is no single optimal
+  point. **You can replace the heuristic weights with data-calibrated ones**,
+  see [Calibrating TAS](#calibrating-tas-to-your-workload).
+- **Savings and dollar figures are estimates, not measurements.** They are the
+  sum of per-fix heuristic projections, *not* a measured before/after re-run at
+  constant task quality. To validate a concrete patch set, capture a real
+  "after" trace and use `tracerazor bench`.
+- **The sampling benchmark is preliminary.** The published numbers are
+  single-seed over 50 tasks with no confidence intervals; small differences
+  between strategies are within noise. Treat the "Pareto" framing as
+  directional, and re-run with multiple seeds (`--seeds`) before drawing firm
+  conclusions. The in-package `SelfConsistencyBaseline` selects answers by
+  honest majority vote (no oracle).
+- **The substitutability classifier result is a pipeline smoke test, not a
+  generalisation estimate.** It is trained and evaluated on synthetic templated
+  pairs where the label is essentially topic identity; the headline AUC reflects
+  label leakage by construction. See the dedicated section above.
+- **IAR (adherence) is closed-loop self-validation**: it checks whether the
+  tool's own fixes improved the tool's own metrics, with no external ground
+  truth such as task success or human judgement.
+- **Performance** is a few milliseconds for typical traces (tens of steps) and
+  scales roughly linearly with step count; multi-thousand-step traces take
+  proportionally longer.
+
+For a fuller, paper-style treatment of the methodology and its limitations, see
+[`paper/tracerazor.tex`](paper/tracerazor.tex).
 
 ---
 

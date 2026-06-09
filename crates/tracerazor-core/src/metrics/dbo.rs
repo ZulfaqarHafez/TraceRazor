@@ -11,8 +11,8 @@
 /// that varies with the trace: failed tool calls, retries on the same tool,
 /// and a low unique-tool ratio all drag the score down.
 ///
-/// Accuracy improves as traces accumulate — 85–90% agreement with
-/// GPT-4o-mini judge after 50+ traces of the same task type.
+/// The signal is expected to sharpen as traces accumulate for a given task
+/// type; this has not been benchmarked against an external judge.
 ///
 /// Similarity metric: Jaccard overlap on tool sets (> 50% = similar task type).
 /// Optimality metric: whether the current trace used tools from the lowest-token

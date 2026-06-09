@@ -86,6 +86,12 @@ enum Commands {
         /// TRACERAZOR_LLM_* / OPENAI_API_KEY / ANTHROPIC_API_KEY env vars.
         #[arg(long, default_value = "false")]
         enhanced: bool,
+
+        /// Path to a calibrated weights JSON file (as produced by the
+        /// calibration tool, `calibration/calibrate.py`). Falls back to the
+        /// TRACERAZOR_WEIGHTS env var, then the built-in default weights.
+        #[arg(long, value_name = "FILE")]
+        weights: Option<PathBuf>,
     },
 
     /// List all stored traces in the current session.
@@ -305,8 +311,8 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, enhanced } => {
-            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, enhanced).await?;
+        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, enhanced, weights } => {
+            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, enhanced, weights).await?;
         }
         Commands::List { agent } => {
             cmd_list(agent).await?;
@@ -339,6 +345,7 @@ async fn main() -> Result<()> {
 
 // ── audit ─────────────────────────────────────────────────────────────────────
 
+#[allow(clippy::too_many_arguments)] // CLI dispatch mirrors the clap subcommand fields
 async fn cmd_audit(
     file: PathBuf,
     format: OutputFormat,
@@ -347,6 +354,7 @@ async fn cmd_audit(
     cost_per_million: f64,
     do_store: bool,
     enhanced: bool,
+    weights: Option<PathBuf>,
 ) -> Result<()> {
     let data = std::fs::read_to_string(&file)
         .with_context(|| format!("Cannot read file: {}", file.display()))?;
@@ -372,6 +380,14 @@ async fn cmd_audit(
     };
     if let Some(t) = threshold {
         config.threshold = t;
+    }
+    // Calibrated weights: --weights flag, else TRACERAZOR_WEIGHTS env var.
+    if let Some(path) = weights.or_else(|| std::env::var_os("TRACERAZOR_WEIGHTS").map(PathBuf::from)) {
+        let raw = std::fs::read_to_string(&path)
+            .with_context(|| format!("Cannot read weights file: {}", path.display()))?;
+        config.weights = serde_json::from_str(&raw)
+            .with_context(|| format!("Invalid weights JSON: {}", path.display()))?;
+        eprintln!("Using calibrated weights from {}", path.display());
     }
     if let Ok(Some(baseline)) = store.baseline_tokens(&trace.agent_name).await {
         config.baseline_tokens = Some(baseline);
@@ -1323,7 +1339,9 @@ fn render_optimize_markdown(
         projected_tokens as i64 - original_tokens as i64
     );
     let waste_pct = if original_tokens > 0 {
-        (original_tokens - projected_tokens) as f64 / original_tokens as f64 * 100.0
+        // saturating_sub: a simulation can in principle project MORE tokens than
+        // the original; plain u32 subtraction would underflow and panic.
+        original_tokens.saturating_sub(projected_tokens) as f64 / original_tokens as f64 * 100.0
     } else { 0.0 };
     let _ = writeln!(s, "| Est. waste removed | — | — | {:.0}% |", waste_pct);
     let _ = writeln!(s);
@@ -1432,7 +1450,9 @@ async fn export_otel(
     trace: &tracerazor_core::types::Trace,
     endpoint: &str,
 ) -> Result<()> {
-    let span_id = format!("{:016x}", report.score.score as u64 * 100);
+    // Clamp + saturating_mul: guard against a NaN/inf/out-of-range score
+    // producing an overflowing u64 multiply (panic in debug).
+    let span_id = format!("{:016x}", (report.score.score.max(0.0) as u64).saturating_mul(100));
     let trace_id_hex = report
         .trace_id
         .chars()
@@ -1489,4 +1509,25 @@ async fn export_otel(
         .with_context(|| format!("OTEL export to {otel_url} failed"))?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Regression: a simulation can project MORE tokens than the original, so
+    /// the waste-percentage math must not underflow on u32 subtraction.
+    #[test]
+    fn optimize_markdown_survives_projection_larger_than_original() {
+        let md = render_optimize_markdown("agent", 50.0, 100, 60.0, 500, &[], &[]);
+        assert!(md.contains("Est. waste removed"));
+        assert!(md.contains("0%"), "larger projection => 0% waste removed");
+    }
+
+    /// Zero original tokens must not divide by zero.
+    #[test]
+    fn optimize_markdown_survives_zero_original_tokens() {
+        let md = render_optimize_markdown("agent", 0.0, 0, 0.0, 0, &[], &[]);
+        assert!(md.contains("0%"));
+    }
 }

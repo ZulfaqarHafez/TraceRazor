@@ -21,6 +21,9 @@ __pycache__/
 *.pyc
 build/
 
+# Build / run logs
+*.log
+
 # Claude local settings
 .claude/
 

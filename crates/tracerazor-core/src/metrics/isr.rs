@@ -75,9 +75,7 @@ pub fn compute_from_similarities(
             continue;
         }
 
-        let curr_text = steps[i].semantic_content();
-
-        // Compute max similarity to any recent prior step (bounded window).
+         step (bounded window).
         // Early-exit once a prior step already exceeds the novelty cut-off,
         // since the only decision that depends on `max_sim` is whether it
         // crosses `1 - NOVELTY_THRESHOLD`.

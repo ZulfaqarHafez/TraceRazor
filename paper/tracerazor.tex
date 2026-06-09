@@ -1,0 +1,490 @@
+\documentclass[11pt]{article}
+
+% --- Packages (all standard; compiles with a stock pdflatex/texlive) ---------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{\textbf{TraceRazor: A Heuristic Framework for Token-Efficiency\\
+Auditing of LLM Agent Traces}\\[4pt]
+\large A System Description and Honest Technical Report}
+
+\author{Zulfaqar Hafez\\
+\small\href{https://github.com/ZulfaqarHafez/tracerazor}{github.com/ZulfaqarHafez/tracerazor}}
+
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Large language model (LLM) agents routinely spend tokens on redundant
+reasoning, repeated tool calls, verbose hedging, and unnecessary context
+carry-over. We present \textbf{TraceRazor}, an offline, dependency-light tool
+that ingests an agent execution trace and produces (i) a composite
+\emph{Trace Auditing Score} (TAS) decomposed into thirteen interpretable
+sub-metrics, (ii) concrete fix suggestions with \emph{estimated} token savings,
+and (iii) two optional companion pillars: consensus-based adaptive sampling
+and a substitutability classifier. TraceRazor is fast (a few milliseconds for
+typical traces) and runs without API keys for its core analysis.
+
+We are deliberate about what this work does and does not establish. TAS is an
+\emph{ordinal heuristic} whose composite weights are author-chosen and have not
+been calibrated against a labelled corpus; reported token ``savings'' are
+heuristic projections rather than measured before/after re-runs; and the
+sampling and substitutability results are preliminary (single-seed and
+synthetic, respectively). We therefore present TraceRazor as a useful
+engineering instrument and a reproducible measurement harness, not as a
+validated scientific claim, and we devote a substantial Threats-to-Validity
+section to its limitations. All numbers in this report are reproducible from the
+public repository.
+\end{abstract}
+
+\section{Introduction}
+Autonomous LLM agents are increasingly deployed in loops that interleave
+reasoning steps and tool calls. Because each step consumes input and output
+tokens, inefficiency compounds: an agent that re-derives the same conclusion,
+retries a malformed tool call, or re-states its entire context on every turn can
+cost several times more than a lean equivalent for the same outcome. Unlike raw
+latency or cost dashboards, which report \emph{how much} was spent, practitioners
+need to know \emph{where} tokens were wasted and \emph{what} to change.
+
+TraceRazor targets this gap. It treats a trace as a sequence of typed steps
+(reasoning, tool call, etc.) with token counts and optional tool-success flags,
+and scores it along thirteen efficiency dimensions. The design goals are: (1)
+\emph{offline by default}, the core analysis pulls in no network
+dependencies; (2) \emph{interpretable}, every point of the composite maps to
+a named sub-metric and a per-step annotation; and (3) \emph{actionable}, the
+output includes fix patches and an ``optimal path'' diff.
+
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=*]
+  \item A decomposable token-efficiency score (TAS) over thirteen sub-metrics,
+        with explicit, overridable weights (Section~\ref{sec:tas}).
+  \item A heuristic fix generator and savings \emph{estimator}, plus an optimal-path
+        recommendation (Section~\ref{sec:fixes}).
+  \item Two optional pillars: consensus-based adaptive sampling
+        (Section~\ref{sec:sampling}) and a substitutability classifier
+        (Section~\ref{sec:subst}).
+  \item A reproducible evaluation on 24 real public agent trajectories plus a
+        synthetic benchmark (Section~\ref{sec:eval}), and a candid
+        Threats-to-Validity analysis (Section~\ref{sec:limits}).
+\end{enumerate}
+
+\section{Related Work}
+TraceRazor draws on three lines of work. \emph{Token-budget-aware reasoning}
+(e.g. TALE~\cite{tale}, SelfBudgeter~\cite{selfbudgeter}, ``Reasoning on a
+Budget''~\cite{budget}) motivates the token-utilisation and value-adjusted
+metrics. \emph{Reasoning-trace evaluation and step pruning}
+(\cite{stepsurvey,steppruner,dualformer,efficientsurvey}) informs the
+redundancy, loop, reasoning-depth, and optimal-path components. \emph{Agent
+benchmarking and composite scoring} (\cite{toolchain,agenteval}) informs the
+tool-sequence and aggregate-scoring design, and \emph{verbosity-bias}
+studies~\cite{verbosity} inform the verbosity metrics. The adaptive-sampling
+pillar is a direct application of \emph{self-consistency}~\cite{selfconsistency}:
+sample multiple candidate answers and take the consensus.
+
+Relative to this literature, TraceRazor's contribution is integrative and
+practical rather than a new learned method: it packages a battery of heuristics
+behind a single interpretable score and an offline CLI/library. We make no claim
+that the composite is a novel learned metric, nor that its weights are optimal.
+
+\section{The TAS Framework}
+\label{sec:tas}
+
+\subsection{Trace model}
+A trace is a tuple $(\textit{id}, \textit{agent}, \textit{framework},
+v, S)$ where $v \in [0,1]$ is a caller-supplied \emph{task value} (task-success
+quality) and $S = (s_1,\dots,s_n)$ is a step sequence. Each step $s_i$ carries a
+type, free-text content, a token count $t_i$, and (for tool calls) a success
+flag. Traces with $n < 5$ steps are not scored (too little signal). Textual
+similarity $\mathrm{sim}(\cdot,\cdot)\in[0,1]$ between step contents is provided
+by an injected backend; the default is a bag-of-words cosine, with an optional
+embedding backend.
+
+\subsection{Sub-metrics}
+Each sub-metric maps a trace to $[0,1]$ (or a percentage), higher being more
+efficient. Table~\ref{tab:metrics} lists all thirteen with their default
+composite weight. Representative definitions:
+
+\begin{itemize}[leftmargin=*]
+  \item \textbf{SRR (Step Redundancy Rate).} Fraction of steps that are
+        near-duplicates of a recent prior step
+        ($\mathrm{sim} \ge 0.65$ for the bag-of-words backend), scanned over a
+        bounded look-back window of the last $256$ steps to keep the cost
+        $O(n\cdot 256)$ rather than $O(n^2)$.
+  \item \textbf{LDI (Loop Detection Index).} Degree to which the
+        reasoning/tool-call sequence revisits previously seen cycles.
+  \item \textbf{TCA (Tool Call Accuracy).} Fraction of tool calls that
+        succeeded on first attempt.
+  \item \textbf{ISR (Information Sufficiency Rate).} Fraction of steps that add
+        novelty, where a step's information gain is
+        $1 - \max_{j\in W(i)} \mathrm{sim}(s_i, s_j)$ over the bounded prior
+        window $W(i)$; steps below a novelty threshold are flagged.
+  \item \textbf{TUR, CCE.} Token-utilisation ratio and context carry-over
+        efficiency, penalising re-stated context.
+  \item \textbf{RDA (Reasoning Depth Appropriateness).} Closeness of the actual
+        step count to an expected count inferred from task complexity (tool
+        surface area, query patterns, historical median).
+  \item \textbf{DBO (Decision Branch Optimality).} Tool-sequence efficiency
+        against accumulated historical sequences; falls back to a neutral
+        cold-start value when no history exists.
+  \item \textbf{Verbosity: VDI, SHL, CCR.} Verbosity-density, sycophancy/hedging
+        level, and a compression-ratio proxy.
+  \item \textbf{GAR, CSD.} Goal-advancement ratio and cross-step semantic drift.
+\end{itemize}
+
+\begin{table}[t]
+\centering
+\caption{The thirteen TAS sub-metrics and their default weights. Weights sum to
+$1.20$ and are normalised by their sum at scoring time, so the rightmost column
+(\,weight\,$/1.20$) is the actual share of the composite. \textbf{These weights
+are author-chosen heuristics, not calibrated} (Section~\ref{sec:limits}).}
+\label{tab:metrics}
+\begin{tabular}{llrr}
+\toprule
+Code & Metric & Weight & Share \\
+\midrule
+SRR & Step Redundancy Rate            & 0.17 & 14.2\% \\
+LDI & Loop Detection Index            & 0.13 & 10.8\% \\
+TCA & Tool Call Accuracy              & 0.13 & 10.8\% \\
+RDA & Reasoning Depth Appropriateness & 0.10 & \phantom{0}8.3\% \\
+ISR & Information Sufficiency Rate     & 0.10 & \phantom{0}8.3\% \\
+TUR & Token Utilisation Ratio         & 0.10 & \phantom{0}8.3\% \\
+CCE & Context Carry-over Efficiency   & 0.10 & \phantom{0}8.3\% \\
+DBO & Decision Branch Optimality      & 0.09 & \phantom{0}7.5\% \\
+VDI & Verbosity Density Index         & 0.08 & \phantom{0}6.7\% \\
+GAR & Goal Advancement Ratio          & 0.07 & \phantom{0}5.8\% \\
+SHL & Sycophancy/Hedging Level        & 0.05 & \phantom{0}4.2\% \\
+CSD & Cross-Step Semantic Drift       & 0.05 & \phantom{0}4.2\% \\
+CCR & Caveman Compression Ratio       & 0.03 & \phantom{0}2.5\% \\
+\midrule
+    & \textbf{Total}                  & \textbf{1.20} & 100\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Composite score}
+Let $m_k\in[0,100]$ be the $k$-th sub-metric and $w_k$ its weight. The raw
+structural score is the normalised weighted mean
+\begin{equation}
+\textit{raw} \;=\; \frac{\sum_k w_k\, m_k}{\sum_k w_k},
+\qquad \sum_k w_k = 1.20 .
+\end{equation}
+The reported TAS applies a \emph{Task Value Integration} (TVI) multiplier so that
+a structurally clean trace that nonetheless \emph{failed} its task is penalised:
+\begin{equation}
+\textit{TAS} \;=\; \textit{raw}\times\bigl(0.7 + 0.3\,v\bigr).
+\label{eq:tvi}
+\end{equation}
+At $v=1$ the multiplier is $1$ (no change); at $v=0$ it caps the score at $0.7$
+of raw. The constants $0.7/0.3$ are a design choice, not a fitted parameter.
+
+\subsection{Verbosity alert}
+An aggregate verbosity score
+$\textit{AVS} = 0.45(1-\textit{VDI}) + 0.30\,\textit{SHL} + 0.25\,\textit{CCR}$
+is reported alongside TAS; $\textit{AVS} > 0.40$ raises a verbosity alert. As
+with the composite weights, these coefficients and threshold are heuristic.
+
+\subsection{Calibrating the weights}
+\label{sec:calib}
+Because the default weights are heuristic, we provide a calibration procedure
+that fits them to data for a stated objective (here, \emph{recoverable token
+waste}). Given a dataset of traces each labelled with a measured recoverable
+fraction $r\in[0,1]$ (from before/after re-runs at constant task quality), we set
+the target efficiency $y = 1-r$ and the feature vector $x$ to the thirteen
+normalised sub-metrics, then solve the simplex-constrained least squares
+\begin{equation}
+\min_{\mathbf{w}}\; \lVert X\mathbf{w} - \mathbf{y}\rVert_2^2 + \lambda\lVert \mathbf{w}-\tfrac{1}{13}\mathbf{1}\rVert_2^2
+\quad\text{s.t.}\quad \mathbf{w}\ge 0,\ \textstyle\sum_k w_k = 1 ,
+\end{equation}
+where the constraint $\sum_k w_k = 1$ makes the engine's normalised composite
+equal $X\mathbf{w}$ exactly, and $\lambda$ optionally regularises toward uniform
+weights. The tool reports in-sample $R^2$, $k$-fold cross-validated $R^2$, and
+the default-weights baseline, and emits a weights file the engine loads at
+runtime. Measured before/after pairs may be supplied as raw, LangSmith, or OTEL
+traces through an import adapter; token totals are read from the auditor so the
+two sides are comparable across formats.
+
+\paragraph{Controlled calibration experiment.}
+To validate the procedure we built a benchmark of $n{=}200$ traces in which a
+known quantity of recoverable waste is injected across six categories (duplicate
+reasoning, repeated tool loops, failed tool calls, verbose filler, hedging, and
+restated context), so the target fraction is ground truth by construction rather
+than estimated by TraceRazor. Table~\ref{tab:calib} reports the fit. Calibrated
+weights explain most of the variance in recoverable waste
+($\text{CV } R^2 = 0.64$) and generalise (train $\approx$ CV, so not over-fit),
+whereas the heuristic default weights are almost uninformative on this target
+($R^2 = 0.09$). The fit concentrates mass on the redundancy and context-carryover
+metrics (SRR $0.38$, CCE $0.54$), i.e. it recovers the metrics that actually
+track the injected waste; $\ell_2$ regularisation toward uniform does not improve
+cross-validated fit here, so the concentration is a property of the data, not
+over-fitting.
+
+\begin{table}[t]
+\centering
+\caption{Calibration on the controlled benchmark ($n{=}200$, 5-fold CV). The
+calibrated weights predict recoverable waste; the heuristic defaults barely do.}
+\label{tab:calib}
+\begin{tabular}{lrr}
+\toprule
+Weights & Train $R^2$ & CV $R^2$ \\
+\midrule
+Default (heuristic)   & --   & 0.09 \\
+Calibrated (this tool) & 0.65 & \textbf{0.64} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[t]
+\centering
+\caption{Default vs.\ calibrated weight on each sub-metric (normalised shares,
+summing to 1). The fit moves mass onto redundancy (SRR) and context
+carry-over (CCE), the metrics that track the injected waste, and zeroes metrics
+that do not vary with it. Metrics calibrated to $0.00$ are omitted.}
+\label{tab:calibweights}
+\begin{tabular}{lrr}
+\toprule
+Metric & Default & Calibrated \\
+\midrule
+CCE (context carry-over)   & 0.083 & \textbf{0.544} \\
+SRR (step redundancy)      & 0.142 & \textbf{0.376} \\
+RDA (reasoning depth)      & 0.083 & 0.054 \\
+LDI (loop detection)       & 0.108 & 0.019 \\
+DBO (decision branch)      & 0.075 & 0.006 \\
+\emph{others (TCA, ISR, TUR, VDI, SHL, CCR, GAR, CSD)} & -- & 0.000 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Scope.} This is a controlled validation of the calibration
+\emph{procedure}: it shows that, given measured recoverable-waste labels, the
+fit recovers a weighting that predicts them far better than the heuristic
+defaults. It is \emph{not} a claim that the calibrated weights predict waste in
+any particular production system, because the injected-waste distribution is a
+model, not a sample of real agents. A production-calibrated score requires
+fitting on real measured before/after runs from the target workload; the tooling
+and data format for that are provided, and the shipped engine defaults are left
+heuristic until such a fit is performed, so no synthetic weighting is passed off
+as a general-purpose metric.
+
+\section{Fix Generation and Savings Estimation}
+\label{sec:fixes}
+For each detected inefficiency, TraceRazor emits a typed fix patch
+(e.g. \emph{context compression}, \emph{termination guard},
+\emph{tool-schema tightening}) with an \emph{estimated} per-run token saving
+computed from per-fix heuristics (for example, projecting that a fraction of a
+flagged step's tokens is recoverable). It also produces an \emph{optimal path}:
+a keep/trim/delete annotation over the steps with a projected token total.
+
+\paragraph{Estimates are not measurements.} The headline ``tokens saved'' and
+``\$/month'' figures are the \emph{sum of these per-fix projections}. They are
+not the result of applying the fixes and re-running the agent. TraceRazor
+provides a \code{bench} command precisely so that a user can supply a real
+``after'' trace and obtain a \emph{measured} before/after delta; only that path
+yields a measured saving. This distinction is load-bearing and is restated in
+Section~\ref{sec:limits}.
+
+\section{Pillar 2: Adaptive Sampling}
+\label{sec:sampling}
+The sampling pillar applies self-consistency~\cite{selfconsistency} to agent
+final answers: sample $K$ candidates, canonicalise them (numeric/whitespace/
+key-order normalisation), and select by exact-match plurality vote. An
+\emph{adaptive-$K$} variant reduces $K$ when recent steps reach consensus quickly
+and restores it otherwise, trading a small accuracy cost for fewer tokens. The
+in-package consensus selector uses \textbf{honest majority vote with a
+deterministic tiebreak and no access to ground-truth answers}.
+
+We emphasise two caveats up front (expanded in Section~\ref{sec:limits}): the
+benchmark below is \textbf{single-seed over 50 tasks with no confidence
+intervals}, and the adaptive rule conflates consensus with correctness. The
+``Pareto'' framing is therefore \emph{directional}, not a significance claim.
+
+\section{Pillar 3: Substitutability Classifier}
+\label{sec:subst}
+This pillar predicts whether a cached response can substitute for a fresh LLM
+call, using embedding-similarity features and an sklearn classifier. We report it
+for completeness but stress that the shipped evaluation is a \textbf{pipeline
+smoke test on synthetic templated pairs}, where the binary label is essentially
+``same intent.'' Under this construction the task collapses to topic similarity,
+which the embedding feature trivially recovers; the resulting near-perfect AUC
+reflects \emph{label leakage by design} and must not be read as a generalisation
+estimate. We include it to document the pipeline, not to make a performance
+claim.
+
+\section{Evaluation}
+\label{sec:eval}
+All results in this section are reproducible from the repository
+(Section~\ref{sec:repro}).
+
+\subsection{Audits on real public agent trajectories}
+We converted 24 real public agent runs (tau-bench airline/retail with GPT-4o and
+Claude~3.5 Sonnet; SWE-agent edit-format variants) into the trace schema and
+audited them. Table~\ref{tab:taubench} reports mean TAS and mean step-redundancy
+per model/domain. These numbers reproduce within rounding from the shipped
+traces. Because token counts for some sources are approximated from text length,
+absolute token figures should be read as estimates; the \emph{relative} ordering
+is the informative part. For SWE-agent, the compact \code{xml} edit format used
+about \textbf{52\% fewer tokens} than the verbose \code{cursors} format
+($3{,}636$ vs $7{,}553$ tokens) at comparable TAS ($\approx 68$--$72$).
+
+\begin{table}[t]
+\centering
+\caption{Audit summary over real public trajectories (means). TAS is the
+ordinal composite; SRR is step-redundancy (lower is better).}
+\label{tab:taubench}
+\begin{tabular}{llrr}
+\toprule
+Model & Domain & Mean TAS & Mean SRR \\
+\midrule
+GPT-4o          & airline & 53.1 & 35.9\% \\
+GPT-4o          & retail  & 85.4 & 13.9\% \\
+Claude 3.5 Sonnet & airline & 67.4 & 41.2\% \\
+Claude 3.5 Sonnet & retail  & 80.6 & 16.5\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Synthetic benchmark}
+On five synthetic traces that each isolate a waste pattern (bloated, clean,
+looping, reformulator, verbose), the mean TAS is $74.3$ (range $55.4$--$84.4$),
+with the looping and verbose traces scoring lowest, as intended. This benchmark
+is regenerated by a script so the numbers in the repository track the current
+scorer.
+
+\subsection{Adaptive sampling (preliminary)}
+Table~\ref{tab:sampling} reports first-attempt pass rate and total tokens over
+$50$ tau-bench airline tasks (gpt-4o), \textbf{single seed}. On point estimates,
+self-consistency and adaptive-$K$ achieve the highest pass rate; adaptive-$K$
+uses far fewer tokens than naive $K{=}5$. With $n=50$, the standard error on a
+pass rate is roughly $7$ percentage points, so the gap between the top two
+configurations is \emph{within noise}. We report this as motivating evidence,
+not a significance result.
+
+\begin{table}[t]
+\centering
+\caption{Sampling strategies on 50 tau-bench airline tasks, gpt-4o,
+\textbf{single seed, no confidence intervals}. Differences within $\sim$1--2
+standard errors should not be over-interpreted.}
+\label{tab:sampling}
+\begin{tabular}{lrr}
+\toprule
+Strategy & Pass@1 & Total tokens \\
+\midrule
+Single ($K{=}1$)        & 38\% & \phantom{0}63{,}248 \\
+Naive $K{=}5$           & 40\% & 281{,}519 \\
+Adaptive-$K$            & 46\% & 245{,}888 \\
+Self-Consistency $K{=}5$ & 48\% & 136{,}942 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Performance}
+Core analysis is a few milliseconds for typical traces (tens of steps). With the
+bounded look-back windows in SRR and ISR, per-trace cost scales roughly linearly
+with step count rather than quadratically; multi-thousand-step traces take
+proportionally longer. The HTTP server additionally caps accepted traces at
+$50{,}000$ steps as a denial-of-service guard.
+
+\section{Threats to Validity and Limitations}
+\label{sec:limits}
+We consider this section the most important part of the report. TraceRazor is a
+heuristic engineering tool; the following limit any scientific interpretation of
+its outputs.
+
+\paragraph{Construct validity of TAS.} TAS has not been validated against an
+external criterion (human-labelled ``recoverable waste,'' or measured token
+reduction at constant task success). It should be treated as an \emph{ordinal,
+within-project} indicator, not a cross-agent or absolute efficiency percentage.
+
+\paragraph{Uncalibrated weights and thresholds (by default).} The \emph{default}
+composite weights (Table~\ref{tab:metrics}), the TVI constants in
+Eq.~\eqref{eq:tvi}, the AVS coefficients, and per-metric thresholds (e.g. the
+$0.65$ similarity cutoff) are author-chosen. The weights can now be replaced with
+data-fit values via the calibration procedure of Section~\ref{sec:calib}; until a
+user calibrates on their own labelled data, the shipped score remains an ordinal
+heuristic, and the TVI/AVS constants and thresholds are still uncalibrated. We
+have not performed a sensitivity analysis showing conclusions are robust to
+perturbing the latter.
+
+\paragraph{Internally competing sub-metrics.} Some sub-metrics optimise in
+opposite directions on the same similarity signal (redundancy penalises
+inter-step similarity; continuity rewards it). There is consequently no single
+joint optimum, and an agent can trade one against another.
+
+\paragraph{Savings are estimates, not outcomes.} As stressed in
+Section~\ref{sec:fixes}, reported token/cost savings are heuristic projections.
+A measured saving requires applying the fixes, re-running the agent, and
+comparing via \code{bench} at constant task quality.
+
+\paragraph{Closed-loop self-validation.} An optional adherence metric checks
+whether the tool's own fixes improved the tool's own metrics. This is
+self-validation, not external ground truth, and should not be read as evidence
+that fixes improve real outcomes.
+
+\paragraph{Sampling statistics.} The sampling benchmark is single-seed,
+$n=50$, with no confidence intervals or significance tests. Multi-seed runs over
+more tasks and domains are needed before any ranking of strategies is asserted.
+We note that an earlier evaluation harness selected self-consistency answers
+using benchmark gold outputs (an oracle); the \emph{shipped} selector uses honest
+majority vote, and the oracle-based path should not be used for headline claims.
+
+\paragraph{Substitutability circularity.} As described in
+Section~\ref{sec:subst}, the shipped classifier evaluation has label leakage by
+construction and is a smoke test only.
+
+\paragraph{Similarity backend and language.} The default bag-of-words similarity
+is shallow; verbosity word-lists are English-only. The compression-ratio proxy
+uses a single global constant and can mis-fire on structured (e.g. JSON) content.
+
+\section{Reproducibility}
+\label{sec:repro}
+The Rust workspace builds with \code{cargo build --release}; the Python package
+installs with \code{pip install -e .}. Audits are reproduced with
+\code{tracerazor audit <trace> --format json}; the synthetic benchmark with
+\code{python benchmarks/run\_benchmarks.py}; the sampling data is shipped as
+JSON; and the test suites run with \code{cargo test --workspace} (192 tests) and
+\code{pytest} (214 tests). The audit table and synthetic-benchmark numbers in
+Section~\ref{sec:eval} were produced by the current binary on the committed
+traces.
+
+\section{Conclusion}
+TraceRazor is a fast, interpretable, offline-first tool for finding and
+explaining token waste in LLM agent traces, with optional sampling and
+substitutability pillars. Its engineering is solid and its outputs are
+actionable, but its central score is an uncalibrated ordinal heuristic and its
+quantitative claims are either estimates or preliminary. We have tried to be
+explicit about this throughout. The clear path to turning TraceRazor into a
+defensible measurement is: (1) apply the calibration procedure of
+Section~\ref{sec:calib} to a real labelled corpus (the tooling now exists; what
+is missing is the data); (2) replace estimated savings with measured
+before/after re-runs at constant task success; (3) re-run the sampling study
+multi-seed with confidence intervals and a deployable (non-oracle) selector; and
+(4) define and label substitutability on real data. Until then, TraceRazor is
+best understood as a high-quality heuristic and a reproducible harness, which is
+how it is documented and shipped.
+
+\begin{thebibliography}{99}
+\small
+\bibitem{tale} M. Han et al. \emph{Token-Budget-Aware LLM Reasoning (TALE)}. ACL, 2025.
+\bibitem{selfbudgeter} Q. Zhao et al. \emph{SelfBudgeter: Adaptive Token Allocation for Reasoning}. 2025.
+\bibitem{stepsurvey} J. Lee et al. \emph{Evaluating Step-by-step Reasoning Traces: A Survey}. 2025.
+\bibitem{dualformer} D. Su et al. \emph{Dualformer: Controllable Fast and Slow Thinking}. 2024.
+\bibitem{steppruner} Y. Wu et al. \emph{Step Pruner: Efficient Reasoning in LLMs}. 2025.
+\bibitem{efficientsurvey} S. Feng et al. \emph{Efficient Reasoning Models: A Survey}. 2025.
+\bibitem{toolchain} Y. Pan et al. \emph{ToolChain*: Efficient Action-Space Search for LLM Agents}. NeurIPS, 2024.
+\bibitem{budget} M. Hassid et al. \emph{Reasoning on a Budget}. 2025.
+\bibitem{agenteval} A. Mohammadi et al. \emph{Evaluation and Benchmarking of LLM Agents}. KDD, 2025.
+\bibitem{verbosity} W. Shi et al. \emph{Verbosity Bias in Preference Labeling / LLM Responses}. 2024.
+\bibitem{selfconsistency} X. Wang et al. \emph{Self-Consistency Improves Chain-of-Thought Reasoning in Language Models}. ICLR, 2023.
+\end{thebibliography}
+
+\end{document}

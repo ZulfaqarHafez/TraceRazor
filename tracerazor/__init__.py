@@ -1,5 +1,5 @@
 """
-TraceRazor 1.0.0
+TraceRazor 1.1.0
 
 TraceRazor is a token efficiency auditor and adaptive sampling library for
 production AI agents. It does two things:

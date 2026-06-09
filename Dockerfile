@@ -18,12 +18,11 @@ COPY crates/tracerazor-ingest/Cargo.toml    crates/tracerazor-ingest/Cargo.toml
 COPY crates/tracerazor-semantic/Cargo.toml  crates/tracerazor-semantic/Cargo.toml
 COPY crates/tracerazor-store/Cargo.toml     crates/tracerazor-store/Cargo.toml
 COPY crates/tracerazor-server/Cargo.toml    crates/tracerazor-server/Cargo.toml
-COPY crates/tracerazor-proxy/Cargo.toml     crates/tracerazor-proxy/Cargo.toml
 COPY crates/tracerazor-cli/Cargo.toml       crates/tracerazor-cli/Cargo.toml
 
 # Stub every lib/main so cargo can resolve the dependency graph.
 RUN for crate in tracerazor-core tracerazor-ingest tracerazor-semantic \
-        tracerazor-store tracerazor-proxy; do \
+        tracerazor-store; do \
       mkdir -p crates/$crate/src && echo "pub fn _stub() {}" > crates/$crate/src/lib.rs; \
     done && \
     mkdir -p crates/tracerazor-server/src && echo "fn main() {}" > crates/tracerazor-server/src/main.rs && \
@@ -53,14 +52,28 @@ COPY traces/ ./traces/
 # Data directory for the persistent SQLite database file.
 RUN mkdir -p /app/data
 
+# Run as an unprivileged user so an app-level RCE can't trivially own the
+# container as root. The chown must happen BEFORE the VOLUME instruction —
+# changes to a volume path made afterwards are discarded by the builder — so
+# the runtime user can write the SQLite database into the named volume.
+RUN useradd --system --uid 10001 --user-group --no-create-home appuser \
+ && chown -R appuser:appuser /app
+
 ENV TRACERAZOR_DB_PATH=/app/data/tracerazor.db
 ENV PORT=8080
+# Inside the container we must listen on all interfaces so the published port
+# is reachable. The application itself defaults to 127.0.0.1; binding 0.0.0.0
+# here is a deliberate, container-scoped exposure.
+ENV TRACERAZOR_BIND_ADDR=0.0.0.0
 
 EXPOSE 8080
 
 VOLUME ["/app/data"]
 
+USER appuser
+
+# Use the server binary's own probe mode — no curl/wget needed in the image.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD curl -f http://localhost:8080/api/ || exit 1
+  CMD ["/app/tracerazor-server", "--health-check"]
 
 CMD ["./tracerazor-server"]
