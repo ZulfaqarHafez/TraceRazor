@@ -793,7 +793,9 @@ mod tests {
 
     async fn test_app() -> TestServer {
         let state = crate::state::AppState::new(":mem:").await.unwrap();
-        let app = crate::build_app(state);
+        // No token: these tests cover route behaviour, not auth (see lib.rs
+        // auth_tests). Hermetic against a TRACERAZOR_API_TOKEN in the test env.
+        let app = crate::build_app_with_token(state, None);
         TestServer::new(app).unwrap()
     }
 

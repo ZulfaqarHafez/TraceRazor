@@ -1,4 +1,4 @@
-name: Release wheels
+name: Release
 
 on:
   push:
@@ -28,3 +28,63 @@ jobs:
         with:
           name: wheel-${{ matrix.os }}
           path: dist/*.whl
+
+  # Standalone CLI binaries — downloaded by the composite GitHub Action
+  # (.github/actions/tracerazor) so consumer repos need no Rust toolchain.
+  binaries:
+    name: Release binary (${{ matrix.target }})
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: macos-13
+            target: x86_64-apple-darwin
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: Build CLI
+        run: cargo build --release -p tracerazor --target ${{ matrix.target }}
+      - name: Smoke test
+        run: ./target/${{ matrix.target }}/release/tracerazor audit traces/support-agent-run-2847.json --hermetic
+      - name: Package
+        run: |
+          tar -czf tracerazor-${{ matrix.target }}.tar.gz \
+            -C target/${{ matrix.target }}/release tracerazor
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.target }}
+          path: tracerazor-*.tar.gz
+
+  # Attach wheels + binaries to the GitHub release on tag push.
+  publish-release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [wheels, binaries]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Create release with assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ASSETS=$(find artifacts -type f \( -name '*.whl' -o -name '*.tar.gz' \))
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # shellcheck disable=SC2086
+            gh release upload "$GITHUB_REF_NAME" $ASSETS --clobber
+          else
+            # shellcheck disable=SC2086
+            gh release create "$GITHUB_REF_NAME" $ASSETS \
+              --verify-tag --generate-notes --title "TraceRazor $GITHUB_REF_NAME"
+          fi

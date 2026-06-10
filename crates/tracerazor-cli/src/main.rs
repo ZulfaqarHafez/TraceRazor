@@ -308,6 +308,25 @@ enum Commands {
     /// To sign every audit: export TRACERAZOR_SIGNING_KEY=<key>
     /// To verify a signed report: tracerazor verify report.json trace.json
     Keygen,
+
+    /// Start the TraceRazor HTTP server (REST API + dashboard).
+    ///
+    /// Alias for the `tracerazor-server` binary. POST a trace to
+    /// /api/audit as {"trace": <trace JSON>}. Set TRACERAZOR_API_TOKEN to
+    /// require `Authorization: Bearer <token>` on all /api routes —
+    /// mandatory before exposing a non-loopback bind address.
+    Serve {
+        /// Port to listen on.
+        #[arg(long, default_value_t = 8080)]
+        port: u16,
+        /// Bind address. Loopback by default; pass 0.0.0.0 to expose
+        /// externally (set TRACERAZOR_API_TOKEN first).
+        #[arg(long, default_value = "127.0.0.1")]
+        bind: String,
+        /// SQLite database path.
+        #[arg(long, value_name = "FILE")]
+        db: Option<String>,
+    },
 }
 
 #[derive(ValueEnum, Clone, Debug)]
@@ -414,6 +433,17 @@ async fn run() -> Result<()> {
         }
         Commands::Keygen => {
             cmd_keygen();
+        }
+        Commands::Serve { port, bind, db } => {
+            let db_path = db
+                .or_else(|| std::env::var("TRACERAZOR_DB_PATH").ok())
+                .unwrap_or_else(|| "./tracerazor.db".to_string());
+            tracerazor_server::run_server(tracerazor_server::ServeOptions {
+                port,
+                bind,
+                db_path,
+            })
+            .await?;
         }
     }
 

@@ -1,6 +1,6 @@
 # TraceRazor
 
-**Token efficiency auditing, adaptive sampling, and substitutability analysis for production AI agents.**
+**An offline auditor that decomposes AI-agent token waste into 14 scored signals, emits risk-tagged fix patches, and produces cryptographically verifiable (Ed25519-signed) reports.**
 
 [![CI](https://github.com/ZulfaqarHafez/tracerazor/actions/workflows/tracerazor.yml/badge.svg)](https://github.com/ZulfaqarHafez/tracerazor/actions)
 [![PyPI](https://img.shields.io/pypi/v/tracerazor)](https://pypi.org/project/tracerazor/)
@@ -15,27 +15,22 @@ pip install tracerazor
 ## What TraceRazor Does
 
 ```
-  ┌───────────────────────────────────────────────────────────────────────────┐
-  │                           TraceRazor v0.4.0                               │
-  │                                                                           │
-  │   ┌──────────────┐    ┌──────────────────┐    ┌────────────────────────┐ │
-  │   │   1. AUDIT   │    │   2. SAMPLING    │    │  3. SUBSTITUTABILITY   │ │
-  │   │              │    │                  │    │                        │ │
-  │   │ Score your   │    │ Run K parallel   │    │ Predict when a cached  │ │
-  │   │ agent traces │    │ LLM calls per    │    │ response can replace a │ │
-  │   │ across 14    │    │ step. Pick the   │    │ fresh LLM call, saving │ │
-  │   │ efficiency   │    │ consensus        │    │ one round-trip per     │ │
-  │   │ metrics.     │    │ winner.          │    │ correct prediction.    │ │
-  │   │              │    │                  │    │                        │ │
-  │   │ Offline.     │    │ Drop-in for      │    │ MiniLM embeddings +    │ │
-  │   │ ~2 ms / 50   │    │ LangGraph.       │    │ sklearn classifier     │ │
-  │   │ steps; see   │    │                  │    │ (Python).              │ │
-  │   │ benchmark.   │    │                  │    │                        │ │
-  │   └──────────────┘    └──────────────────┘    └────────────────────────┘ │
-  └───────────────────────────────────────────────────────────────────────────┘
+  ┌──────────────────────── TraceRazor v0.4.0 ─────────────────────────────┐
+  │                                                                        │
+  │   trace JSON ──► AUDIT ──► TAS score (14 signals) + fix patches        │
+  │   (LangSmith /             + savings estimate + run manifest           │
+  │    OTel / raw)             + Ed25519 signature (optional)              │
+  │                                                                        │
+  │   report ─────► VERIFY ──► signature check ► hash check ► re-score     │
+  │   (+ trace)                any edited field ⇒ TAMPERED, exit 1         │
+  │                                                                        │
+  └────────────────────────────────────────────────────────────────────────┘
 ```
 
-Each pillar is independent. Use one, two, or all three.
+Audit runs offline (no API keys; low single-digit milliseconds on typical
+traces). Verify lets a third party check that a score is authentic and
+reproducible. Experimental sampling and substitutability work is demoted to
+[Labs](#labs-experimental) status.
 
 ---
 
@@ -61,7 +56,7 @@ Most tools in this space are observability and cost dashboards: LangSmith, Langf
 
 ---
 
-## Pillar 1: Audit
+## Audit
 
 > Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Fast on typical traces — low single-digit milliseconds up to ~50 steps; cost grows with trace length (see the [Performance](#performance) note). Reproduce locally with `cargo bench -p tracerazor-core`.
 
@@ -451,7 +446,51 @@ choice for another. The worked example lives in `calibration/`; see
 
 ---
 
-## Pillar 2: Adaptive Sampling
+## Verify: signed, tamper-evident reports
+
+A score is only evidence if a third party can check it. Every audit embeds a
+**run manifest** (trace SHA-256, tool version, similarity backend, exact
+weights + hash, thresholds, store-derived baselines), and `verify` re-checks
+it; hermetic bag-of-words runs are re-scored exactly, field by field.
+
+For adversarial settings (compliance hand-offs, vendor claims), sign the
+report:
+
+```bash
+# One-time: generate an Ed25519 keypair
+tracerazor keygen
+# TRACERAZOR_SIGNING_KEY=...   (private — keep secret, e.g. a CI secret)
+# TRACERAZOR_VERIFY_KEY=...    (public — distribute freely)
+
+# Audits signed with the key embed a signature over the canonical report
+export TRACERAZOR_SIGNING_KEY=<key>
+tracerazor audit traces/support-agent-run-2847.json --hermetic --format json > report.json
+
+# Verification checks the signature FIRST: any edited field — TAS, AGF,
+# savings, fixes, summary, even the similarity-backend claim — exits 1 TAMPERED
+tracerazor verify report.json traces/support-agent-run-2847.json
+# signature       : OK (Ed25519)
+# trace hash      : OK (...)
+# re-score        : OK (all metrics match)
+# verified        : full (Ed25519-authenticated + reproduced from trace, manifest, version)
+```
+
+Unsigned reports never get a "full" verdict — they verify as
+`rescore-only (unsigned)` at best. For WORM hand-offs, `tracerazor export
+<trace> --bundle evidence.zip` packs trace + signed report + weights +
+SHA256SUMS into one archive that `tracerazor verify evidence.zip` checks
+end-to-end (no separate trace argument needed).
+
+---
+
+## Labs (experimental)
+
+The two sections below are research tracks, not part of the supported
+product surface. Their results are preliminary (single-seed sampling
+benchmark; substitutability validated only on synthetic data) — treat them
+as directional until the caveats inside each section are resolved.
+
+## Labs: Adaptive Sampling (experimental)
 
 > Two drop-in LangGraph strategies, `AdaptiveKNode` (per-step parallel
 > sampling) and `SelfConsistencyBaseline` (re-sample the final answer only).
@@ -543,7 +582,7 @@ result = await naive.run(task)
 
 ---
 
-## Pillar 3: Substitutability Classifier
+## Labs: Substitutability Classifier (experimental)
 
 > Predict whether a cached LLM response can safely replace a fresh response to a new prompt. Every correct positive saves one full LLM round-trip.
 
@@ -780,14 +819,28 @@ hooks.assert_passes()
 
 ### GitHub Actions CI Gate
 
+Works from **any repo** — the action downloads a prebuilt release binary
+(no Rust toolchain), parses the report JSON (a malformed report fails the
+step instead of silently scoring 0), posts a sticky PR comment, and uploads
+the JSON report as an artifact.
+
 ```yaml
-- uses: ./.github/actions/tracerazor
+permissions:
+  pull-requests: write # for the sticky PR comment
+
+- uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v0.4.0
   with:
     trace-file: traces/latest-run.json
     threshold: '75'
+    # Optional regression gate vs a known-good baseline:
+    baseline-trace: traces/support-agent-run-2847.json
+    regression-threshold: '10' # fail on any metric dropping >10%
 ```
 
-Outputs: `tas-score`, `grade`, `passes`, `report`. Exits 1 if TAS < threshold.
+Outputs: `tas-score`, `grade`, `passes`, `regression-detected`,
+`tokens-saved`, `report`, `report-json-path`. Exits 1 if TAS < threshold or
+a per-metric regression exceeds the threshold; exits 2 (without inventing a
+score) on broken input.
 
 | Framework | Adapter |
 |---|---|
@@ -806,14 +859,16 @@ tracerazor <COMMAND>
 
 Commands:
   audit      Score a trace file; gate CI on --threshold <N>
+  verify     Verify a report (or evidence bundle .zip) — signature, hash, re-score
+  keygen     Generate an Ed25519 keypair for report signing
   optimize   Rewrite the system prompt with an LLM to eliminate detected waste
   apply      Patch a system prompt file with safe, non-functional fixes
   bench      Compare before/after traces and verify actual savings
   compare    Per-metric delta table between two trace files
   simulate   Project TAS impact of removing or merging steps
   cost       Monthly savings estimate across a set of traces
-  export     Forward a stored trace to OTEL or a webhook
-  verify     Re-verify a report against its trace and run manifest
+  export     Forward a report to OTEL/webhook, or pack an evidence bundle
+  serve      Start the HTTP server (REST API + dashboard)
   list       List traces stored in the current session
 ```
 
@@ -826,6 +881,11 @@ tracerazor compare before.json after.json
 tracerazor simulate trace.json --remove 3,8 --merge 6,7
 tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs 50000
 tracerazor optimize trace.json --system-prompt agent.txt --output agent_v2.txt --target-tas 85
+
+# Signed evidence bundle (trace + signed report + weights + SHA256SUMS),
+# verifiable as a single file:
+tracerazor export traces/support-agent-run-2847.json --bundle evidence.zip
+tracerazor verify evidence.zip
 ```
 
 LLM backend (for `optimize` and `--enhanced`):
@@ -844,11 +904,34 @@ export TRACERAZOR_LLM_MODEL=llama3.1
 
 ## REST API
 
-Start: `./target/release/tracerazor-server`
+Start: `tracerazor serve` (alias for `./target/release/tracerazor-server`).
+
+The audit endpoint takes a `{"trace": ...}` envelope — the raw trace JSON
+(same schema as the CLI) wrapped in a `trace` key:
+
+```bash
+tracerazor serve --port 8080 &
+
+curl -s -X POST http://127.0.0.1:8080/api/audit \
+  -H "Content-Type: application/json" \
+  -d '{"trace": {"trace_id": "t1", "agent_name": "support", "framework": "raw",
+        "steps": [{"id": 1, "step_type": "reasoning", "content": "...", "tokens": 100}]}}'
+```
+
+**Auth:** set `TRACERAZOR_API_TOKEN` to require
+`Authorization: Bearer <token>` on every `/api` route and `/ws`; requests
+without it get `401`. The server binds loopback by default — set a token
+*before* exposing it (`--bind 0.0.0.0`), and the server warns if you don't.
+Health probes (`/healthz`, `/readyz`) stay open for orchestrators.
+
+```bash
+TRACERAZOR_API_TOKEN=s3cret tracerazor serve --bind 0.0.0.0 --port 8080 &
+curl -s -H "Authorization: Bearer s3cret" http://127.0.0.1:8080/api/traces
+```
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/audit` | Score a trace; auto-captures to KB if TAS >= 85 |
+| `POST` | `/api/audit` | Score a trace (`{"trace": ...}` envelope); auto-captures to KB if TAS >= 85 |
 | `GET` | `/api/traces` | List stored traces |
 | `GET/DELETE` | `/api/traces/:id` | Full trace + report / delete |
 | `GET` | `/api/dashboard` | Aggregate stats |
@@ -894,6 +977,7 @@ tracerazor/
 │   └── openai_agents/
 │
 ├── docs/
+│   ├── case_study.md          # Measured-savings protocol + harness status (4.1)
 │   ├── findings_v5.md         # Substitutability study: full results + Mermaid charts
 │   └── tau_bench_benchmark_report.md  # Pareto analysis of sampling strategies
 │
@@ -910,15 +994,15 @@ Reproduce with `cargo test --workspace` and `pytest`.
 
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 160 |
-| tracerazor-ingest | 3 |
+| tracerazor-core | 164 |
+| tracerazor-ingest (incl. golden files) | 7 |
 | tracerazor-semantic | 22 |
 | tracerazor-store | 10 |
-| tracerazor-server | 17 |
-| tracerazor-cli (2 unit + 13 integration) | 15 |
+| tracerazor-server (incl. auth) | 24 |
+| tracerazor-cli (2 unit + 22 integration) | 24 |
 | Doc-tests | 9 |
-| **Total Rust** | **236, all pass** |
-| **Python** (pytest) | **238 pass, 3 skipped** |
+| **Total Rust** | **260, all pass** |
+| **Python** (pytest) | **254 pass, 4 skipped** |
 
 ---
 

@@ -28,7 +28,7 @@ for arg in "$@"; do
 done
 
 # Rust crates must publish in topological dependency order. The CLI binary
-# depends on store + semantic + ingest + core; store depends on core; etc.
+# depends on server + store + semantic + ingest + core; store depends on core; etc.
 CRATE_ORDER=(
     crates/tracerazor-core
     crates/tracerazor-ingest

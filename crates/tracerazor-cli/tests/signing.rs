@@ -4,7 +4,6 @@
 //! Also verifies that a legitimately signed, unmodified report exits 0.
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use serde_json::Value;
 use std::io::Write;
 use std::path::PathBuf;

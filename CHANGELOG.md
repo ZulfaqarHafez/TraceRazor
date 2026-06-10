@@ -4,6 +4,60 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-06-10
+
+### Ship-plan Phase 4 (prove it and launch)
+- **Measured case-study harness** (`benchmark/case_study.py`) — turns
+  before/after trace pairs into a published table of *measured* token deltas
+  with seeded bootstrap 95% CIs, and refuses to call a delta a "saving" on
+  any task whose pass flag flipped (constant-pass-rate requirement, exit 1).
+  Methodology + status in `docs/case_study.md`; the live tau-bench re-run
+  needs API budget — until it lands, all savings remain heuristic estimates.
+- **GitHub Action v2** — downloads a prebuilt release binary (works from any
+  repo, no Rust toolchain; build-from-source is explicit opt-in), parses the
+  report JSON (a malformed/empty report fails the step instead of silently
+  scoring 0), wires `compare --regression-threshold` as a second gate
+  (`baseline-trace` input), posts a sticky PR comment, uploads the JSON
+  report as an artifact. Logic lives in shell scripts under
+  `.github/actions/tracerazor/`, exercised locally against the binary.
+- **Release binaries** — `release.yml` now builds standalone CLI tarballs
+  (linux x86_64, macOS arm64/x86_64) next to the wheels and attaches both to
+  the GitHub release on tag push; the action's download path consumes them.
+- **Server hardening for ops** — `TRACERAZOR_API_TOKEN` enables bearer-token
+  auth on every `/api` route and `/ws` (constant-time compare; missing/wrong
+  token → 401; health probes stay open); the server warns when binding
+  non-loopback unauthenticated. New `tracerazor serve` CLI alias (the server
+  crate is now also a library). The `{"trace": ...}` envelope and a working
+  curl are documented in the README.
+- **README narrowed to one product** — hero leads with Audit + Verify
+  ("offline auditor … cryptographically verifiable reports"); sampling and
+  substitutability demoted to explicit `Labs (experimental)` status; new
+  Verify section documents `keygen`/signing/`verify`/`--bundle`; CLI table
+  gains `verify`-bundle, `keygen`, `serve`.
+
+### Ship-plan Phase 3 (adversary-proof verification)
+- **Ed25519 report signing** — `tracerazor keygen` generates a keypair;
+  with `TRACERAZOR_SIGNING_KEY` set, every audit signs the canonical report
+  (`analysis_duration_ms` zeroed, signature fields excluded) and embeds the
+  signature + public key in the manifest. `verify` checks the signature
+  *first*: any edited field — TAS, AGF, savings, fixes, summary, even the
+  `similarity_backend` claim — exits 1 TAMPERED. The compliance reviewer's
+  four forgery attacks are pinned as integration tests
+  (`crates/tracerazor-cli/tests/signing.rs`).
+- **Whole-report verification** — re-score compares AGF score, savings,
+  fix count, and summary in addition to TAS + every normalised metric.
+  Unsigned reports get an explicit `rescore-only (unsigned)` verdict, never
+  "full"; only signed + reproduced reports earn
+  `full (Ed25519-authenticated + reproduced …)`.
+- **Evidence bundles** — `tracerazor export <trace> --bundle evidence.zip`
+  packs trace + signed report + weights + SHA256SUMS for WORM hand-off;
+  `tracerazor verify evidence.zip` checks bundle integrity then runs the
+  full signature/hash/re-score chain (no separate trace argument).
+- **Deterministic canonical bytes** — LDI loop output is sorted (HashMap
+  iteration order leaked into the report), and signing normalises floats
+  through a JSON round-trip so sign-time and verify-time serialisations
+  agree byte-for-byte.
+
 ### Ship-plan Phase 2 (installable + ingestible)
 - **Platform wheels with the bundled CLI** — `scripts/build_platform_wheel.sh`
   builds a wheel carrying the Rust binary at `tracerazor/bin/`; a new
