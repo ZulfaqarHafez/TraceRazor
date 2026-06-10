@@ -92,6 +92,14 @@ enum Commands {
         /// TRACERAZOR_WEIGHTS env var, then the built-in default weights.
         #[arg(long, value_name = "FILE")]
         weights: Option<PathBuf>,
+
+        /// Minimum trace steps required to audit (clamped to >= 2). The
+        /// default keeps the statistically conservative floor; lower it to
+        /// audit short real-world trajectories (most ReAct task runs finish
+        /// in 3-4 steps). Pair-based metrics carry less evidence on very
+        /// short traces — interpret scores accordingly.
+        #[arg(long, value_name = "N", default_value_t = MIN_TRACE_STEPS)]
+        min_steps: usize,
     },
 
     /// List all stored traces in the current session.
@@ -311,8 +319,8 @@ async fn main() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, enhanced, weights } => {
-            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, enhanced, weights).await?;
+        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, enhanced, weights, min_steps } => {
+            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, enhanced, weights, min_steps).await?;
         }
         Commands::List { agent } => {
             cmd_list(agent).await?;
@@ -355,6 +363,7 @@ async fn cmd_audit(
     do_store: bool,
     enhanced: bool,
     weights: Option<PathBuf>,
+    min_steps: usize,
 ) -> Result<()> {
     let data = std::fs::read_to_string(&file)
         .with_context(|| format!("Cannot read file: {}", file.display()))?;
@@ -362,12 +371,16 @@ async fn cmd_audit(
     let mut trace = ingest_parse(&data, trace_format.into())
         .with_context(|| format!("Failed to parse trace: {}", file.display()))?;
 
-    if !is_analysable(&trace) {
+    // Pair-based metrics need at least two steps; below the default floor the
+    // user opts in explicitly (most real ReAct task runs are 3–4 steps).
+    let min_steps = min_steps.max(2);
+    if trace.steps.len() < min_steps {
         eprintln!(
-            "Notice: Trace '{}' has {} steps (minimum {} required).",
+            "Notice: Trace '{}' has {} steps (minimum {} required). \
+             Use --min-steps to audit short traces.",
             trace.trace_id,
             trace.steps.len(),
-            MIN_TRACE_STEPS
+            min_steps
         );
         return Ok(());
     }

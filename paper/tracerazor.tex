@@ -146,15 +146,21 @@ composite weight. Representative definitions:
         step count to an expected count inferred from task complexity (tool
         surface area, query patterns, historical median).
   \item \textbf{DBO (Decision Branch Optimality).} Tool-sequence efficiency
-        against accumulated historical sequences; falls back to a neutral
-        cold-start value when no history exists.
+        against accumulated historical sequences; with no history it falls back
+        to a single-trace proxy whose retry and thrash signals key on the
+        \emph{invocation} (tool $+$ parameters), not the bare tool name, so
+        single-tool command agents are not structurally penalised
+        (Section~\ref{sec:hf-agentinstruct}).
   \item \textbf{Verbosity: VDI, SHL, CCR.} Verbosity-density, sycophancy/hedging
         level, and a compression-ratio proxy.
   \item \textbf{GAR, CSD.} Goal-advancement ratio and cross-step semantic drift.
         Both score reasoning-bearing steps against the goal (GAR) or each other
         (CSD); the scored set includes ReAct tool-call turns whose content embeds
         a substantive thought, not just steps typed as reasoning, so the metrics
-        do not collapse on tool-using agents whose reasoning is fused with action
+        do not collapse on tool-using agents whose reasoning is fused with action.
+        Fenced code inside a scored turn is reduced to its argument literals
+        (paths, quoted strings, numbers) before similarity: the literals anchor
+        the step to the task while command syntax no longer dilutes the overlap
         (Section~\ref{sec:hf-agentinstruct}).
 \end{itemize}
 
@@ -426,16 +432,28 @@ sourced trajectories from the Hugging Face dataset \code{zai-org/AgentInstruct}
 (formerly \code{THUDM/AgentInstruct})~\cite{agentinstruct}, a corpus of
 $1{,}866$ ReAct interactions across six task domains. We converted a sample
 spanning the operating-system (bash) and database (SQL) splits into the trace
-schema (\code{tools/convert\_agentinstruct.py}); the resulting corpus of nine
-traces (seven analysable at $\ge 5$ steps) is audited end-to-end by a
-\code{cargo test} statistics gate
+schema (\code{tools/convert\_agentinstruct.py}); the resulting corpus of
+thirteen traces is audited end-to-end by a \code{cargo test} statistics gate
 (\code{crates/tracerazor-cli/tests/huggingface\_real\_data.rs}) and summarised by
-\code{benchmark/hf\_audit\_stats.py}. Provenance and a live dataset-viewer fetch
-path are documented in the repository.
+\code{benchmark/hf\_audit\_stats.py}, with every audit run in a fresh state
+directory so measurements are independent of audit order. Provenance and a live
+dataset-viewer fetch path are documented in the repository.
 
-Auditing this corpus exposed two metric blind spots the function-calling traces
-had not, both rooted in ReAct's fusion of thought and action into one tool-call
-turn. They drove two heuristic fixes (the composite weights are unchanged):
+\paragraph{Few-shot scaffolding is not agent behaviour.} Each upstream row
+embeds the dataset's fixed one-shot demonstration (the same ``count the files
+in \code{/etc}'' exchange in every \code{os} row) before the real task, marked
+by a \code{loss{=}false} flag on its assistant turns. Our first conversion
+audited those turns as agent steps, which pseudo-replicated one canned
+trajectory into every trace and mis-anchored the goal metrics (every trace
+``began'' with a step about \code{/etc} regardless of its task). Excluding
+scaffolding by the loss flag (with a textual-boundary fallback) changed the
+statistics materially: mean TAS fell from $82.8$ to $78.0$ --- the demo steps
+had been \emph{padding} every score --- while goal alignment rose
+($\mathrm{GAR_{norm}}$ $0.26\to0.35$) once the metrics no longer fought the
+demo/task mismatch. We flag this as a general hazard when auditing
+conversation-formatted agent corpora.
+
+Auditing the corpus drove four data-driven fixes (composite weights unchanged):
 
 \paragraph{Loop detection missed parametric loops.} LDI originally keyed loops on
 an exact state hash, so it never fired ($\mathrm{LDI_{norm}}=1.0$ on every trace)
@@ -444,43 +462,77 @@ even on \code{os\_6}, which runs the same template once per file
 (Section~\ref{sec:metrics}) abstracts argument literals into a command skeleton
 and flags $\ge 3$ repeats, scoped to command-style tools so a structured call
 issued for two arguments (e.g.\ a flight search for two routes) is untouched.
-\code{os\_6} now reports a length-4 loop ($\mathrm{LDI_{norm}}:1.0\to 0.556$) and
-emits a loop-termination fix, while progressive pipelines (\code{os\_0}) are
-correctly \emph{not} flagged.
+On the de-contaminated corpus the loop dominates the trace:
+$\mathrm{LDI_{norm}}$ for \code{os\_6} is $0.333$ and a loop-termination fix is
+emitted, while progressive pipelines (\code{os\_0}) are correctly \emph{not}
+flagged.
 
 \paragraph{Goal/continuity metrics ignored embedded reasoning.} GAR and CSD
 scored only reasoning-typed steps, but a ReAct agent's goal-relevant reasoning
 lives inside the tool-call turn (``Think: \dots\ Act: bash \dots''); both metrics
 saw only the sparse final-answer steps and collapsed ($\mathrm{GAR_{norm}}$ as
 low as $0.0$). Scoring a tool-call step when its content carries substantive
-reasoning prose ($\ge 12$ words) --- capturing ``Think'' turns while still
-ignoring bare invocations --- raised corpus mean $\mathrm{GAR_{norm}}$ from
-$0.20$ to $0.25$ (roughly doubling on the most tool-heavy traces) and changed CSD
-from a single degenerate answer-pair comparison to scoring all reasoning
-transitions, localising drift to the few-shot-example$\to$task boundary.
+reasoning prose ($\ge 12$ words) captures ``Think'' turns while still ignoring
+bare invocations, and changed CSD from a single degenerate answer-pair
+comparison to scoring all reasoning transitions.
 
-Table~\ref{tab:agentinstruct} reports the corpus statistics after the fixes. Mean
-TAS is $80.6$ (all ``Good''); the value here is not the headline score but the
-two corrected blind spots, which neither a synthetic benchmark nor a
+\paragraph{Code syntax dilutes lexical similarity; argument literals anchor it.}
+With reasoning-aware scoring in place, both semantic metrics still fed the full
+turn --- prose plus code fence --- into the bag-of-words similarity. An ablation
+that stripped fences wholesale made things \emph{worse} (corpus
+$\mathrm{CSD_{norm}}$ $0.415\to0.353$): the code's argument literals (paths,
+quoted search strings, filenames) are exactly the tokens shared with the
+natural-language goal and with neighbouring thoughts. The shipped reduction
+keeps those literals and drops only command names, flags, and operators ---
+the inverse of the LDI skeleton, which keeps the template and abstracts the
+arguments. On the de-contaminated corpus $\mathrm{GAR_{norm}}$ averages $0.348$
+(up from $0.202$ at the start of the exercise) with the most goal-aligned trace
+at $0.467$.
+
+\paragraph{Single-tool agents were structurally penalised by DBO.} The
+decision-branch metric's cold-start fallback keyed retries and tool-thrashing
+on the bare tool name, so a bash operator --- one tool, by construction ---
+was capped near the $0.5$ floor regardless of conduct ($n$ calls $=$ $n{-}1$
+``retries''). Keying both signals on the \emph{invocation} (tool $+$
+parameters) restores the intended semantics: re-running \code{bash} with a new
+command is progress, re-issuing an identical call is a retry. Corpus mean
+$\mathrm{DBO_{norm}}$ moved $0.59\to0.88$, and the one trace with a genuine
+tool failure (\code{os\_5}) is now the only one below the cold-start ceiling.
+
+\paragraph{Most real ReAct task runs are shorter than the analysis floor.}
+With scaffolding excluded, $9$ of $13$ traces ($\approx69\%$) fall below the
+default five-step analysis floor --- real task runs routinely finish in three
+or four steps. Rather than silently excluding that majority, the CLI gained a
+\code{-{}-min-steps} opt-in (default unchanged; clamped to $\ge 2$, where
+pair-based metrics carry less evidence): with \code{-{}-min-steps 2} the gate
+audits $13/13$ traces (mean TAS $82.9$, $20$ fix patches), so the floor's
+coverage cost on real data is now measured and recoverable instead of assumed.
+
+Table~\ref{tab:agentinstruct} reports the corpus statistics after the fixes.
+The value here is not the headline score but the corrected blind spots and the
+scaffolding hazard, which neither a synthetic benchmark nor a
 function-calling-only evaluation would have surfaced --- concrete evidence for
 testing heuristic auditors against \emph{diverse} real agent styles.
 
 \begin{table}[t]
 \centering
-\caption{TraceRazor on the real Hugging Face AgentInstruct corpus (seven
-analysable ReAct traces). Normalised metric means ($1.0=$ no waste detected).}
+\caption{TraceRazor on the real Hugging Face AgentInstruct corpus after
+few-shot-scaffolding exclusion (13 traces; 4 analysable at the default 5-step
+floor). Normalised metric means ($1.0=$ no waste detected).}
 \label{tab:agentinstruct}
 \begin{tabular}{lrl}
 \toprule
 Quantity & Value & Note \\
 \midrule
-Mean TAS              & 80.6  & all ``Good'' \\
-Mean SRR$_\text{norm}$ & 0.674 & step redundancy detected \\
-Mean LDI$_\text{norm}$ & 0.937 & was $1.000$; parametric loop in \code{os\_6} \\
-Mean GAR$_\text{norm}$ & 0.247 & was $0.202$; reasoning-aware \\
-Mean CSD$_\text{norm}$ & 0.415 & full reasoning flow (was a degenerate pair) \\
-Mean OBS$_\text{norm}$ & 0.913 & high tool-I/O share \\
-Fix patches (sum)     & 17    & across the seven traces \\
+Mean TAS (default floor) & 78.0  & all ``Good''; median 77.9 \\
+Mean SRR$_\text{norm}$ & 0.650 & step redundancy detected \\
+Mean LDI$_\text{norm}$ & 0.833 & was $1.000$; \code{os\_6} parametric loop at $0.333$ \\
+Mean GAR$_\text{norm}$ & 0.348 & was $0.202$; reasoning-aware $+$ literal-anchored \\
+Mean CSD$_\text{norm}$ & 0.487 & full reasoning flow (was a degenerate pair) \\
+Mean DBO$_\text{norm}$ & 0.875 & was $\approx0.57$; invocation-keyed cold start \\
+Mean OBS$_\text{norm}$ & 0.930 & high tool-I/O share \\
+Fix patches (sum)     & 11    & across the four analysable traces \\
+Full corpus (\code{-{}-min-steps 2}) & 13/13 & mean TAS $82.9$; $20$ fix patches \\
 \bottomrule
 \end{tabular}
 \end{table}

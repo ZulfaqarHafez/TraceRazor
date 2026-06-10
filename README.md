@@ -377,14 +377,26 @@ assistants — we also audit trajectories sourced from the Hugging Face dataset
 ([`crates/tracerazor-cli/tests/huggingface_real_data.rs`](crates/tracerazor-cli/tests/huggingface_real_data.rs))
 and summarised in
 [`docs/huggingface_agentinstruct_audit.md`](docs/huggingface_agentinstruct_audit.md)
-(reproduce with `python -m benchmark.hf_audit_stats`). Mean TAS is **80.6** (all
-"Good"), but the exercise mattered because it exposed two metric blind spots on
-tool agents that the τ-bench traces did not — and fixed them:
+(reproduce with `python -m benchmark.hf_audit_stats`; every audit runs in a
+fresh state directory so measurements are order-independent). On the
+de-contaminated corpus mean TAS is **78.0** at the default floor (4 analysable
+traces) and **82.9** over the full 13-trace corpus with `--min-steps 2`. The
+exercise mattered because it surfaced — and fixed — a data-fidelity hazard plus
+four product blind spots that the τ-bench traces did not:
 
 | Finding on real ReAct data | Fix |
 |---|---|
-| **Loop detection never fired** (`os_6` runs `grep -o "Linux" <FILE> \| wc -l` 4×, but LDI keyed on exact tool+params) | LDI now detects **parametric loops** — same command template, different argument (LDIₙₒᵣₘ 1.00→0.56 on `os_6`) |
-| **GAR/CSD collapsed** (ReAct fuses the reasoning into the tool-call turn, which both metrics ignored) | GAR/CSD now score tool-call steps carrying substantive **reasoning prose**, not just `reasoning`-typed steps (GARₙₒᵣₘ ~doubles on tool-heavy traces) |
+| **Few-shot scaffolding audited as agent behaviour** (every row embeds the dataset's one-shot demo, `loss=false`; it pseudo-replicated one canned trajectory into every trace) | Converter audits only real-task turns via the **`loss` flag** (text-marker fallback). Mean TAS 82.8→78.0 — the demo was *padding* every score |
+| **Loop detection never fired** (`os_6` runs `grep -o "Linux" <FILE> \| wc -l` 4×, but LDI keyed on exact tool+params) | LDI now detects **parametric loops** — same command template, different argument (LDIₙₒᵣₘ 1.00→0.33 on the clean `os_6`) |
+| **GAR/CSD collapsed** (ReAct fuses the reasoning into the tool-call turn, which both metrics ignored) | GAR/CSD score tool-call steps carrying substantive **reasoning prose**, not just `reasoning`-typed steps |
+| **Code syntax diluted similarity** (wholesale fence-stripping made it *worse*: CSDₙₒᵣₘ 0.415→0.353 — the argument literals are the goal anchors) | Fenced code is reduced to its **argument literals** (paths, quoted strings, numbers); syntax dropped (GARₙₒᵣₘ 0.202→0.348 overall) |
+| **DBO structurally capped single-tool agents** (a bash operator's n calls = n−1 "retries" when keyed on tool name) | Cold-start retry/thrash signals key on the **invocation** (tool+params): DBOₙₒᵣₘ 0.59→0.88, with the one genuine-failure trace the only one below the ceiling |
+
+**Coverage finding:** with scaffolding excluded, ~69% of real trajectories
+(9/13) finish in 3–4 steps — below the default 5-step analysis floor. The
+`audit` command now takes **`--min-steps N`** (default unchanged, clamped ≥2)
+so short real-world task runs are auditable by explicit opt-in; the gate
+verifies 13/13 full-corpus coverage.
 
 Provenance and a live dataset-viewer fetch path are in
 [`traces/external/huggingface/agentinstruct/SOURCE.md`](traces/external/huggingface/agentinstruct/SOURCE.md);
@@ -884,15 +896,15 @@ Reproduce with `cargo test --workspace` and `pytest`.
 
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 146 |
+| tracerazor-core | 154 |
 | tracerazor-ingest | 3 |
 | tracerazor-semantic | 21 |
 | tracerazor-store | 10 |
 | tracerazor-server | 17 |
 | tracerazor-cli (2 unit + 10 integration) | 12 |
 | Doc-tests | 9 |
-| **Total Rust** | **218, all pass** |
-| **Python** (pytest) | **231 pass, 1 skipped** |
+| **Total Rust** | **226, all pass** |
+| **Python** (pytest) | **238 pass, 3 skipped** |
 
 ---
 

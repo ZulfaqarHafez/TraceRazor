@@ -13,9 +13,38 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
   and a `cargo test` statistics gate
   (`crates/tracerazor-cli/tests/huggingface_real_data.rs`) that audits the
   corpus end-to-end. Establishes measured behaviour on tool-using agents
-  (mean TAS 80.6, all "Good").
+  (de-contaminated corpus: mean TAS 78.0 at the default floor, 82.9 over the
+  full corpus with `--min-steps 2`). Every audit runs in a fresh state
+  directory so measurements are independent of audit order.
+- **`tracerazor audit --min-steps N`** — opt-in floor override (default
+  unchanged at 5; clamped ≥2). With few-shot scaffolding excluded, ~69% of real
+  AgentInstruct trajectories finish in 3–4 steps; the flag makes that real
+  trace class auditable by explicit choice, and the skip notice now points at
+  it.
+
+### Fixed
+- **AgentInstruct converter no longer audits few-shot scaffolding** — upstream
+  rows embed the dataset's fixed one-shot demo (and the db split's "Ok." ack)
+  before the real task, marked `loss=false` on gpt turns. The converter now
+  audits only real-task turns (loss-flag rule, text-marker fallback).
+  Previously the identical demo steps were pseudo-replicated into every trace
+  and mis-anchored goal metrics; their removal moved mean TAS 82.8→78.0 (the
+  demo was padding every score). Corpus widened with 4 more real rows (os_7,
+  os_11, os_16, os_18) fetched live from the Hub.
+- **DBO cold-start no longer structurally penalises single-tool agents** — the
+  retry/thrash signals keyed on the bare tool name, capping a bash/SQL operator
+  near the 0.5 floor by construction (n calls = n−1 "retries"). They now key on
+  the invocation (tool + params): re-running a tool with new arguments is
+  progress; re-issuing an identical call is a retry. Corpus mean DBOₙₒᵣₘ
+  0.59→0.88 with genuine-failure traces still discriminated.
 
 ### Changed
+- **GAR/CSD reduce fenced code to its argument literals** — scored ReAct turns
+  previously fed prose+code into BoW similarity. A wholesale fence-strip
+  ablation made scores *worse* (the code's paths/quoted strings are the goal
+  anchors); the shipped reduction keeps argument literals and drops command
+  names/flags/operators — the inverse of the LDI skeleton. Corpus mean GARₙₒᵣₘ
+  0.202→0.348 across the exercise.
 - **LDI now detects parametric loops** — loop detection previously keyed on an
   exact tool+params state hash and missed the dominant real loop shape for
   tool-using agents: the same command template run once per argument (e.g. a

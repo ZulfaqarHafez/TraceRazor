@@ -70,7 +70,6 @@ fn mean(xs: &[f64]) -> f64 {
 /// End-to-end statistics over the real Hugging Face corpus.
 #[test]
 fn huggingface_agentinstruct_audit_statistics() {
-    let home = TempDir::new().unwrap();
     let files = trace_files();
     assert!(
         files.len() >= 8,
@@ -90,6 +89,9 @@ fn huggingface_agentinstruct_audit_statistics() {
     let mut skipped = 0usize;
 
     for f in &files {
+        // Fresh HOME per audit: measurements are independent (no cross-trace
+        // history effects on DBO/RDA baselines, no audit-order dependence).
+        let home = TempDir::new().unwrap();
         let out = cli(&home)
             .args(["audit", f.to_str().unwrap(), "--format", "json"])
             .assert()
@@ -188,6 +190,49 @@ fn huggingface_agentinstruct_audit_statistics() {
         "loop detection never fired on the real corpus (min normalised LDI = {min_ldi})"
     );
 
+    // ── Full-corpus coverage via the short-trace opt-in ──────────────────────
+    // The sub-floor majority (3–4-step real trajectories) must be auditable
+    // with `--min-steps 2`: every trace in the corpus produces a valid
+    // in-range report when the user opts in.
+    let mut short_audited = 0usize;
+    for f in &files {
+        let home = TempDir::new().unwrap();
+        let out = cli(&home)
+            .args([
+                "audit",
+                f.to_str().unwrap(),
+                "--format",
+                "json",
+                "--min-steps",
+                "2",
+            ])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        let report: Value = serde_json::from_slice(&out.stdout).unwrap_or_else(|e| {
+            panic!(
+                "--min-steps 2 audit of {:?} must produce JSON: {e}; stderr: {}",
+                f.file_name().unwrap(),
+                String::from_utf8_lossy(&out.stderr)
+            )
+        });
+        let t = report["score"]["score"]
+            .as_f64()
+            .expect("short-trace TAS must be a number");
+        assert!(
+            (0.0..=100.0).contains(&t),
+            "short-trace TAS for {:?} out of range: {t}",
+            f.file_name().unwrap()
+        );
+        short_audited += 1;
+    }
+    assert_eq!(
+        short_audited,
+        files.len(),
+        "with --min-steps 2 the entire real corpus must be auditable"
+    );
+
     // ── Emit the statistics (visible with --nocapture) ───────────────────────
     println!("\n==== Hugging Face AgentInstruct real-data audit ====");
     println!("source            : zai-org/AgentInstruct (ReAct trajectories)");
@@ -202,5 +247,6 @@ fn huggingface_agentinstruct_audit_statistics() {
     println!("mean OBS (norm)   : {:.3}", mean(&obs));
     println!("mean MVTG         : {:.3}", mean(&mvtg));
     println!("fix patches (sum) : {total_fixes}");
+    println!("full-corpus audit : {short_audited}/{} with --min-steps 2", files.len());
     println!("====================================================\n");
 }

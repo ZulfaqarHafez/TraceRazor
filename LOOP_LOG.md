@@ -272,3 +272,92 @@ floor — the floor's real-data coverage cost is now measured, not assumed.
 Next: Iteration 5 — act on the coverage finding: the 5-step floor excludes
 most real short ReAct trajectories; evaluate a short-trace audit path (floor
 reduction or degraded-mode scoring) so the product can serve this trace class.
+
+## Iteration 5
+Read: Coverage finding from iter-4: 9/13 (~69%) of real de-contaminated
+trajectories fall under the 5-step floor; the floor is CLI policy only
+(core analyse() runs fine on short traces; metrics have small-N guards).
+Plan: Add `--min-steps <N>` opt-in to `audit` (default unchanged at 5,
+clamped >=2 for pair metrics); skip notice now points at the flag. Extend the
+gate with a full-corpus pass asserting 13/13 valid reports at --min-steps 2.
+Change: `crates/tracerazor-cli/src/main.rs` (flag + cmd_audit min_steps),
+`crates/tracerazor-cli/tests/huggingface_real_data.rs` (full-coverage pass +
+stat line).
+Test result: PASS — cargo test --workspace 226/226; clippy clean; gate prints
+"full-corpus audit : 13/13 with --min-steps 2".
+Diagnosis: The measured coverage gap is now closed by explicit opt-in without
+weakening the default statistical floor.
+Next: Iteration 6 — extend the stats harness with a full-corpus (--min-steps 2)
+section so the paper numbers are reproducible, then update paper + README +
+CHANGELOG with the Run-2 findings.
+
+## Iteration 6
+Read: Product iterations complete (scaffolding exclusion, literal-aware GAR/CSD,
+DBO invocation keying, --min-steps); stats harness shared one HOME across
+audits, so pass-2 numbers were inflated by pass-1 history (order dependence).
+Plan: Make every audit independent (fresh HOME per audit in harness + gate),
+add a full-corpus (--min-steps 2) section to STATS.json/report, then update the
+paper, README, and CHANGELOG with the Run-2 findings.
+Change: `benchmark/hf_audit_stats.py` (fresh HOME per audit, full-corpus pass),
+`crates/tracerazor-cli/tests/huggingface_real_data.rs` (fresh TempDir per audit,
+13/13 coverage line), `paper/tracerazor.tex` (rewrote sec:hf-agentinstruct:
+scaffolding hazard, four fixes incl. the falsified fence-strip ablation,
+coverage finding + opt-in, refreshed Table tab:agentinstruct; DBO and GAR/CSD
+definition updates), `README.md` (findings table, coverage note, test counts
+226/238), `CHANGELOG.md` (Added/Fixed/Changed entries).
+Test result: PASS — cargo test --workspace 226/226; pytest 238 passed,
+3 skipped; clippy 0 warnings; LaTeX environments balanced, refs/cites resolve.
+Diagnosis: Final independent statistics — default floor: n=4, mean TAS 78.0,
+SRR 0.650, LDI 0.833 (os_6 0.333), GAR 0.348, CSD 0.487, DBO 0.875, OBS 0.930,
+11 fixes; full corpus via --min-steps 2: 13/13, mean TAS 82.9, 20 fixes.
+Next: none — goal met. See FINAL REPORT (Run 2).
+
+---
+
+# FINAL REPORT (Run 2)
+Goal achieved: drive product improvements from the real Hugging Face statistics
+gate and update the research paper with the new content.
+Iterations used: 6 / 10.
+
+Files changed:
+  - `crates/tracerazor-core/src/metrics/mod.rs` — reasoning_text(): fenced code
+    reduced to argument literals (+code_literals/is_unquoted_literal, 6 tests).
+  - `crates/tracerazor-core/src/metrics/gar.rs` — literal-aware similarity text
+    (+ fence regression test).
+  - `crates/tracerazor-core/src/metrics/csd.rs` — same (+ fence regression test).
+  - `crates/tracerazor-core/src/metrics/dbo.rs` — cold-start retry/thrash keyed
+    on invocation (tool+params), not tool name (+2 tests).
+  - `tools/convert_agentinstruct.py` — _real_task_turns(): loss-flag scaffolding
+    exclusion with text-marker fallback.
+  - `benchmark/data/_agentinstruct_hf_sample.py` — +4 real rows (os_7, os_11,
+    os_16, os_18) fetched live via the HF MCP connector.
+  - `benchmark/hf_audit_stats.py` — fresh HOME per audit (order-independent),
+    full-corpus (--min-steps 2) statistics section.
+  - `crates/tracerazor-cli/src/main.rs` — `audit --min-steps N` opt-in floor.
+  - `crates/tracerazor-cli/tests/huggingface_real_data.rs` — honest corpus
+    floors, per-audit isolation, 13/13 full-coverage assertion.
+  - `tests/test_hf_agentinstruct.py` — +5 scaffolding tests, coverage-shape test.
+  - `traces/external/huggingface/agentinstruct/*` — regenerated 13-trace corpus,
+    SOURCE.md provenance (scaffolding exclusion, coverage cost).
+  - `paper/tracerazor.tex`, `README.md`, `CHANGELOG.md` — Run-2 findings.
+
+Headline findings (real data, independent audits):
+  1. Few-shot scaffolding contaminated every trace (demo audited as agent
+     behaviour); exclusion moved mean TAS 82.8→78.0 and GAR 0.26→0.35.
+  2. Wholesale code-stripping HURT semantic metrics (falsified ablation); the
+     correct reduction keeps argument literals, drops syntax (GAR 0.202→0.348
+     across the exercise).
+  3. DBO structurally capped single-tool agents (~0.57); invocation keying
+     restored discrimination (0.875 mean; only the genuine-failure trace is
+     sub-ceiling).
+  4. ~69% of real trajectories are 3–4 steps — below the default floor; the
+     measured gap is now closed by `--min-steps` opt-in (13/13 coverage,
+     mean TAS 82.9, 20 fixes).
+
+Known limitations / follow-up:
+  - BoW remains the similarity floor; `--enhanced` embeddings would lift
+    GAR/CSD discrimination further.
+  - Corpus spans os+db splits; alfworld/webshop/kg/mind2web formats are
+    unconverted.
+  - Short-trace (<5 steps) scores carry less pair-metric evidence; flagged in
+    the CLI help, not yet down-weighted in the composite.
