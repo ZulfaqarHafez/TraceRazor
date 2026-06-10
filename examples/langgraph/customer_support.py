@@ -12,7 +12,7 @@ import os
 from dotenv import load_dotenv
 
 # Load .env from the repo root (two levels up from this file).
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../../../.env"))
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
 
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage, SystemMessage

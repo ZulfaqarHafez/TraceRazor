@@ -151,7 +151,7 @@ enum Commands {
         regression_threshold: f64,
     },
 
-    /// Project monthly and annual costs at a given run volume (E-05).
+    /// Project monthly and annual costs at a given run volume .
     ///
     /// Provide one or more trace files. Each file contributes one data point.
     Cost {
@@ -175,7 +175,7 @@ enum Commands {
         format: OutputFormat,
     },
 
-    /// Simulate removing or merging steps and project the TAS/token impact (E-02).
+    /// Simulate removing or merging steps and project the TAS/token impact.
     Simulate {
         /// Trace file to simulate.
         #[arg(value_name = "FILE")]
@@ -265,7 +265,7 @@ enum Commands {
         format: OutputFormat,
     },
 
-    /// Export a report to an observability platform or webhook (E-07).
+    /// Export a report to an observability platform or webhook.
     Export {
         /// Trace file to audit and export.
         #[arg(value_name = "FILE")]
@@ -337,8 +337,18 @@ impl From<InputFormat> for TraceFormat {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     let _ = dotenvy::dotenv();
+    // Exit-code contract: 0 = success / gate passed, 1 = an explicit gate
+    // failed (threshold, regression, tamper), 2 = error (bad input, IO,
+    // parse). Batch jobs can rely on the distinction.
+    if let Err(e) = run().await {
+        eprintln!("Error: {e:#}");
+        std::process::exit(2);
+    }
+}
+
+async fn run() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
@@ -504,7 +514,10 @@ async fn cmd_audit(
         }
     }
 
-    if !report.score.passes_threshold {
+    // Gating is opt-in: only an explicit --threshold turns a low score into a
+    // non-zero exit. Without it, batch jobs can tell "inefficient agent"
+    // (exit 0, low TAS in the report) apart from "broken input" (exit 2).
+    if threshold.is_some() && !report.score.passes_threshold {
         eprintln!(
             "FAIL: TAS {:.1} is below threshold {:.1}",
             report.score.score, config.threshold

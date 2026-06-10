@@ -272,11 +272,13 @@ class TraceRazorClient:
             return found
 
         here = os.path.dirname(os.path.abspath(__file__))
+        # This file lives at <repo>/tracerazor/_audit_client.py, so a source
+        # checkout's `cargo build` output is exactly one level up.
         for rel in [
-            "../../../../target/release/tracerazor.exe",
-            "../../../../target/release/tracerazor",
-            "../../../../target/debug/tracerazor.exe",
-            "../../../../target/debug/tracerazor",
+            "../target/release/tracerazor.exe",
+            "../target/release/tracerazor",
+            "../target/debug/tracerazor.exe",
+            "../target/debug/tracerazor",
         ]:
             candidate = os.path.normpath(os.path.join(here, rel))
             if os.path.isfile(candidate):

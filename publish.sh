@@ -34,7 +34,6 @@ CRATE_ORDER=(
     crates/tracerazor-ingest
     crates/tracerazor-semantic
     crates/tracerazor-store
-    crates/tracerazor-proxy
     crates/tracerazor-server
     crates/tracerazor-cli
 )

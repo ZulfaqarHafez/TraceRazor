@@ -137,3 +137,35 @@ fn store_false_flag_is_accepted() {
         .assert()
         .success();
 }
+
+#[test]
+fn exit_code_contract() {
+    let trace = corpus_trace();
+
+    // No --threshold: a low score is information, not a failure (exit 0).
+    let home = TempDir::new().unwrap();
+    cli(&home)
+        .args(["audit", trace.to_str().unwrap(), "--format", "json", "--hermetic"])
+        .assert()
+        .success();
+
+    // Explicit gate that cannot pass: exit 1.
+    let home = TempDir::new().unwrap();
+    cli(&home)
+        .args([
+            "audit",
+            trace.to_str().unwrap(),
+            "--hermetic",
+            "--threshold",
+            "100.0",
+        ])
+        .assert()
+        .code(1);
+
+    // Broken input: exit 2, distinguishable from a failed gate.
+    let home = TempDir::new().unwrap();
+    cli(&home)
+        .args(["audit", "/does/not/exist.json"])
+        .assert()
+        .code(2);
+}

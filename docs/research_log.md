@@ -409,3 +409,18 @@ product; their convergent findings drove this implementation pass.
 hard-code): TVI range shrink / raw-TAS headline, z-score standardisation or
 w∝share/σ weights, GAR/CSD quantile re-normalisation, DBO→TCA fold, prebuilt
 wheels, evidence-bundle export, aggregate gating, store schema versioning.
+
+---
+
+# Run 4 — Ship-plan Phase 0 (trust hygiene)
+
+All six Phase-0 items implemented and acceptance-tested:
+0.1 versions → 0.4.0 everywhere (test-enforced); 0.2 README repaired with a
+README-claims pytest that immediately caught one more phantom path
+(traces/latest.json); 0.3 _find_binary one-level-up fix (+regression test);
+0.4 exit-code contract 0/1/2 with opt-in gating (+integration test);
+0.5 hygiene (research log moved here, PRD removed, benchmarks/ merged into
+benchmark/, publish.sh fixed, example paths fixed); 0.6 RESULTS.md +
+external_agent_audits.md regenerated hermetically (run_benchmarks.py now
+order-independent; verified byte-identical across runs) + CI drift gate.
+Suite: 237 Rust + 242 Python green, clippy 0.

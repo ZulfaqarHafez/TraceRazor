@@ -4,6 +4,31 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Ship-plan Phase 0 (trust hygiene)
+- **One version everywhere: 0.4.0** — workspace Cargo.toml, inter-crate dep
+  declarations, pyproject, `__version__`, docker-compose, README banner all
+  agree; enforced by a pytest (`tests/test_readme_claims.py`).
+- **Exit-code contract** — `0` success/pass, `1` explicit gate failed
+  (`--threshold`, regression, tamper), `2` error (bad input/IO/parse).
+  Gating is now opt-in: without `--threshold`, a low TAS never exits non-zero.
+- **`_find_binary` fixed** — the Python client searched four directories up
+  and missed a source checkout's own `target/release/`; now one level up.
+- **README repaired** — dual-version banner, duplicated ASCII/blockquote
+  lines, contradictory problem paragraphs, stale sample outputs (75/0.70/0.833
+  as the binary actually prints), quickstart output corrected to the measured
+  `TAS 80.4`, phantom file paths replaced with shipped traces, mermaid now
+  shows all 14 signals with table-consistent shares, "thirteen"→fourteen,
+  CLI table gains `verify`/`list`, redundancy claim restated corpus-wide
+  (26% mean; 36–41% airline / 15% retail / 22% SWE). Internal ticket IDs
+  stripped from `--help`.
+- **Doc tables regenerated + CI drift check** — `benchmark/RESULTS.md` and
+  `docs/external_agent_audits.md` regenerated against 0.4.0 with hermetic,
+  order-independent audits (`run_benchmarks.py` now uses `--hermetic` with a
+  fresh state dir per audit); CI fails if RESULTS.md drifts from the scorer.
+- **Repo hygiene** — `LOOP_LOG.md` → `docs/research_log.md`; PRD `.docx`
+  removed; `benchmarks/` merged into `benchmark/`; `publish.sh` no longer
+  references a non-existent crate; example fixes (package name, `.env` path).
+
 ### Added
 - **Run manifest + `tracerazor verify`** — every audit report embeds a
   provenance manifest (trace SHA-256, tool version, timestamp, actual
