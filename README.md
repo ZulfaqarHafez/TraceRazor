@@ -14,7 +14,7 @@ pip install tracerazor
 
 ## What TraceRazor Does
 
-TraceRazor v0.4.0 closes a full loop: **audit** a trace offline, **apply** the
+TraceRazor v0.4.1 closes a full loop: **audit** a trace offline, **apply** the
 emitted fixes, **measure** the real before/after delta at constant task
 outcome, and let anyone **verify** the report cryptographically.
 
@@ -891,7 +891,7 @@ the JSON report as an artifact.
 permissions:
   pull-requests: write # for the sticky PR comment
 
-- uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v0.4.0
+- uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v0.4.1
   with:
     trace-file: traces/latest-run.json
     threshold: '75'

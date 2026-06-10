@@ -10,7 +10,9 @@ jobs:
     name: Platform wheel (${{ matrix.os }})
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        # ubuntu-22.04 (glibc 2.35) keeps the manylinux floor low; macos-latest
+        # covers arm64 and macos-13 covers Intel.
+        os: [ubuntu-22.04, macos-latest, macos-13]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -20,6 +22,11 @@ jobs:
           python-version: "3.11"
       - name: Build platform wheel with bundled CLI
         run: bash scripts/build_platform_wheel.sh
+      - name: Build sdist (once, on the Linux builder)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          rm -rf tracerazor/bin   # sdist is source-only; no prebuilt binary
+          python -m build --sdist
       - name: Clean-room smoke test
         run: |
           python -m venv /tmp/v && /tmp/v/bin/pip install dist/tracerazor-*.whl
@@ -27,7 +34,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: wheel-${{ matrix.os }}
-          path: dist/*.whl
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
 
   # Standalone CLI binaries — downloaded by the composite GitHub Action
   # (.github/actions/tracerazor) so consumer repos need no Rust toolchain.
@@ -60,6 +69,30 @@ jobs:
         with:
           name: binary-${{ matrix.target }}
           path: tracerazor-*.tar.gz
+
+  # Upload wheels + sdist to PyPI via trusted publishing (OIDC — no token
+  # stored in the repo). One-time setup on pypi.org: project "tracerazor" →
+  # Publishing → add GitHub publisher (owner ZulfaqarHafez, repo TraceRazor,
+  # workflow release.yml, environment pypi). publish.sh stays as the manual
+  # fallback.
+  pypi:
+    name: Publish to PyPI
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [wheels]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheel-*
+          merge-multiple: true
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          skip-existing: true
 
   # Attach wheels + binaries to the GitHub release on tag push.
   publish-release:
