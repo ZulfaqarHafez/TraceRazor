@@ -136,6 +136,11 @@ def render_markdown(stats: Dict[str, Any]) -> str:
     lines = [
         "# TraceRazor on Real Hugging Face Agent Trajectories",
         "",
+        "> Provenance: numbers regenerated under the 9-signal composite — GAR, CSD,",
+        "> DBO, VDI and SHL are now weight-0 diagnostics (see",
+        "> `docs/metric_effectiveness.md`). They still compute and appear in the",
+        "> per-metric tables below; their normalised scores are unchanged.",
+        "",
         "Audit statistics for the product run over real ReAct agent trajectories",
         "from the Hugging Face dataset [`zai-org/AgentInstruct`]"
         "(https://huggingface.co/datasets/zai-org/AgentInstruct) "

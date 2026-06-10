@@ -493,6 +493,30 @@ impl TraceReport {
             pass_str(s.cce.pass)
         );
         out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}\n",
+            "CCR",
+            "Caveman Compression Ratio",
+            format!("{:.3}", s.ccr.score),
+            "<0.30",
+            pass_str(s.ccr.pass)
+        );
+        out += &format!(
+            "{:<6} {:<30} {:<8} {:<8} {}\n",
+            "OBS", "Observation Token Share",
+            format!("{:.3}", s.obs.score),
+            "≥0.30",
+            pass_str(s.obs.pass),
+        );
+
+        // Detection-only metrics: their detectors, annotations and fixes all
+        // run, but they carry no composite weight by default — the metric
+        // self-evaluation over real traces found them non-discriminative or
+        // range-broken (see docs/metric_effectiveness.md).
+        out += &format!(
+            "-- Diagnostics (no default composite weight) {}\n",
+            "-".repeat(10)
+        );
+        out += &format!(
             "{:<6} {:<30} {:<8} {:<8} {}{}\n",
             "DBO",
             "Decision Branch Optimality",
@@ -501,9 +525,6 @@ impl TraceReport {
             pass_str(s.dbo.pass),
             if s.dbo.cold_start { " [cold]" } else { "" }
         );
-
-        // Verbosity metrics separator + three rows.
-        out += &format!("-- Verbosity Metrics {}\n", "-".repeat(34));
         out += &format!(
             "{:<6} {:<30} {:<8} {:<8} {}\n",
             "VDI",
@@ -520,17 +541,7 @@ impl TraceReport {
             "<0.20",
             pass_str(s.shl.pass)
         );
-        out += &format!(
-            "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "CCR",
-            "Caveman Compression Ratio",
-            format!("{:.3}", s.ccr.score),
-            "<0.30",
-            pass_str(s.ccr.pass)
-        );
 
-        // Goal advancement metric (M1).
-        out += &format!("-- Goal Advancement {}\n", "-".repeat(35));
         let gar_note = if s.gar.low_advancement_steps.is_empty() {
             String::new()
         } else {
@@ -555,8 +566,6 @@ impl TraceReport {
             s.gar.goal_step_id.map(|id| id.to_string()).unwrap_or_else(|| "—".into()),
         );
 
-        // Semantic path coherence (M4).
-        out += &format!("-- Semantic Path {}\n", "-".repeat(38));
         let csd_drift_note = if s.csd.high_drift_pairs.is_empty() {
             String::new()
         } else {
@@ -575,13 +584,6 @@ impl TraceReport {
             "≥0.60",
             pass_str(s.csd.pass),
             csd_drift_note,
-        );
-        out += &format!(
-            "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "OBS", "Observation Token Share",
-            format!("{:.3}", s.obs.score),
-            "≥0.30",
-            pass_str(s.obs.pass),
         );
 
         out += &format!("{sep}\n");

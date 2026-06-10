@@ -29,7 +29,7 @@ inputs:
     required: false
     default: "markdown"
   version:
-    description: TraceRazor release tag to download (e.g. "v0.4.1"), or "latest".
+    description: TraceRazor release tag to download (e.g. "v0.5.0"), or "latest".
     required: false
     default: "latest"
   release-repo:

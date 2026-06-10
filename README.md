@@ -1,6 +1,6 @@
 # TraceRazor
 
-**An offline auditor that decomposes AI-agent token waste into 14 scored signals, emits risk-tagged fix patches, and produces cryptographically verifiable (Ed25519-signed) reports.**
+**An offline auditor that decomposes AI-agent token waste into 9 evidence-validated efficiency signals (plus 5 detection-only diagnostics), emits risk-tagged fix patches, and produces cryptographically verifiable (Ed25519-signed) reports.**
 
 [![CI](https://github.com/ZulfaqarHafez/tracerazor/actions/workflows/tracerazor.yml/badge.svg)](https://github.com/ZulfaqarHafez/tracerazor/actions)
 [![PyPI](https://img.shields.io/pypi/v/tracerazor)](https://pypi.org/project/tracerazor/)
@@ -14,7 +14,7 @@ pip install tracerazor
 
 ## What TraceRazor Does
 
-TraceRazor v0.4.1 closes a full loop: **audit** a trace offline, **apply** the
+TraceRazor v0.5.0 closes a full loop: **audit** a trace offline, **apply** the
 emitted fixes, **measure** the real before/after delta at constant task
 outcome, and let anyone **verify** the report cryptographically.
 
@@ -23,7 +23,7 @@ flowchart LR
     T["📄 Trace JSON<br/>LangSmith · OTel · raw ·<br/>Claude Code transcripts"]
 
     subgraph AUDIT["1 · AUDIT — offline, no API keys, ~ms"]
-        A["14 scored signals"] --> R["Report<br/>TAS 0–100 + fix patches<br/>+ run manifest<br/>+ Ed25519 signature"]
+        A["9 composite signals<br/>+ 5 diagnostics"] --> R["Report<br/>TAS 0–100 + fix patches<br/>+ run manifest<br/>+ Ed25519 signature"]
     end
 
     subgraph MEASURE["2 · MEASURE — the only real proof"]
@@ -84,28 +84,34 @@ flowchart TD
     T[Trace JSON] --> P[Parse & Ingest]
     P --> M
 
-    subgraph M["14 Efficiency Signals (post-normalisation share of TAS)"]
+    subgraph M["9 Composite Signals (post-normalisation share of TAS)"]
         direction LR
-        S1["Step Redundancy\n13.5%"]
-        S2["Loop Detection\n10.3%"]
-        S3["Tool Accuracy\n10.3%"]
-        S4["Reasoning Depth\n7.9%"]
-        S5["Info Sufficiency\n7.9%"]
-        S6["Token Utilisation\n7.9%"]
-        S7["Context Efficiency\n7.9%"]
-        S8["Decision Optimality\n7.1%"]
-        S9["Goal Advancement\n5.6%"]
-        S10["Semantic Drift\n4.0%"]
-        V1["Verbosity Density\n6.3%"]
-        V2["Sycophancy/Hedging\n4.0%"]
-        V3["Compression Ratio\n2.4%"]
-        O1["Observation Share\n4.8%"]
+        S1["Step Redundancy\n18.5%"]
+        S2["Loop Detection\n14.1%"]
+        S3["Tool Accuracy\n14.1%"]
+        S4["Reasoning Depth\n10.9%"]
+        S5["Info Sufficiency\n10.9%"]
+        S6["Token Utilisation\n10.9%"]
+        S7["Context Efficiency\n10.9%"]
+        O1["Observation Share\n6.5%"]
+        V3["Compression Ratio\n3.3%"]
     end
 
+    subgraph D["5 Diagnostics (detection-only, weight 0 by default)"]
+        direction LR
+        S8["Decision Optimality"]
+        S9["Goal Advancement"]
+        S10["Semantic Drift"]
+        V1["Verbosity Density"]
+        V2["Sycophancy/Hedging"]
+    end
+
+    P --> D
     M --> W["Weighted Score 0-100 (ordinal)"]
     W --> TAS["TAS - Token Audit Score"]
     TAS --> G["Grade: Excellent / Good / Fair / Poor"]
-    M --> AVS["Verbosity Alert if AVS > 0.40"]
+    D --> AVS["Verbosity Alert if AVS > 0.40"]
+    D --> FX["Per-step annotations + fix patches"]
 ```
 
 > **TAS is ordinal, not cardinal.** Most weights are heuristics, not calibrated.
@@ -115,38 +121,39 @@ flowchart TD
 > *one project over time*, not as an absolute percentage. Override via
 > `ScoringConfig.weights`.
 
-### The 14 Metrics
+### The metrics: 9 composite + 5 diagnostic
 
-All shares are *post-normalisation* (the raw weights below sum to 1.26; `compute()` divides by the sum).
+A self-evaluation over **61 real traces** decided which metrics keep
+composite weight — criteria pre-stated, data committed, regenerable with
+`python -m benchmark.metric_effectiveness`
+(see [`docs/metric_effectiveness.md`](docs/metric_effectiveness.md)).
+Shares are *post-normalisation* (the raw composite weights sum to 0.92;
+`compute()` divides by the sum).
 
-**Structural Efficiency**
-
-| Metric | Share | What It Detects |
-|---|---|---|
-| Step Redundancy Rate (SRR) | 13.5% | Near-duplicate steps wasting tokens |
-| Loop Detection Index (LDI) | 10.3% | Repeated tool calls re-attempting the same action |
-| Tool Call Accuracy (TCA) | 10.3% | Failed tool calls and retries |
-| Reasoning Depth (RDA) |  7.9% | Over-deep reasoning for simple tasks |
-| Information Sufficiency (ISR) |  7.9% | Steps adding no novel information |
-| Token Utilisation (TUR) |  7.9% | Off-task token spending |
-| Context Efficiency (CCE) |  7.9% | Duplicate context across steps |
-| Decision Optimality (DBO) |  7.1% | Sub-optimal tool call sequences |
-| Goal Advancement (GAR) |  5.6% | Steps that fail to move toward the stated goal |
-| Semantic Drift (CSD) |  4.0% | Reasoning drift mid-trace |
-
-**Verbosity and Presentation**
+**Composite signals** (these shape TAS)
 
 | Metric | Share | What It Detects |
 |---|---|---|
-| Verbosity Density (VDI) | 6.3% | Filler words and low-substance content |
-| Sycophancy/Hedging (SHL) | 4.0% | Excessive politeness and caution |
-| Compression Ratio (CCR) | 2.4% | Highly compressible text |
+| Step Redundancy Rate (SRR) | 18.5% | Near-duplicate steps wasting tokens |
+| Loop Detection Index (LDI) | 14.1% | Repeated tool calls re-attempting the same action |
+| Tool Call Accuracy (TCA) | 14.1% | Failed tool calls and retries |
+| Reasoning Depth (RDA) | 10.9% | Over-deep reasoning for simple tasks |
+| Information Sufficiency (ISR) | 10.9% | Steps adding no novel information |
+| Token Utilisation (TUR) | 10.9% | Off-task token spending |
+| Context Efficiency (CCE) | 10.9% | Duplicate context across steps |
+| Observation Token Share (OBS) | 6.5% | Share of tokens spent on tool I/O vs recoverable reasoning — the one signal validated against real recoverable waste (see [Better features](#better-features-observation-accumulation)) |
+| Compression Ratio (CCR) | 3.3% | Highly compressible text |
 
-**Observation accumulation** (data-validated, see [Better features](#better-features-observation-accumulation))
+**Diagnostics** (detection-only: full per-step annotations and fixes, no
+composite weight by default — re-enable any of them via a weights file)
 
-| Metric | Share | What It Detects |
+| Metric | Why it left the composite (61 real traces) | Detection role it keeps |
 |---|---|---|
-| Observation Token Share (OBS) | 4.8% | Share of tokens spent on tool I/O vs recoverable reasoning |
+| Goal Advancement (GAR) | max 0.62 ever observed — constant drag, not discrimination | flags off-goal steps; drives `goal_anchor` fixes |
+| Semantic Drift (CSD) | max 0.68 ever observed; misreads coding workflows as drift | flags drifting step pairs |
+| Decision Optimality (DBO) | sd 0.037 (near-constant); r = 0.76 with TCA | flags sub-optimal tool sequences |
+| Verbosity Density (VDI) | sd 0.038; zero correlation with the composite | drives the AVS verbosity alert + fixes |
+| Sycophancy/Hedging (SHL) | sd 0.033 (near-constant) | drives the AVS verbosity alert + hedge fixes |
 
 **TAS Grade Scale**
 
@@ -429,7 +436,8 @@ the converter is [`tools/convert_agentinstruct.py`](tools/convert_agentinstruct.
 
 ### Calibrating TAS to your workload
 
-The fourteen sub-metrics are combined with weights that are heuristic by
+The sub-metrics (all fourteen are computed and fittable; nine carry default
+composite weight) are combined with weights that are heuristic by
 default. If you want TAS to be a *calibrated* indicator for your use case rather
 than an ordinal one, fit the weights to ground truth with the calibration tool
 in [`calibration/`](calibration/). The supported objective is **recoverable
@@ -891,7 +899,7 @@ the JSON report as an artifact.
 permissions:
   pull-requests: write # for the sticky PR comment
 
-- uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v0.4.1
+- uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v0.5.0
   with:
     trace-file: traces/latest-run.json
     threshold: '75'
@@ -1011,7 +1019,7 @@ How a trace flows through the crates:
 
 ```mermaid
 flowchart LR
-    IN["tracerazor-ingest<br/>raw JSON · LangSmith · OTel"] --> CORE["tracerazor-core<br/>14 metrics · TAS · fixes · manifest<br/>(zero network deps)"]
+    IN["tracerazor-ingest<br/>raw JSON · LangSmith · OTel"] --> CORE["tracerazor-core<br/>9+5 metrics · TAS · fixes · manifest<br/>(zero network deps)"]
     SEM["tracerazor-semantic<br/>BoW default · LLM opt-in"] -.-> CORE
     STORE["tracerazor-store<br/>SQLite baselines · history"] -.-> CORE
     CORE --> CLI["tracerazor-cli<br/>audit · verify · bench · apply · serve"]
@@ -1025,7 +1033,7 @@ Repository layout:
 ```
 tracerazor/
 ├── crates/
-│   ├── tracerazor-core/       # 14 metrics, TAS scoring, fix generation, IAR
+│   ├── tracerazor-core/       # 9 composite + 5 diagnostic metrics, TAS, fixes, IAR
 │   ├── tracerazor-ingest/     # Parsers: raw JSON, LangSmith, OpenTelemetry
 │   ├── tracerazor-semantic/   # BoW similarity + LLM backend (OpenAI / Anthropic / compatible)
 │   ├── tracerazor-store/      # SQLite: traces, KB, baselines, anomaly detection

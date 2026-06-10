@@ -3,7 +3,7 @@ services:
     build: .
     # Pin to an explicit version rather than :latest so deployments are
     # reproducible and don't silently pick up an unvetted rebuild.
-    image: tracerazor:0.4.1
+    image: tracerazor:0.5.0
     ports:
       - "${PORT:-8080}:8080"
     volumes:

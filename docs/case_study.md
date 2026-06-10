@@ -22,6 +22,14 @@ out as **FLIPPED, not a saving**, and the run exits non-zero.
 
 ## Setup
 
+> **Scorer version note.** The TAS columns below were measured under the
+> v0.4 fourteen-metric composite. v0.5 demoted five metrics to diagnostics
+> (see [`docs/metric_effectiveness.md`](metric_effectiveness.md)), which
+> shifts absolute TAS values; the token numbers, pass rates and CIs — the
+> study's actual claims — are scorer-independent. Re-running
+> `python -m benchmark.case_study --pairs-dir benchmark/live/traces`
+> against the current binary reproduces the token results exactly.
+
 | | |
 |---|---|
 | Subject agent | Claude Code 2.1.170, headless (`claude -p`), model `claude-haiku-4-5` |
