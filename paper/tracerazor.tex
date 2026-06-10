@@ -3,6 +3,11 @@
 % --- Packages (all standard; compiles with a stock pdflatex/texlive) ---------
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+% Latin Modern: vector (Type 1) fonts. Without this, T1 encoding falls back
+% to bitmap Type 3 EC fonts on texlive installs lacking cm-super, which
+% renders fuzzy in PDF viewers.
+\usepackage{lmodern}
+\usepackage{microtype}
 \usepackage[margin=1in]{geometry}
 \usepackage{amsmath,amssymb}
 \usepackage{booktabs}
