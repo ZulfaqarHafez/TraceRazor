@@ -196,7 +196,20 @@ impl TraceReport {
         for step in &trace.steps {
             let has_flag = |f: &StepFlag| step.flags.contains(f);
 
-            let (action, justification, tokens_suggested) = if has_flag(&StepFlag::Redundant) {
+            // A successful state-changing call (booking, edit, write) is never
+            // a delete candidate: removing it breaks the task the trace
+            // completed, whatever its lexical similarity to earlier steps.
+            let protected = step.is_mutating() && step.tool_success != Some(false);
+
+            let (action, justification, tokens_suggested) = if protected
+                && (has_flag(&StepFlag::Redundant) || has_flag(&StepFlag::Loop))
+            {
+                (
+                    DiffAction::Keep,
+                    Some("Successful state-changing call (kept; not deletable)".into()),
+                    None,
+                )
+            } else if has_flag(&StepFlag::Redundant) {
                 let detail = step.flag_details.first().cloned().unwrap_or_default();
                 (DiffAction::Delete, Some(format!("Redundant: {}", detail)), Some(0))
             } else if has_flag(&StepFlag::Loop) {

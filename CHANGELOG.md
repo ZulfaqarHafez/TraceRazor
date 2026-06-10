@@ -4,6 +4,46 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Ship-plan Phase 1 (verdict precision)
+- **Responsiveness rules in SRR** — a similar pair is exempt when (1) new
+  external input arrived at or between the pair (a step answering a new user
+  turn is never redundant with a pre-turn step), (2) it is a fail→retry of the
+  same tool (the retry is the productive member; TCA already penalises the
+  failure), or (3) both are successful tool calls with an intervening
+  state-changing step (re-running a check after an edit is verification).
+  On the reviewer-adjudicated airline trace this took delete-recommendation
+  precision from 1/6 correct to 6/6; corpus airline SRR 35.9%→15.5%.
+- **Verification-aware LDI** — a state-hash repeat after an intervening
+  mutation restarts the chain instead of counting as a loop iteration, and
+  parametric-loop occurrence chains split at mutations (test→edit→test cycles
+  are verification, not looping). The marshmallow post-fix verification run is
+  no longer deleted.
+- **Mutating-call protection** — `TraceStep::is_mutating()` (name vocabulary +
+  command-text scan); a successful state-changing call (booking, edit, write)
+  is never a delete candidate in the optimal-path diff. Corpus-wide invariant
+  test across all real traces.
+- **Fix risk classes** — every fix carries `safe` / `needs_review` /
+  `dangerous`; `apply` auto-applies safe only, `--all` adds needs_review,
+  `dangerous` (e.g. termination guards, which can suppress verification
+  re-runs) additionally requires `--force`. `apply` now appends only the
+  quoted prompt directive, never the report's analysis meta-prose.
+- **Error-derived tool fixes** — the `tool_schema` fix diagnoses from the
+  recorded `tool_error` text (value errors get a pre-call validation
+  recommendation) instead of the one-size "mark parameters required"
+  boilerplate that was wrong on every adjudicated failure.
+- **AGF tokenizer rewrite** — markdown emphasis, shell variables, regex/awk
+  classes, and glob patterns are no longer extracted as "claims"; quoted
+  syntax spans are rejected; content-creation params (edit/write/insert) are
+  treated as the agent's new artifact, not assertions; a step's own
+  `input_context` counts as evidence; apostrophes in prose no longer open
+  phantom quote spans. Corpus acceptance test: zero syntax artifacts in
+  `ungrounded[]`. AgentInstruct AGF 0.854→0.951 with the failure trace lowest.
+- **SRR most-similar fix** — the flagged pair now points at the *most* similar
+  prior step, not the first/oldest one above threshold.
+- All published tables/claims regenerated under the new scorer (24-trace
+  corpus mean TAS 71.3→73.5; README sample report; paper Table tab:taubench;
+  docs/external_agent_audits.md narrative).
+
 ### Ship-plan Phase 0 (trust hygiene)
 - **One version everywhere: 0.4.0** — workspace Cargo.toml, inter-crate dep
   declarations, pyproject, `__version__`, docker-compose, README banner all

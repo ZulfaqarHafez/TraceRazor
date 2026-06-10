@@ -67,9 +67,42 @@ impl AgfResult {
     }
 }
 
+/// A quoted span that is regex/awk/shell syntax rather than a task string
+/// (e.g. '[ =]', '{print $1}', '\\.conf$', '((25[0-5]...'). These are the
+/// agent's own pattern language — flagging them as "ungrounded claims" is
+/// pure reviewer noise.
+fn quoted_span_is_syntax(s: &str) -> bool {
+    let t = s.trim();
+    if t.is_empty() {
+        return true;
+    }
+    if t.starts_with(['[', '{', '^', '(', '$']) || t.contains('\\') {
+        return true;
+    }
+    // Glob patterns ("*.jpeg") are search syntax, not claims about the world.
+    if t.contains('*') || t.contains('?') {
+        return true;
+    }
+    if t.contains("$1") || t.contains("$2") || t.contains("[:") || t.contains("{print") {
+        return true;
+    }
+    // Mostly-punctuation spans are pattern syntax.
+    let non_alnum = t.chars().filter(|c| !c.is_alphanumeric() && *c != ' ').count();
+    non_alnum * 5 > t.chars().count() * 2 // > 40% punctuation
+}
+
 /// Extract checkable literals from a free-text command/query string:
-/// quoted spans, path/glob/file-like tokens, and multi-digit numbers.
+/// quoted spans, path/file-like tokens, and multi-digit numbers. Shell/regex/
+/// awk/glob *syntax* is excluded — patterns are how the agent searches, not
+/// claims about the world.
 fn text_literals(text: &str) -> Vec<String> {
+    text_literals_inner(text, true)
+}
+
+/// `single_quotes`: treat `'` as a quote delimiter (true for code/commands,
+/// false for prose, where apostrophes are contractions — "doesn't" must not
+/// open a phantom span).
+fn text_literals_inner(text: &str, single_quotes: bool) -> Vec<String> {
     let mut lits = Vec::new();
     let mut unquoted = String::new();
     let mut in_quote: Option<char> = None;
@@ -77,28 +110,35 @@ fn text_literals(text: &str) -> Vec<String> {
     for c in text.chars() {
         match in_quote {
             Some(q) if c == q => {
-                if span.trim().len() >= MIN_STRING_LITERAL_LEN {
+                if span.trim().len() >= MIN_STRING_LITERAL_LEN && !quoted_span_is_syntax(&span) {
                     lits.push(span.clone());
                 }
                 span.clear();
                 in_quote = None;
             }
             Some(_) => span.push(c),
-            None if c == '\'' || c == '"' => in_quote = Some(c),
+            None if c == '"' || (single_quotes && c == '\'') => in_quote = Some(c),
             None => unquoted.push(c),
         }
     }
-    if span.trim().len() >= MIN_STRING_LITERAL_LEN {
+    if span.trim().len() >= MIN_STRING_LITERAL_LEN && !quoted_span_is_syntax(&span) {
         lits.push(span);
     }
     for tok in unquoted.split_whitespace() {
-        // Trim sentence punctuation so prose like "lines." is not mistaken
-        // for a file-like literal; inner dots (conf.yaml) survive.
-        let t = tok.trim_matches(|c: char| ",;().:!?".contains(c));
+        // Trim sentence punctuation and markdown emphasis so prose like
+        // "lines." or "**Cabin**" is not mistaken for a file-like literal;
+        // inner dots (conf.yaml) survive.
+        let t = tok.trim_matches(|c: char| ",;().:!?*`'\"".contains(c));
         if t.starts_with('-') || t.len() < MIN_LITERAL_LEN {
             continue;
         }
-        let pathish = t.contains('/') || t.contains('*') || (t.contains('.') && t.len() > 3);
+        // Shell/regex/glob syntax is the agent's pattern language, not a
+        // claim: variables ($line), classes ([:digit:]), awk blocks, home
+        // shorthand (~/), and glob patterns (*.conf) are all skipped.
+        if t.starts_with(['$', '[', '{', '~']) || t.contains('*') || t.contains('?') {
+            continue;
+        }
+        let pathish = t.contains('/') || (t.contains('.') && t.len() > 3);
         let numeric = t.chars().all(|c| c.is_ascii_digit());
         if pathish || numeric {
             lits.push(t.to_string());
@@ -125,7 +165,7 @@ fn param_literals(v: &serde_json::Value, out: &mut Vec<String>) {
 
 /// Literals in a final answer worth evidencing: quoted spans and numbers.
 fn claim_literals(text: &str) -> Vec<String> {
-    let mut lits = text_literals(text);
+    let mut lits = text_literals_inner(text, false);
     // Also catch bare multi-digit numbers embedded in prose ("it is 172.").
     let mut cur = String::new();
     for c in text.chars() {
@@ -176,8 +216,32 @@ pub fn compute(trace: &Trace) -> AgfResult {
         .map(|s| s.id);
 
     for step in &trace.steps {
+        // 0) This step's input_context arrived *before* the agent produced
+        //    the step — it is evidence for the step's own params and claims
+        //    (e.g. a zip code the user just stated).
+        if let Some(ic) = &step.input_context {
+            let low = ic.to_lowercase();
+            prior_text.push('\n');
+            prior_text.push_str(&low);
+            env_text.push('\n');
+            env_text.push_str(&low);
+        }
+
         // 1) Action grounding: check this step's params against PRIOR text.
-        if step.step_type == StepType::ToolCall {
+        //    Content-creation tools (edit/write/create/insert/...) are
+        //    excluded: their params are the agent's *new artifact* — code it
+        //    is writing — not references whose existence can be checked.
+        let creates_content = step
+            .tool_name
+            .as_deref()
+            .map(|n| {
+                let n = n.to_lowercase();
+                ["edit", "write", "create", "insert", "str_replace", "append"]
+                    .iter()
+                    .any(|p| n.contains(p))
+            })
+            .unwrap_or(false);
+        if step.step_type == StepType::ToolCall && !creates_content {
             if let Some(params) = &step.tool_params {
                 let mut lits = Vec::new();
                 param_literals(params, &mut lits);
@@ -219,12 +283,6 @@ pub fn compute(trace: &Trace) -> AgfResult {
         let mut own = String::new();
         own.push('\n');
         own.push_str(&step.content.to_lowercase());
-        if let Some(ic) = &step.input_context {
-            own.push('\n');
-            own.push_str(&ic.to_lowercase());
-            env_text.push('\n');
-            env_text.push_str(&ic.to_lowercase());
-        }
         if let Some(out) = &step.output {
             own.push('\n');
             own.push_str(&out.to_lowercase());

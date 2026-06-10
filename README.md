@@ -41,7 +41,7 @@ Each pillar is independent. Use one, two, or all three.
 
 ## The Problem
 
-A substantial fraction of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. The exact share is workload-dependent and we do not claim a universal figure. The most concrete number we can stand behind is our own measurement: across 24 public τ-bench / SWE-agent traces, **mean step redundancy is 26% — 36–41% on the messy airline subset, 15% on retail, 22% on SWE-agent** (see [`docs/external_agent_audits.md`](docs/external_agent_audits.md)). Treat any broader "30–60%" rule of thumb as an unvalidated heuristic, not a measured constant.
+A substantial fraction of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. The exact share is workload-dependent and we do not claim a universal figure. The most concrete number we can stand behind is our own measurement: across 24 public τ-bench / SWE-agent traces, **mean step redundancy is 13% — ~20% on the messy airline subset, 5% on retail, 17% on SWE-agent** (after the responsiveness rules: a step answering a new user turn, a successful retry of a failure, or a verification re-run after an edit is never counted as redundant) (see [`docs/external_agent_audits.md`](docs/external_agent_audits.md)). Treat any broader "30–60%" rule of thumb as an unvalidated heuristic, not a measured constant.
 
 A typical production support agent handling 8 tool calls across 3 loops consumes **15,000-40,000 tokens per resolution**:
 
@@ -182,20 +182,20 @@ Framework: langgraph
 Steps:     11   Tokens: 14280
 Analysed:  13ms
 ------------------------------------------------------
-TRACERAZOR SCORE:  75 / 100  [GOOD]  (raw structural: 77, task value: 0.90)
-VAE SCORE:         0.70
-MVTG:              49.1%  (trace is 49.1% above minimum viable token count)
+TRACERAZOR SCORE:  79 / 100  [GOOD]  (raw structural: 82, task value: 0.90)
+VAE SCORE:         0.73
+MVTG:              33.8%  (trace is 33.8% above minimum viable token count)
 Note: TAS is an *ordinal* heuristic score - compare runs within one
 project over time, not as an absolute efficiency percentage.
 ------------------------------------------------------
 METRIC BREAKDOWN
 Code   Metric                         Score    Target   Status
-SRR    Step Redundancy Rate           18.2%    <15%     FAIL
-LDI    Loop Detection Index           0.182    <0.10    FAIL
+SRR    Step Redundancy Rate           0.0%     <15%     PASS
+LDI    Loop Detection Index           0.000    <0.10    PASS
 TCA    Tool Call Accuracy             83.3%    >85%     FAIL
 RDA    Reasoning Depth Approp.        0.917    >0.75    PASS
 ISR    Info Sufficiency Rate          100.0%   >80%     PASS
-TUR    Token Utilisation Ratio        0.793    >0.35    PASS
+TUR    Token Utilisation Ratio        0.959    >0.35    PASS
 CCE    Context Carry-over Eff.        0.613    >0.60    PASS
 DBO    Decision Branch Optimality     0.833    >0.70    PASS [cold]
 -- Verbosity Metrics ----------------------------------
@@ -209,9 +209,9 @@ CSD    Cross-Step Semantic Drift      0.438    ≥0.60    FAIL  [drifting pairs:
 OBS    Observation Token Share        0.377    ≥0.30    PASS
 ------------------------------------------------------
 SAVINGS ESTIMATE  (heuristic projection from flagged waste, not a measured re-run)
-Tokens saved:      7006  (49.1% reduction)
-Cost saved:        $0.0210 per run
-At 50K runs/month: $1050.90/month saved
+Tokens saved:      4827  (33.8% reduction)
+Cost saved:        $0.0145 per run
+Projected/month:   $724.05  (at the configured run count & token price)
 ```
 
 > Savings figures are **estimates** derived from per-fix heuristics, not a

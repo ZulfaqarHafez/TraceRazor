@@ -209,6 +209,11 @@ enum Commands {
         /// Apply every fix type, not just the safe subset.
         #[arg(long, default_value = "false")]
         all: bool,
+        /// Also apply fixes classified `dangerous` (e.g. termination guards
+        /// that can suppress legitimate verification re-runs). Off by default
+        /// even with --all.
+        #[arg(long, default_value = "false")]
+        force: bool,
         /// Preview the patches without writing to disk.
         #[arg(long, default_value = "false")]
         dry_run: bool,
@@ -370,8 +375,8 @@ async fn run() -> Result<()> {
         Commands::Simulate { file, remove, merge, format } => {
             cmd_simulate(file, remove, merge, format).await?;
         }
-        Commands::Apply { fixes, to, all, dry_run } => {
-            cmd_apply(fixes, to, all, dry_run).await?;
+        Commands::Apply { fixes, to, all, force, dry_run } => {
+            cmd_apply(fixes, to, all, force, dry_run).await?;
         }
         Commands::Bench { before, after, fixes, format } => {
             cmd_bench(before, after, fixes, format).await?;
@@ -1080,19 +1085,39 @@ async fn cmd_apply(
     fixes_path: PathBuf,
     target: PathBuf,
     all: bool,
+    force: bool,
     dry_run: bool,
 ) -> Result<()> {
+    use tracerazor_core::fixes::FixRisk;
+
     let fixes = load_fixes(&fixes_path)?;
     if fixes.is_empty() {
         println!("No fixes found in {}. Nothing to apply.", fixes_path.display());
         return Ok(());
     }
 
-    let selected: Vec<&Fix> = if all {
-        fixes.iter().collect()
-    } else {
-        fixes.iter().filter(|f| is_safe_fix(f)).collect()
-    };
+    // Risk-gated selection: safe always; needs_review with --all; dangerous
+    // only with --all --force (a termination guard can suppress exactly the
+    // verification re-run that catches a bug).
+    let selected: Vec<&Fix> = fixes
+        .iter()
+        .filter(|f| match f.risk {
+            FixRisk::Safe => is_safe_fix(f) || all,
+            FixRisk::NeedsReview => all,
+            FixRisk::Dangerous => all && force,
+        })
+        .collect();
+    let dangerous_skipped = fixes
+        .iter()
+        .filter(|f| f.risk == FixRisk::Dangerous)
+        .count()
+        .saturating_sub(selected.iter().filter(|f| f.risk == FixRisk::Dangerous).count());
+    if dangerous_skipped > 0 {
+        eprintln!(
+            "Skipped {dangerous_skipped} dangerous fix(es) (e.g. termination guards). \
+             Re-run with --all --force to include them."
+        );
+    }
 
     if selected.is_empty() {
         println!(
@@ -1129,9 +1154,12 @@ async fn cmd_apply(
             fix.fix_type,
             fix.estimated_token_savings
         );
+        // Append only the directive, never the report's analysis meta-prose.
         appended.push_str(&format!(
             "# {} (est. {} tokens/run)\n{}\n\n",
-            fix.fix_type, fix.estimated_token_savings, fix.patch
+            fix.fix_type,
+            fix.estimated_token_savings,
+            fix.prompt_directive()
         ));
     }
 

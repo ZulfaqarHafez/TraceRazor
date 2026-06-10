@@ -43,31 +43,28 @@ All audits were run with `tracerazor audit --threshold 0 --format json`. SRR (St
 
 2. **Step redundancy is the dominant waste pattern on airline.** ~36% of GPT-4o's airline steps and ~41% of Claude Sonnet 3.5's are flagged as near-duplicates (BoW cosine ≥ 0.65). On retail both models land near 15%.
 
-3. **GPT-4o's worst airline trace (task 3) scores 48.6 / 100 (Poor) with 56.7% step redundancy** on 4,414 tokens. The audit identifies six near-duplicate searches and one misfired `book_reservation` call that was retried at the next step.
+3. **GPT-4o's worst airline trace (task 3) scores 51.9 / 100 (Fair) with 33.3% step redundancy** on 4,414 tokens. The audit identifies six near-duplicate searches and one misfired `book_reservation` call that was retried at the next step.
 
-4. **Cross-model gap is smaller than expected.** Claude Sonnet 3.5 is slightly more wasteful on airline (41.2% SRR vs 36.0%) but cleaner on retail. Tool-palette design appears to matter more than model choice.
+4. **Cross-model gap is smaller than expected.** Claude Sonnet 3.5 is slightly more wasteful on airline (24.0% SRR vs 15.5%) but cleaner on retail (3.7% vs 6.1%). Tool-palette design appears to matter more than model choice.
 
 ### Per-task table (selected)
 
 | Trace | Model | Domain | Task | TAS | Grade | SRR |
 |---|---|---|---|---|---|---|
-| `gpt-4o_airline_task0.json` | gpt-4o | airline | 0 | 55.1 | Fair | 33.3% |
-| `gpt-4o_airline_task3.json` | gpt-4o | airline | 3 | **48.6** | **Poor** | **56.7%** |
-| `gpt-4o_retail_task4.json` | gpt-4o | retail | 4 | 89.4 | Good | 8.3% |
-| `claude-sonnet-3.5-new_airline_task0.json` | sonnet-3.5-new | airline | 0 | 47.9 | Poor | 45.0% |
-| `claude-sonnet-3.5-new_airline_task2.json` | sonnet-3.5-new | airline | 2 | 70.2 | Good | **66.7%** |
-| `claude-sonnet-3.5-new_retail_task1.json` | sonnet-3.5-new | retail | 1 | 88.4 | Good | 8.3% |
+| `gpt-4o_airline_task0.json` | gpt-4o | airline | 0 | 61.1 | Fair | 0.0% |
+| `gpt-4o_airline_task3.json` | gpt-4o | airline | 3 | **51.9** | **Fair** | **33.3%** |
+| `gpt-4o_retail_task4.json` | gpt-4o | retail | 4 | 90.6 | Excellent | 0.0% |
+| `claude-sonnet-3.5-new_airline_task0.json` | sonnet-3.5-new | airline | 0 | 54.1 | Fair | 15.0% |
+| `claude-sonnet-3.5-new_airline_task2.json` | sonnet-3.5-new | airline | 2 | 72.0 | Good | **60.0%** |
+| `claude-sonnet-3.5-new_retail_task1.json` | sonnet-3.5-new | retail | 1 | 89.5 | Good | 0.0% |
 
 ### One concrete pattern the auditor caught
 
 From `gpt-4o_airline_task0.json`:
 
-- Step 4 calls `search_direct_flight` for JFK → SEA on May 20.
-- Step 6 calls `search_onestop_flight` for the same route — **88% similar to step 4**.
-- Step 10 calls `book_reservation`. **Mis-fired**: the error from the tool is *"payment amount does not add up, total price is 305, but paid 255."* Retried at step 11 with corrected params.
-- Step 14 calls `book_reservation` again — **85% similar to step 10**.
-
-The auto-generated fix patches this with a `tool_schema` recommendation to mark `payment.amount` as required so the model cannot omit it, plus a `context_compression` directive to summarise the conversation to the last three relevant facts before each tool call.
+- Step 10 calls `book_reservation`. **Mis-fired**: the error from the tool is *"payment amount does not add up, total price is 305, but paid 255."* The optimal path deletes the failed attempt and keeps the successful retry at step 14.
+- Steps 6 and 7 (the one-stop re-search after the user rejected the direct options) are **not** flagged: a step answering a new user turn is responsive, not redundant — one of the precision rules adjudicated in on real traces.
+- The auto-generated `tool_schema` fix is **diagnosed from the actual error text** ("payment amount does not add up…"), recommending a pre-call check that recomputes derived totals/fees before calling `book_reservation` — not a generic "mark parameters required" boilerplate. Each fix carries a risk class (`safe` / `needs_review` / `dangerous`); `apply` only auto-applies `safe` ones.
 
 ---
 

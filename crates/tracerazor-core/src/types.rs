@@ -143,6 +143,46 @@ impl TraceStep {
             .unwrap_or_default();
         format!("{}:{}:{}", self.step_type, tool, params_str)
     }
+
+    /// Whether this step changes external state (a booking, an edit, a write).
+    ///
+    /// Used by the redundancy/diff layer in two ways: a successful mutating
+    /// call is never a delete candidate (deleting it breaks the task), and a
+    /// re-run *after* an intervening mutation is verification, not redundancy.
+    /// Heuristic: mutating tool-name vocabulary, plus a command-text scan for
+    /// command-style tools (bash/sql/...). Read-only by default.
+    pub fn is_mutating(&self) -> bool {
+        if self.step_type != StepType::ToolCall {
+            return false;
+        }
+        let name = self.tool_name.as_deref().unwrap_or("").to_lowercase();
+        const MUTATING_NAMES: &[&str] = &[
+            "book", "create", "update", "delete", "remove", "exchange", "send",
+            "post", "write", "edit", "insert", "cancel", "modify", "transfer",
+            "pay", "refund", "commit", "push", "upload", "submit",
+            "str_replace", "set_",
+        ];
+        if MUTATING_NAMES.iter().any(|p| name.contains(p)) {
+            return true;
+        }
+        // Command-style tools: the command text decides.
+        if matches!(
+            name.as_str(),
+            "bash" | "sh" | "shell" | "terminal" | "cmd" | "python" | "sql" | "mysql"
+        ) {
+            if let Some(p) = &self.tool_params {
+                let cmd = p.to_string().to_lowercase();
+                const WRITE_PATTERNS: &[&str] = &[
+                    " rm ", " mv ", ">", "mkdir", "touch ", "sed -i", "chmod",
+                    "chown", "zip ", "crontab", "git commit", "git push",
+                    "insert into", "update ", "delete from", "drop table",
+                    "create table", "alter table",
+                ];
+                return WRITE_PATTERNS.iter().any(|w| cmd.contains(w));
+            }
+        }
+        false
+    }
 }
 
 /// A complete agent execution trace, parsed into the internal representation.

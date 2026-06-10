@@ -65,19 +65,33 @@ pub fn compute(trace: &Trace) -> LdiResult {
     let mut loops: Vec<DetectedLoop> = Vec::new();
 
     // Method 1: State hash repetition (tool-call level).
-    let mut state_seen: HashMap<String, u32> = HashMap::new();
+    //
+    // A repeat *after an intervening state change* (an edit, a write, a
+    // booking) is not a loop: re-running the identical check against a
+    // changed world is how agents verify their changes. The chain restarts
+    // at the verification run.
+    let mut state_seen: HashMap<String, (u32, usize)> = HashMap::new(); // hash -> (first_id, last_idx)
     let mut tool_loop_groups: HashMap<u32, Vec<u32>> = HashMap::new();
 
-    for step in steps {
+    for (idx, step) in steps.iter().enumerate() {
         if step.tool_name.is_some() {
             let hash = step.state_hash();
-            if let Some(&first_id) = state_seen.get(&hash) {
-                tool_loop_groups
-                    .entry(first_id)
-                    .or_default()
-                    .push(step.id);
-            } else {
-                state_seen.insert(hash, step.id);
+            match state_seen.get_mut(&hash) {
+                Some((first_id, last_idx)) => {
+                    let mutated_between =
+                        steps[*last_idx + 1..idx].iter().any(|s| s.is_mutating());
+                    if mutated_between && step.tool_success != Some(false) {
+                        // Verification re-run: world changed since the last
+                        // occurrence — fresh chain, not a loop iteration.
+                        *first_id = step.id;
+                    } else {
+                        tool_loop_groups.entry(*first_id).or_default().push(step.id);
+                    }
+                    *last_idx = idx;
+                }
+                None => {
+                    state_seen.insert(hash, (step.id, idx));
+                }
             }
         }
     }
@@ -107,27 +121,46 @@ pub fn compute(trace: &Trace) -> LdiResult {
                 skeleton_groups.entry(skel).or_default().push(step.id);
             }
         }
+        let id_to_idx: HashMap<u32, usize> =
+            steps.iter().enumerate().map(|(i, s)| (s.id, i)).collect();
         let mut grouped: Vec<(String, Vec<u32>)> = skeleton_groups.into_iter().collect();
         grouped.sort_by(|a, b| a.1.first().cmp(&b.1.first()));
         for (_skel, mut ids) in grouped {
-            // Require a clear repeat (>=3 identical templates) before calling it
-            // a loop, so an incidental pair of similar calls is not penalised.
-            if ids.len() < 3 {
-                continue;
-            }
             ids.sort();
-            let already_reported = loops
-                .iter()
-                .any(|l| l.step_ids.iter().any(|id| ids.contains(id)));
-            if already_reported {
-                continue;
+            // Split the occurrence chain wherever a mutating step intervenes:
+            // a test→edit→test→edit→test cycle is the agent *verifying* each
+            // change, not looping. Only unbroken segments count.
+            let mut segments: Vec<Vec<u32>> = Vec::new();
+            let mut cur = vec![ids[0]];
+            for w in ids.windows(2) {
+                let (a, b) = (id_to_idx[&w[0]], id_to_idx[&w[1]]);
+                if steps[a + 1..b].iter().any(|s| s.is_mutating()) {
+                    segments.push(std::mem::take(&mut cur));
+                    cur = vec![w[1]];
+                } else {
+                    cur.push(w[1]);
+                }
             }
-            let len = ids.len();
-            loops.push(DetectedLoop {
-                step_ids: ids,
-                length: len,
-                loop_type: LoopType::ParametricRepeat,
-            });
+            segments.push(cur);
+            for seg in segments {
+                // Require a clear repeat (>=3 identical templates) before
+                // calling it a loop, so an incidental pair is not penalised.
+                if seg.len() < 3 {
+                    continue;
+                }
+                let already_reported = loops
+                    .iter()
+                    .any(|l| l.step_ids.iter().any(|id| seg.contains(id)));
+                if already_reported {
+                    continue;
+                }
+                let len = seg.len();
+                loops.push(DetectedLoop {
+                    step_ids: seg,
+                    length: len,
+                    loop_type: LoopType::ParametricRepeat,
+                });
+            }
         }
     }
 

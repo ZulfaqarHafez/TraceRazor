@@ -424,3 +424,23 @@ benchmark/, publish.sh fixed, example paths fixed); 0.6 RESULTS.md +
 external_agent_audits.md regenerated hermetically (run_benchmarks.py now
 order-independent; verified byte-identical across runs) + CI drift gate.
 Suite: 237 Rust + 242 Python green, clippy 0.
+
+---
+
+# Run 5 — Ship-plan Phase 1 (verdict precision)
+
+Implemented 1.1–1.6 with the two adjudicated traces pinned as tests:
+- SRR responsiveness rules (new-input / fail→retry / verification-after-
+  mutation) + most-similar-prior fix (1.2, 1.1, 1.6).
+- LDI verification awareness: state-hash chains restart after mutations;
+  parametric chains split at mutations (marshmallow step 20 now KEEP).
+- TraceStep::is_mutating() + diff guard: successful mutating calls never
+  deleted (corpus invariant test).
+- Fix risk classes (safe/needs_review/dangerous) + --force gate; apply emits
+  directives only (no meta-prose); tool_schema fix diagnosed from tool_error.
+- AGF tokenizer rewrite (syntax/markdown/glob rejection, creation params
+  excluded, same-step ic as evidence, prose apostrophes).
+Adjudication outcome: airline_task0 6/6 delete verdicts correct (was 1/6),
+AGF ungrounded 0 artifacts (was 0/10 correct); marshmallow verification kept.
+Corpus effects (all regenerated): 24-trace mean TAS 71.3→73.5; airline SRR
+35.9→15.5%; AgentInstruct AGF 0.951. Suites: 241 Rust + 247 Python, clippy 0.

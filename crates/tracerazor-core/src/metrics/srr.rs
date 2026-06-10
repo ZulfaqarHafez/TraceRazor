@@ -60,6 +60,56 @@ pub const CRITICAL_PERCENT: f64 = 30.0;
 /// back than this window will not be flagged.
 pub const LOOKBACK_WINDOW: usize = 256;
 
+/// Whether the later step of a similar pair is *responsive* rather than
+/// redundant. Three real-trace patterns that lexical similarity cannot see:
+///
+/// 1. **New external input arrived** at or between the pair (any step in
+///    `(a, b]` carries a non-empty `input_context`): a step answering a new
+///    user/environment turn is never redundant with a pre-turn step, however
+///    similar the wording (e.g. re-searching after the user rejected the
+///    first results).
+/// 2. **Fail→retry**: the earlier step is a failed call to the same tool the
+///    later one completes — the retry is the productive member of the pair
+///    (the failure is already penalised by TCA).
+/// 3. **Verification after a state change**: two successful tool calls with
+///    an intervening mutating step (an edit, a write, a booking) — re-running
+///    a check after changing the world is how agents verify, not waste.
+fn pair_is_responsive(steps: &[TraceStep], a: usize, b: usize) -> bool {
+    use crate::types::StepType;
+
+    // 1) New external input at or between the pair.
+    if steps[a + 1..=b].iter().any(|s| {
+        s.input_context
+            .as_deref()
+            .is_some_and(|c| !c.trim().is_empty())
+    }) {
+        return true;
+    }
+
+    let (pa, pb) = (&steps[a], &steps[b]);
+
+    // 2) Fail→retry of the same tool: keep the retry.
+    if pa.tool_success == Some(false)
+        && pb.step_type == StepType::ToolCall
+        && pa.tool_name == pb.tool_name
+        && pb.tool_success != Some(false)
+    {
+        return true;
+    }
+
+    // 3) Verification re-run after an intervening state change.
+    if pa.step_type == StepType::ToolCall
+        && pb.step_type == StepType::ToolCall
+        && pa.tool_success != Some(false)
+        && pb.tool_success != Some(false)
+        && steps[a + 1..b].iter().any(|s| s.is_mutating())
+    {
+        return true;
+    }
+
+    false
+}
+
 /// Compute the SRR metric for a trace.
 ///
 /// `similarity_fn` is a closure that takes two step text strings and returns
@@ -82,34 +132,33 @@ where
         let curr_text = curr.semantic_content();
         let window_start = i.saturating_sub(LOOKBACK_WINDOW);
 
-        for prev in &steps[window_start..i] {
-            let prev_text = prev.semantic_content();
-
-            let sim = similarity_fn(&curr_text, &prev_text);
-
-            // Only flag at or above the low confidence bound.
-            if sim >= LOW_CONFIDENCE {
-                let confidence = if sim >= HIGH_CONFIDENCE {
-                    Confidence::High
-                } else if sim >= threshold {
-                    Confidence::Medium
-                } else {
-                    Confidence::Low
-                };
-
-                // Only record as a hard redundancy at/above the main threshold.
-                if sim >= threshold {
-                    redundant_step_ids.insert(curr.id);
-                    pairs.push(SrrRedundantPair {
-                        step_a: prev.id,
-                        step_b: curr.id,
-                        similarity: (sim * 100.0).round() / 100.0,
-                        confidence,
-                    });
-                    // Only flag the most similar prior step.
-                    break;
-                }
+        // Track the *most similar* qualifying prior step (the previous code
+        // broke on the first/oldest prior above threshold, contradicting its
+        // own "most similar" comment).
+        let mut best: Option<(usize, f64)> = None;
+        for (off, prev) in steps[window_start..i].iter().enumerate() {
+            let j = window_start + off;
+            let sim = similarity_fn(&curr_text, &prev.semantic_content());
+            if sim >= threshold
+                && !pair_is_responsive(steps, j, i)
+                && best.is_none_or(|(_, s)| sim > s)
+            {
+                best = Some((j, sim));
             }
+        }
+        if let Some((j, sim)) = best {
+            let confidence = if sim >= HIGH_CONFIDENCE {
+                Confidence::High
+            } else {
+                Confidence::Medium
+            };
+            redundant_step_ids.insert(curr.id);
+            pairs.push(SrrRedundantPair {
+                step_a: steps[j].id,
+                step_b: curr.id,
+                similarity: (sim * 100.0).round() / 100.0,
+                confidence,
+            });
         }
     }
 
@@ -228,4 +277,113 @@ mod tests {
             .any(|p| p.step_b == last_id && p.step_a == 1);
         assert!(!flagged_last, "step 1 should be outside the lookback window of the last step");
     }
+
+    // ── Phase-1 precision rules ───────────────────────────────────────────────
+
+    #[test]
+    fn most_similar_prior_is_flagged_not_first() {
+        // Two priors above threshold; the pair must point at the MORE similar
+        // one (index 2), not the first/oldest above threshold (index 0).
+        let trace = make_trace(&["alpha beta gamma", "unrelated", "alpha beta gamma delta", "alpha beta gamma delta"]);
+        let sim = |a: &str, b: &str| {
+            if a == b { 1.0 }
+            else if a.starts_with("alpha") && b.starts_with("alpha") { 0.7 }
+            else { 0.0 }
+        };
+        let result = compute(&trace, sim, None);
+        let pair = result
+            .redundant_steps
+            .iter()
+            .find(|p| p.step_b == 4)
+            .expect("step 4 should be flagged");
+        assert_eq!(pair.step_a, 3, "must flag the most similar prior, got {pair:?}");
+    }
+
+    #[test]
+    fn new_input_between_pair_is_responsive_not_redundant() {
+        // Identical wording, but a new user turn arrived at step 3: the
+        // re-search answers new input and must not be flagged.
+        let mut trace = make_trace(&[
+            "search flights from JFK to SEA",
+            "presenting the direct options",
+            "search flights from JFK to SEA",
+        ]);
+        trace.steps[2].input_context = Some("user: nothing before 11am please".into());
+        let result = compute(&trace, exact_sim, None);
+        assert!(
+            result.redundant_steps.is_empty(),
+            "responsive re-search flagged: {:?}",
+            result.redundant_steps
+        );
+
+        // Control: without the new input the identical step IS redundant.
+        let control = make_trace(&[
+            "search flights from JFK to SEA",
+            "presenting the direct options",
+            "search flights from JFK to SEA",
+        ]);
+        let r = compute(&control, exact_sim, None);
+        assert_eq!(r.redundant_count, 1, "control pair must still be flagged");
+    }
+
+    #[test]
+    fn failed_then_successful_retry_keeps_the_retry() {
+        let mut trace = make_trace(&[
+            "Calling book_reservation with payment 255",
+            "recalculating the total",
+            "Calling book_reservation with payment 255",
+        ]);
+        for (i, ok) in [(0, false), (2, true)] {
+            trace.steps[i].step_type = StepType::ToolCall;
+            trace.steps[i].tool_name = Some("book_reservation".into());
+            trace.steps[i].tool_success = Some(ok);
+        }
+        let result = compute(&trace, exact_sim, None);
+        assert!(
+            !result.redundant_steps.iter().any(|p| p.step_b == 3),
+            "the successful retry must not be the redundant member: {:?}",
+            result.redundant_steps
+        );
+    }
+
+    #[test]
+    fn verification_rerun_after_mutation_is_not_redundant() {
+        // run tests -> edit the file -> run tests again: the re-run verifies
+        // the edit. With no intervening mutation it stays redundant.
+        let mut trace = make_trace(&[
+            "Action: python reproduce.py",
+            "Action: edit lines 40:45",
+            "Action: python reproduce.py",
+        ]);
+        for i in [0, 1, 2] {
+            trace.steps[i].step_type = StepType::ToolCall;
+            trace.steps[i].tool_success = Some(true);
+        }
+        trace.steps[0].tool_name = Some("python".into());
+        trace.steps[1].tool_name = Some("edit".into());
+        trace.steps[2].tool_name = Some("python".into());
+        let result = compute(&trace, exact_sim, None);
+        assert!(
+            !result.redundant_steps.iter().any(|p| p.step_b == 3),
+            "verification re-run flagged: {:?}",
+            result.redundant_steps
+        );
+
+        // Control: same pair with a read-only step between stays redundant.
+        let mut control = make_trace(&[
+            "Action: python reproduce.py",
+            "Action: open the file to read it",
+            "Action: python reproduce.py",
+        ]);
+        for i in [0, 1, 2] {
+            control.steps[i].step_type = StepType::ToolCall;
+            control.steps[i].tool_success = Some(true);
+        }
+        control.steps[0].tool_name = Some("python".into());
+        control.steps[1].tool_name = Some("open".into());
+        control.steps[2].tool_name = Some("python".into());
+        let r = compute(&control, exact_sim, None);
+        assert!(r.redundant_steps.iter().any(|p| p.step_b == 3));
+    }
+
 }
