@@ -151,4 +151,4 @@ In tau-bench airline benchmarks (50 tasks, gpt-4o):
 
 ## License
 
-MIT. Copyright (c) 2024 Zulfaqar Hafez.
+MIT. Copyright (c) 2025-2026 Zulfaqar Hafez. See [LICENSE](../LICENSE).

@@ -4,6 +4,29 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Documentation, paper and housekeeping
+- **Paper reworked around the measured findings** (`paper/tracerazor.tex`) —
+  new "measured intervention study" section reporting both rounds (the
+  −5.6% negative result, the diagnosis, the rewritten patch, the +0.7%
+  re-measurement) plus the cache-warmth accounting hazard; abstract,
+  contributions, related work (cost-aware agent evaluation), fix-generation,
+  verification (Ed25519 signing + bundles), limitations (study scope,
+  coding-agent metric priors), reproducibility (test counts, committed
+  dataset) and conclusion updated; five references added. Prior calibration,
+  AgentInstruct and sampling content kept as-is — still accurate.
+- **README visualized** — Mermaid product-loop diagram (audit → measure →
+  verify) replaces the ASCII hero; new "Measure" section with the
+  apply→re-run→bench sequence diagram and both case-study rounds; crate
+  data-flow diagram in Architecture; layout tree now includes the
+  measurement kit.
+- **License standardized** — copyright unified to
+  "(c) 2025-2026 Zulfaqar Hafez" across LICENSE, README and
+  docs/python_api.md (was 2024 there); `dashboard/package.json` gains its
+  missing `"license": "MIT"` field.
+- **Dead-code audit: clean** — a full sweep (scripts, dashboard, calibration,
+  benchmark tools, traces, Python modules, Rust crates, workflows, docs)
+  found every file referenced by CI, tests or docs; nothing to delete.
+
 ### The live measured case study (docs/case_study.md)
 - **Live case study executed** — 24 real agent runs (Claude Code headless,
   Haiku 4.5) over 6 pytest-verified Python tasks × 2 replicates, audit →

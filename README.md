@@ -14,22 +14,39 @@ pip install tracerazor
 
 ## What TraceRazor Does
 
-```
-  ┌──────────────────────── TraceRazor v0.4.0 ─────────────────────────────┐
-  │                                                                        │
-  │   trace JSON ──► AUDIT ──► TAS score (14 signals) + fix patches        │
-  │   (LangSmith /             + savings estimate + run manifest           │
-  │    OTel / raw)             + Ed25519 signature (optional)              │
-  │                                                                        │
-  │   report ─────► VERIFY ──► signature check ► hash check ► re-score     │
-  │   (+ trace)                any edited field ⇒ TAMPERED, exit 1         │
-  │                                                                        │
-  └────────────────────────────────────────────────────────────────────────┘
+TraceRazor v0.4.0 closes a full loop: **audit** a trace offline, **apply** the
+emitted fixes, **measure** the real before/after delta at constant task
+outcome, and let anyone **verify** the report cryptographically.
+
+```mermaid
+flowchart LR
+    T["📄 Trace JSON<br/>LangSmith · OTel · raw ·<br/>Claude Code transcripts"]
+
+    subgraph AUDIT["1 · AUDIT — offline, no API keys, ~ms"]
+        A["14 scored signals"] --> R["Report<br/>TAS 0–100 + fix patches<br/>+ run manifest<br/>+ Ed25519 signature"]
+    end
+
+    subgraph MEASURE["2 · MEASURE — the only real proof"]
+        F["apply<br/>safe patches → prompt"] --> RR["re-run agent"]
+        RR --> B["bench<br/>measured Δ tokens at<br/>constant pass rate"]
+    end
+
+    subgraph VERIFY["3 · VERIFY — anyone, anywhere"]
+        V["signature ✓ → hash ✓ → re-score ✓<br/>any edited field ⇒ TAMPERED, exit 1"]
+    end
+
+    T --> A
+    R --> F
+    R --> V
+    B -.->|next audit| T
 ```
 
 Audit runs offline (no API keys; low single-digit milliseconds on typical
-traces). Verify lets a third party check that a score is authentic and
-reproducible. Experimental sampling and substitutability work is demoted to
+traces). Measure turns the audit's heuristic savings *estimates* into
+*measured* deltas — see the [live case study](docs/case_study.md), which
+caught one of our own fixes costing tokens and verified the repair. Verify
+lets a third party check that a score is authentic and reproducible.
+Experimental sampling and substitutability work is demoted to
 [Labs](#labs-experimental) status.
 
 ---
@@ -448,6 +465,47 @@ because the injected-waste distribution is a model rather than a sample of real
 agents, so shipping those weights as the default would swap one unvalidated
 choice for another. The worked example lives in `calibration/`; see
 [`calibration/README.md`](calibration/README.md).
+
+---
+
+## Measure: from estimated to measured savings
+
+The audit's "tokens saved" figure is a heuristic projection. The `apply` →
+re-run → `bench` loop replaces it with a **measured** delta, and the
+measurement harness refuses to call a delta a "saving" on any task whose
+pass flag flipped:
+
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant TraceRazor
+    participant Harness as case_study harness
+
+    Agent->>TraceRazor: before-trace
+    TraceRazor->>TraceRazor: audit --hermetic
+    TraceRazor->>Agent: apply → patched system prompt
+    Agent->>TraceRazor: after-trace (same task, same model)
+    TraceRazor->>Harness: bench per pair
+    Harness->>Harness: bootstrap 95% CIs + pass-rate check
+    Note over Harness: pass flag flipped? ⇒ "FLIPPED, not a saving", exit 1
+```
+
+We ran this loop live — 24 real Claude Code runs over 6 pytest-verified
+tasks × 2 replicates, ≈$1.30 total — and published both rounds, including
+the one that went against us:
+
+| Round | Patch under test | Mean token Δ (95% CI) | Pass rate |
+|---|---|---|---|
+| 1 | `goal_anchor` as shipped | **−5.6%** [−11.4, +0.2] — a cost | 12/12 → 12/12 |
+| 2 | `goal_anchor` rewritten from round-1 evidence | **+0.7%** [−8.9, +9.9] — cost-neutral | 12/12 → 12/12 |
+
+Round 1's estimate accuracy was **−102%**: the projection had the wrong
+sign. That measurement is why the shipped patch no longer tells the agent to
+restate its objective every step. Full protocol, data, and limitations:
+[`docs/case_study.md`](docs/case_study.md) — every trace, fix, and run log is
+committed, so the measurement re-runs without API spend. The transcript
+converter (`benchmark/convert_claude_code.py`) makes any Claude Code session
+auditable the same way.
 
 ---
 
@@ -949,6 +1007,21 @@ curl -s -H "Authorization: Bearer s3cret" http://127.0.0.1:8080/api/traces
 
 ## Architecture
 
+How a trace flows through the crates:
+
+```mermaid
+flowchart LR
+    IN["tracerazor-ingest<br/>raw JSON · LangSmith · OTel"] --> CORE["tracerazor-core<br/>14 metrics · TAS · fixes · manifest<br/>(zero network deps)"]
+    SEM["tracerazor-semantic<br/>BoW default · LLM opt-in"] -.-> CORE
+    STORE["tracerazor-store<br/>SQLite baselines · history"] -.-> CORE
+    CORE --> CLI["tracerazor-cli<br/>audit · verify · bench · apply · serve"]
+    CORE --> SRV["tracerazor-server<br/>REST · WebSocket · dashboard"]
+    CLI --> OUT["report.json<br/>signed, verifiable"]
+    SRV --> OUT
+```
+
+Repository layout:
+
 ```
 tracerazor/
 ├── crates/
@@ -980,6 +1053,11 @@ tracerazor/
 │   ├── langgraph/
 │   ├── crewai/
 │   └── openai_agents/
+│
+├── benchmark/
+│   ├── case_study.py          # measured-savings harness: bench per pair + bootstrap CIs
+│   ├── convert_claude_code.py # Claude Code transcript → auditable trace
+│   └── live/                  # live-study kit: task suite, runner, both rounds' data
 │
 ├── docs/
 │   ├── case_study.md          # MEASURED live case study: 24 real agent runs, CIs, both rounds
@@ -1070,4 +1148,4 @@ For a fuller, paper-style treatment of the methodology and its limitations, see
 
 ## License
 
-MIT. Copyright 2025 Zulfaqar Hafez. See [LICENSE](LICENSE).
+MIT. Copyright (c) 2025-2026 Zulfaqar Hafez. See [LICENSE](LICENSE).
