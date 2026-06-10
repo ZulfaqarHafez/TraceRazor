@@ -3,6 +3,11 @@ name: Release
 on:
   push:
     tags: ["v*"]
+    # Pushing a branch named release-cut/vX.Y.Z cuts the release for that
+    # version at the pushed commit — equivalent to the workflow_dispatch
+    # path, for environments that can push branches but not tags or
+    # dispatch workflows.
+    branches: ["release-cut/v*"]
   workflow_dispatch:
     inputs:
       tag:
@@ -31,16 +36,18 @@ jobs:
           set -euo pipefail
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TAG="$INPUT_TAG"
-            case "$TAG" in v*) ;; *) echo "tag must look like vX.Y.Z, got '$TAG'" >&2; exit 1 ;; esac
-            if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
-              echo "tag $TAG already exists — releasing it"
-            else
-              gh api "repos/$GITHUB_REPOSITORY/git/refs" \
-                -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
-              echo "created tag $TAG at $GITHUB_SHA"
-            fi
+          elif [[ "$GITHUB_REF" == refs/heads/release-cut/* ]]; then
+            TAG="${GITHUB_REF_NAME#release-cut/}"
           else
-            TAG="$GITHUB_REF_NAME"
+            TAG="$GITHUB_REF_NAME"   # tag-push event
+          fi
+          case "$TAG" in v*) ;; *) echo "tag must look like vX.Y.Z, got '$TAG'" >&2; exit 1 ;; esac
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+            echo "tag $TAG already exists — releasing it"
+          else
+            gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+              -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
+            echo "created tag $TAG at $GITHUB_SHA"
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
