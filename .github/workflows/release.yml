@@ -4,10 +4,49 @@ on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag, e.g. v0.4.1 (created at the chosen ref if missing)'
+        required: true
+        type: string
 
 jobs:
+  # Resolve (and on workflow_dispatch, create) the release tag. On tag-push
+  # events this just verifies the pushed tag, so downstream jobs can depend
+  # on it unconditionally in both modes.
+  tag:
+    name: Resolve release tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - name: Resolve or create tag
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="$INPUT_TAG"
+            case "$TAG" in v*) ;; *) echo "tag must look like vX.Y.Z, got '$TAG'" >&2; exit 1 ;; esac
+            if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
+              echo "tag $TAG already exists — releasing it"
+            else
+              gh api "repos/$GITHUB_REPOSITORY/git/refs" \
+                -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
+              echo "created tag $TAG at $GITHUB_SHA"
+            fi
+          else
+            TAG="$GITHUB_REF_NAME"
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+
   wheels:
     name: Platform wheel (${{ matrix.os }})
+    needs: [tag]
     strategy:
       matrix:
         # ubuntu-22.04 (glibc 2.35) keeps the manylinux floor low; macos-latest
@@ -16,6 +55,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
@@ -42,6 +83,7 @@ jobs:
   # (.github/actions/tracerazor) so consumer repos need no Rust toolchain.
   binaries:
     name: Release binary (${{ matrix.target }})
+    needs: [tag]
     strategy:
       matrix:
         include:
@@ -54,6 +96,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
@@ -77,8 +121,7 @@ jobs:
   # fallback.
   pypi:
     name: Publish to PyPI
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [wheels]
+    needs: [tag, wheels]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -94,30 +137,32 @@ jobs:
           packages-dir: dist
           skip-existing: true
 
-  # Attach wheels + binaries to the GitHub release on tag push.
+  # Attach wheels + binaries to the GitHub release.
   publish-release:
     name: Publish GitHub release
-    if: startsWith(github.ref, 'refs/tags/')
-    needs: [wheels, binaries]
+    needs: [tag, wheels, binaries]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
       - name: Create release with assets
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.tag.outputs.tag }}
         run: |
           set -euo pipefail
           ASSETS=$(find artifacts -type f \( -name '*.whl' -o -name '*.tar.gz' \))
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             # shellcheck disable=SC2086
-            gh release upload "$GITHUB_REF_NAME" $ASSETS --clobber
+            gh release upload "$RELEASE_TAG" $ASSETS --clobber
           else
             # shellcheck disable=SC2086
-            gh release create "$GITHUB_REF_NAME" $ASSETS \
-              --verify-tag --generate-notes --title "TraceRazor $GITHUB_REF_NAME"
+            gh release create "$RELEASE_TAG" $ASSETS \
+              --verify-tag --generate-notes --title "TraceRazor $RELEASE_TAG"
           fi
