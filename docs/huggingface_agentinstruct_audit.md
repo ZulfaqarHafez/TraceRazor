@@ -8,39 +8,36 @@ the live-fetch path. Reproduce with `python -m benchmark.hf_audit_stats`.
 
 ## Corpus
 
-- Traces: **9** (7 analysable, 2 skipped <5 steps)
-- Mean TAS: **80.6** (median 81.4)
-- Grade distribution: {'Good': 7}
-- Mean MVTG (structural waste): **0.278**
-- Fix patches emitted: **17**
+- Traces: **13** (4 analysable, 9 skipped <5 steps)
+- Mean TAS: **78.6** (median 78.7)
+- Grade distribution: {'Good': 4}
+- Mean MVTG (structural waste): **0.364**
+- Fix patches emitted: **10**
 
 ## Mean normalised metric scores (1.0 = no waste detected)
 
 | Metric | Mean (normalised) |
 |---|---:|
-| SRR | 0.674 |
-| LDI | 0.937 |
-| TCA | 0.959 |
-| RDA | 0.726 |
-| ISR | 0.984 |
-| TUR | 0.945 |
-| CCE | 0.974 |
-| DBO | 0.588 |
-| VDI | 0.867 |
-| SHL | 1.0 |
-| CCR | 0.913 |
-| GAR | 0.247 |
-| CSD | 0.415 |
-| OBS | 0.913 |
+| SRR | 0.65 |
+| LDI | 0.833 |
+| TCA | 0.9 |
+| RDA | 0.45 |
+| ISR | 0.958 |
+| TUR | 0.888 |
+| CCE | 0.956 |
+| DBO | 0.875 |
+| VDI | 0.902 |
+| SHL | 0.967 |
+| CCR | 0.857 |
+| GAR | 0.348 |
+| CSD | 0.487 |
+| OBS | 0.93 |
 
 ## Per-trace
 
 | Trace | Steps | Tokens | TAS | Grade | SRR | LDI | GAR | OBS | Fixes |
 |---|---:|---:|---:|---|---:|---:|---:|---:|---:|
-| agentinstruct-os_0 | 9 | 534 | 80.4 | Good | 0.778 | 1.0 | 0.196 | 0.916 | 3 |
-| agentinstruct-os_1 | 6 | 294 | 81.5 | Good | 0.667 | 1.0 | 0.254 | 0.908 | 3 |
-| agentinstruct-os_2 | 6 | 429 | 81.4 | Good | 0.667 | 1.0 | 0.182 | 0.937 | 3 |
-| agentinstruct-os_3 | 6 | 356 | 85.0 | Good | 0.667 | 1.0 | 0.313 | 0.879 | 1 |
-| agentinstruct-os_4 | 7 | 468 | 84.0 | Good | 0.714 | 1.0 | 0.242 | 0.921 | 1 |
-| agentinstruct-os_5 | 9 | 811 | 77.2 | Good | 0.667 | 1.0 | 0.273 | 0.936 | 4 |
-| agentinstruct-os_6 | 9 | 425 | 75.0 | Good | 0.556 | 0.556 | 0.268 | 0.892 | 2 |
+| agentinstruct-os_0 | 6 | 414 | 82.2 | Good | 0.833 | 1.0 | 0.284 | 0.925 | 3 |
+| agentinstruct-os_11 | 5 | 638 | 81.1 | Good | 0.6 | 1.0 | 0.467 | 0.956 | 1 |
+| agentinstruct-os_5 | 6 | 691 | 74.8 | Good | 0.667 | 1.0 | 0.308 | 0.945 | 4 |
+| agentinstruct-os_6 | 6 | 305 | 76.3 | Good | 0.5 | 0.333 | 0.331 | 0.895 | 2 |

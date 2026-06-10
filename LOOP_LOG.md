@@ -184,3 +184,91 @@ Known limitations / follow-up:
     similarity (already supported via `--enhanced`) would lift them further.
   - Corpus is OS+DB splits only; alfworld/webshop/kg/mind2web are available via the loader.
   - TAS weights are unchanged (these are heuristic correctness fixes, not a recalibration).
+
+---
+
+# Run 2 (second improvement pass over the real-data statistics)
+
+## Iteration 1
+Read: Run 1 complete (PR #9 + CI fix); real-corpus weak spots are GAR 0.247 and
+CSD 0.415 — both feed the full ReAct turn (prose + code fence) into BoW
+similarity.
+Plan: Add `reasoning_text()` in metrics/mod.rs stripping fenced code blocks, and
+score GAR/CSD on the thought alone; hypothesis: code tokens dilute lexical
+overlap with NL goals/neighbouring thoughts.
+Change: `metrics/mod.rs` (+reasoning_text +3 tests), `gar.rs` (score stripped
+text, +1 fence test), `csd.rs` (score stripped text, +1 fence test).
+Test result: PARTIAL — cargo test --workspace 223/223 green, but the real-data
+gate statistics REGRESSED: GAR 0.247→0.240, CSD 0.415→0.353, TAS 80.6→80.4.
+Diagnosis: Hypothesis falsified on real data. In this corpus the code carries
+task-grounded literals (paths, filenames, search strings from the task) that
+anchor lexical overlap between consecutive steps and with the goal; wholesale
+fence-stripping removes signal along with syntax.
+Next: Iteration 2 — keep the fence parser but make it literal-preserving: drop
+only code *syntax* (command names, flags, operators) and retain argument
+literals (paths, quoted strings, numbers), which are exactly the tokens shared
+with the NL goal. Predicted: GAR ↑ vs both baseline and Iter-1.
+
+## Iteration 2
+Read: Iter-1 falsified wholesale fence-stripping (code literals are anchors);
+BoW tokenizer confirmed: every non-shared token lowers TF-cosine via magnitude,
+shared literals raise the dot product.
+Plan: Make `reasoning_text()` literal-preserving — reduce fence lines to their
+argument literals (quoted spans, paths, globs, filenames, numbers), dropping
+command names/flags/operators. Keeps task-grounded anchors, removes only syntax.
+Change: `metrics/mod.rs` (+code_literals/+is_unquoted_literal, reasoning_text
+reduces instead of drops; tests updated to new semantics +1 SQL-literal test),
+`gar.rs`/`csd.rs` fence tests updated (shared literals, differing syntax).
+Test result: PASS — cargo test --workspace 224/224 green.
+Diagnosis: GAR 0.247→0.264 (+7% over baseline; syntax dilution vs NL goal
+removed, literal anchors kept). CSD 0.387 (above iter-1's 0.353; below the
+raw-content 0.415 by design — shared tool vocabulary between consecutive steps
+no longer masquerades as topical continuity). TAS mean back at 80.6.
+Next: Iteration 3 — audit SRR (0.674) on the real corpus: ReAct turns share
+"Think:/Act: bash" boilerplate + code syntax in full-content similarity, which
+may inflate revisit detection (false redundancy on normal progression).
+
+## Iteration 3
+Read: SRR's flagged pairs on os_0 are defensible (truncated-ls redo; incremental
+pipeline re-runs that CCE corroborates) — but DBO sat at 0.571 on a fresh HOME:
+cold-start proxy keys retries/uniqueness on bare tool name, so a single-tool
+bash/SQL agent is capped near the floor by construction (1/n unique, n-1
+"retries" for n calls).
+Plan: Key the cold-start retry/thrash signals on the *invocation* (tool name +
+tool_params) — re-running bash with a different command (or get_order for a
+different order) is progress; re-issuing an identical call is the retry.
+Param-less steps keep name-keying (existing API-agent tests unaffected).
+Change: `metrics/dbo.rs` single_trace_efficiency invocation keying + doc;
++2 tests (distinct invocations hit ceiling; identical invocations penalised).
+Test result: PASS — cargo test --workspace 226/226 green.
+Diagnosis: Real corpus: DBO 0.588→0.894, TAS mean 80.6→82.8. Discrimination
+preserved: os_5 (genuine tool failure) is now the only sub-ceiling trace
+(0.857); previously all traces were uniformly docked for tool-inventory size.
+Next: Iteration 4 — RDA scored 0.444 on os_0 (corpus mean 0.726); inspect how
+task-complexity classification treats command-agent traces.
+
+## Iteration 4
+Read: RDA scored 0.444 on os_0 — but the trail led to a data-fidelity bug:
+every converted trace began with the IDENTICAL step ("count the files in
+/etc"). AgentInstruct rows embed the dataset's one-shot demo before the real
+task, marked by `loss: false` on gpt turns (real turns: `loss: true`); the
+converter was auditing the demo as agent behaviour (pseudo-replication,
+mis-anchored goal metrics — os_0's SRR pair (1,2) was the demo itself).
+Plan: Exclude scaffolding in the converter (loss-flag rule + "start a new
+problem" marker fallback); widen the corpus via the HF MCP connector (fetched
+os_7–os_18 live) and vendor 4 new real rows (os_7, os_11, os_16, os_18 — incl.
+a 5-step analysable trace and the `finish` action shape).
+Change: `tools/convert_agentinstruct.py` (+_real_task_turns), 
+`benchmark/data/_agentinstruct_hf_sample.py` (+4 real rows), corpus regenerated
+(13 traces), gate floors updated to the honest corpus shape
+(`huggingface_real_data.rs`: >=4 analysable + sub-floor majority retained;
+pytest: +5 scaffolding tests, coverage-shape test), SOURCE.md provenance.
+Test result: PASS — cargo test --workspace 226/226; pytest 238 passed, 3 skipped.
+Diagnosis: De-contaminated statistics: mean TAS 82.8→78.6 (demo steps were
+padding all scores), GAR 0.264→0.347 (goal anchoring no longer fights the demo
+mismatch), LDI mean 0.833, fixes 10. NEW COVERAGE FINDING: with scaffolding
+excluded, 9/13 (~69%) of real trajectories fall below the 5-step analysis
+floor — the floor's real-data coverage cost is now measured, not assumed.
+Next: Iteration 5 — act on the coverage finding: the 5-step floor excludes
+most real short ReAct trajectories; evaluate a short-trace audit path (floor
+reduction or degraded-mode scoring) so the product can serve this trace class.
