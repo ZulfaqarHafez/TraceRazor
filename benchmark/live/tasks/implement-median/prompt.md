@@ -1,0 +1,1 @@
+You are in a small Python project. `stats.py` has an unimplemented `median` function. Run `python3 -m pytest -q` to see what behaviour the tests expect, implement `median`, and re-run the tests until they all pass. Do not modify any files under `tests/`.

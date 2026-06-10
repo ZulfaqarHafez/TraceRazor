@@ -1,0 +1,82 @@
+{
+  "condition": "before",
+  "model": "claude-haiku-4-5-20251001",
+  "max_turns": 25,
+  "system_prompt_appended": false,
+  "completed_at": "2026-06-10T14:38:02Z",
+  "total_cost_usd": 0.1956,
+  "runs": [
+    {
+      "task": "csv-filter.r2",
+      "condition": "before",
+      "passed": true,
+      "steps": 11,
+      "trace_tokens": 7941,
+      "num_turns": 7,
+      "cost_usd": 0.027075550000000004,
+      "wall_s": 19.7,
+      "session_id": "4c87d181-e92d-4ca4-90bf-85bcc06e2db0",
+      "agent_exit": 0
+    },
+    {
+      "task": "dedupe-helpers.r2",
+      "condition": "before",
+      "passed": true,
+      "steps": 16,
+      "trace_tokens": 7638,
+      "num_turns": 10,
+      "cost_usd": 0.034057000000000004,
+      "wall_s": 74.4,
+      "session_id": "2fb4ad57-2bf6-4722-a31f-7681b45d037f",
+      "agent_exit": 0
+    },
+    {
+      "task": "fix-imports.r2",
+      "condition": "before",
+      "passed": true,
+      "steps": 21,
+      "trace_tokens": 7539,
+      "num_turns": 11,
+      "cost_usd": 0.0423796,
+      "wall_s": 33.1,
+      "session_id": "d5d91df9-2645-45b7-b38e-d25f3be06eab",
+      "agent_exit": 0
+    },
+    {
+      "task": "fix-offby-one.r2",
+      "condition": "before",
+      "passed": true,
+      "steps": 13,
+      "trace_tokens": 6759,
+      "num_turns": 7,
+      "cost_usd": 0.030058999999999995,
+      "wall_s": 24.2,
+      "session_id": "52cc30d9-cc30-43ca-8d2a-3a660580df4f",
+      "agent_exit": 0
+    },
+    {
+      "task": "implement-median.r2",
+      "condition": "before",
+      "passed": true,
+      "steps": 9,
+      "trace_tokens": 6604,
+      "num_turns": 5,
+      "cost_usd": 0.024534350000000003,
+      "wall_s": 15.9,
+      "session_id": "fb268b63-34cb-4cb1-a29f-6edc05465df5",
+      "agent_exit": 0
+    },
+    {
+      "task": "rename-api.r2",
+      "condition": "before",
+      "passed": true,
+      "steps": 21,
+      "trace_tokens": 8409,
+      "num_turns": 14,
+      "cost_usd": 0.037537350000000004,
+      "wall_s": 43.3,
+      "session_id": "1cecec8e-9599-4301-ae9d-87c9d09f2c3c",
+      "agent_exit": 0
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+You are in a small Python project. The test suite is failing because of a bug in `chunker.py`. Run `python3 -m pytest -q` to see the failures, find and fix the bug, then re-run the tests until they all pass. Do not modify any files under `tests/`.

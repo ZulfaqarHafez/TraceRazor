@@ -1,0 +1,1 @@
+You are in a small Python project. The package `mypkg` is broken: importing it fails, and the tests expect `run_pipeline` to be importable directly from the package. Run `python3 -m pytest -q` to see the errors, fix the package's imports/exports, and re-run the tests until they all pass. Do not modify any files under `tests/`.

@@ -1,7 +1,9 @@
 name: Agent Efficiency Gate
 
 # Example workflow showing how to use the TraceRazor action in CI.
-# Copy this file into your own repo and adjust the trace file path and threshold.
+# Copy this file into your own repo and adjust the trace file path and
+# threshold. The action downloads a prebuilt release binary by default, so
+# the consumer repo needs no Rust toolchain.
 
 on:
   pull_request:
@@ -10,6 +12,10 @@ on:
       - "agents/**"
   push:
     branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write # for the sticky PR comment
 
 jobs:
   tracerazor-audit:
@@ -20,27 +26,32 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # ── Option A: audit a checked-in trace file ────────────────────────────
+      # ── Audit a checked-in trace, gate on TAS and regressions ──────────────
+      # In your own repo, reference the action by tag:
+      #   uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v0.4.0
       - name: Audit agent trace
         id: audit
         uses: ./.github/actions/tracerazor
         with:
-          trace-file: traces/latest-run.json   # path to your trace file
-          threshold: "70"                       # fail if TAS drops below 70
-          format: markdown
+          trace-file: traces/latest-run.json # path to your trace file
+          threshold: "70" # fail if TAS drops below 70
+          # Optional regression gate vs a known-good baseline trace:
+          # baseline-trace: traces/baseline-run.json
+          # regression-threshold: "10"  # fail on any metric dropping >10%
+          version: latest # release tag of the binary to download
+          # Inside the TraceRazor repo itself we build from the workspace
+          # (consumer repos should omit this and use the release download):
+          build-from-source: "true"
 
-      # ── Show the report in the PR summary ─────────────────────────────────
-      - name: Post report to job summary
+      # The action posts a sticky PR comment, uploads the JSON report as an
+      # artifact, and appends the report to the job summary by itself.
+      # Outputs remain available for custom steps:
+      - name: Use outputs
         if: always()
         run: |
-          echo "## TraceRazor Efficiency Report" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**TAS Score:** ${{ steps.audit.outputs.tas-score }} [${{ steps.audit.outputs.grade }}]" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Passes:** ${{ steps.audit.outputs.passes }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          echo "${{ steps.audit.outputs.report }}" >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          echo "TAS: ${{ steps.audit.outputs.tas-score }} [${{ steps.audit.outputs.grade }}]"
+          echo "passes=${{ steps.audit.outputs.passes }}"
+          echo "regression-detected=${{ steps.audit.outputs.regression-detected }}"
 
       # ── Option B: generate a trace at CI time and audit it ─────────────────
       # Uncomment if you run your agent as part of CI and capture its trace:

@@ -343,6 +343,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         let mut after = minimal_report(vec![
@@ -351,6 +352,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         // Improve TCA score in after report
@@ -370,6 +372,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         let after = minimal_report(vec![
@@ -378,6 +381,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         // Scores stay the same → no improvement
@@ -395,18 +399,21 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::TerminationGuard,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ContextCompression,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         let mut after = minimal_report(vec![
@@ -415,18 +422,21 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::TerminationGuard,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ContextCompression,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         // Improve TCA and CCE, but not LDI
@@ -449,12 +459,14 @@ mod tests {
                 target: "tool_a".into(),
                 patch: "fix a".into(),
                 estimated_token_savings: 50,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ToolSchema,
                 target: "tool_b".into(),
                 patch: "fix b".into(),
                 estimated_token_savings: 50,
+                risk: Default::default(),
             },
         ]);
         let mut after = minimal_report(vec![
@@ -463,12 +475,14 @@ mod tests {
                 target: "tool_a".into(),
                 patch: "fix a".into(),
                 estimated_token_savings: 50,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ToolSchema,
                 target: "tool_b".into(),
                 patch: "fix b".into(),
                 estimated_token_savings: 50,
+                risk: Default::default(),
             },
         ]);
         after.score.tca.score = 100.0;
@@ -487,24 +501,28 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::TerminationGuard,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ContextCompression,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::VerbosityReduction,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         let mut after = minimal_report(vec![
@@ -513,24 +531,28 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::TerminationGuard,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ContextCompression,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::VerbosityReduction,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         // 3 out of 4 improve
@@ -553,24 +575,28 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::TerminationGuard,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ContextCompression,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::VerbosityReduction,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         let mut after = minimal_report(vec![
@@ -579,24 +605,28 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::TerminationGuard,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ContextCompression,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::VerbosityReduction,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         // Only 2 out of 4 improve
@@ -618,6 +648,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         let mut after = minimal_report(vec![
@@ -626,6 +657,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         // Increase TCA by 0.005 (less than MIN_DELTA of 0.01)
@@ -643,6 +675,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         let mut after = minimal_report(vec![
@@ -651,6 +684,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         // SHL is "lower is better", so normalised() inverts it.
@@ -670,6 +704,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         let mut after = minimal_report(vec![
@@ -678,6 +713,7 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         // ReformulationGuard targets ISR.
@@ -695,12 +731,14 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ContextCompression,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         let mut after = minimal_report(vec![
@@ -709,12 +747,14 @@ mod tests {
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
             Fix {
                 fix_type: FixType::ContextCompression,
                 target: "test".into(),
                 patch: "test".into(),
                 estimated_token_savings: 100,
+                risk: Default::default(),
             },
         ]);
         after.score.tca.score = 100.0;

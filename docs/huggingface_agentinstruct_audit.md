@@ -13,7 +13,7 @@ the live-fetch path. Reproduce with `python -m benchmark.hf_audit_stats`.
 - Grade distribution: {'Good': 4}
 - Mean MVTG (structural waste): **0.364**
 - Fix patches emitted: **11**
-- Mean AGF (grounding-fidelity diagnostic): **0.854**
+- Mean AGF (grounding-fidelity diagnostic): **0.951**
 
 ## Mean normalised metric scores (1.0 = no waste detected)
 

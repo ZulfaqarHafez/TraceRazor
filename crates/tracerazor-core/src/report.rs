@@ -175,6 +175,18 @@ pub struct RunManifest {
     pub historical_median_steps: Option<f64>,
     /// Number of store-derived historical tool sequences fed to DBO.
     pub n_historical_sequences: usize,
+    /// Parse-quality assessment of the input (see [`IngestQuality`]).
+    #[serde(default)]
+    pub ingest_quality: Option<IngestQuality>,
+    /// Ed25519 signature over the canonical serialisation of the report
+    /// (hex-encoded 64-byte signature = 128 hex chars). Present only when
+    /// the audit ran with `TRACERAZOR_SIGNING_KEY` set.
+    #[serde(default)]
+    pub signature: Option<String>,
+    /// Ed25519 verifying (public) key that produced `signature`
+    /// (hex-encoded 32-byte point = 64 hex chars). Safe to publish.
+    #[serde(default)]
+    pub signing_key_pub: Option<String>,
 }
 
 impl RunManifest {
@@ -188,7 +200,64 @@ impl RunManifest {
     }
 }
 
+/// How much of the parsed trace carries real data. A TAS computed over steps
+/// with zero token counts or placeholder content (e.g. an OTel parse that
+/// fell back to span names) must never look authoritative — the audit
+/// surfaces this loudly and records it next to the score.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct IngestQuality {
+    /// Share of steps with a zero token count (0.0–1.0).
+    pub zero_token_pct: f64,
+    /// Share of steps whose content is a placeholder: empty, a bare tool /
+    /// span name, or fewer than three words (0.0–1.0).
+    pub placeholder_content_pct: f64,
+    /// True when either share exceeds 50% — token- and content-derived
+    /// metrics are then unreliable for this trace.
+    pub degraded: bool,
+}
+
+impl IngestQuality {
+    pub fn assess(trace: &crate::types::Trace) -> IngestQuality {
+        let n = trace.steps.len().max(1) as f64;
+        let zero_tokens = trace.steps.iter().filter(|s| s.tokens == 0).count() as f64;
+        let placeholder = trace
+            .steps
+            .iter()
+            .filter(|s| {
+                let c = s.content.trim();
+                c.is_empty()
+                    || s.tool_name.as_deref() == Some(c)
+                    || c.split_whitespace().count() < 3
+            })
+            .count() as f64;
+        let zero_token_pct = zero_tokens / n;
+        let placeholder_content_pct = placeholder / n;
+        IngestQuality {
+            zero_token_pct: (zero_token_pct * 1000.0).round() / 1000.0,
+            placeholder_content_pct: (placeholder_content_pct * 1000.0).round() / 1000.0,
+            degraded: zero_token_pct > 0.5 || placeholder_content_pct > 0.5,
+        }
+    }
+}
+
 impl TraceReport {
+    /// Canonical serialisation bytes for Ed25519 signing/verification.
+    ///
+    /// `analysis_duration_ms` is zeroed (non-deterministic wall-clock field);
+    /// `manifest.signature` and `manifest.signing_key_pub` are excluded (the
+    /// signature cannot sign itself). Every other field — including
+    /// `manifest.similarity_backend`, `agf`, `savings`, `fixes`, `summary` —
+    /// is included, so any edit to any field invalidates the signature.
+    pub fn canonical_bytes(&self) -> Result<Vec<u8>, serde_json::Error> {
+        let mut r = self.clone();
+        r.analysis_duration_ms = 0;
+        if let Some(ref mut m) = r.manifest {
+            m.signature = None;
+            m.signing_key_pub = None;
+        }
+        serde_json::to_vec(&r)
+    }
+
     /// Build the optimal-path diff from annotated trace steps.
     pub fn build_diff(trace: &Trace, _score: &TasScore) -> Vec<DiffLine> {
         let mut diff = Vec::new();
@@ -196,7 +265,20 @@ impl TraceReport {
         for step in &trace.steps {
             let has_flag = |f: &StepFlag| step.flags.contains(f);
 
-            let (action, justification, tokens_suggested) = if has_flag(&StepFlag::Redundant) {
+            // A successful state-changing call (booking, edit, write) is never
+            // a delete candidate: removing it breaks the task the trace
+            // completed, whatever its lexical similarity to earlier steps.
+            let protected = step.is_mutating() && step.tool_success != Some(false);
+
+            let (action, justification, tokens_suggested) = if protected
+                && (has_flag(&StepFlag::Redundant) || has_flag(&StepFlag::Loop))
+            {
+                (
+                    DiffAction::Keep,
+                    Some("Successful state-changing call (kept; not deletable)".into()),
+                    None,
+                )
+            } else if has_flag(&StepFlag::Redundant) {
                 let detail = step.flag_details.first().cloned().unwrap_or_default();
                 (DiffAction::Delete, Some(format!("Redundant: {}", detail)), Some(0))
             } else if has_flag(&StepFlag::Loop) {

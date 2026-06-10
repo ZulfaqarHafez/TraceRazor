@@ -78,4 +78,6 @@ def test_find_binary_locates_repo_build(monkeypatch):
     from tracerazor._audit_client import TraceRazorClient
 
     found = TraceRazorClient._find_binary()
-    assert str(REPO / "target") in found
+    # Either the source build (one level up) or a wheel-bundled binary
+    # (tracerazor/bin/) is a correct resolution in a checkout.
+    assert str(REPO / "target") in found or str(REPO / "tracerazor" / "bin") in found

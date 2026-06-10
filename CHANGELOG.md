@@ -4,6 +4,152 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### The live measured case study (docs/case_study.md)
+- **Live case study executed** — 24 real agent runs (Claude Code headless,
+  Haiku 4.5) over 6 pytest-verified Python tasks × 2 replicates, audit →
+  `apply` → re-run per pair, measured with the bootstrap-CI harness at
+  constant 12/12 pass rate. Total spend ≈ $1.30. Round 1 measured the
+  shipped `goal_anchor` patch at **−5.6% tokens (a cost, not a saving)**;
+  the harness's estimate-accuracy check surfaced it (−102%).
+- **`goal_anchor` patch rewritten** from the measured evidence: the old
+  wording told the agent to restate the objective before every reasoning
+  step — a per-turn standing cost that exceeded recovered drift on
+  on-track runs. The anchor now forbids restating ("do not restate the
+  objective or summarise progress unless explicitly asked") while keeping
+  the skip-non-advancing directive. Detection and the conservative
+  estimate are unchanged.
+- **Claude Code transcript converter** (`benchmark/convert_claude_code.py`)
+  — turns any Claude Code session transcript into an auditable TraceRazor
+  trace: per-message usage grouped by API message id, tool results joined
+  to tool calls, marginal token accounting with cache reads and the
+  (cache-warmth-dependent, ±22k observed) first-turn prefix encoding
+  excluded and the convention stamped in trace metadata.
+- **Live-run kit** (`benchmark/live/`) — task suite with objective pytest
+  outcomes, headless runner with a tight tool envelope identical across
+  conditions, per-pair audit-and-apply orchestration, and transcript
+  reconversion so converter improvements never require re-running agents.
+
+## [0.4.0] - 2026-06-10
+
+### Ship-plan Phase 4 (prove it and launch)
+- **Measured case-study harness** (`benchmark/case_study.py`) — turns
+  before/after trace pairs into a published table of *measured* token deltas
+  with seeded bootstrap 95% CIs, and refuses to call a delta a "saving" on
+  any task whose pass flag flipped (constant-pass-rate requirement, exit 1).
+  Methodology + status in `docs/case_study.md`. (The live run landed
+  post-0.4.0 — see Unreleased above.)
+- **GitHub Action v2** — downloads a prebuilt release binary (works from any
+  repo, no Rust toolchain; build-from-source is explicit opt-in), parses the
+  report JSON (a malformed/empty report fails the step instead of silently
+  scoring 0), wires `compare --regression-threshold` as a second gate
+  (`baseline-trace` input), posts a sticky PR comment, uploads the JSON
+  report as an artifact. Logic lives in shell scripts under
+  `.github/actions/tracerazor/`, exercised locally against the binary.
+- **Release binaries** — `release.yml` now builds standalone CLI tarballs
+  (linux x86_64, macOS arm64/x86_64) next to the wheels and attaches both to
+  the GitHub release on tag push; the action's download path consumes them.
+- **Server hardening for ops** — `TRACERAZOR_API_TOKEN` enables bearer-token
+  auth on every `/api` route and `/ws` (constant-time compare; missing/wrong
+  token → 401; health probes stay open); the server warns when binding
+  non-loopback unauthenticated. New `tracerazor serve` CLI alias (the server
+  crate is now also a library). The `{"trace": ...}` envelope and a working
+  curl are documented in the README.
+- **README narrowed to one product** — hero leads with Audit + Verify
+  ("offline auditor … cryptographically verifiable reports"); sampling and
+  substitutability demoted to explicit `Labs (experimental)` status; new
+  Verify section documents `keygen`/signing/`verify`/`--bundle`; CLI table
+  gains `verify`-bundle, `keygen`, `serve`.
+
+### Ship-plan Phase 3 (adversary-proof verification)
+- **Ed25519 report signing** — `tracerazor keygen` generates a keypair;
+  with `TRACERAZOR_SIGNING_KEY` set, every audit signs the canonical report
+  (`analysis_duration_ms` zeroed, signature fields excluded) and embeds the
+  signature + public key in the manifest. `verify` checks the signature
+  *first*: any edited field — TAS, AGF, savings, fixes, summary, even the
+  `similarity_backend` claim — exits 1 TAMPERED. The compliance reviewer's
+  four forgery attacks are pinned as integration tests
+  (`crates/tracerazor-cli/tests/signing.rs`).
+- **Whole-report verification** — re-score compares AGF score, savings,
+  fix count, and summary in addition to TAS + every normalised metric.
+  Unsigned reports get an explicit `rescore-only (unsigned)` verdict, never
+  "full"; only signed + reproduced reports earn
+  `full (Ed25519-authenticated + reproduced …)`.
+- **Evidence bundles** — `tracerazor export <trace> --bundle evidence.zip`
+  packs trace + signed report + weights + SHA256SUMS for WORM hand-off;
+  `tracerazor verify evidence.zip` checks bundle integrity then runs the
+  full signature/hash/re-score chain (no separate trace argument).
+- **Deterministic canonical bytes** — LDI loop output is sorted (HashMap
+  iteration order leaked into the report), and signing normalises floats
+  through a JSON round-trip so sign-time and verify-time serialisations
+  agree byte-for-byte.
+
+### Ship-plan Phase 2 (installable + ingestible)
+- **Platform wheels with the bundled CLI** — `scripts/build_platform_wheel.sh`
+  builds a wheel carrying the Rust binary at `tracerazor/bin/`; a new
+  `tracerazor` console script (`tracerazor/_launcher.py`) and the Python
+  client prefer the bundled binary, so `pip install <wheel>` delivers a
+  working auditor with no Rust toolchain (clean-room smoke test in the new
+  `release.yml` workflow, linux+macos matrix). Dev-status classifier
+  corrected to Beta.
+- **LangSmith adapter vs real exports** — flat `client.list_runs()` arrays now
+  rebuild the run tree from `parent_run_id` and keep **every** run (previously
+  only the first survived, silently); tokens are read from run-level
+  `total_tokens`/`prompt+completion`, `outputs.llm_output.token_usage`, and
+  `outputs.usage_metadata`, not just `extra`. Golden-file tests.
+- **OTel semconv coverage** — spec-compliant protojson string `intValue`
+  parsing; `gen_ai.usage.prompt_tokens`/`completion_tokens`; content from
+  message events (`gen_ai.user.message`/`gen_ai.choice`), structured
+  `gen_ai.input/output.messages`, and OpenLLMetry indexed attributes —
+  content no longer silently falls back to span names. Golden-file tests.
+- **Degraded-ingest detection** — `IngestQuality` (zero-token share,
+  placeholder-content share) computed on every audit, recorded in the run
+  manifest, with a loud stderr warning when either exceeds 50%: a TAS
+  computed over span names never looks authoritative again.
+- **Batch/fleet mode** — `tracerazor audit <DIR>` (or multiple files) audits
+  hermetically per file and emits one aggregate report (mean/median TAS,
+  worst-5, recoverable-token sum; JSON or markdown); `--threshold` gates the
+  mean. Plus `tools/fetch_langsmith.py` for one-command project export.
+
+### Ship-plan Phase 1 (verdict precision)
+- **Responsiveness rules in SRR** — a similar pair is exempt when (1) new
+  external input arrived at or between the pair (a step answering a new user
+  turn is never redundant with a pre-turn step), (2) it is a fail→retry of the
+  same tool (the retry is the productive member; TCA already penalises the
+  failure), or (3) both are successful tool calls with an intervening
+  state-changing step (re-running a check after an edit is verification).
+  On the reviewer-adjudicated airline trace this took delete-recommendation
+  precision from 1/6 correct to 6/6; corpus airline SRR 35.9%→15.5%.
+- **Verification-aware LDI** — a state-hash repeat after an intervening
+  mutation restarts the chain instead of counting as a loop iteration, and
+  parametric-loop occurrence chains split at mutations (test→edit→test cycles
+  are verification, not looping). The marshmallow post-fix verification run is
+  no longer deleted.
+- **Mutating-call protection** — `TraceStep::is_mutating()` (name vocabulary +
+  command-text scan); a successful state-changing call (booking, edit, write)
+  is never a delete candidate in the optimal-path diff. Corpus-wide invariant
+  test across all real traces.
+- **Fix risk classes** — every fix carries `safe` / `needs_review` /
+  `dangerous`; `apply` auto-applies safe only, `--all` adds needs_review,
+  `dangerous` (e.g. termination guards, which can suppress verification
+  re-runs) additionally requires `--force`. `apply` now appends only the
+  quoted prompt directive, never the report's analysis meta-prose.
+- **Error-derived tool fixes** — the `tool_schema` fix diagnoses from the
+  recorded `tool_error` text (value errors get a pre-call validation
+  recommendation) instead of the one-size "mark parameters required"
+  boilerplate that was wrong on every adjudicated failure.
+- **AGF tokenizer rewrite** — markdown emphasis, shell variables, regex/awk
+  classes, and glob patterns are no longer extracted as "claims"; quoted
+  syntax spans are rejected; content-creation params (edit/write/insert) are
+  treated as the agent's new artifact, not assertions; a step's own
+  `input_context` counts as evidence; apostrophes in prose no longer open
+  phantom quote spans. Corpus acceptance test: zero syntax artifacts in
+  `ungrounded[]`. AgentInstruct AGF 0.854→0.951 with the failure trace lowest.
+- **SRR most-similar fix** — the flagged pair now points at the *most* similar
+  prior step, not the first/oldest one above threshold.
+- All published tables/claims regenerated under the new scorer (24-trace
+  corpus mean TAS 71.3→73.5; README sample report; paper Table tab:taubench;
+  docs/external_agent_audits.md narrative).
+
 ### Ship-plan Phase 0 (trust hygiene)
 - **One version everywhere: 0.4.0** — workspace Cargo.toml, inter-crate dep
   declarations, pyproject, `__version__`, docker-compose, README banner all

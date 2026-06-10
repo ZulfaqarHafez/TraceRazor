@@ -1,0 +1,9 @@
+[
+  {
+    "fix_type": "goal_anchor",
+    "target": "system_prompt",
+    "patch": "Add to system prompt: \"Before each reasoning step, restate the stated task objective (\"You are in a small Python project. `filt.py` has an unimplemented `filter_rows` function that should read a CSV file and\") in one sentence and verify the step moves measurably closer to it. If a step does not advance the objective, skip it and proceed to the next concrete action.\" (Detected drift: trajectory path entropy 1.00 / focus 0.25 (scattered).)",
+    "estimated_token_savings": 156,
+    "risk": "safe"
+  }
+]

@@ -1,0 +1,82 @@
+{
+  "condition": "after",
+  "model": "claude-haiku-4-5-20251001",
+  "max_turns": 25,
+  "system_prompt_appended": true,
+  "completed_at": "2026-06-10T14:59:05Z",
+  "total_cost_usd": 0.1765,
+  "runs": [
+    {
+      "task": "csv-filter.r2",
+      "condition": "after",
+      "passed": true,
+      "steps": 12,
+      "trace_tokens": 4704,
+      "num_turns": 7,
+      "cost_usd": 0.029812649999999996,
+      "wall_s": 22.7,
+      "session_id": "aca57e54-e0c6-4653-8927-173da98c1bed",
+      "agent_exit": 0
+    },
+    {
+      "task": "dedupe-helpers.r2",
+      "condition": "after",
+      "passed": true,
+      "steps": 15,
+      "trace_tokens": 4804,
+      "num_turns": 9,
+      "cost_usd": 0.03480815000000001,
+      "wall_s": 26.6,
+      "session_id": "7d1d866e-4df0-4d2b-b2aa-3973fc4d0c21",
+      "agent_exit": 0
+    },
+    {
+      "task": "fix-imports.r2",
+      "condition": "after",
+      "passed": true,
+      "steps": 14,
+      "trace_tokens": 3633,
+      "num_turns": 9,
+      "cost_usd": 0.02800425,
+      "wall_s": 22.3,
+      "session_id": "8468b9cf-f083-460f-8c5f-c35045e14ae6",
+      "agent_exit": 0
+    },
+    {
+      "task": "fix-offby-one.r2",
+      "condition": "after",
+      "passed": true,
+      "steps": 9,
+      "trace_tokens": 3467,
+      "num_turns": 5,
+      "cost_usd": 0.0246968,
+      "wall_s": 17.6,
+      "session_id": "e37ba66c-d8e1-46e7-871b-7f1b3e400fcf",
+      "agent_exit": 0
+    },
+    {
+      "task": "implement-median.r2",
+      "condition": "after",
+      "passed": true,
+      "steps": 11,
+      "trace_tokens": 4251,
+      "num_turns": 6,
+      "cost_usd": 0.0289137,
+      "wall_s": 27.4,
+      "session_id": "1f0c842b-3b96-4bb3-9474-c3b1b94ef4a2",
+      "agent_exit": 0
+    },
+    {
+      "task": "rename-api.r2",
+      "condition": "after",
+      "passed": true,
+      "steps": 18,
+      "trace_tokens": 4545,
+      "num_turns": 13,
+      "cost_usd": 0.030285000000000003,
+      "wall_s": 60.9,
+      "session_id": "ed00c79c-c12a-45c9-b787-2658791327ce",
+      "agent_exit": 0
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "fix_type": "goal_anchor",
+    "target": "system_prompt",
+    "patch": "Add to system prompt: \"Before each reasoning step, restate the stated task objective (\"You are in a small Python project. The public function `fetch_data` in `core.py` must be renamed to `load_records` every\") in one sentence and verify the step moves measurably closer to it. If a step does not advance the objective, skip it and proceed to the next concrete action.\" (Detected drift: trajectory path entropy 0.98 / focus 0.18 (regressing).)",
+    "estimated_token_savings": 497,
+    "risk": "safe"
+  }
+]

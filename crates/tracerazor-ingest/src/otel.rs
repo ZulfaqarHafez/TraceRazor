@@ -45,10 +45,23 @@ struct Span {
     name: String,
     #[serde(default)]
     attributes: Vec<Attribute>,
+    #[serde(default)]
+    events: Vec<SpanEvent>,
     status: Option<SpanStatus>,
     start_time_unix_nano: Option<String>,
     #[allow(dead_code)]
     end_time_unix_nano: Option<String>,
+}
+
+/// Span event (modern gen_ai semconv puts prompt/completion messages here,
+/// e.g. events named `gen_ai.user.message` / `gen_ai.choice` with a
+/// `content` attribute).
+#[derive(Debug, Deserialize)]
+struct SpanEvent {
+    #[serde(default)]
+    name: String,
+    #[serde(default)]
+    attributes: Vec<Attribute>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -76,7 +89,12 @@ impl AttributeValue {
 
     fn as_i64(&self) -> Option<i64> {
         match self {
-            AttributeValue::Int { int_value } => int_value.as_i64(),
+            // Spec-compliant OTLP/JSON (protojson) encodes 64-bit ints as
+            // STRINGS ("450"); accept both encodings.
+            AttributeValue::Int { int_value } => int_value
+                .as_i64()
+                .or_else(|| int_value.as_str().and_then(|s| s.parse().ok())),
+            AttributeValue::String { string_value } => string_value.parse().ok(),
             _ => None,
         }
     }
@@ -86,6 +104,62 @@ impl AttributeValue {
 struct SpanStatus {
     code: Option<String>,
     message: Option<String>,
+}
+
+/// Pull span content from the shapes real exporters use, in order:
+/// flat `gen_ai.prompt`/`gen_ai.completion`, structured
+/// `gen_ai.input.messages`/`gen_ai.output.messages`, OpenLLMetry indexed
+/// attributes (`gen_ai.prompt.0.content`, ...), then message events.
+/// Returns None when nothing content-like exists — the caller falls back to
+/// the span name, and the ingest-quality check makes that fallback loud.
+fn extract_content(span: &Span, attrs: &HashMap<&str, &AttributeValue>) -> Option<String> {
+    let mut parts: Vec<String> = Vec::new();
+
+    for key in ["gen_ai.prompt", "gen_ai.input.messages"] {
+        if let Some(v) = attrs.get(key).and_then(|v| v.as_str()) {
+            parts.push(v.to_string());
+        }
+    }
+
+    // OpenLLMetry style: gen_ai.prompt.<i>.content / gen_ai.completion.<i>.content
+    let mut indexed: Vec<(&str, usize, &str)> = Vec::new();
+    for (k, v) in attrs {
+        for prefix in ["gen_ai.prompt.", "gen_ai.completion."] {
+            if let Some(rest) = k.strip_prefix(prefix) {
+                if let Some(idx) = rest.strip_suffix(".content").and_then(|i| i.parse().ok()) {
+                    if let Some(text) = v.as_str() {
+                        indexed.push((prefix, idx, text));
+                    }
+                }
+            }
+        }
+    }
+    // Prompts before completions, then by message index.
+    indexed.sort_by_key(|(p, i, _)| (usize::from(*p != "gen_ai.prompt."), *i));
+    parts.extend(indexed.into_iter().map(|(_, _, t)| t.to_string()));
+
+    for key in ["gen_ai.completion", "gen_ai.output.messages"] {
+        if let Some(v) = attrs.get(key).and_then(|v| v.as_str()) {
+            parts.push(v.to_string());
+        }
+    }
+
+    // Message events (gen_ai.user.message / gen_ai.assistant.message /
+    // gen_ai.choice / gen_ai.content.prompt ...): take their content attrs.
+    for ev in &span.events {
+        if ev.name.starts_with("gen_ai.") {
+            for a in &ev.attributes {
+                if a.key == "content" || a.key.ends_with(".content") || a.key == "body" {
+                    if let Some(text) = a.value.as_str() {
+                        parts.push(text.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    let joined = parts.join(" ").trim().to_string();
+    if joined.is_empty() { None } else { Some(joined) }
 }
 
 /// Parse an OTEL JSON export into a Trace.
@@ -159,9 +233,15 @@ pub fn parse(data: &str) -> Result<Trace> {
             .get("gen_ai.usage.total_tokens")
             .and_then(|v| v.as_i64())
             .or_else(|| {
-                let i = attrs.get("gen_ai.usage.input_tokens")?.as_i64()?;
+                // input/output (current semconv) or prompt/completion
+                // (older semconv + OpenLLMetry).
+                let i = attrs
+                    .get("gen_ai.usage.input_tokens")
+                    .or_else(|| attrs.get("gen_ai.usage.prompt_tokens"))?
+                    .as_i64()?;
                 let o = attrs
                     .get("gen_ai.usage.output_tokens")
+                    .or_else(|| attrs.get("gen_ai.usage.completion_tokens"))
                     .and_then(|v| v.as_i64())
                     .unwrap_or(0);
                 // saturating_add: avoid overflow on pathological inputs.
@@ -194,11 +274,7 @@ pub fn parse(data: &str) -> Result<Trace> {
             None
         };
 
-        let content = attrs
-            .get("gen_ai.prompt")
-            .and_then(|v| v.as_str())
-            .unwrap_or(&span.name)
-            .to_string();
+        let content = extract_content(span, &attrs).unwrap_or_else(|| span.name.clone());
 
         steps.push(TraceStep {
             id: counter,

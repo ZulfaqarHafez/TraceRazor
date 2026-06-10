@@ -55,9 +55,11 @@ struct Cli {
 enum Commands {
     /// Audit a trace file and produce an efficiency report.
     Audit {
-        /// Path to the trace file (JSON).
-        #[arg(value_name = "FILE")]
-        file: PathBuf,
+        /// Trace file(s) or directories (JSON). A directory or multiple
+        /// files switches to batch mode: every trace is audited hermetically
+        /// and one aggregate fleet report is produced.
+        #[arg(value_name = "FILE", num_args = 1..)]
+        files: Vec<PathBuf>,
 
         /// Output format.
         #[arg(short, long, default_value = "markdown")]
@@ -116,13 +118,18 @@ enum Commands {
     /// Checks the trace file hash against the manifest, and — for hermetic
     /// bag-of-words runs — re-scores the trace with the manifest's exact
     /// configuration and compares every metric. Exit 0 = verified.
+    ///
+    /// For evidence bundles (zip files produced by `export --bundle`), the
+    /// trace argument is optional — the bundle contains the trace internally.
     Verify {
-        /// The report JSON produced by `audit --format json`.
+        /// The report JSON produced by `audit --format json`, or an evidence
+        /// bundle zip produced by `export --bundle`.
         #[arg(value_name = "REPORT")]
         report: PathBuf,
         /// The original trace file the report claims to describe.
+        /// Not required when REPORT is an evidence bundle (.zip).
         #[arg(value_name = "TRACE")]
-        trace: PathBuf,
+        trace: Option<PathBuf>,
     },
 
     /// List all stored traces in the current session.
@@ -209,6 +216,11 @@ enum Commands {
         /// Apply every fix type, not just the safe subset.
         #[arg(long, default_value = "false")]
         all: bool,
+        /// Also apply fixes classified `dangerous` (e.g. termination guards
+        /// that can suppress legitimate verification re-runs). Off by default
+        /// even with --all.
+        #[arg(long, default_value = "false")]
+        force: bool,
         /// Preview the patches without writing to disk.
         #[arg(long, default_value = "false")]
         dry_run: bool,
@@ -282,6 +294,38 @@ enum Commands {
         /// Output format for local print.
         #[arg(short, long, default_value = "markdown")]
         format: OutputFormat,
+        /// Create a verifiable evidence bundle (zip: trace, signed report,
+        /// weights, SHA256SUMS). Verify with: tracerazor verify bundle.zip
+        #[arg(long, value_name = "FILE")]
+        bundle: Option<PathBuf>,
+    },
+
+    /// Generate an Ed25519 keypair for cryptographic report signing.
+    ///
+    /// Prints TRACERAZOR_SIGNING_KEY (private, keep secret) and
+    /// TRACERAZOR_VERIFY_KEY (public, safe to distribute) to stdout.
+    ///
+    /// To sign every audit: export TRACERAZOR_SIGNING_KEY=<key>
+    /// To verify a signed report: tracerazor verify report.json trace.json
+    Keygen,
+
+    /// Start the TraceRazor HTTP server (REST API + dashboard).
+    ///
+    /// Alias for the `tracerazor-server` binary. POST a trace to
+    /// /api/audit as {"trace": <trace JSON>}. Set TRACERAZOR_API_TOKEN to
+    /// require `Authorization: Bearer <token>` on all /api routes —
+    /// mandatory before exposing a non-loopback bind address.
+    Serve {
+        /// Port to listen on.
+        #[arg(long, default_value_t = 8080)]
+        port: u16,
+        /// Bind address. Loopback by default; pass 0.0.0.0 to expose
+        /// externally (set TRACERAZOR_API_TOKEN first).
+        #[arg(long, default_value = "127.0.0.1")]
+        bind: String,
+        /// SQLite database path.
+        #[arg(long, value_name = "FILE")]
+        db: Option<String>,
     },
 }
 
@@ -352,8 +396,13 @@ async fn run() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps } => {
-            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps).await?;
+        Commands::Audit { files, format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps } => {
+            let expanded = expand_trace_paths(&files)?;
+            if expanded.len() == 1 {
+                cmd_audit(expanded.into_iter().next().expect("len checked"), format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps).await?;
+            } else {
+                cmd_audit_batch(expanded, format, threshold, trace_format, cost_per_million, weights, min_steps)?;
+            }
         }
         Commands::Verify { report, trace } => {
             cmd_verify(report, trace)?;
@@ -370,8 +419,8 @@ async fn run() -> Result<()> {
         Commands::Simulate { file, remove, merge, format } => {
             cmd_simulate(file, remove, merge, format).await?;
         }
-        Commands::Apply { fixes, to, all, dry_run } => {
-            cmd_apply(fixes, to, all, dry_run).await?;
+        Commands::Apply { fixes, to, all, force, dry_run } => {
+            cmd_apply(fixes, to, all, force, dry_run).await?;
         }
         Commands::Bench { before, after, fixes, format } => {
             cmd_bench(before, after, fixes, format).await?;
@@ -379,8 +428,22 @@ async fn run() -> Result<()> {
         Commands::Optimize { file, system_prompt, output, iterations, target_tas, format } => {
             cmd_optimize(file, system_prompt, output, iterations, target_tas, format).await?;
         }
-        Commands::Export { file, otel, webhook, print, format } => {
-            cmd_export(file, otel, webhook, print, format).await?;
+        Commands::Export { file, otel, webhook, print, format, bundle } => {
+            cmd_export(file, otel, webhook, print, format, bundle).await?;
+        }
+        Commands::Keygen => {
+            cmd_keygen();
+        }
+        Commands::Serve { port, bind, db } => {
+            let db_path = db
+                .or_else(|| std::env::var("TRACERAZOR_DB_PATH").ok())
+                .unwrap_or_else(|| "./tracerazor.db".to_string());
+            tracerazor_server::run_server(tracerazor_server::ServeOptions {
+                port,
+                bind,
+                db_path,
+            })
+            .await?;
         }
     }
 
@@ -484,6 +547,21 @@ async fn cmd_audit(
         }
     }
 
+    // Ingest-quality check: a TAS computed over zero-token steps or
+    // placeholder content (e.g. an OTel parse that fell back to span names)
+    // must never look authoritative.
+    let ingest_quality = tracerazor_core::report::IngestQuality::assess(&trace);
+    if ingest_quality.degraded {
+        eprintln!(
+            "WARNING: degraded ingest — {:.0}% of steps have zero tokens and \
+             {:.0}% have placeholder content. Token- and content-derived \
+             metrics are unreliable for this trace; check the trace format \
+             (-F) and exporter configuration.",
+            ingest_quality.zero_token_pct * 100.0,
+            ingest_quality.placeholder_content_pct * 100.0
+        );
+    }
+
     // Run manifest: bind the report to its inputs so a third party can
     // attribute — and for hermetic BoW runs exactly re-verify — the score.
     let weights_json = serde_json::to_string(&config.weights)?;
@@ -501,7 +579,20 @@ async fn cmd_audit(
         baseline_tokens: config.baseline_tokens,
         historical_median_steps: config.historical_median_steps,
         n_historical_sequences: config.historical_sequences.len(),
+        ingest_quality: Some(ingest_quality),
+        signature: None,
+        signing_key_pub: None,
     });
+
+    // Sign the canonical report if TRACERAZOR_SIGNING_KEY is configured.
+    // The signature covers every field (including manifest.similarity_backend,
+    // agf, savings, fixes, summary) so any post-audit edit breaks it.
+    if let Ok(key_hex) = std::env::var("TRACERAZOR_SIGNING_KEY") {
+        match sign_report(&mut report, &key_hex) {
+            Ok(()) => {}
+            Err(e) => eprintln!("Warning: could not sign report ({e}); report will be unsigned"),
+        }
+    }
 
     match format {
         OutputFormat::Markdown => println!("{}", report.to_markdown()),
@@ -528,6 +619,152 @@ async fn cmd_audit(
     Ok(())
 }
 
+/// Expand a mix of files and directories into a sorted list of trace files.
+fn expand_trace_paths(inputs: &[PathBuf]) -> Result<Vec<PathBuf>> {
+    let mut out = Vec::new();
+    for p in inputs {
+        if p.is_dir() {
+            let mut stack = vec![p.clone()];
+            while let Some(dir) = stack.pop() {
+                for entry in std::fs::read_dir(&dir)
+                    .with_context(|| format!("Cannot read directory: {}", dir.display()))?
+                {
+                    let path = entry?.path();
+                    if path.is_dir() {
+                        stack.push(path);
+                    } else if path.extension().is_some_and(|e| e == "json") {
+                        out.push(path);
+                    }
+                }
+            }
+        } else {
+            out.push(p.clone());
+        }
+    }
+    out.sort();
+    out.dedup();
+    if out.is_empty() {
+        anyhow::bail!("no trace files found in the given paths");
+    }
+    Ok(out)
+}
+
+/// Batch/fleet audit: hermetic per-file scoring and one aggregate report.
+/// Gating (--threshold) applies to the mean TAS.
+fn cmd_audit_batch(
+    files: Vec<PathBuf>,
+    format: OutputFormat,
+    threshold: Option<f64>,
+    trace_format: InputFormat,
+    cost_per_million: f64,
+    weights: Option<PathBuf>,
+    min_steps: usize,
+) -> Result<()> {
+    let mut config = ScoringConfig {
+        cost_per_million_tokens: cost_per_million,
+        ..Default::default()
+    };
+    if let Some(t) = threshold {
+        config.threshold = t;
+    }
+    if let Some(path) = weights.or_else(|| std::env::var_os("TRACERAZOR_WEIGHTS").map(PathBuf::from)) {
+        let raw = std::fs::read_to_string(&path)
+            .with_context(|| format!("Cannot read weights file: {}", path.display()))?;
+        config.weights = serde_json::from_str(&raw)
+            .with_context(|| format!("Invalid weights JSON: {}", path.display()))?;
+    }
+
+    let min_steps = min_steps.max(2);
+    let mut rows: Vec<(String, f64, String, usize, u32)> = Vec::new(); // file, tas, grade, fixes, est tokens
+    let mut skipped = 0usize;
+    for f in &files {
+        let data = match std::fs::read_to_string(f) {
+            Ok(d) => d,
+            Err(e) => {
+                eprintln!("skip {}: {e}", f.display());
+                skipped += 1;
+                continue;
+            }
+        };
+        let mut trace = match ingest_parse(&data, trace_format.clone().into()) {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("skip {}: parse failed: {e:#}", f.display());
+                skipped += 1;
+                continue;
+            }
+        };
+        if trace.steps.len() < min_steps {
+            skipped += 1;
+            continue;
+        }
+        let report = tracerazor_core::analyse(&mut trace, default_similarity_fn(), &config)?;
+        rows.push((
+            f.file_name().and_then(|n| n.to_str()).unwrap_or("?").to_string(),
+            report.score.score,
+            report.score.grade.to_string(),
+            report.fixes.len(),
+            report.savings.tokens_saved,
+        ));
+    }
+    if rows.is_empty() {
+        anyhow::bail!("no analysable traces in batch ({} skipped)", skipped);
+    }
+
+    let mut tas: Vec<f64> = rows.iter().map(|r| r.1).collect();
+    tas.sort_by(|a, b| a.partial_cmp(b).expect("TAS is never NaN"));
+    let mean = tas.iter().sum::<f64>() / tas.len() as f64;
+    let median = tas[tas.len() / 2];
+    let total_savings: u32 = rows.iter().map(|r| r.4).sum();
+    let mut worst = rows.clone();
+    worst.sort_by(|a, b| a.1.partial_cmp(&b.1).expect("TAS is never NaN"));
+    worst.truncate(5);
+
+    match format {
+        OutputFormat::Json => {
+            let per_file: Vec<serde_json::Value> = rows
+                .iter()
+                .map(|(f, t, g, x, s)| {
+                    serde_json::json!({"file": f, "tas": t, "grade": g, "fixes": x, "est_tokens_saved": s})
+                })
+                .collect();
+            let out = serde_json::json!({
+                "mode": "batch",
+                "hermetic": true,
+                "n_files": files.len(),
+                "n_analysable": rows.len(),
+                "n_skipped": skipped,
+                "mean_tas": (mean * 10.0).round() / 10.0,
+                "median_tas": (median * 10.0).round() / 10.0,
+                "total_est_tokens_saved": total_savings,
+                "worst": worst.iter().map(|(f, t, ..)| serde_json::json!({"file": f, "tas": t})).collect::<Vec<_>>(),
+                "per_file": per_file,
+            });
+            println!("{}", serde_json::to_string_pretty(&out)?);
+        }
+        OutputFormat::Markdown => {
+            let sep = "-".repeat(60);
+            println!("TRACERAZOR FLEET AUDIT  (hermetic, per-file independent)");
+            println!("{sep}");
+            println!("Traces:      {} ({} analysable, {} skipped)", files.len(), rows.len(), skipped);
+            println!("Mean TAS:    {mean:.1}   Median: {median:.1}");
+            println!("Est. tokens recoverable (sum): {total_savings}");
+            println!("{sep}");
+            println!("Worst {}:", worst.len());
+            for (f, t, g, x, _) in &worst {
+                println!("  {t:>5.1}  {g:<10} fixes={x}  {f}");
+            }
+            println!("{sep}");
+        }
+    }
+
+    if threshold.is_some() && mean < config.threshold {
+        eprintln!("FAIL: mean TAS {mean:.1} is below threshold {:.1}", config.threshold);
+        std::process::exit(1);
+    }
+    Ok(())
+}
+
 fn sha256_hex(bytes: &[u8]) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
@@ -536,16 +773,192 @@ fn sha256_hex(bytes: &[u8]) -> String {
     digest.iter().map(|b| format!("{b:02x}")).collect()
 }
 
+fn hex_encode(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+fn hex_decode(s: &str) -> Result<Vec<u8>> {
+    if !s.len().is_multiple_of(2) {
+        anyhow::bail!("odd-length hex string");
+    }
+    (0..s.len())
+        .step_by(2)
+        .map(|i| {
+            u8::from_str_radix(&s[i..i + 2], 16)
+                .map_err(|_| anyhow::anyhow!("invalid hex character at position {i}"))
+        })
+        .collect()
+}
+
+fn hex_decode_32(s: &str) -> Result<[u8; 32]> {
+    let v = hex_decode(s)?;
+    v.try_into().map_err(|v: Vec<u8>| {
+        anyhow::anyhow!("expected 32 bytes (64 hex chars), got {} bytes", v.len())
+    })
+}
+
+fn hex_decode_64(s: &str) -> Result<[u8; 64]> {
+    let v = hex_decode(s)?;
+    v.try_into().map_err(|v: Vec<u8>| {
+        anyhow::anyhow!("expected 64 bytes (128 hex chars), got {} bytes", v.len())
+    })
+}
+
+/// Sign the report's canonical bytes with the Ed25519 private key and store
+/// the signature + verifying key in the manifest.
+fn sign_report(
+    report: &mut tracerazor_core::report::TraceReport,
+    key_hex: &str,
+) -> Result<()> {
+    use ed25519_dalek::{Signer, SigningKey};
+    let key_bytes = hex_decode_32(key_hex)
+        .context("TRACERAZOR_SIGNING_KEY must be 64 hex chars (32-byte Ed25519 seed)")?;
+    let signing_key = SigningKey::from_bytes(&key_bytes);
+    let verifying_key = signing_key.verifying_key();
+
+    // Normalise f64 values via a JSON round-trip before computing canonical
+    // bytes. Without this, some f64s serialise differently depending on whether
+    // they were computed in-process (sign time) vs deserialized from a JSON
+    // file (verify time), producing last-digit differences such as
+    // `0.9333333333333333` vs `0.9333333333333332`. Round-tripping here
+    // guarantees both sides use the same parsed-from-JSON f64 values.
+    let json = serde_json::to_string(report)
+        .context("failed to serialise report for float normalisation")?;
+    let normalized: tracerazor_core::report::TraceReport = serde_json::from_str(&json)
+        .context("failed to deserialise report for float normalisation")?;
+
+    let canonical = normalized
+        .canonical_bytes()
+        .context("failed to serialise report for signing")?;
+    let sig: ed25519_dalek::Signature = signing_key.sign(&canonical);
+    if let Some(ref mut m) = report.manifest {
+        m.signature = Some(hex_encode(&sig.to_bytes()));
+        m.signing_key_pub = Some(hex_encode(verifying_key.as_bytes()));
+    }
+    Ok(())
+}
+
+fn cmd_keygen() {
+    use ed25519_dalek::SigningKey;
+    use rand::RngCore;
+    let mut seed = [0u8; 32];
+    rand::rngs::OsRng.fill_bytes(&mut seed);
+    let signing_key = SigningKey::from_bytes(&seed);
+    let verifying_key = signing_key.verifying_key();
+    println!("# TraceRazor Ed25519 Signing Keypair");
+    println!("# Generated at: {}", chrono::Utc::now().to_rfc3339());
+    println!("#");
+    println!("# Set the signing key in your audit environment:");
+    println!("TRACERAZOR_SIGNING_KEY={}", hex_encode(&seed));
+    println!("#");
+    println!("# Distribute the verify key to anyone who needs to verify reports:");
+    println!("TRACERAZOR_VERIFY_KEY={}", hex_encode(verifying_key.as_bytes()));
+    println!("#");
+    println!("# Usage:");
+    println!("#   export TRACERAZOR_SIGNING_KEY=<key>    # in your CI/CD");
+    println!("#   tracerazor audit trace.json --format json > report.json");
+    println!("#   tracerazor verify report.json trace.json");
+    eprintln!("WARNING: Keep TRACERAZOR_SIGNING_KEY secret. Treat it like a password.");
+}
+
+/// Create a verifiable evidence bundle zip.
+fn create_bundle(
+    trace_path: &PathBuf,
+    report: &tracerazor_core::report::TraceReport,
+    weights: &tracerazor_core::scoring::Weights,
+    bundle_path: &PathBuf,
+) -> Result<()> {
+    use std::io::Write;
+    let trace_data = std::fs::read_to_string(trace_path)
+        .with_context(|| format!("Cannot read trace for bundle: {}", trace_path.display()))?;
+    let report_data =
+        serde_json::to_string_pretty(report).context("failed to serialise report for bundle")?;
+    let weights_data = serde_json::to_string_pretty(weights)
+        .context("failed to serialise weights for bundle")?;
+
+    let trace_sha = sha256_hex(trace_data.as_bytes());
+    let report_sha = sha256_hex(report_data.as_bytes());
+    let weights_sha = sha256_hex(weights_data.as_bytes());
+    let sums = format!(
+        "{trace_sha}  trace.json\n{report_sha}  report.json\n{weights_sha}  weights.json\n"
+    );
+
+    let file = std::fs::File::create(bundle_path)
+        .with_context(|| format!("Cannot create bundle: {}", bundle_path.display()))?;
+    let mut zip = zip::ZipWriter::new(file);
+    let options = zip::write::FileOptions::default()
+        .compression_method(zip::CompressionMethod::Deflated);
+    for (name, data) in [
+        ("trace.json", trace_data.as_bytes()),
+        ("report.json", report_data.as_bytes()),
+        ("weights.json", weights_data.as_bytes()),
+        ("SHA256SUMS", sums.as_bytes()),
+    ] {
+        zip.start_file(name, options)?;
+        zip.write_all(data)?;
+    }
+    zip.finish()?;
+    Ok(())
+}
+
 // ── verify ────────────────────────────────────────────────────────────────────
 
-/// Verify a historical report against its trace file and embedded manifest.
-fn cmd_verify(report_path: PathBuf, trace_path: PathBuf) -> Result<()> {
-    let report_raw = std::fs::read_to_string(&report_path)
-        .with_context(|| format!("Cannot read report: {}", report_path.display()))?;
-    let report: serde_json::Value = serde_json::from_str(&report_raw)
-        .with_context(|| format!("Report is not valid JSON: {}", report_path.display()))?;
+/// Signature check outcome.
+enum SigCheck { Valid, Invalid, Unsigned }
 
-    let Some(manifest_value) = report.get("manifest").filter(|m| !m.is_null()) else {
+/// Verify the Ed25519 signature on a report, if present.
+fn check_report_signature(
+    report: &tracerazor_core::report::TraceReport,
+) -> Result<SigCheck> {
+    use ed25519_dalek::{Verifier, VerifyingKey, Signature};
+
+    let manifest = match report.manifest.as_ref() {
+        Some(m) => m,
+        None => return Ok(SigCheck::Unsigned),
+    };
+
+    let (sig_hex, pub_hex) = match (&manifest.signature, &manifest.signing_key_pub) {
+        (Some(s), Some(p)) => (s.as_str(), p.as_str()),
+        (None, _) => return Ok(SigCheck::Unsigned),
+        (Some(_), None) => {
+            // Signature present but no public key: looks tampered
+            return Ok(SigCheck::Invalid);
+        }
+    };
+
+    let sig_bytes = match hex_decode_64(sig_hex) {
+        Ok(b) => b,
+        Err(_) => return Ok(SigCheck::Invalid),
+    };
+    let pub_bytes = match hex_decode_32(pub_hex) {
+        Ok(b) => b,
+        Err(_) => return Ok(SigCheck::Invalid),
+    };
+
+    let verifying_key = match VerifyingKey::from_bytes(&pub_bytes) {
+        Ok(k) => k,
+        Err(_) => return Ok(SigCheck::Invalid),
+    };
+    let sig = Signature::from_bytes(&sig_bytes);
+    let canonical = report
+        .canonical_bytes()
+        .context("failed to compute canonical bytes for signature check")?;
+
+    match verifying_key.verify(&canonical, &sig) {
+        Ok(()) => Ok(SigCheck::Valid),
+        Err(_) => Ok(SigCheck::Invalid),
+    }
+}
+
+/// Core verify logic operating on in-memory strings (shared by file and
+/// bundle paths).
+fn verify_from_bytes(report_raw: &str, trace_bytes: &[u8]) -> Result<()> {
+    let report_value: serde_json::Value = serde_json::from_str(report_raw)
+        .context("report is not valid JSON")?;
+    let report_struct: tracerazor_core::report::TraceReport =
+        serde_json::from_str(report_raw).context("report JSON does not match TraceReport schema")?;
+
+    let Some(manifest_value) = report_value.get("manifest").filter(|m| !m.is_null()) else {
         anyhow::bail!(
             "report carries no run manifest (produced by a pre-provenance \
              TraceRazor version); re-audit with this version to get one"
@@ -555,10 +968,31 @@ fn cmd_verify(report_path: PathBuf, trace_path: PathBuf) -> Result<()> {
         serde_json::from_value(manifest_value.clone())
             .context("malformed run manifest in report")?;
 
-    // 1) The trace file must be byte-identical to what was scored.
-    let trace_raw = std::fs::read_to_string(&trace_path)
-        .with_context(|| format!("Cannot read trace: {}", trace_path.display()))?;
-    let actual_sha = sha256_hex(trace_raw.as_bytes());
+    // ── Phase 3.1: Signature check — FIRST, before any other check ──────────
+    // A valid signature proves the ENTIRE report is authentic: TAS, AGF,
+    // savings, fixes, summary, similarity_backend — every field is covered.
+    // Any post-audit edit to any field breaks the signature.
+    let sig_status = check_report_signature(&report_struct)?;
+    let is_signed = match sig_status {
+        SigCheck::Valid => {
+            println!("signature       : OK (Ed25519)");
+            true
+        }
+        SigCheck::Invalid => {
+            eprintln!(
+                "TAMPERED: Ed25519 signature verification failed. \
+                 Report has been modified after signing."
+            );
+            std::process::exit(1);
+        }
+        SigCheck::Unsigned => {
+            println!("signature       : none (report is unsigned)");
+            false
+        }
+    };
+
+    // ── Trace hash ────────────────────────────────────────────────────────────
+    let actual_sha = sha256_hex(trace_bytes);
     if actual_sha != manifest.trace_sha256 {
         eprintln!("TAMPERED: trace file hash does not match the manifest.");
         eprintln!("  manifest : {}", manifest.trace_sha256);
@@ -567,44 +1001,69 @@ fn cmd_verify(report_path: PathBuf, trace_path: PathBuf) -> Result<()> {
     }
     println!("trace hash      : OK ({actual_sha})");
 
-    // 2) Version awareness — a different scorer version may legitimately
-    //    produce different numbers; report it rather than guess.
+    // ── Version check ─────────────────────────────────────────────────────────
     let this_version = env!("CARGO_PKG_VERSION");
     if manifest.tool_version != this_version {
         println!(
-            "tool version    : report {} vs current {this_version} (re-score check skipped)",
+            "tool version    : report {} vs current {this_version} (re-score skipped)",
             manifest.tool_version
         );
-        println!("verified        : hash + manifest integrity only");
+        let verdict = if is_signed {
+            "signature + hash (Ed25519-authenticated)"
+        } else {
+            "hash-only (unsigned — not cryptographically authenticated)"
+        };
+        println!("verified        : {verdict}");
         return Ok(());
     }
     println!("tool version    : OK ({this_version})");
 
-    // 3) Exact re-score is only sound for runs that were a pure function of
-    //    (trace, config, version): BoW backend and no store-derived inputs.
+    // ── Re-score — only sound for BoW + hermetic ─────────────────────────────
+    // Phase 3.2: under a valid signature, a backend mismatch is TAMPERED
+    // (the signature covers similarity_backend, so a signed report cannot
+    // legitimately have a mismatched backend).
     if manifest.similarity_backend != tracerazor_semantic::BOW_BACKEND_ID {
-        println!(
-            "backend         : {} — embedding scores are not locally \
-             reproducible; verified hash + manifest integrity only",
-            manifest.similarity_backend
-        );
+        if is_signed {
+            // Signed reports that claim embedding backend: signed means the
+            // backend claim is authentic; we just cannot locally re-score it.
+            println!(
+                "backend         : {} — embedding scores are not locally \
+                 reproducible; score verified via Ed25519 signature",
+                manifest.similarity_backend
+            );
+            println!("verified        : signature-only (Ed25519-authenticated, re-score skipped)");
+        } else {
+            println!(
+                "backend         : {} — embedding scores are not locally \
+                 reproducible; verified hash + manifest integrity only",
+                manifest.similarity_backend
+            );
+            println!("verified        : hash-only (unsigned — not cryptographically authenticated)");
+        }
         return Ok(());
     }
     if manifest.store_influenced() {
-        println!(
-            "store baselines : run used local history (baseline_tokens={:?}, \
-             median_steps={:?}, sequences={}) — exact re-score requires that \
-             state; verified hash + manifest integrity only. \
-             Tip: audit with --hermetic for fully re-verifiable reports.",
-            manifest.baseline_tokens,
-            manifest.historical_median_steps,
-            manifest.n_historical_sequences
-        );
+        let tip = "Tip: audit with --hermetic for fully re-verifiable reports.";
+        if is_signed {
+            println!("store baselines : run used local history — re-score skipped; verified via signature");
+            println!("verified        : signature-only (Ed25519-authenticated, re-score skipped)");
+        } else {
+            println!(
+                "store baselines : run used local history (baseline_tokens={:?}, \
+                 median_steps={:?}, sequences={}) — exact re-score requires that \
+                 state; verified hash + manifest integrity only. {tip}",
+                manifest.baseline_tokens,
+                manifest.historical_median_steps,
+                manifest.n_historical_sequences
+            );
+            println!("verified        : hash-only (unsigned — not cryptographically authenticated)");
+        }
         return Ok(());
     }
 
-    let mut trace = ingest_parse(&trace_raw, tracerazor_ingest::TraceFormat::Auto)
-        .with_context(|| format!("Failed to parse trace: {}", trace_path.display()))?;
+    let trace_str = std::str::from_utf8(trace_bytes).context("trace is not valid UTF-8")?;
+    let mut trace = ingest_parse(trace_str, tracerazor_ingest::TraceFormat::Auto)
+        .context("failed to parse trace for re-score")?;
     if trace.steps.len() < manifest.min_steps.max(2) {
         anyhow::bail!(
             "trace has {} steps but the manifest floor is {} — nothing to re-score",
@@ -621,16 +1080,17 @@ fn cmd_verify(report_path: PathBuf, trace_path: PathBuf) -> Result<()> {
     };
     let recomputed = tracerazor_core::analyse(&mut trace, default_similarity_fn(), &config)?;
 
-    let original_tas = report["score"]["score"].as_f64().unwrap_or(f64::NAN);
+    // ── Phase 3.2: compare the WHOLE report — not just TAS + metric_normalised
+    let original_tas = report_value["score"]["score"].as_f64().unwrap_or(f64::NAN);
     let recomputed_tas = recomputed.score.score;
     let mut mismatches: Vec<String> = Vec::new();
     if (original_tas - recomputed_tas).abs() > 1e-9 {
         mismatches.push(format!("TAS {original_tas} -> {recomputed_tas}"));
     }
-    let recomputed_mn = serde_json::to_value(&recomputed.score)?;
+    let recomputed_score_json = serde_json::to_value(&recomputed.score)?;
     if let (Some(orig), Some(new)) = (
-        report["score"]["metric_normalised"].as_object(),
-        recomputed_mn["metric_normalised"].as_object(),
+        report_value["score"]["metric_normalised"].as_object(),
+        recomputed_score_json["metric_normalised"].as_object(),
     ) {
         for (k, ov) in orig {
             let o = ov.as_f64().unwrap_or(f64::NAN);
@@ -640,10 +1100,43 @@ fn cmd_verify(report_path: PathBuf, trace_path: PathBuf) -> Result<()> {
             }
         }
     }
+    // Compare AGF score
+    if let (Some(orig_agf_score), Some(new_agf_score)) = (
+        report_value["agf"]["score"].as_f64(),
+        recomputed.agf.as_ref().map(|a| a.score),
+    ) {
+        if (orig_agf_score - new_agf_score).abs() > 1e-9 {
+            mismatches.push(format!("agf.score {orig_agf_score:.6} -> {new_agf_score:.6}"));
+        }
+    }
+    // Compare savings.tokens_saved
+    if let Some(orig_saved) = report_value["savings"]["tokens_saved"].as_u64() {
+        let new_saved = recomputed.savings.tokens_saved as u64;
+        if orig_saved != new_saved {
+            mismatches.push(format!("savings.tokens_saved {orig_saved} -> {new_saved}"));
+        }
+    }
+    // Compare fix count
+    let orig_fix_count = report_value["fixes"].as_array().map(|a| a.len()).unwrap_or(0);
+    let new_fix_count = recomputed.fixes.len();
+    if orig_fix_count != new_fix_count {
+        mismatches.push(format!("fixes count {orig_fix_count} -> {new_fix_count}"));
+    }
+    // Compare summary (existence; exact text may differ with trailing whitespace)
+    let orig_summary = report_value["summary"].as_str().unwrap_or("").trim();
+    let new_summary = recomputed.summary.trim();
+    if !orig_summary.is_empty() && orig_summary != new_summary {
+        mismatches.push("summary text differs".to_string());
+    }
 
     if mismatches.is_empty() {
-        println!("re-score        : OK (TAS {recomputed_tas:.1}; all normalised metrics match)");
-        println!("verified        : full — report reproduces from (trace, manifest, {this_version})");
+        println!("re-score        : OK (TAS {recomputed_tas:.1}; all metrics match)");
+        let verdict = if is_signed {
+            format!("full (Ed25519-authenticated + reproduced from trace, manifest, {this_version})")
+        } else {
+            format!("rescore-only (unsigned — reproduced from trace, manifest, {this_version})")
+        };
+        println!("verified        : {verdict}");
         Ok(())
     } else {
         eprintln!("MISMATCH: re-scored values differ from the report:");
@@ -652,6 +1145,77 @@ fn cmd_verify(report_path: PathBuf, trace_path: PathBuf) -> Result<()> {
         }
         std::process::exit(1);
     }
+}
+
+fn cmd_verify(report_path: PathBuf, trace_path: Option<PathBuf>) -> Result<()> {
+    // Accept a zip bundle as the first argument (Phase 3.3); trace is optional.
+    if report_path.extension().is_some_and(|e| e == "zip") {
+        return cmd_verify_bundle(report_path);
+    }
+
+    let trace_path = trace_path.ok_or_else(|| {
+        anyhow::anyhow!(
+            "<TRACE> is required when verifying a JSON report (not needed for .zip bundles)"
+        )
+    })?;
+
+    let report_raw = std::fs::read_to_string(&report_path)
+        .with_context(|| format!("Cannot read report: {}", report_path.display()))?;
+    let trace_bytes = std::fs::read(&trace_path)
+        .with_context(|| format!("Cannot read trace: {}", trace_path.display()))?;
+
+    verify_from_bytes(&report_raw, &trace_bytes)
+}
+
+/// Verify an evidence bundle (zip produced by `export --bundle`).
+fn cmd_verify_bundle(bundle_path: PathBuf) -> Result<()> {
+    use std::io::Read;
+
+    let file = std::fs::File::open(&bundle_path)
+        .with_context(|| format!("Cannot open bundle: {}", bundle_path.display()))?;
+    let mut archive =
+        zip::ZipArchive::new(file).context("file is not a valid zip bundle")?;
+
+    // Read each entry into a Vec before the next by_name call; each block
+    // drops the ZipFile borrow before the next access to archive.
+    let sums_bytes = {
+        let mut f = archive.by_name("SHA256SUMS").context("bundle is missing SHA256SUMS")?;
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf)?;
+        buf
+    };
+    let report_bytes = {
+        let mut f = archive.by_name("report.json").context("bundle is missing report.json")?;
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf)?;
+        buf
+    };
+    let trace_bytes = {
+        let mut f = archive.by_name("trace.json").context("bundle is missing trace.json")?;
+        let mut buf = Vec::new();
+        f.read_to_end(&mut buf)?;
+        buf
+    };
+
+    // Verify bundle integrity before anything else
+    let sums = std::str::from_utf8(&sums_bytes).context("SHA256SUMS is not valid UTF-8")?;
+    let expected_report_sha = sums
+        .lines()
+        .find(|l| l.ends_with("  report.json"))
+        .and_then(|l| l.split_whitespace().next())
+        .unwrap_or("");
+    let actual_report_sha = sha256_hex(&report_bytes);
+    if !expected_report_sha.is_empty() && actual_report_sha != expected_report_sha {
+        eprintln!("TAMPERED: report.json SHA256 does not match SHA256SUMS in bundle.");
+        eprintln!("  expected : {expected_report_sha}");
+        eprintln!("  actual   : {actual_report_sha}");
+        std::process::exit(1);
+    }
+    println!("bundle integrity: OK (SHA256SUMS verified)");
+
+    let report_raw =
+        std::str::from_utf8(&report_bytes).context("report.json is not valid UTF-8")?;
+    verify_from_bytes(report_raw, &trace_bytes)
 }
 
 // ── list ──────────────────────────────────────────────────────────────────────
@@ -1080,19 +1644,39 @@ async fn cmd_apply(
     fixes_path: PathBuf,
     target: PathBuf,
     all: bool,
+    force: bool,
     dry_run: bool,
 ) -> Result<()> {
+    use tracerazor_core::fixes::FixRisk;
+
     let fixes = load_fixes(&fixes_path)?;
     if fixes.is_empty() {
         println!("No fixes found in {}. Nothing to apply.", fixes_path.display());
         return Ok(());
     }
 
-    let selected: Vec<&Fix> = if all {
-        fixes.iter().collect()
-    } else {
-        fixes.iter().filter(|f| is_safe_fix(f)).collect()
-    };
+    // Risk-gated selection: safe always; needs_review with --all; dangerous
+    // only with --all --force (a termination guard can suppress exactly the
+    // verification re-run that catches a bug).
+    let selected: Vec<&Fix> = fixes
+        .iter()
+        .filter(|f| match f.risk {
+            FixRisk::Safe => is_safe_fix(f) || all,
+            FixRisk::NeedsReview => all,
+            FixRisk::Dangerous => all && force,
+        })
+        .collect();
+    let dangerous_skipped = fixes
+        .iter()
+        .filter(|f| f.risk == FixRisk::Dangerous)
+        .count()
+        .saturating_sub(selected.iter().filter(|f| f.risk == FixRisk::Dangerous).count());
+    if dangerous_skipped > 0 {
+        eprintln!(
+            "Skipped {dangerous_skipped} dangerous fix(es) (e.g. termination guards). \
+             Re-run with --all --force to include them."
+        );
+    }
 
     if selected.is_empty() {
         println!(
@@ -1129,9 +1713,12 @@ async fn cmd_apply(
             fix.fix_type,
             fix.estimated_token_savings
         );
+        // Append only the directive, never the report's analysis meta-prose.
         appended.push_str(&format!(
             "# {} (est. {} tokens/run)\n{}\n\n",
-            fix.fix_type, fix.estimated_token_savings, fix.patch
+            fix.fix_type,
+            fix.estimated_token_savings,
+            fix.prompt_directive()
         ));
     }
 
@@ -1588,26 +2175,64 @@ async fn cmd_export(
     webhook_url: Option<String>,
     print_report: bool,
     format: OutputFormat,
+    bundle_path: Option<PathBuf>,
 ) -> Result<()> {
-    if otel_endpoint.is_none() && webhook_url.is_none() {
-        eprintln!("Specify at least one export target: --otel <url> or --webhook <url>");
-        eprintln!("Example: tracerazor export trace.json --otel http://localhost:4317");
+    if otel_endpoint.is_none() && webhook_url.is_none() && bundle_path.is_none() {
+        eprintln!("Specify at least one export target: --otel <url>, --webhook <url>, or --bundle <file.zip>");
+        eprintln!("Example: tracerazor export trace.json --bundle bundle.zip");
         return Ok(());
     }
 
     let data = std::fs::read_to_string(&file)
         .with_context(|| format!("Cannot read {}", file.display()))?;
+    let trace_sha256 = sha256_hex(data.as_bytes());
     let mut trace = ingest_parse(&data, TraceFormat::Auto)?;
 
     let config = ScoringConfig::default();
     let sim_fn = default_similarity_fn();
-    let report = tracerazor_core::analyse(&mut trace, sim_fn, &config)?;
+    let mut report = tracerazor_core::analyse(&mut trace, sim_fn, &config)?;
+
+    // Attach a run manifest so the bundle can be verified.
+    let weights_json = serde_json::to_string(&config.weights)?;
+    let ingest_quality = tracerazor_core::report::IngestQuality::assess(&trace);
+    report.manifest = Some(tracerazor_core::report::RunManifest {
+        trace_sha256,
+        tool_version: env!("CARGO_PKG_VERSION").to_string(),
+        created_at: chrono::Utc::now().to_rfc3339(),
+        similarity_backend: tracerazor_semantic::BOW_BACKEND_ID.to_string(),
+        weights: config.weights.clone(),
+        weights_sha256: sha256_hex(weights_json.as_bytes()),
+        threshold: config.threshold,
+        cost_per_million_tokens: config.cost_per_million_tokens,
+        min_steps: MIN_TRACE_STEPS.max(2),
+        hermetic: true,
+        baseline_tokens: None,
+        historical_median_steps: None,
+        n_historical_sequences: 0,
+        ingest_quality: Some(ingest_quality),
+        signature: None,
+        signing_key_pub: None,
+    });
+
+    // Sign if key is configured (so the bundle contains a signed report)
+    if let Ok(key_hex) = std::env::var("TRACERAZOR_SIGNING_KEY") {
+        if let Err(e) = sign_report(&mut report, &key_hex) {
+            eprintln!("Warning: could not sign report ({e}); bundle will be unsigned");
+        }
+    }
 
     if print_report {
         match format {
             OutputFormat::Markdown => println!("{}", report.to_markdown()),
             OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
         }
+    }
+
+    // ── Evidence bundle (Phase 3.3) ───────────────────────────────────────────
+    if let Some(ref bp) = bundle_path {
+        create_bundle(&file, &report, &config.weights, bp)?;
+        eprintln!("Evidence bundle written to {}", bp.display());
+        eprintln!("Verify with: tracerazor verify {}", bp.display());
     }
 
     // ── OTEL export ───────────────────────────────────────────────────────────

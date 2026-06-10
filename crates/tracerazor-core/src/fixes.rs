@@ -64,6 +64,38 @@ impl std::fmt::Display for FixType {
     }
 }
 
+/// How much human review a fix needs before it can be applied.
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum FixRisk {
+    /// Pure prompt-text hygiene (verbosity, hedging, compression directives).
+    Safe,
+    /// Changes behaviour-shaping config (schemas, loop guards): review first.
+    #[default]
+    NeedsReview,
+    /// Could suppress legitimate behaviour (e.g. retries/verification runs):
+    /// `apply` refuses these without an explicit override.
+    Dangerous,
+}
+
+impl FixRisk {
+    fn for_type(t: &FixType) -> FixRisk {
+        match t {
+            FixType::ContextCompression
+            | FixType::VerbosityReduction
+            | FixType::HedgeReduction
+            | FixType::CavemanPromptInsert
+            | FixType::ReformulationGuard
+            | FixType::PromptInsert
+            | FixType::GoalAnchor => FixRisk::Safe,
+            FixType::ToolSchema => FixRisk::NeedsReview,
+            // A termination guard can suppress exactly the re-run an agent
+            // uses to verify a fix; never auto-apply.
+            FixType::TerminationGuard => FixRisk::Dangerous,
+        }
+    }
+}
+
 /// A generated fix with estimated token impact.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Fix {
@@ -74,6 +106,32 @@ pub struct Fix {
     pub patch: String,
     /// Estimated tokens saved per run if this fix is applied.
     pub estimated_token_savings: u32,
+    /// Review class: safe / needs_review / dangerous (see [`FixRisk`]).
+    #[serde(default)]
+    pub risk: FixRisk,
+}
+
+impl Fix {
+    /// The text that should actually land in a prompt file when this fix is
+    /// applied. Report patches are written for human readers ("Task
+    /// complexity classified as ... Add to system prompt: \"...\" (37% of
+    /// sentences ...)"); appending that meta-prose verbatim into a live
+    /// system prompt injects analysis noise into the agent. This extracts
+    /// just the quoted directive; patches without the marker are returned
+    /// unchanged.
+    pub fn prompt_directive(&self) -> String {
+        const MARKER: &str = "Add to system prompt: \"";
+        if let Some(pos) = self.patch.find(MARKER) {
+            let rest = &self.patch[pos + MARKER.len()..];
+            if let Some(end) = rest.rfind('\"') {
+                let directive = rest[..end].trim();
+                if !directive.is_empty() {
+                    return directive.to_string();
+                }
+            }
+        }
+        self.patch.clone()
+    }
 }
 
 /// Generate fixes for all flagged issues in the trace.
@@ -88,18 +146,42 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
     for misfire in &score.tca.misfires {
         let tool = &misfire.tool_name;
         let savings = estimate_misfire_savings(trace, misfire.failed_step);
+        // Diagnose from the actual error text instead of assuming a schema
+        // problem: most real failures are value errors (wrong amount, bad id),
+        // which marking parameters required would not prevent.
+        let error = misfire.error.as_deref().unwrap_or("");
+        let elow = error.to_lowercase();
+        let patch = if elow.contains("required") || elow.contains("missing") {
+            format!(
+                "Tool \"{tool}\" failed at step {} with: \"{error}\". Mark the \
+                 missing parameter(s) as required in the tool schema so the model \
+                 cannot omit them.",
+                misfire.failed_step,
+            )
+        } else if !error.is_empty() {
+            format!(
+                "Tool \"{tool}\" failed at step {} with: \"{error}\". Add a \
+                 pre-call check for this condition to the system prompt (e.g.\
+                 recompute derived values such as totals/fees and validate \
+                 identifiers against prior observations before calling \
+                 \"{tool}\").",
+                misfire.failed_step,
+            )
+        } else {
+            format!(
+                "Tool \"{tool}\" failed at step {} with no recorded error. Log \
+                 tool errors into the trace (tool_error) so failures are \
+                 diagnosable, and add a retry-once-with-validation policy for \
+                 \"{tool}\".",
+                misfire.failed_step,
+            )
+        };
         fixes.push(Fix {
             fix_type: FixType::ToolSchema,
             target: tool.clone(),
-            patch: format!(
-                "Mark required parameters as required in the \"{tool}\" tool schema. \
-                 The tool failed at step {} ({}) — ensure all parameters needed for \
-                 a successful call are documented as required so the model cannot \
-                 omit them.",
-                misfire.failed_step,
-                misfire.error.as_deref().unwrap_or("missing parameter"),
-            ),
+            patch,
             estimated_token_savings: savings,
+            risk: FixRisk::for_type(&FixType::ToolSchema),
         });
     }
 
@@ -123,6 +205,7 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
                     established earlier in this session."
                 .into(),
             estimated_token_savings: total_bloat_tokens,
+            risk: FixRisk::for_type(&FixType::ContextCompression),
         });
     }
 
@@ -153,6 +236,7 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
                  next distinct task step."
             ),
             estimated_token_savings: save_tokens,
+            risk: FixRisk::for_type(&FixType::TerminationGuard),
         });
     }
 
@@ -192,6 +276,7 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
                     score.rda.expected_steps + 1.0,
                 ),
                 estimated_token_savings: estimated,
+                risk: FixRisk::for_type(&FixType::PromptInsert),
             });
         }
     }
@@ -239,6 +324,7 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
                             .join(", ")
                     ),
                     estimated_token_savings: wasted,
+                    risk: FixRisk::for_type(&FixType::VerbosityReduction),
                 });
             }
         }
@@ -259,6 +345,7 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
                     score.shl.score * 100.0
                 ),
                 estimated_token_savings: shl_waste / 5, // ~20% of flagged content is preamble
+                risk: FixRisk::for_type(&FixType::HedgeReduction),
             });
         }
 
@@ -277,6 +364,7 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
                          compressible without information loss.\""
                     ),
                     estimated_token_savings: ccr_waste,
+                    risk: FixRisk::for_type(&FixType::CavemanPromptInsert),
                 });
             }
         }
@@ -312,6 +400,7 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
                  (Steps [{ids_str}] were detected as reformulating their input context.)"
             ),
             estimated_token_savings: wasted,
+            risk: FixRisk::for_type(&FixType::ReformulationGuard),
         });
     }
 
@@ -375,16 +464,23 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
             )
         };
 
+        // Measured live (docs/case_study.md): an earlier wording that asked the
+        // agent to *restate the objective before each reasoning step* added a
+        // per-turn output cost that exceeded the recovered drift on on-track
+        // runs (mean -5.6% tokens). The anchor must never add a standing
+        // ritual: anchor silently, skip non-advancing steps, forbid restating.
         fixes.push(Fix {
             fix_type: FixType::GoalAnchor,
             target: "system_prompt".into(),
             patch: format!(
-                "Add to system prompt: \"Before each reasoning step, restate {goal_clause} \
-                 in one sentence and verify the step moves measurably closer to it. If a step \
-                 does not advance the objective, skip it and proceed to the next concrete action.\" \
+                "Add to system prompt: \"Keep {goal_clause} as your working objective. \
+                 Before acting, check that the action moves measurably closer to it; if it \
+                 does not, skip it and take the next concrete action instead. Do not restate \
+                 the objective or summarise progress unless explicitly asked.\" \
                  (Detected drift: {drift_note}.)"
             ),
             estimated_token_savings: estimated,
+            risk: FixRisk::for_type(&FixType::GoalAnchor),
         });
     }
 
