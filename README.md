@@ -398,6 +398,17 @@ four product blind spots that the τ-bench traces did not:
 so short real-world task runs are auditable by explicit opt-in; the gate
 verifies 13/13 full-corpus coverage.
 
+**Auditable runs (provenance):** every audit now embeds a **run manifest**
+(SHA-256 of the input trace bytes, tool version, timestamp, the similarity
+backend that *actually* ran, the exact weights + their hash, step floor, and
+any store-derived baselines). `--hermetic` makes the score a pure function of
+(trace, config, version), and **`tracerazor verify <report> <trace>`**
+re-checks the hash and exactly re-scores hermetic BoW runs — one flipped byte
+fails verification. Reports also carry **AGF (Action/Claim Grounding
+Fidelity)**: a deterministic diagnostic measuring how much of what the agent
+did and concluded is traceable to prior context/observations, with every
+ungrounded literal itemised (mean 0.854 on the AgentInstruct corpus).
+
 Provenance and a live dataset-viewer fetch path are in
 [`traces/external/huggingface/agentinstruct/SOURCE.md`](traces/external/huggingface/agentinstruct/SOURCE.md);
 the converter is [`tools/convert_agentinstruct.py`](tools/convert_agentinstruct.py).
@@ -896,14 +907,14 @@ Reproduce with `cargo test --workspace` and `pytest`.
 
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 154 |
+| tracerazor-core | 160 |
 | tracerazor-ingest | 3 |
-| tracerazor-semantic | 21 |
+| tracerazor-semantic | 22 |
 | tracerazor-store | 10 |
 | tracerazor-server | 17 |
-| tracerazor-cli (2 unit + 10 integration) | 12 |
+| tracerazor-cli (2 unit + 13 integration) | 15 |
 | Doc-tests | 9 |
-| **Total Rust** | **226, all pass** |
+| **Total Rust** | **236, all pass** |
 | **Python** (pytest) | **238 pass, 3 skipped** |
 
 ---

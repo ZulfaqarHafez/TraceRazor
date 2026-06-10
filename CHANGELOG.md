@@ -5,6 +5,40 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 ## [Unreleased]
 
 ### Added
+- **Run manifest + `tracerazor verify`** — every audit report embeds a
+  provenance manifest (trace SHA-256, tool version, timestamp, actual
+  similarity backend incl. recorded embedding→BoW fallbacks, exact weights +
+  weights SHA-256, threshold, step floor, store-derived baselines). New
+  `--hermetic` flag makes scoring a pure function of (trace, config, version);
+  `tracerazor verify <report> <trace>` re-checks the hash and exactly
+  re-scores hermetic BoW runs, exiting non-zero on tamper or divergence.
+  Non-reproducible conditions (embeddings, store-influenced baselines) are
+  detected and reported as hash-only verification.
+- **AGF (Action/Claim Grounding Fidelity) diagnostic** — deterministic,
+  model-free provenance metric: share of tool-call argument literals grounded
+  in prior context, and of final-answer literals grounded in
+  environment-provided text; every ungrounded literal itemised per step.
+  Reported alongside TAS, not folded into the composite pending calibration.
+- **Metric-validity audit on 37 real traces** — per-metric fire rates,
+  realised-vs-nominal weight influence, and correlation structure documented
+  in the paper: TVI dominates final TAS (r=0.89), TUR carries 28% of raw-TAS
+  variance, GAR/CSD never exceed 0.62/0.68 on real data, DBO≈TCA (r=0.81).
+  Recorded as the baseline for quantile recalibration in `calibration/`.
+
+### Fixed
+- **`--store false` now works** — the flag previously rejected an explicit
+  value, making store write-back impossible to disable.
+
+### Performance
+- **Memoised TF vectors in the default similarity closure** — the BoW backend
+  re-tokenised both strings on every call (9,534 calls over 191 distinct
+  texts on a 100-step trace); each distinct text is now tokenised once.
+  Output is identical (equivalence-tested).
+- **Incremental CCE prior-n-gram set** — replaces the O(n²·len) whole-prefix
+  re-join per step; boundary-spanning n-grams preserved via a tail carry,
+  equivalence-tested against the original implementation.
+
+### Added (real-data evaluation cycle)
 - **Hugging Face real-data audit harness** — sourced real ReAct agent
   trajectories from the Hugging Face dataset `zai-org/AgentInstruct` (bash + SQL
   splits), a converter (`tools/convert_agentinstruct.py`), a bundled/disk/live
@@ -22,7 +56,7 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
   trace class auditable by explicit choice, and the skip notice now points at
   it.
 
-### Fixed
+### Fixed (real-data evaluation cycle)
 - **AgentInstruct converter no longer audits few-shot scaffolding** — upstream
   rows embed the dataset's fixed one-shot demo (and the db split's "Ok." ack)
   before the real task, marked `loss=false` on gpt turns. The converter now

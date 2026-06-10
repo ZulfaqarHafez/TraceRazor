@@ -537,6 +537,67 @@ Full corpus (\code{-{}-min-steps 2}) & 13/13 & mean TAS $82.9$; $20$ fix patches
 \end{tabular}
 \end{table}
 
+\subsection{Metric validity, grounding fidelity, and verifiable runs}
+\label{sec:metric-eval}
+A statistical audit of the fourteen sub-metrics over $37$ real traces
+($20$ $\tau$-bench, $13$ AgentInstruct, $4$ SWE-agent; independent state per
+audit) quantified how the composite behaves in practice. Three findings stand
+out. First, the task-value multiplier --- not the structural metrics --- drives
+the final score: $r(\mathrm{TAS},\allowbreak \mathrm{task\_value\_score})=0.89$,
+while the structural metrics separate failed from passing $\tau$-bench runs by
+only $4.9$ raw points. Second, realised influence diverges from the documented
+weights because influence scales with each metric's empirical variance:
+TUR (nominal $7.9\%$) carries $28\%$ of raw-TAS variance ($r=0.89$), whereas
+the verbosity trio VDI/SHL/CCR ($12.7\%$ nominal) contributes $\approx 0$, with
+VDI mildly \emph{anti}-correlated. Third, normalisation ranges are
+miscalibrated at both ends: GAR never exceeds $0.62$ and CSD never exceeds
+$0.68$ on any real trace (a near-constant drag rather than a discriminator),
+while LDI sits at its $1.0$ ceiling on $78\%$ of traces; DBO and TCA are
+strongly collinear ($r=0.81$). We treat these as calibration work: the
+\code{calibration/} tooling is the natural home for quantile-based
+re-normalisation and variance-aware weights, and the numbers above are the
+baseline it should be judged against.
+
+\paragraph{AGF: a grounding-fidelity diagnostic for auditable runs.} Guided by
+the trajectory-hallucination literature~\cite{trajhall}, the report now carries
+\textbf{Action/Claim Grounding Fidelity}: the share of tool-call argument
+literals (paths, quoted strings, numbers) that appear in prior context, and of
+final-answer literals that appear in \emph{environment-provided} text (task,
+observations). Matching is deterministic literal containment --- no model, no
+similarity backend --- so the diagnostic itself is reproducible byte-for-byte,
+and every failure is itemised (\code{ungrounded[]}) with the step it occurred
+in. Derived values (arithmetic the agent performed) are deliberately counted as
+ungrounded: they are precisely the claims an auditor must verify by hand. On
+the AgentInstruct corpus AGF averages $0.854$, with the failure/retry trace
+lowest ($0.800$) and the observation-anchored loop trace highest ($0.909$).
+AGF is reported as a diagnostic, not folded into TAS: the variance analysis
+above shows what uncalibrated weights do to realised influence.
+
+\paragraph{Run manifests and third-party verification.} A score is only
+evidence if a third party can check what was scored, by what, and under which
+configuration~\cite{provagent}. Every audit now embeds a \emph{run manifest}:
+SHA-256 of the raw input trace bytes, tool version, RFC-3339 timestamp, the
+similarity backend that \emph{actually} ran (silent embedding$\to$BoW fallbacks
+become recorded fact), the exact composite weights (inline, plus their
+SHA-256), the step floor, and the store-derived baselines that influenced
+scoring, if any. A new \code{-{}-hermetic} mode reads nothing from and writes
+nothing to local state, making the score a pure function of (trace, config,
+version) --- and \code{tracerazor verify <report> <trace>} re-checks the hash,
+then re-scores hermetic bag-of-words runs from the manifest's configuration
+and compares every normalised metric exactly, exiting non-zero on a single
+flipped byte or score divergence. Non-reproducible conditions (embedding
+backends, store-influenced baselines) are detected and reported as
+hash-and-integrity-only verification rather than silently glossed over.
+
+\paragraph{Performance.} Profiling showed the bag-of-words backend re-tokenised
+both texts on every call --- $9{,}534$ calls covering only $191$ distinct texts
+on a 100-step trace --- and the context metric re-joined the whole prefix per
+step ($O(n^2 \cdot \mathrm{len})$). The default similarity closure now memoises
+per-text term-frequency vectors (identical output, equivalence-tested) and CCE
+builds its prior-n-gram set incrementally with a boundary-spanning tail
+(equivalence-tested against the original implementation), removing the two
+dominant terms from the $O(n^2)$ pipeline.
+
 \subsection{Benchmark on real traces}
 The repository benchmark runs the auditor over the 24 real public traces above
 (tau-bench airline/retail; SWE-agent edit-format variants) and records TAS,
@@ -687,6 +748,8 @@ how it is documented and shipped.
 \bibitem{selfconsistency} X. Wang et al. \emph{Self-Consistency Improves Chain-of-Thought Reasoning in Language Models}. ICLR, 2023.
 \bibitem{taubench} S. Yao et al. \emph{tau-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains}. Sierra Research, 2024. \url{https://github.com/sierra-research/tau-bench}
 \bibitem{agentinstruct} A. Zeng et al. \emph{AgentTuning: Enabling Generalized Agent Abilities for LLMs}. arXiv:2310.12823, 2023. Dataset: \url{https://huggingface.co/datasets/zai-org/AgentInstruct}
+\bibitem{trajhall} \emph{Trajectory-level hallucination taxonomies for tool-using agents}. arXiv:2605.24219, 2026; see also arXiv:2601.06818.
+\bibitem{provagent} \emph{PROV-AGENT: Provenance graphs for agent workflows} (W3C-PROV extension). arXiv:2508.02866, 2025.
 \end{thebibliography}
 
 \end{document}

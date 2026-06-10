@@ -361,3 +361,51 @@ Known limitations / follow-up:
     unconverted.
   - Short-trace (<5 steps) scores carry less pair-metric evidence; flagged in
     the CLI help, not yet down-weighted in the composite.
+
+---
+
+# Run 3 — five-agent metric evaluation + auditable-runs implementation
+
+Five parallel specialist agents (literature researcher, data scientist,
+solution architect, Rust code reviewer, product researcher) evaluated the
+product; their convergent findings drove this implementation pass.
+
+## Evaluation verdicts (data scientist, n=37 real traces)
+- TVI multiplier, not the 14 metrics, drives final TAS (r=0.89 with
+  task_value_score); structural metrics separate failed/passed tau-bench runs
+  by only 4.9 raw pts.
+- Realised influence ∝ w·σ diverges from nominal weights: TUR carries 28.1% of
+  raw-TAS variance (nominal 7.9%); verbosity trio VDI/SHL/CCR contributes ≈0
+  (VDI anti-correlated).
+- Range defects: GAR max 0.62, CSD max 0.68 (constant drag, not discriminator);
+  LDI at ceiling on 78% of traces; DBO≈TCA r=0.81 (fold candidate).
+- Verdicts: HEALTHY srr/tca/rda/isr/tur/cce/obs; WEAK ldi/vdi/shl/ccr/gar/csd;
+  REDUNDANT dbo(with tca). No dead metrics.
+
+## Implemented this run (236 Rust + 238 Python tests green, clippy 0)
+- Perf P0 (code reviewer): memoised TF vectors in default_similarity_fn and
+  the boxed BoW paths (9,534 calls / 191 distinct texts on a 100-step trace
+  were ~99% redundant tokenisation) + incremental CCE prior-n-gram set with
+  boundary tail (O(n²·len)→O(n·len)). Both equivalence-tested (identical
+  output); +2 tests.
+- Run manifest (architect+product convergence): report.manifest binds
+  trace SHA-256, tool version, timestamp, ACTUAL similarity backend (silent
+  embedding→BoW fallbacks recorded), inline weights + weights SHA-256,
+  threshold, min_steps, hermetic flag, store-derived baselines.
+- --hermetic flag: scoring as a pure function of (trace, config, version);
+  fixed broken `--store false` (clap ArgAction::Set).
+- `tracerazor verify <report> <trace>`: hash check always; exact re-score +
+  per-metric comparison for hermetic BoW runs; honest hash-only verification
+  for embeddings/store-influenced runs. +3 integration tests incl. tamper.
+- AGF (Action/Claim Grounding Fidelity) diagnostic (literature pick:
+  deterministic, offline, audit-grade): action-param grounding vs prior
+  context + final-claim grounding vs environment text; ungrounded literals
+  itemised. Mean 0.854 on AgentInstruct corpus (failure trace lowest 0.800).
+  Reported as diagnostic, NOT weighted into TAS (per variance finding).
+- Docs: paper sec:metric-eval (validity stats, AGF, manifests/verify, perf),
+  README (provenance feature blurb, counts 236/238), CHANGELOG.
+
+## Deferred with rationale (calibration-scale changes, n=37 too small to
+hard-code): TVI range shrink / raw-TAS headline, z-score standardisation or
+w∝share/σ weights, GAR/CSD quantile re-normalisation, DBO→TCA fold, prebuilt
+wheels, evidence-bundle export, aggregate gating, store schema versioning.

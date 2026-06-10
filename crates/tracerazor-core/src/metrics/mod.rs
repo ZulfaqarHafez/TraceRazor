@@ -15,6 +15,7 @@ pub mod gar;
 pub mod csd;
 pub mod obs;
 pub mod tpe;
+pub mod agf;
 
 pub use srr::{SrrResult, SrrRedundantPair};
 pub use ldi::{LdiResult, DetectedLoop};
@@ -32,6 +33,7 @@ pub use gar::{GarResult, GarStepResult};
 pub use csd::{CsdResult, CsdStepResult};
 pub use obs::ObsResult;
 pub use tpe::{GoalOrigin, TpeResult};
+pub use agf::{AgfResult, UngroundedLiteral};
 
 use crate::types::{StepType, TraceStep};
 

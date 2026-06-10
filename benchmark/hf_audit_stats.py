@@ -80,6 +80,7 @@ def collect() -> Dict[str, Any]:
             "grade": str(score["grade"]),
             "mvtg": round(report.get("mvtg", 0.0), 3),
             "fixes": len(report.get("fixes", [])),
+            "agf": round((report.get("agf") or {}).get("score", float("nan")), 3),
             "metrics": {k: round(mn.get(k, float("nan")), 3) for k in _METRIC_CODES},
         })
 
@@ -119,6 +120,7 @@ def collect() -> Dict[str, Any]:
         "grade_distribution": grades,
         "mean_mvtg": round(statistics.fmean([t["mvtg"] for t in per_trace]), 3) if per_trace else None,
         "total_fixes": sum(t["fixes"] for t in per_trace),
+        "mean_agf": round(statistics.fmean([t["agf"] for t in per_trace]), 3) if per_trace else None,
         "metric_means_normalised": metric_means,
         "per_trace": per_trace,
         "full_corpus_min_steps_2": {
@@ -150,6 +152,7 @@ def render_markdown(stats: Dict[str, Any]) -> str:
         f"- Grade distribution: {stats['grade_distribution']}",
         f"- Mean MVTG (structural waste): **{stats['mean_mvtg']}**",
         f"- Fix patches emitted: **{stats['total_fixes']}**",
+        f"- Mean AGF (grounding-fidelity diagnostic): **{stats.get('mean_agf')}**",
         "",
         "## Mean normalised metric scores (1.0 = no waste detected)",
         "",

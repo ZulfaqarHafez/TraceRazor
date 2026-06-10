@@ -413,6 +413,8 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
         path_entropy: Default::default(),
         iar: None,
         features: Default::default(),
+        agf: None,
+        manifest: None,
     }
 }
 

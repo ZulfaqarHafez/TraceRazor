@@ -21,6 +21,7 @@
   },
   "mean_mvtg": 0.364,
   "total_fixes": 11,
+  "mean_agf": 0.854,
   "metric_means_normalised": {
     "srr": 0.65,
     "ldi": 0.833,
@@ -46,6 +47,7 @@
       "grade": "Good",
       "mvtg": 0.283,
       "fixes": 3,
+      "agf": 0.833,
       "metrics": {
         "srr": 0.833,
         "ldi": 1.0,
@@ -71,6 +73,7 @@
       "grade": "Good",
       "mvtg": 0.262,
       "fixes": 1,
+      "agf": 0.875,
       "metrics": {
         "srr": 0.6,
         "ldi": 1.0,
@@ -96,6 +99,7 @@
       "grade": "Good",
       "mvtg": 0.457,
       "fixes": 4,
+      "agf": 0.8,
       "metrics": {
         "srr": 0.667,
         "ldi": 1.0,
@@ -121,6 +125,7 @@
       "grade": "Good",
       "mvtg": 0.456,
       "fixes": 3,
+      "agf": 0.909,
       "metrics": {
         "srr": 0.5,
         "ldi": 0.333,

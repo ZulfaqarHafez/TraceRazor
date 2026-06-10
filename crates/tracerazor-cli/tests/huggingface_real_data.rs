@@ -82,6 +82,7 @@ fn huggingface_agentinstruct_audit_statistics() {
     let mut ldi: Vec<f64> = Vec::new();
     let mut obs: Vec<f64> = Vec::new();
     let mut gar: Vec<f64> = Vec::new();
+    let mut agf: Vec<f64> = Vec::new();
     let mut mvtg: Vec<f64> = Vec::new();
     let mut grades: BTreeMap<String, usize> = BTreeMap::new();
     let mut total_fixes = 0usize;
@@ -132,6 +133,10 @@ fn huggingface_agentinstruct_audit_statistics() {
                 }
                 if let Some(v) = report["mvtg"].as_f64() {
                     mvtg.push(v);
+                }
+                if let Some(v) = report["agf"]["score"].as_f64() {
+                    assert!((0.0..=1.0).contains(&v), "AGF out of range: {v}");
+                    agf.push(v);
                 }
                 total_fixes += report["fixes"].as_array().map(|a| a.len()).unwrap_or(0);
             }
@@ -244,6 +249,7 @@ fn huggingface_agentinstruct_audit_statistics() {
     println!("mean SRR (norm)   : {:.3}", mean(&srr));
     println!("mean LDI (norm)   : {:.3}", mean(&ldi));
     println!("mean GAR (norm)   : {:.3}", mean(&gar));
+    println!("mean AGF (diag)   : {:.3}", mean(&agf));
     println!("mean OBS (norm)   : {:.3}", mean(&obs));
     println!("mean MVTG         : {:.3}", mean(&mvtg));
     println!("fix patches (sum) : {total_fixes}");
