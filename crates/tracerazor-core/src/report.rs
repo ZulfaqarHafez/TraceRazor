@@ -178,15 +178,16 @@ pub struct RunManifest {
     /// Parse-quality assessment of the input (see [`IngestQuality`]).
     #[serde(default)]
     pub ingest_quality: Option<IngestQuality>,
-    /// Ed25519 signature over the canonical serialisation of the report
-    /// (hex-encoded 64-byte signature = 128 hex chars). Present only when
-    /// the audit ran with `TRACERAZOR_SIGNING_KEY` set.
-    #[serde(default)]
-    pub signature: Option<String>,
-    /// Ed25519 verifying (public) key that produced `signature`
-    /// (hex-encoded 32-byte point = 64 hex chars). Safe to publish.
-    #[serde(default)]
-    pub signing_key_pub: Option<String>,
+    /// Ed25519 verifying key (base64url, no padding) — present when the
+    /// audit was run with `TRACERAZOR_SIGNING_KEY` set.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub signing_public_key: Option<String>,
+    /// Ed25519 signature over the canonical report bytes (base64url, no
+    /// padding). Canonical bytes: full report serialised to compact JSON
+    /// with `analysis_duration_ms = 0` and both signature fields set to
+    /// `null` before serialising.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub report_signature: Option<String>,
 }
 
 impl RunManifest {
@@ -198,6 +199,39 @@ impl RunManifest {
             || self.historical_median_steps.is_some()
             || self.n_historical_sequences > 0
     }
+}
+
+/// Compute the canonical byte representation of a report that is used as the
+/// Ed25519 signing input.
+///
+/// Canonical form: full report serialised to compact JSON with two fields
+/// normalised to remove sources of non-determinism:
+///   - `analysis_duration_ms` → 0  (wall-clock timing is not reproducible)
+///   - `manifest.signing_public_key` → None  (signing a field that includes
+///     the public key would create a circularity; it is recovered at verify time)
+///   - `manifest.report_signature` → None  (signature cannot sign itself)
+///
+/// The report is first serialised to JSON then immediately re-parsed to ensure
+/// that all floating-point values are in their "round-tripped" form. This
+/// eliminates a 1-ULP serde_json parsing discrepancy where
+/// `to_string` → `from_str` may produce a slightly different f64 bit pattern
+/// than the original in-memory value, causing sign/verify to diverge.
+/// By going through the same JSON round-trip on both paths the canonical bytes
+/// are always derived from the same stable representation.
+pub fn canonical_report_bytes(report: &TraceReport) -> anyhow::Result<Vec<u8>> {
+    // Normalise mutable fields before serialising.
+    let mut r = report.clone();
+    r.analysis_duration_ms = 0;
+    if let Some(ref mut m) = r.manifest {
+        m.report_signature = None;
+        m.signing_public_key = None;
+    }
+    // Round-trip through JSON so every f64 is in its serde_json-stable form.
+    // Without this, a value like 0.9566563467492261 may re-parse to a 1-ULP-
+    // different float, making the canonical bytes differ between sign and verify.
+    let json_str = serde_json::to_string(&r)?;
+    let r2: TraceReport = serde_json::from_str(&json_str)?;
+    Ok(serde_json::to_vec(&r2)?)
 }
 
 /// How much of the parsed trace carries real data. A TAS computed over steps
@@ -252,8 +286,8 @@ impl TraceReport {
         let mut r = self.clone();
         r.analysis_duration_ms = 0;
         if let Some(ref mut m) = r.manifest {
-            m.signature = None;
-            m.signing_key_pub = None;
+            m.report_signature = None;
+            m.signing_public_key = None;
         }
         serde_json::to_vec(&r)
     }

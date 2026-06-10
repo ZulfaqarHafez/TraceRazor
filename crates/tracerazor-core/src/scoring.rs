@@ -19,13 +19,14 @@ fn default_one() -> f64 {
 }
 
 /// Grade bands for the composite TAS score (mirrors Google Lighthouse).
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Grade {
     /// 90–100: Agent is highly optimised.
     Excellent,
     /// 70–89: Minor inefficiencies present.
     Good,
     /// 50–69: Actionable waste present.
+    #[default]
     Fair,
     /// 0–49: Significant restructuring recommended.
     Poor,
@@ -78,6 +79,7 @@ impl std::fmt::Display for Grade {
 /// divides by the sum), so each per-metric percentage in this file is
 /// `weight / 0.92` — e.g. SRR's 0.17 contributes 18.5 % of the composite.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Weights {
     // Comments show the post-normalisation share of the composite (weight / 0.92).
     // Structural metrics.
@@ -125,7 +127,7 @@ impl Default for Weights {
 
 /// The composite TraceRazor Score and all component results.
 /// All thirteen metrics are always present — no Option wrappers.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TasScore {
     /// Composite score (0–100), **after** the Task Value Integration multiplier.
     /// `score = raw_tas × (0.7 + 0.3 × task_value_score)`.
@@ -157,22 +159,35 @@ pub struct TasScore {
     pub metric_normalised: std::collections::BTreeMap<String, f64>,
 
     // Structural metrics.
+    #[serde(default)]
     pub srr: SrrResult,
+    #[serde(default)]
     pub ldi: LdiResult,
+    #[serde(default)]
     pub tca: TcaResult,
+    #[serde(default)]
     pub tur: TurResult,
+    #[serde(default)]
     pub cce: CceResult,
+    #[serde(default)]
     pub rda: RdaResult,
+    #[serde(default)]
     pub isr: IsrResult,
+    #[serde(default)]
     pub dbo: DboResult,
 
     // Verbosity metrics (v2).
+    #[serde(default)]
     pub vdi: VdiResult,
+    #[serde(default)]
     pub shl: ShlResult,
+    #[serde(default)]
     pub ccr: CcrResult,
     // Goal advancement metric (M1).
+    #[serde(default)]
     pub gar: GarResult,
     // Semantic path coherence (M4).
+    #[serde(default)]
     pub csd: CsdResult,
     // Observation token share (validated on real data; metrics::obs).
     #[serde(default)]
@@ -361,7 +376,7 @@ pub fn compute(
 }
 
 /// Estimate token and cost savings if all recommendations are applied.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SavingsEstimate {
     pub tokens_saved: u32,
     pub reduction_pct: f64,

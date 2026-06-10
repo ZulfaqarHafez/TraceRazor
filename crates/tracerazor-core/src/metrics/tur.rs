@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::{StepType, Trace};
 
 /// Result of the TUR metric computation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TurResult {
     /// TUR ratio (0.0–1.0). Higher is better.
     pub score: f64,

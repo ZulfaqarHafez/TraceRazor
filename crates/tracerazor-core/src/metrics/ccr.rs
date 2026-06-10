@@ -46,7 +46,7 @@ const MIN_GZIP_BYTES: usize = 128;
 const MIN_NGRAM_COUNT: usize = 8;
 
 /// CCR result for a single step.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CcrStepResult {
     pub step_id: u32,
     pub original_tokens: u32,
@@ -65,7 +65,7 @@ pub struct CcrStepResult {
 }
 
 /// Aggregate CCR result across the full trace.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CcrResult {
     /// Aggregate ratio: total_removed / total_original (0.0–1.0). Lower is better.
     pub score: f64,

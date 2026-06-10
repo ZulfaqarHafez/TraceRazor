@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::{Confidence, StepFlag, Trace, TraceStep};
 
 /// A detected redundant step pair.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SrrRedundantPair {
     pub step_a: u32,
     pub step_b: u32,
@@ -19,7 +19,7 @@ pub struct SrrRedundantPair {
 }
 
 /// Result of the SRR metric computation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct SrrResult {
     /// SRR as a percentage (0–100). Lower is better.
     pub score: f64,

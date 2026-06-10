@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::{StepFlag, StepType, Trace, TraceStep};
 
 /// A detected tool misfire (failed first attempt requiring retry).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ToolMisfire {
     /// The step ID of the failed tool call.
     pub failed_step: u32,
@@ -25,7 +25,7 @@ pub struct ToolMisfire {
 }
 
 /// Result of the TCA metric computation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TcaResult {
     /// TCA as a percentage (0–100). Higher is better.
     pub score: f64,

@@ -32,9 +32,9 @@ dotenvy = "0.15"
 sha2 = { workspace = true }
 chrono = { workspace = true }
 ed25519-dalek = { workspace = true }
-rand = { workspace = true }
-zip = "0.6"
-tempfile = "3"
+rand_core = { workspace = true }
+base64 = { workspace = true }
+zip = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = "2"

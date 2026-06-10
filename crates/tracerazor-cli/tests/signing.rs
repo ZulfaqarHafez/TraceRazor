@@ -9,9 +9,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
-// A deterministic 32-byte Ed25519 seed used throughout the tests
-// (hex-encoded: 64 'a' chars = 32 bytes of 0xaa).
-const TEST_KEY: &str = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+// A deterministic 32-byte Ed25519 seed (base64url, no padding: 32 bytes of 0xaa).
+const TEST_KEY: &str = "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqo";
 
 fn corpus_trace() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -69,11 +68,11 @@ fn signed_report_round_trip_ok() {
     let report = signed_audit(&home, &trace);
 
     assert!(
-        report["manifest"]["signature"].is_string(),
+        report["manifest"]["report_signature"].is_string(),
         "audit with TRACERAZOR_SIGNING_KEY must embed a signature"
     );
     assert!(
-        report["manifest"]["signing_key_pub"].is_string(),
+        report["manifest"]["signing_public_key"].is_string(),
         "audit with TRACERAZOR_SIGNING_KEY must embed the public key"
     );
 
@@ -141,12 +140,10 @@ fn attack_agf_edit_exits_1() {
     let trace = corpus_trace();
     let mut report = signed_audit(&home, &trace);
 
-    // Forge the AGF score downward (0.0 is clearly wrong and always differs
-    // from the real score, which is > 0 for any trace with grounded literals).
+    // Forge the AGF score downward
     if report["agf"].is_object() {
         report["agf"]["score"] = serde_json::json!(0.0);
     } else {
-        // If AGF is null/absent, inject a fake object.
         report["agf"] = serde_json::json!({"score": 0.0, "pass": false, "target": 0.7,
             "checked_literals": 99, "ungrounded": [], "claim_grounding": 0.0,
             "action_grounding": null});
@@ -208,7 +205,7 @@ fn unsigned_report_never_says_full() {
         .clone();
     let report: Value = serde_json::from_slice(&out.stdout).unwrap();
     assert!(
-        report["manifest"]["signature"].is_null(),
+        report["manifest"]["report_signature"].is_null(),
         "unsigned audit must not embed a signature"
     );
 
@@ -241,8 +238,7 @@ fn keygen_prints_key_pair() {
         .args(["keygen"])
         .assert()
         .success()
-        .stdout(predicates::str::contains("TRACERAZOR_SIGNING_KEY="))
-        .stdout(predicates::str::contains("TRACERAZOR_VERIFY_KEY="));
+        .stdout(predicates::str::contains("TRACERAZOR_SIGNING_KEY="));
 }
 
 // ── 8. Bundle round-trip through verify ───────────────────────────────────────

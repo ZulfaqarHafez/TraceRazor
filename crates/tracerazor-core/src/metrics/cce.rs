@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::{StepFlag, Trace, TraceStep};
 
 /// A step with detected context bloat.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ContextBloatStep {
     pub step_id: u32,
     /// Estimated percentage of input context that is duplicated.
@@ -21,7 +21,7 @@ pub struct ContextBloatStep {
 }
 
 /// Result of the CCE metric computation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CceResult {
     /// CCE score (0.0–1.0). Higher is better.
     pub score: f64,

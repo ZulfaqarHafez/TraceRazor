@@ -18,10 +18,11 @@ use std::collections::HashSet;
 use crate::types::Trace;
 
 /// Complexity tier and its expected step range.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TaskComplexity {
     /// 1–2 steps expected (single-tool lookup, factual question).
+    #[default]
     Trivial,
     /// 3–5 steps expected (two-tool workflow, basic reasoning chain).
     Moderate,
@@ -71,7 +72,7 @@ impl std::fmt::Display for TaskComplexity {
 }
 
 /// Result of the RDA metric computation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct RdaResult {
     /// RDA score (0.0–1.0). Higher is better.
     pub score: f64,

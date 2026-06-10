@@ -20,7 +20,7 @@ pub const TARGET: f64 = 0.60;
 const HIGH_DRIFT_THRESHOLD: f64 = 0.30;
 
 /// Per-step result for a single consecutive pair.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CsdStepResult {
     /// Source step ID (step i).
     pub step_id_from: u32,
@@ -34,7 +34,7 @@ pub struct CsdStepResult {
 }
 
 /// Aggregate semantic drift result.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CsdResult {
     /// Mean consecutive-pair similarity, 0.0–1.0.
     /// Higher is better (lower drift = agent stays on topic).

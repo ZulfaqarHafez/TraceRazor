@@ -44,7 +44,7 @@ pub struct HistoricalSequence {
 }
 
 /// A branch decision evaluated at a tool-call step.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct BranchDecision {
     pub step_id: u32,
     /// Whether this tool choice appeared in the lowest-token historical path.
@@ -53,7 +53,7 @@ pub struct BranchDecision {
 }
 
 /// Result of the DBO metric computation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DboResult {
     /// DBO score (0.0–1.0). Higher is better.
     pub score: f64,

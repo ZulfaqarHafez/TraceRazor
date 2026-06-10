@@ -49,7 +49,7 @@ pub const LOW_ADVANCEMENT_THRESHOLD: f64 = 0.20;
 use crate::metrics::{carries_reasoning, reasoning_text};
 
 /// Per-step GAR result.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GarStepResult {
     pub step_id: u32,
     /// Cosine similarity of this step's content to the goal proxy (0.0–1.0).
@@ -59,7 +59,7 @@ pub struct GarStepResult {
 }
 
 /// Aggregate GAR result across the full trace.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct GarResult {
     /// Token-weighted mean goal similarity (0.0–1.0).  Higher is better.
     pub score: f64,

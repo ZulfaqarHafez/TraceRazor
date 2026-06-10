@@ -14,7 +14,7 @@ use crate::types::Trace;
 pub const TARGET: f64 = 0.20;
 
 /// Aggregate SHL result across the full trace.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ShlResult {
     /// Ratio of flagged sentences to total sentences (0.0–1.0). Lower is better.
     pub score: f64,

@@ -11,7 +11,7 @@ use std::collections::HashMap;
 use crate::types::{StepFlag, Trace, TraceStep};
 
 /// A detected loop in the trace.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DetectedLoop {
     /// Step IDs involved in the loop.
     pub step_ids: Vec<u32>,
@@ -22,9 +22,10 @@ pub struct DetectedLoop {
     pub loop_type: LoopType,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LoopType {
+    #[default]
     StateHash,
     ToolRepeat,
     CycleDetect,
@@ -34,7 +35,7 @@ pub enum LoopType {
 }
 
 /// Result of the LDI metric computation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LdiResult {
     /// LDI value (0.0 = no loops). Lower is better.
     pub score: f64,

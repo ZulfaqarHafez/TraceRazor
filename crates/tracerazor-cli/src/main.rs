@@ -1,5 +1,7 @@
 use anyhow::{Context, Result};
+use base64::{Engine as _, engine::general_purpose::URL_SAFE_NO_PAD as B64};
 use clap::{Parser, Subcommand, ValueEnum};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 use std::path::PathBuf;
 use tracerazor_core::{
     cost::{CostConfig, ProviderPreset, project_cost},
@@ -432,7 +434,7 @@ async fn run() -> Result<()> {
             cmd_export(file, otel, webhook, print, format, bundle).await?;
         }
         Commands::Keygen => {
-            cmd_keygen();
+            cmd_keygen()?;
         }
         Commands::Serve { port, bind, db } => {
             let db_path = db
@@ -580,17 +582,26 @@ async fn cmd_audit(
         historical_median_steps: config.historical_median_steps,
         n_historical_sequences: config.historical_sequences.len(),
         ingest_quality: Some(ingest_quality),
-        signature: None,
-        signing_key_pub: None,
+        signing_public_key: None,
+        report_signature: None,
     });
 
-    // Sign the canonical report if TRACERAZOR_SIGNING_KEY is configured.
-    // The signature covers every field (including manifest.similarity_backend,
-    // agf, savings, fixes, summary) so any post-audit edit breaks it.
-    if let Ok(key_hex) = std::env::var("TRACERAZOR_SIGNING_KEY") {
-        match sign_report(&mut report, &key_hex) {
-            Ok(()) => {}
-            Err(e) => eprintln!("Warning: could not sign report ({e}); report will be unsigned"),
+    // Ed25519 signing: if TRACERAZOR_SIGNING_KEY is set, sign the canonical
+    // report bytes and embed the signature + verifying key in the manifest.
+    if let Ok(key_b64) = std::env::var("TRACERAZOR_SIGNING_KEY") {
+        let key_bytes = B64
+            .decode(key_b64.trim())
+            .context("TRACERAZOR_SIGNING_KEY is not valid base64url")?;
+        let key_arr: [u8; 32] = key_bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("TRACERAZOR_SIGNING_KEY must be 32 bytes (base64url-encoded)"))?;
+        let signing_key = SigningKey::from_bytes(&key_arr);
+        let verifying_key = signing_key.verifying_key();
+        let canonical = tracerazor_core::report::canonical_report_bytes(&report)?;
+        let sig: Signature = signing_key.sign(&canonical);
+        if let Some(ref mut m) = report.manifest {
+            m.signing_public_key = Some(B64.encode(verifying_key.as_bytes()));
+            m.report_signature = Some(B64.encode(sig.to_bytes()));
         }
     }
 
@@ -773,131 +784,21 @@ fn sha256_hex(bytes: &[u8]) -> String {
     digest.iter().map(|b| format!("{b:02x}")).collect()
 }
 
-fn hex_encode(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
+// ── keygen ────────────────────────────────────────────────────────────────────
 
-fn hex_decode(s: &str) -> Result<Vec<u8>> {
-    if !s.len().is_multiple_of(2) {
-        anyhow::bail!("odd-length hex string");
-    }
-    (0..s.len())
-        .step_by(2)
-        .map(|i| {
-            u8::from_str_radix(&s[i..i + 2], 16)
-                .map_err(|_| anyhow::anyhow!("invalid hex character at position {i}"))
-        })
-        .collect()
-}
-
-fn hex_decode_32(s: &str) -> Result<[u8; 32]> {
-    let v = hex_decode(s)?;
-    v.try_into().map_err(|v: Vec<u8>| {
-        anyhow::anyhow!("expected 32 bytes (64 hex chars), got {} bytes", v.len())
-    })
-}
-
-fn hex_decode_64(s: &str) -> Result<[u8; 64]> {
-    let v = hex_decode(s)?;
-    v.try_into().map_err(|v: Vec<u8>| {
-        anyhow::anyhow!("expected 64 bytes (128 hex chars), got {} bytes", v.len())
-    })
-}
-
-/// Sign the report's canonical bytes with the Ed25519 private key and store
-/// the signature + verifying key in the manifest.
-fn sign_report(
-    report: &mut tracerazor_core::report::TraceReport,
-    key_hex: &str,
-) -> Result<()> {
-    use ed25519_dalek::{Signer, SigningKey};
-    let key_bytes = hex_decode_32(key_hex)
-        .context("TRACERAZOR_SIGNING_KEY must be 64 hex chars (32-byte Ed25519 seed)")?;
-    let signing_key = SigningKey::from_bytes(&key_bytes);
+fn cmd_keygen() -> Result<()> {
+    use rand_core::OsRng;
+    let signing_key = SigningKey::generate(&mut OsRng);
     let verifying_key = signing_key.verifying_key();
-
-    // Normalise f64 values via a JSON round-trip before computing canonical
-    // bytes. Without this, some f64s serialise differently depending on whether
-    // they were computed in-process (sign time) vs deserialized from a JSON
-    // file (verify time), producing last-digit differences such as
-    // `0.9333333333333333` vs `0.9333333333333332`. Round-tripping here
-    // guarantees both sides use the same parsed-from-JSON f64 values.
-    let json = serde_json::to_string(report)
-        .context("failed to serialise report for float normalisation")?;
-    let normalized: tracerazor_core::report::TraceReport = serde_json::from_str(&json)
-        .context("failed to deserialise report for float normalisation")?;
-
-    let canonical = normalized
-        .canonical_bytes()
-        .context("failed to serialise report for signing")?;
-    let sig: ed25519_dalek::Signature = signing_key.sign(&canonical);
-    if let Some(ref mut m) = report.manifest {
-        m.signature = Some(hex_encode(&sig.to_bytes()));
-        m.signing_key_pub = Some(hex_encode(verifying_key.as_bytes()));
-    }
-    Ok(())
-}
-
-fn cmd_keygen() {
-    use ed25519_dalek::SigningKey;
-    use rand::RngCore;
-    let mut seed = [0u8; 32];
-    rand::rngs::OsRng.fill_bytes(&mut seed);
-    let signing_key = SigningKey::from_bytes(&seed);
-    let verifying_key = signing_key.verifying_key();
-    println!("# TraceRazor Ed25519 Signing Keypair");
-    println!("# Generated at: {}", chrono::Utc::now().to_rfc3339());
-    println!("#");
-    println!("# Set the signing key in your audit environment:");
-    println!("TRACERAZOR_SIGNING_KEY={}", hex_encode(&seed));
-    println!("#");
-    println!("# Distribute the verify key to anyone who needs to verify reports:");
-    println!("TRACERAZOR_VERIFY_KEY={}", hex_encode(verifying_key.as_bytes()));
-    println!("#");
-    println!("# Usage:");
-    println!("#   export TRACERAZOR_SIGNING_KEY=<key>    # in your CI/CD");
-    println!("#   tracerazor audit trace.json --format json > report.json");
-    println!("#   tracerazor verify report.json trace.json");
-    eprintln!("WARNING: Keep TRACERAZOR_SIGNING_KEY secret. Treat it like a password.");
-}
-
-/// Create a verifiable evidence bundle zip.
-fn create_bundle(
-    trace_path: &PathBuf,
-    report: &tracerazor_core::report::TraceReport,
-    weights: &tracerazor_core::scoring::Weights,
-    bundle_path: &PathBuf,
-) -> Result<()> {
-    use std::io::Write;
-    let trace_data = std::fs::read_to_string(trace_path)
-        .with_context(|| format!("Cannot read trace for bundle: {}", trace_path.display()))?;
-    let report_data =
-        serde_json::to_string_pretty(report).context("failed to serialise report for bundle")?;
-    let weights_data = serde_json::to_string_pretty(weights)
-        .context("failed to serialise weights for bundle")?;
-
-    let trace_sha = sha256_hex(trace_data.as_bytes());
-    let report_sha = sha256_hex(report_data.as_bytes());
-    let weights_sha = sha256_hex(weights_data.as_bytes());
-    let sums = format!(
-        "{trace_sha}  trace.json\n{report_sha}  report.json\n{weights_sha}  weights.json\n"
-    );
-
-    let file = std::fs::File::create(bundle_path)
-        .with_context(|| format!("Cannot create bundle: {}", bundle_path.display()))?;
-    let mut zip = zip::ZipWriter::new(file);
-    let options = zip::write::FileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
-    for (name, data) in [
-        ("trace.json", trace_data.as_bytes()),
-        ("report.json", report_data.as_bytes()),
-        ("weights.json", weights_data.as_bytes()),
-        ("SHA256SUMS", sums.as_bytes()),
-    ] {
-        zip.start_file(name, options)?;
-        zip.write_all(data)?;
-    }
-    zip.finish()?;
+    let sk_b64 = B64.encode(signing_key.as_bytes());
+    let vk_b64 = B64.encode(verifying_key.as_bytes());
+    println!("Generated a new Ed25519 key pair.\n");
+    println!("Private key — set this in your environment or .env file:");
+    println!("  TRACERAZOR_SIGNING_KEY={sk_b64}\n");
+    println!("Public key (embedded in every signed report — safe to share):");
+    println!("  {vk_b64}\n");
+    println!("Keep the private key secret. Anyone with the public key can");
+    println!("verify a report but cannot produce a new valid signature.");
     Ok(())
 }
 
@@ -910,41 +811,38 @@ enum SigCheck { Valid, Invalid, Unsigned }
 fn check_report_signature(
     report: &tracerazor_core::report::TraceReport,
 ) -> Result<SigCheck> {
-    use ed25519_dalek::{Verifier, VerifyingKey, Signature};
-
-    let manifest = match report.manifest.as_ref() {
+    let m = match report.manifest.as_ref() {
         Some(m) => m,
         None => return Ok(SigCheck::Unsigned),
     };
 
-    let (sig_hex, pub_hex) = match (&manifest.signature, &manifest.signing_key_pub) {
+    let (sig_b64, pk_b64) = match (&m.report_signature, &m.signing_public_key) {
         (Some(s), Some(p)) => (s.as_str(), p.as_str()),
         (None, _) => return Ok(SigCheck::Unsigned),
-        (Some(_), None) => {
-            // Signature present but no public key: looks tampered
-            return Ok(SigCheck::Invalid);
-        }
+        (Some(_), None) => return Ok(SigCheck::Invalid),
     };
 
-    let sig_bytes = match hex_decode_64(sig_hex) {
-        Ok(b) => b,
+    let sig_bytes = B64.decode(sig_b64).unwrap_or_default();
+    let sig_arr: [u8; 64] = match sig_bytes.try_into() {
+        Ok(a) => a,
         Err(_) => return Ok(SigCheck::Invalid),
     };
-    let pub_bytes = match hex_decode_32(pub_hex) {
-        Ok(b) => b,
-        Err(_) => return Ok(SigCheck::Invalid),
-    };
+    let sig = Signature::from_bytes(&sig_arr);
 
-    let verifying_key = match VerifyingKey::from_bytes(&pub_bytes) {
+    let pk_bytes = B64.decode(pk_b64).unwrap_or_default();
+    let pk_arr: [u8; 32] = match pk_bytes.try_into() {
+        Ok(a) => a,
+        Err(_) => return Ok(SigCheck::Invalid),
+    };
+    let vk = match VerifyingKey::from_bytes(&pk_arr) {
         Ok(k) => k,
         Err(_) => return Ok(SigCheck::Invalid),
     };
-    let sig = Signature::from_bytes(&sig_bytes);
-    let canonical = report
-        .canonical_bytes()
+
+    let canonical = tracerazor_core::report::canonical_report_bytes(report)
         .context("failed to compute canonical bytes for signature check")?;
 
-    match verifying_key.verify(&canonical, &sig) {
+    match vk.verify(&canonical, &sig) {
         Ok(()) => Ok(SigCheck::Valid),
         Err(_) => Ok(SigCheck::Invalid),
     }
@@ -953,26 +851,21 @@ fn check_report_signature(
 /// Core verify logic operating on in-memory strings (shared by file and
 /// bundle paths).
 fn verify_from_bytes(report_raw: &str, trace_bytes: &[u8]) -> Result<()> {
-    let report_value: serde_json::Value = serde_json::from_str(report_raw)
-        .context("report is not valid JSON")?;
-    let report_struct: tracerazor_core::report::TraceReport =
+    let report: tracerazor_core::report::TraceReport =
         serde_json::from_str(report_raw).context("report JSON does not match TraceReport schema")?;
 
-    let Some(manifest_value) = report_value.get("manifest").filter(|m| !m.is_null()) else {
+    let Some(ref manifest) = report.manifest else {
         anyhow::bail!(
             "report carries no run manifest (produced by a pre-provenance \
              TraceRazor version); re-audit with this version to get one"
         );
     };
-    let manifest: tracerazor_core::report::RunManifest =
-        serde_json::from_value(manifest_value.clone())
-            .context("malformed run manifest in report")?;
 
     // ── Phase 3.1: Signature check — FIRST, before any other check ──────────
     // A valid signature proves the ENTIRE report is authentic: TAS, AGF,
     // savings, fixes, summary, similarity_backend — every field is covered.
     // Any post-audit edit to any field breaks the signature.
-    let sig_status = check_report_signature(&report_struct)?;
+    let sig_status = check_report_signature(&report)?;
     let is_signed = match sig_status {
         SigCheck::Valid => {
             println!("signature       : OK (Ed25519)");
@@ -992,8 +885,7 @@ fn verify_from_bytes(report_raw: &str, trace_bytes: &[u8]) -> Result<()> {
     };
 
     // ── Trace hash ────────────────────────────────────────────────────────────
-    let actual_sha = sha256_hex(trace_bytes);
-    if actual_sha != manifest.trace_sha256 {
+    let actual_sha = sha256_hex(trace_bytes);    if actual_sha != manifest.trace_sha256 {
         eprintln!("TAMPERED: trace file hash does not match the manifest.");
         eprintln!("  manifest : {}", manifest.trace_sha256);
         eprintln!("  on disk  : {actual_sha}");
@@ -1080,57 +972,61 @@ fn verify_from_bytes(report_raw: &str, trace_bytes: &[u8]) -> Result<()> {
     };
     let recomputed = tracerazor_core::analyse(&mut trace, default_similarity_fn(), &config)?;
 
-    // ── Phase 3.2: compare the WHOLE report — not just TAS + metric_normalised
-    let original_tas = report_value["score"]["score"].as_f64().unwrap_or(f64::NAN);
-    let recomputed_tas = recomputed.score.score;
     let mut mismatches: Vec<String> = Vec::new();
-    if (original_tas - recomputed_tas).abs() > 1e-9 {
-        mismatches.push(format!("TAS {original_tas} -> {recomputed_tas}"));
+
+    // TAS + all normalised metrics
+    if (report.score.score - recomputed.score.score).abs() > 1e-9 {
+        mismatches.push(format!("TAS {} -> {}", report.score.score, recomputed.score.score));
     }
-    let recomputed_score_json = serde_json::to_value(&recomputed.score)?;
+    let orig_mn = serde_json::to_value(&report.score)?;
+    let new_mn = serde_json::to_value(&recomputed.score)?;
     if let (Some(orig), Some(new)) = (
-        report_value["score"]["metric_normalised"].as_object(),
-        recomputed_score_json["metric_normalised"].as_object(),
+        orig_mn["metric_normalised"].as_object(),
+        new_mn["metric_normalised"].as_object(),
     ) {
         for (k, ov) in orig {
             let o = ov.as_f64().unwrap_or(f64::NAN);
             let n = new.get(k).and_then(|v| v.as_f64()).unwrap_or(f64::NAN);
             if (o - n).abs() > 1e-9 {
-                mismatches.push(format!("{k} {o} -> {n}"));
+                mismatches.push(format!("{k}: {} -> {}", o, n));
             }
         }
     }
-    // Compare AGF score
-    if let (Some(orig_agf_score), Some(new_agf_score)) = (
-        report_value["agf"]["score"].as_f64(),
-        recomputed.agf.as_ref().map(|a| a.score),
-    ) {
-        if (orig_agf_score - new_agf_score).abs() > 1e-9 {
-            mismatches.push(format!("agf.score {orig_agf_score:.6} -> {new_agf_score:.6}"));
+    // AGF score (deterministic, should reproduce exactly)
+    let orig_agf = report.agf.as_ref().map(|a| a.score);
+    let new_agf = recomputed.agf.as_ref().map(|a| a.score);
+    match (orig_agf, new_agf) {
+        (Some(o), Some(n)) if (o - n).abs() > 1e-9 => {
+            mismatches.push(format!("AGF score: {o} -> {n}"));
         }
+        (Some(o), None) => mismatches.push(format!("AGF score: {o} -> (absent)")),
+        (None, Some(n)) => mismatches.push(format!("AGF score: (absent) -> {n}")),
+        _ => {}
     }
-    // Compare savings.tokens_saved
-    if let Some(orig_saved) = report_value["savings"]["tokens_saved"].as_u64() {
-        let new_saved = recomputed.savings.tokens_saved as u64;
-        if orig_saved != new_saved {
-            mismatches.push(format!("savings.tokens_saved {orig_saved} -> {new_saved}"));
-        }
+
+    // Savings estimate
+    let orig_savings_pct = report.savings.reduction_pct;
+    let new_savings_pct = recomputed.savings.reduction_pct;
+    if (orig_savings_pct - new_savings_pct).abs() > 1e-9 {
+        mismatches.push(format!(
+            "savings.reduction_pct: {orig_savings_pct} -> {new_savings_pct}"
+        ));
     }
-    // Compare fix count
-    let orig_fix_count = report_value["fixes"].as_array().map(|a| a.len()).unwrap_or(0);
-    let new_fix_count = recomputed.fixes.len();
-    if orig_fix_count != new_fix_count {
-        mismatches.push(format!("fixes count {orig_fix_count} -> {new_fix_count}"));
-    }
-    // Compare summary (existence; exact text may differ with trailing whitespace)
-    let orig_summary = report_value["summary"].as_str().unwrap_or("").trim();
-    let new_summary = recomputed.summary.trim();
-    if !orig_summary.is_empty() && orig_summary != new_summary {
-        mismatches.push("summary text differs".to_string());
+
+    // Fix count (a changed fix list would produce a different count)
+    if report.fixes.len() != recomputed.fixes.len() {
+        mismatches.push(format!(
+            "fix count: {} -> {}",
+            report.fixes.len(),
+            recomputed.fixes.len()
+        ));
     }
 
     if mismatches.is_empty() {
-        println!("re-score        : OK (TAS {recomputed_tas:.1}; all metrics match)");
+        println!(
+            "re-score        : OK (TAS {:.1}; metrics, AGF, savings, fixes all match)",
+            recomputed.score.score
+        );
         let verdict = if is_signed {
             format!("full (Ed25519-authenticated + reproduced from trace, manifest, {this_version})")
         } else {
@@ -2177,10 +2073,9 @@ async fn cmd_export(
     format: OutputFormat,
     bundle_path: Option<PathBuf>,
 ) -> Result<()> {
-    if otel_endpoint.is_none() && webhook_url.is_none() && bundle_path.is_none() {
-        eprintln!("Specify at least one export target: --otel <url>, --webhook <url>, or --bundle <file.zip>");
-        eprintln!("Example: tracerazor export trace.json --bundle bundle.zip");
-        return Ok(());
+    if otel_endpoint.is_none() && webhook_url.is_none() && !print_report && bundle_path.is_none() {
+        eprintln!("Specify at least one export target: --otel <url>, --webhook <url>, --print, or --bundle <file>");
+        eprintln!("Example: tracerazor export trace.json --bundle trace.bundle.zip");        return Ok(());
     }
 
     let data = std::fs::read_to_string(&file)
@@ -2210,14 +2105,31 @@ async fn cmd_export(
         historical_median_steps: None,
         n_historical_sequences: 0,
         ingest_quality: Some(ingest_quality),
-        signature: None,
-        signing_key_pub: None,
+        signing_public_key: None,
+        report_signature: None,
     });
 
     // Sign if key is configured (so the bundle contains a signed report)
-    if let Ok(key_hex) = std::env::var("TRACERAZOR_SIGNING_KEY") {
-        if let Err(e) = sign_report(&mut report, &key_hex) {
-            eprintln!("Warning: could not sign report ({e}); bundle will be unsigned");
+    if let Ok(key_b64) = std::env::var("TRACERAZOR_SIGNING_KEY") {
+        match B64.decode(key_b64.trim()) {
+            Ok(key_bytes) => match key_bytes.try_into() as Result<[u8; 32], _> {
+                Ok(key_arr) => {
+                    let signing_key = SigningKey::from_bytes(&key_arr);
+                    let verifying_key = signing_key.verifying_key();
+                    match tracerazor_core::report::canonical_report_bytes(&report) {
+                        Ok(canonical) => {
+                            let sig: Signature = signing_key.sign(&canonical);
+                            if let Some(ref mut m) = report.manifest {
+                                m.signing_public_key = Some(B64.encode(verifying_key.as_bytes()));
+                                m.report_signature = Some(B64.encode(sig.to_bytes()));
+                            }
+                        }
+                        Err(e) => eprintln!("Warning: could not sign report ({e}); bundle will be unsigned"),
+                    }
+                }
+                Err(_) => eprintln!("Warning: TRACERAZOR_SIGNING_KEY must be 32 bytes; bundle will be unsigned"),
+            },
+            Err(e) => eprintln!("Warning: TRACERAZOR_SIGNING_KEY is not valid base64url ({e}); bundle will be unsigned"),
         }
     }
 
@@ -2226,13 +2138,6 @@ async fn cmd_export(
             OutputFormat::Markdown => println!("{}", report.to_markdown()),
             OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
         }
-    }
-
-    // ── Evidence bundle (Phase 3.3) ───────────────────────────────────────────
-    if let Some(ref bp) = bundle_path {
-        create_bundle(&file, &report, &config.weights, bp)?;
-        eprintln!("Evidence bundle written to {}", bp.display());
-        eprintln!("Verify with: tracerazor verify {}", bp.display());
     }
 
     // ── OTEL export ───────────────────────────────────────────────────────────
@@ -2247,7 +2152,84 @@ async fn cmd_export(
         eprintln!("Posted report to {url}");
     }
 
+    // ── Evidence bundle ───────────────────────────────────────────────────────
+    if let Some(ref bundle) = bundle_path {
+        let out_path = if bundle.extension().is_none() {
+            bundle.with_extension("zip")
+        } else {
+            bundle.clone()
+        };
+        let zip_bytes = build_bundle_zip(&data, &report)?;
+        std::fs::write(&out_path, &zip_bytes)
+            .with_context(|| format!("Cannot write bundle: {}", out_path.display()))?;
+        eprintln!(
+            "Evidence bundle written: {} ({} bytes)",
+            out_path.display(),
+            zip_bytes.len()
+        );
+    }
+
     Ok(())
+}
+
+/// Build a reproducible evidence bundle zip:
+///   trace.json          — original trace (bit-identical to what was scored)
+///   report.json         — full JSON report
+///   weights.json        — the Weights struct used for scoring
+///   manifest.json       — the RunManifest (also present inside report.json)
+///   SHA256SUMS          — SHA-256 of each archived file for independent verification
+fn build_bundle_zip(
+    trace_raw: &str,
+    report: &tracerazor_core::report::TraceReport,
+) -> Result<Vec<u8>> {
+    use std::io::Write;
+    use zip::write::SimpleFileOptions;
+    use zip::CompressionMethod;
+
+    let report_json = serde_json::to_string_pretty(report)?;
+    let weights_json = report
+        .manifest
+        .as_ref()
+        .map(|m| serde_json::to_string_pretty(&m.weights))
+        .transpose()?
+        .unwrap_or_else(|| "{}".to_string());
+    let manifest_json = report
+        .manifest
+        .as_ref()
+        .map(|m| serde_json::to_string_pretty(m))
+        .transpose()?
+        .unwrap_or_else(|| "{}".to_string());
+
+    let trace_name = "trace.json";
+
+    let trace_sha256 = sha256_hex(trace_raw.as_bytes());
+    let report_sha256 = sha256_hex(report_json.as_bytes());
+    let weights_sha256 = sha256_hex(weights_json.as_bytes());
+    let manifest_sha256 = sha256_hex(manifest_json.as_bytes());
+
+    let sha_manifest = format!(
+        "{trace_sha256}  {trace_name}\n\
+         {report_sha256}  report.json\n\
+         {weights_sha256}  weights.json\n\
+         {manifest_sha256}  manifest.json\n"
+    );
+
+    let buf = std::io::Cursor::new(Vec::new());
+    let mut zip = zip::ZipWriter::new(buf);
+    let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+
+    zip.start_file(trace_name, opts)?;
+    zip.write_all(trace_raw.as_bytes())?;
+    zip.start_file("report.json", opts)?;
+    zip.write_all(report_json.as_bytes())?;
+    zip.start_file("weights.json", opts)?;
+    zip.write_all(weights_json.as_bytes())?;
+    zip.start_file("manifest.json", opts)?;
+    zip.write_all(manifest_json.as_bytes())?;
+    zip.start_file("SHA256SUMS", opts)?;
+    zip.write_all(sha_manifest.as_bytes())?;
+
+    Ok(zip.finish()?.into_inner())
 }
 
 /// POST a JSON report payload to a webhook URL.
@@ -2367,5 +2349,126 @@ mod tests {
     fn optimize_markdown_survives_zero_original_tokens() {
         let md = render_optimize_markdown("agent", 0.0, 0, 0.0, 0, &[], &[]);
         assert!(md.contains("0%"));
+    }
+
+    // ── Signature / forgery tests ──────────────────────────────────────────
+
+    /// Build a minimal signed TraceReport by deserialising a known-good JSON
+    /// skeleton. This avoids coupling to every field of TasScore/SavingsEstimate
+    /// while still producing a fully round-trippable struct for signature tests.
+    fn make_signed_report() -> (tracerazor_core::report::TraceReport, String) {
+        use rand_core::OsRng;
+        let signing_key = SigningKey::generate(&mut OsRng);
+        let verifying_key = signing_key.verifying_key();
+
+        // Minimal JSON skeleton — fields that aren't present use serde defaults.
+        let json = serde_json::json!({
+            "trace_id": "test-trace",
+            "agent_name": "test-agent",
+            "framework": "test",
+            "total_steps": 1,
+            "total_tokens": 100,
+            "analysis_duration_ms": 999,
+            "score": {
+                "score": 75.0,
+                "raw_tas": 75.0,
+                "task_value_score": 1.0,
+                "grade": "Good",
+                "vae": 75.0,
+                "passes_threshold": true,
+                "avs": 0.1
+            },
+            "diff": [],
+            "savings": {
+                "tokens_saved": 0,
+                "reduction_pct": 0.0,
+                "cost_saved_per_run_usd": 0.0,
+                "monthly_savings_usd": 0.0,
+                "latency_saved_seconds": 0.0
+            },
+            "summary": "test summary",
+            "summary_oneliner": "one liner",
+            "manifest": {
+                "trace_sha256": "abc",
+                "tool_version": "0.4.0",
+                "created_at": "2026-01-01T00:00:00Z",
+                "similarity_backend": "bow",
+                "weights": {},
+                "weights_sha256": "def",
+                "threshold": 0.0,
+                "cost_per_million_tokens": 3.0,
+                "min_steps": 2,
+                "hermetic": true,
+                "n_historical_sequences": 0
+            }
+        });
+        let mut report: tracerazor_core::report::TraceReport =
+            serde_json::from_value(json).expect("test JSON must deserialise");
+
+        let canonical = tracerazor_core::report::canonical_report_bytes(&report).unwrap();
+        let sig: Signature = signing_key.sign(&canonical);
+        if let Some(ref mut m) = report.manifest {
+            m.signing_public_key = Some(B64.encode(verifying_key.as_bytes()));
+            m.report_signature = Some(B64.encode(sig.to_bytes()));
+        }
+
+        let pk_b64 = B64.encode(verifying_key.as_bytes());
+        (report, pk_b64)
+    }
+
+    fn verify_sig(report: &tracerazor_core::report::TraceReport) -> bool {
+        let m = report.manifest.as_ref().unwrap();
+        let sig_b64 = m.report_signature.as_ref().unwrap();
+        let pk_b64 = m.signing_public_key.as_ref().unwrap();
+
+        let sig_bytes: [u8; 64] = B64.decode(sig_b64).unwrap().try_into().unwrap();
+        let sig = Signature::from_bytes(&sig_bytes);
+        let pk_bytes: [u8; 32] = B64.decode(pk_b64).unwrap().try_into().unwrap();
+        let vk = VerifyingKey::from_bytes(&pk_bytes).unwrap();
+        let canonical = tracerazor_core::report::canonical_report_bytes(report).unwrap();
+        vk.verify(&canonical, &sig).is_ok()
+    }
+
+    #[test]
+    fn forgery_attack_1_tas_edit() {
+        let (mut report, _) = make_signed_report();
+        assert!(verify_sig(&report), "fresh signature should verify");
+        report.score.score = 99.9; // forge the TAS
+        assert!(!verify_sig(&report), "tampered TAS must not verify");
+    }
+
+    #[test]
+    fn forgery_attack_2_backend_flip() {
+        let (mut report, _) = make_signed_report();
+        if let Some(ref mut m) = report.manifest {
+            m.similarity_backend = "embeddings:gpt-4".to_string();
+        }
+        assert!(!verify_sig(&report), "tampered backend must not verify");
+    }
+
+    #[test]
+    fn forgery_attack_3_agf_edit() {
+        let (mut report, _) = make_signed_report();
+        report.agf = Some(tracerazor_core::metrics::AgfResult {
+            score: 0.99,
+            ..Default::default()
+        });
+        assert!(!verify_sig(&report), "added AGF must not verify");
+    }
+
+    #[test]
+    fn forgery_attack_4_savings_edit() {
+        let (mut report, _) = make_signed_report();
+        report.savings.reduction_pct = 0.99;
+        assert!(!verify_sig(&report), "tampered savings must not verify");
+    }
+
+    #[test]
+    fn canonical_bytes_ignores_duration_and_sig_fields() {
+        let (mut report, _) = make_signed_report();
+        let canonical1 = tracerazor_core::report::canonical_report_bytes(&report).unwrap();
+        report.analysis_duration_ms = 12345; // should not affect canonical
+        let canonical2 = tracerazor_core::report::canonical_report_bytes(&report).unwrap();
+        assert_eq!(canonical1, canonical2, "duration change must not affect canonical bytes");
     }
 }

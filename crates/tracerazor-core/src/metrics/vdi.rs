@@ -13,7 +13,7 @@ use super::verbosity_data::{FILLER_WORDS, PREAMBLE_PATTERNS};
 use crate::types::Trace;
 
 /// VDI result for a single step.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VdiStepResult {
     pub step_id: u32,
     /// Substantive / total ratio for this step (0.0–1.0, higher = better).
@@ -27,7 +27,7 @@ pub struct VdiStepResult {
 }
 
 /// Aggregate VDI result across the full trace.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct VdiResult {
     /// Aggregate substantive-token ratio (0.0–1.0). Higher is better.
     pub score: f64,

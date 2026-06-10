@@ -61,12 +61,13 @@ impl std::fmt::Display for StepFlag {
 }
 
 /// Confidence level for redundancy detection.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Confidence {
     /// Cosine similarity >= 0.95
     High,
     /// Cosine similarity 0.85-0.94
+    #[default]
     Medium,
     /// Cosine similarity 0.75-0.84 (shown in verbose mode)
     Low,

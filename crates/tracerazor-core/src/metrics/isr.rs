@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::types::Trace;
 
 /// A step identified as lacking novel information.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct LowNoveltyStep {
     pub step_id: u32,
     /// Information gain (0.0 = entirely redundant, 1.0 = completely novel).
@@ -22,7 +22,7 @@ pub struct LowNoveltyStep {
 }
 
 /// Result of the ISR metric computation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct IsrResult {
     /// ISR as a percentage (0–100). Higher is better.
     pub score: f64,
