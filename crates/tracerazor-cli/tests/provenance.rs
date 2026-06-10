@@ -91,6 +91,7 @@ fn verify_round_trip_passes_and_tamper_fails() {
     std::fs::write(&report_path, serde_json::to_string(&report).unwrap()).unwrap();
 
     // Round-trip: the report reproduces from (trace, manifest, version).
+    // Unsigned reports get "rescore-only (unsigned)" — never "full".
     cli(&home)
         .args([
             "verify",
@@ -99,7 +100,8 @@ fn verify_round_trip_passes_and_tamper_fails() {
         ])
         .assert()
         .success()
-        .stdout(predicates::str::contains("verified        : full"));
+        .stdout(predicates::str::contains("re-score        : OK"))
+        .stdout(predicates::str::contains("rescore-only (unsigned"));
 
     // One flipped byte in the trace must fail verification.
     let mut tampered_bytes = std::fs::read(&trace).unwrap();

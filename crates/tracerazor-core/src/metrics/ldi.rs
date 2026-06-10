@@ -205,6 +205,9 @@ pub fn compute(trace: &Trace) -> LdiResult {
         }
     }
 
+    // Sort by first step_id for deterministic canonical_bytes() across process runs.
+    loops.sort_by_key(|l| l.step_ids.first().copied().unwrap_or(u32::MAX));
+
     let max_cycle_length = loops.iter().map(|l| l.length).max().unwrap_or(0);
     let score = if total == 0 {
         0.0

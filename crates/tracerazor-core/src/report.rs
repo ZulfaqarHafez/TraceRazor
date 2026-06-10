@@ -178,6 +178,15 @@ pub struct RunManifest {
     /// Parse-quality assessment of the input (see [`IngestQuality`]).
     #[serde(default)]
     pub ingest_quality: Option<IngestQuality>,
+    /// Ed25519 signature over the canonical serialisation of the report
+    /// (hex-encoded 64-byte signature = 128 hex chars). Present only when
+    /// the audit ran with `TRACERAZOR_SIGNING_KEY` set.
+    #[serde(default)]
+    pub signature: Option<String>,
+    /// Ed25519 verifying (public) key that produced `signature`
+    /// (hex-encoded 32-byte point = 64 hex chars). Safe to publish.
+    #[serde(default)]
+    pub signing_key_pub: Option<String>,
 }
 
 impl RunManifest {
@@ -232,6 +241,23 @@ impl IngestQuality {
 }
 
 impl TraceReport {
+    /// Canonical serialisation bytes for Ed25519 signing/verification.
+    ///
+    /// `analysis_duration_ms` is zeroed (non-deterministic wall-clock field);
+    /// `manifest.signature` and `manifest.signing_key_pub` are excluded (the
+    /// signature cannot sign itself). Every other field — including
+    /// `manifest.similarity_backend`, `agf`, `savings`, `fixes`, `summary` —
+    /// is included, so any edit to any field invalidates the signature.
+    pub fn canonical_bytes(&self) -> Result<Vec<u8>, serde_json::Error> {
+        let mut r = self.clone();
+        r.analysis_duration_ms = 0;
+        if let Some(ref mut m) = r.manifest {
+            m.signature = None;
+            m.signing_key_pub = None;
+        }
+        serde_json::to_vec(&r)
+    }
+
     /// Build the optimal-path diff from annotated trace steps.
     pub fn build_diff(trace: &Trace, _score: &TasScore) -> Vec<DiffLine> {
         let mut diff = Vec::new();
