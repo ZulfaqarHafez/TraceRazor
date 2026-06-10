@@ -29,8 +29,18 @@ struct LangSmithRun {
     #[serde(default)]
     child_runs: Vec<LangSmithRun>,
     #[serde(default)]
-    #[allow(dead_code)]
     parent_run_id: Option<String>,
+    #[serde(default)]
+    trace_id: Option<String>,
+    #[serde(default)]
+    start_time: Option<String>,
+    /// Run-level token counts (present on `client.list_runs()` exports).
+    #[serde(default)]
+    total_tokens: Option<u64>,
+    #[serde(default)]
+    prompt_tokens: Option<u64>,
+    #[serde(default)]
+    completion_tokens: Option<u64>,
     #[serde(default)]
     #[allow(dead_code)]
     tags: Vec<String>,
@@ -43,17 +53,15 @@ pub fn parse(data: &str) -> Result<Trace> {
         serde_json::from_str(data).context("Invalid JSON in LangSmith trace")?;
 
     let root: LangSmithRun = if v.is_array() {
-        // Array of runs — wrap in a synthetic root.
+        // Flat `client.list_runs()` export: EVERY run must survive. Rebuild
+        // the tree from `parent_run_id` (the old code silently kept only the
+        // first run and discarded the rest).
         let runs: Vec<LangSmithRun> = serde_json::from_value(v)
             .context("Failed to parse LangSmith run array")?;
         if runs.is_empty() {
             anyhow::bail!("LangSmith trace contains no runs");
         }
-        // Use the first run as root; remaining become siblings (treat as children).
-        // Safety: we checked runs.is_empty() above, but use expect for clarity.
-        runs.into_iter()
-            .next()
-            .expect("non-empty after is_empty check")
+        rebuild_tree(runs)?
     } else {
         serde_json::from_value(v).context("Failed to parse LangSmith run")?
     };
@@ -78,13 +86,71 @@ pub fn parse(data: &str) -> Result<Trace> {
         .fold(0u32, u32::saturating_add);
 
     Ok(Trace {
-        trace_id: root.id.clone(),
+        trace_id: root.trace_id.clone().unwrap_or_else(|| root.id.clone()),
         agent_name: root.name.clone(),
         framework,
         steps,
         total_tokens,
         task_value_score: 1.0,
         metadata: HashMap::new(),
+    })
+}
+
+/// Rebuild a run tree from a flat `list_runs()` array via `parent_run_id`.
+/// Runs are ordered by `start_time` (exports are often reverse-chronological);
+/// roots are runs whose parent is absent from the export. Multiple roots are
+/// wrapped in a synthetic chain so all of them are flattened.
+fn rebuild_tree(mut runs: Vec<LangSmithRun>) -> Result<LangSmithRun> {
+    runs.sort_by(|a, b| a.start_time.cmp(&b.start_time));
+    let ids: std::collections::HashSet<String> = runs.iter().map(|r| r.id.clone()).collect();
+
+    // Pop children into parent buckets, keep roots.
+    let mut children: HashMap<String, Vec<LangSmithRun>> = HashMap::new();
+    let mut roots: Vec<LangSmithRun> = Vec::new();
+    for run in runs {
+        match run.parent_run_id.clone().filter(|p| ids.contains(p)) {
+            Some(parent) => children.entry(parent).or_default().push(run),
+            None => roots.push(run),
+        }
+    }
+    fn attach(run: &mut LangSmithRun, children: &mut HashMap<String, Vec<LangSmithRun>>) {
+        if let Some(mut kids) = children.remove(&run.id) {
+            for k in &mut kids {
+                attach(k, children);
+            }
+            run.child_runs.append(&mut kids);
+        }
+    }
+    for r in &mut roots {
+        attach(r, &mut children);
+    }
+    if roots.is_empty() {
+        anyhow::bail!("LangSmith export has no root runs (cyclic parent_run_id?)");
+    }
+    if roots.len() == 1 {
+        return Ok(roots.into_iter().next().expect("len checked"));
+    }
+    // Multiple traces in one export: wrap them under a synthetic chain.
+    let trace_id = roots[0]
+        .trace_id
+        .clone()
+        .unwrap_or_else(|| roots[0].id.clone());
+    Ok(LangSmithRun {
+        id: trace_id.clone(),
+        name: roots[0].name.clone(),
+        run_type: "chain".into(),
+        inputs: serde_json::Value::Null,
+        outputs: serde_json::Value::Null,
+        error: None,
+        extra: roots[0].extra.clone(),
+        child_runs: roots,
+        parent_run_id: None,
+        trace_id: Some(trace_id),
+        start_time: None,
+        total_tokens: None,
+        prompt_tokens: None,
+        completion_tokens: None,
+        tags: vec![],
     })
 }
 
@@ -109,8 +175,8 @@ fn flatten_run(
         _ => StepType::Reasoning,
     };
 
-    // Extract token count from usage metadata if available.
-    let tokens = extract_tokens(&run.extra);
+    // Extract token count from all the places real exports put it.
+    let tokens = extract_tokens(run);
 
     // Build a content string from inputs/outputs.
     let content = build_content(&run.inputs, &run.outputs, &run.run_type);
@@ -163,18 +229,49 @@ fn flatten_run(
     }
 }
 
-fn extract_tokens(extra: &Option<serde_json::Value>) -> u32 {
-    extra
-        .as_ref()
-        .and_then(|e| e.get("usage_metadata").or_else(|| e.get("token_usage")))
-        .and_then(|u| {
-            u.get("total_tokens")
-                .or_else(|| u.get("totalTokens"))
-                .and_then(|t| t.as_u64())
+/// Token count, checked in the order real exports actually use:
+/// run-level `total_tokens` (list_runs), `prompt+completion` pair,
+/// `outputs.llm_output.token_usage` (LangChain run trees),
+/// `outputs.usage_metadata`, then `extra.usage_metadata`/`extra.token_usage`.
+fn extract_tokens(run: &LangSmithRun) -> u32 {
+    fn total_of(u: &serde_json::Value) -> Option<u64> {
+        u.get("total_tokens")
+            .or_else(|| u.get("totalTokens"))
+            .and_then(|t| t.as_u64())
+            .or_else(|| {
+                let p = u.get("prompt_tokens").and_then(|t| t.as_u64());
+                let c = u.get("completion_tokens").and_then(|t| t.as_u64());
+                match (p, c) {
+                    (None, None) => None,
+                    (p, c) => Some(p.unwrap_or(0) + c.unwrap_or(0)),
+                }
+            })
+    }
+
+    let from_run = run.total_tokens.or_else(|| {
+        match (run.prompt_tokens, run.completion_tokens) {
+            (None, None) => None,
+            (p, c) => Some(p.unwrap_or(0) + c.unwrap_or(0)),
+        }
+    });
+
+    let found = from_run
+        .or_else(|| {
+            run.outputs
+                .get("llm_output")
+                .and_then(|l| l.get("token_usage"))
+                .and_then(total_of)
         })
-        // Saturate rather than silently truncating the upper 32 bits.
-        .map(|t| u32::try_from(t).unwrap_or(u32::MAX))
-        .unwrap_or(0)
+        .or_else(|| run.outputs.get("usage_metadata").and_then(total_of))
+        .or_else(|| {
+            run.extra
+                .as_ref()
+                .and_then(|e| e.get("usage_metadata").or_else(|| e.get("token_usage")))
+                .and_then(total_of)
+        });
+
+    // Saturate rather than silently truncating the upper 32 bits.
+    found.map(|t| u32::try_from(t).unwrap_or(u32::MAX)).unwrap_or(0)
 }
 
 fn build_content(

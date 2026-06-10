@@ -1,0 +1,34 @@
+[
+  {
+    "id": "run-tool-1", "trace_id": "trace-777", "parent_run_id": "run-root",
+    "name": "get_order_details", "run_type": "tool",
+    "start_time": "2026-06-01T10:00:02Z",
+    "inputs": {"order_id": "ORD-9182"},
+    "outputs": {"output": "Order found: blue jacket, status shipped"},
+    "total_tokens": 120
+  },
+  {
+    "id": "run-llm-2", "trace_id": "trace-777", "parent_run_id": "run-root",
+    "name": "ChatOpenAI", "run_type": "llm",
+    "start_time": "2026-06-01T10:00:03Z",
+    "inputs": {"messages": [{"content": "Decide the refund eligibility for the shipped jacket"}]},
+    "outputs": {
+      "generations": [[{"text": "The order is within the window; refund is eligible."}]],
+      "llm_output": {"token_usage": {"prompt_tokens": 310, "completion_tokens": 45}}
+    }
+  },
+  {
+    "id": "run-llm-1", "trace_id": "trace-777", "parent_run_id": "run-root",
+    "name": "ChatOpenAI", "run_type": "llm",
+    "start_time": "2026-06-01T10:00:01Z",
+    "inputs": {"messages": [{"content": "Parse the user refund request for order ORD-9182"}]},
+    "outputs": {"generations": [[{"text": "The user wants a refund for ORD-9182"}]]},
+    "prompt_tokens": 280, "completion_tokens": 30
+  },
+  {
+    "id": "run-root", "trace_id": "trace-777", "parent_run_id": null,
+    "name": "support-agent", "run_type": "chain",
+    "start_time": "2026-06-01T10:00:00Z",
+    "inputs": {}, "outputs": {}
+  }
+]

@@ -4,6 +4,33 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Ship-plan Phase 2 (installable + ingestible)
+- **Platform wheels with the bundled CLI** — `scripts/build_platform_wheel.sh`
+  builds a wheel carrying the Rust binary at `tracerazor/bin/`; a new
+  `tracerazor` console script (`tracerazor/_launcher.py`) and the Python
+  client prefer the bundled binary, so `pip install <wheel>` delivers a
+  working auditor with no Rust toolchain (clean-room smoke test in the new
+  `release.yml` workflow, linux+macos matrix). Dev-status classifier
+  corrected to Beta.
+- **LangSmith adapter vs real exports** — flat `client.list_runs()` arrays now
+  rebuild the run tree from `parent_run_id` and keep **every** run (previously
+  only the first survived, silently); tokens are read from run-level
+  `total_tokens`/`prompt+completion`, `outputs.llm_output.token_usage`, and
+  `outputs.usage_metadata`, not just `extra`. Golden-file tests.
+- **OTel semconv coverage** — spec-compliant protojson string `intValue`
+  parsing; `gen_ai.usage.prompt_tokens`/`completion_tokens`; content from
+  message events (`gen_ai.user.message`/`gen_ai.choice`), structured
+  `gen_ai.input/output.messages`, and OpenLLMetry indexed attributes —
+  content no longer silently falls back to span names. Golden-file tests.
+- **Degraded-ingest detection** — `IngestQuality` (zero-token share,
+  placeholder-content share) computed on every audit, recorded in the run
+  manifest, with a loud stderr warning when either exceeds 50%: a TAS
+  computed over span names never looks authoritative again.
+- **Batch/fleet mode** — `tracerazor audit <DIR>` (or multiple files) audits
+  hermetically per file and emits one aggregate report (mean/median TAS,
+  worst-5, recoverable-token sum; JSON or markdown); `--threshold` gates the
+  mean. Plus `tools/fetch_langsmith.py` for one-command project export.
+
 ### Ship-plan Phase 1 (verdict precision)
 - **Responsiveness rules in SRR** — a similar pair is exempt when (1) new
   external input arrived at or between the pair (a step answering a new user

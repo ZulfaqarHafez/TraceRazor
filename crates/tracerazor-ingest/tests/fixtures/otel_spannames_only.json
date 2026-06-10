@@ -1,0 +1,11 @@
+{
+  "resourceSpans": [{
+    "resource": {"attributes": [{"key": "service.name", "value": {"stringValue": "bare-agent"}}]},
+    "scopeSpans": [{
+      "spans": [
+        {"traceId": "x", "spanId": "a", "name": "chat", "startTimeUnixNano": "1", "attributes": [{"key": "gen_ai.operation.name", "value": {"stringValue": "chat"}}], "events": []},
+        {"traceId": "x", "spanId": "b", "name": "chat", "startTimeUnixNano": "2", "attributes": [{"key": "gen_ai.operation.name", "value": {"stringValue": "chat"}}], "events": []}
+      ]
+    }]
+  }]
+}

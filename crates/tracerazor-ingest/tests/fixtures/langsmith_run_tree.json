@@ -1,0 +1,23 @@
+{
+  "id": "run-root", "trace_id": "trace-888", "name": "agent", "run_type": "chain",
+  "inputs": {}, "outputs": {},
+  "child_runs": [
+    {
+      "id": "c1", "name": "ChatOpenAI", "run_type": "llm",
+      "inputs": {"messages": [{"content": "Summarise the incident report"}]},
+      "outputs": {
+        "generations": [[{"text": "Two services were degraded for ten minutes."}]],
+        "llm_output": {"token_usage": {"total_tokens": 512}}
+      },
+      "child_runs": []
+    },
+    {
+      "id": "c2", "name": "search_kb", "run_type": "tool",
+      "inputs": {"query": "incident 4412"},
+      "outputs": {"output": "kb article 9: rollback procedure"},
+      "outputs_extra": {},
+      "child_runs": [],
+      "total_tokens": 64
+    }
+  ]
+}

@@ -818,6 +818,10 @@ Commands:
 ```
 
 ```bash
+# Fleet/batch mode: a directory (or several files) produces one aggregate
+# report — mean/median TAS, worst-5 list — hermetic per file. Gate on mean:
+tracerazor audit traces/external/ --min-steps 2 --threshold 70
+
 tracerazor compare before.json after.json
 tracerazor simulate trace.json --remove 3,8 --merge 6,7
 tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs 50000

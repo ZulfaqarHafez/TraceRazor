@@ -55,9 +55,11 @@ struct Cli {
 enum Commands {
     /// Audit a trace file and produce an efficiency report.
     Audit {
-        /// Path to the trace file (JSON).
-        #[arg(value_name = "FILE")]
-        file: PathBuf,
+        /// Trace file(s) or directories (JSON). A directory or multiple
+        /// files switches to batch mode: every trace is audited hermetically
+        /// and one aggregate fleet report is produced.
+        #[arg(value_name = "FILE", num_args = 1..)]
+        files: Vec<PathBuf>,
 
         /// Output format.
         #[arg(short, long, default_value = "markdown")]
@@ -357,8 +359,13 @@ async fn run() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps } => {
-            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps).await?;
+        Commands::Audit { files, format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps } => {
+            let expanded = expand_trace_paths(&files)?;
+            if expanded.len() == 1 {
+                cmd_audit(expanded.into_iter().next().expect("len checked"), format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps).await?;
+            } else {
+                cmd_audit_batch(expanded, format, threshold, trace_format, cost_per_million, weights, min_steps)?;
+            }
         }
         Commands::Verify { report, trace } => {
             cmd_verify(report, trace)?;
@@ -489,6 +496,21 @@ async fn cmd_audit(
         }
     }
 
+    // Ingest-quality check: a TAS computed over zero-token steps or
+    // placeholder content (e.g. an OTel parse that fell back to span names)
+    // must never look authoritative.
+    let ingest_quality = tracerazor_core::report::IngestQuality::assess(&trace);
+    if ingest_quality.degraded {
+        eprintln!(
+            "WARNING: degraded ingest — {:.0}% of steps have zero tokens and \
+             {:.0}% have placeholder content. Token- and content-derived \
+             metrics are unreliable for this trace; check the trace format \
+             (-F) and exporter configuration.",
+            ingest_quality.zero_token_pct * 100.0,
+            ingest_quality.placeholder_content_pct * 100.0
+        );
+    }
+
     // Run manifest: bind the report to its inputs so a third party can
     // attribute — and for hermetic BoW runs exactly re-verify — the score.
     let weights_json = serde_json::to_string(&config.weights)?;
@@ -506,6 +528,7 @@ async fn cmd_audit(
         baseline_tokens: config.baseline_tokens,
         historical_median_steps: config.historical_median_steps,
         n_historical_sequences: config.historical_sequences.len(),
+        ingest_quality: Some(ingest_quality),
     });
 
     match format {
@@ -530,6 +553,152 @@ async fn cmd_audit(
         std::process::exit(1);
     }
 
+    Ok(())
+}
+
+/// Expand a mix of files and directories into a sorted list of trace files.
+fn expand_trace_paths(inputs: &[PathBuf]) -> Result<Vec<PathBuf>> {
+    let mut out = Vec::new();
+    for p in inputs {
+        if p.is_dir() {
+            let mut stack = vec![p.clone()];
+            while let Some(dir) = stack.pop() {
+                for entry in std::fs::read_dir(&dir)
+                    .with_context(|| format!("Cannot read directory: {}", dir.display()))?
+                {
+                    let path = entry?.path();
+                    if path.is_dir() {
+                        stack.push(path);
+                    } else if path.extension().is_some_and(|e| e == "json") {
+                        out.push(path);
+                    }
+                }
+            }
+        } else {
+            out.push(p.clone());
+        }
+    }
+    out.sort();
+    out.dedup();
+    if out.is_empty() {
+        anyhow::bail!("no trace files found in the given paths");
+    }
+    Ok(out)
+}
+
+/// Batch/fleet audit: hermetic per-file scoring and one aggregate report.
+/// Gating (--threshold) applies to the mean TAS.
+fn cmd_audit_batch(
+    files: Vec<PathBuf>,
+    format: OutputFormat,
+    threshold: Option<f64>,
+    trace_format: InputFormat,
+    cost_per_million: f64,
+    weights: Option<PathBuf>,
+    min_steps: usize,
+) -> Result<()> {
+    let mut config = ScoringConfig {
+        cost_per_million_tokens: cost_per_million,
+        ..Default::default()
+    };
+    if let Some(t) = threshold {
+        config.threshold = t;
+    }
+    if let Some(path) = weights.or_else(|| std::env::var_os("TRACERAZOR_WEIGHTS").map(PathBuf::from)) {
+        let raw = std::fs::read_to_string(&path)
+            .with_context(|| format!("Cannot read weights file: {}", path.display()))?;
+        config.weights = serde_json::from_str(&raw)
+            .with_context(|| format!("Invalid weights JSON: {}", path.display()))?;
+    }
+
+    let min_steps = min_steps.max(2);
+    let mut rows: Vec<(String, f64, String, usize, u32)> = Vec::new(); // file, tas, grade, fixes, est tokens
+    let mut skipped = 0usize;
+    for f in &files {
+        let data = match std::fs::read_to_string(f) {
+            Ok(d) => d,
+            Err(e) => {
+                eprintln!("skip {}: {e}", f.display());
+                skipped += 1;
+                continue;
+            }
+        };
+        let mut trace = match ingest_parse(&data, trace_format.clone().into()) {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("skip {}: parse failed: {e:#}", f.display());
+                skipped += 1;
+                continue;
+            }
+        };
+        if trace.steps.len() < min_steps {
+            skipped += 1;
+            continue;
+        }
+        let report = tracerazor_core::analyse(&mut trace, default_similarity_fn(), &config)?;
+        rows.push((
+            f.file_name().and_then(|n| n.to_str()).unwrap_or("?").to_string(),
+            report.score.score,
+            report.score.grade.to_string(),
+            report.fixes.len(),
+            report.savings.tokens_saved,
+        ));
+    }
+    if rows.is_empty() {
+        anyhow::bail!("no analysable traces in batch ({} skipped)", skipped);
+    }
+
+    let mut tas: Vec<f64> = rows.iter().map(|r| r.1).collect();
+    tas.sort_by(|a, b| a.partial_cmp(b).expect("TAS is never NaN"));
+    let mean = tas.iter().sum::<f64>() / tas.len() as f64;
+    let median = tas[tas.len() / 2];
+    let total_savings: u32 = rows.iter().map(|r| r.4).sum();
+    let mut worst = rows.clone();
+    worst.sort_by(|a, b| a.1.partial_cmp(&b.1).expect("TAS is never NaN"));
+    worst.truncate(5);
+
+    match format {
+        OutputFormat::Json => {
+            let per_file: Vec<serde_json::Value> = rows
+                .iter()
+                .map(|(f, t, g, x, s)| {
+                    serde_json::json!({"file": f, "tas": t, "grade": g, "fixes": x, "est_tokens_saved": s})
+                })
+                .collect();
+            let out = serde_json::json!({
+                "mode": "batch",
+                "hermetic": true,
+                "n_files": files.len(),
+                "n_analysable": rows.len(),
+                "n_skipped": skipped,
+                "mean_tas": (mean * 10.0).round() / 10.0,
+                "median_tas": (median * 10.0).round() / 10.0,
+                "total_est_tokens_saved": total_savings,
+                "worst": worst.iter().map(|(f, t, ..)| serde_json::json!({"file": f, "tas": t})).collect::<Vec<_>>(),
+                "per_file": per_file,
+            });
+            println!("{}", serde_json::to_string_pretty(&out)?);
+        }
+        OutputFormat::Markdown => {
+            let sep = "-".repeat(60);
+            println!("TRACERAZOR FLEET AUDIT  (hermetic, per-file independent)");
+            println!("{sep}");
+            println!("Traces:      {} ({} analysable, {} skipped)", files.len(), rows.len(), skipped);
+            println!("Mean TAS:    {mean:.1}   Median: {median:.1}");
+            println!("Est. tokens recoverable (sum): {total_savings}");
+            println!("{sep}");
+            println!("Worst {}:", worst.len());
+            for (f, t, g, x, _) in &worst {
+                println!("  {t:>5.1}  {g:<10} fixes={x}  {f}");
+            }
+            println!("{sep}");
+        }
+    }
+
+    if threshold.is_some() && mean < config.threshold {
+        eprintln!("FAIL: mean TAS {mean:.1} is below threshold {:.1}", config.threshold);
+        std::process::exit(1);
+    }
     Ok(())
 }
 

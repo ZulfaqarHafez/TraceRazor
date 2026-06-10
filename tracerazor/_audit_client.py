@@ -263,6 +263,13 @@ class TraceRazorClient:
 
     @staticmethod
     def _find_binary() -> str:
+        # Platform wheels bundle the CLI inside the package; prefer it.
+        here_pkg = os.path.dirname(os.path.abspath(__file__))
+        for name in ("tracerazor", "tracerazor.exe"):
+            bundled = os.path.join(here_pkg, "bin", name)
+            if os.path.isfile(bundled) and os.access(bundled, os.X_OK):
+                return bundled
+
         env_path = os.environ.get("TRACERAZOR_BIN")
         if env_path and os.path.isfile(env_path):
             return env_path

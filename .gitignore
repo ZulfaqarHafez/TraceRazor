@@ -38,3 +38,7 @@ v2/results/*.json
 examples/teacher_playbook.json
 teacher/**/__pycache__/
 .claude/settings.local.json
+# Wheel build artifacts (the binary is bundled at build time, never committed)
+dist/
+tracerazor/bin/tracerazor
+tracerazor/bin/tracerazor.exe

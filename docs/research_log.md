@@ -444,3 +444,21 @@ Adjudication outcome: airline_task0 6/6 delete verdicts correct (was 1/6),
 AGF ungrounded 0 artifacts (was 0/10 correct); marshmallow verification kept.
 Corpus effects (all regenerated): 24-trace mean TAS 71.3→73.5; airline SRR
 35.9→15.5%; AgentInstruct AGF 0.951. Suites: 241 Rust + 247 Python, clippy 0.
+
+---
+
+# Run 6 — Ship-plan Phase 2 (installable + ingestible)
+
+2.1 Platform wheels: scripts/build_platform_wheel.sh bundles the CLI into
+tracerazor/bin/; new console script + client prefer it. Clean-room verified
+locally (env -i, fresh venv, no repo, no Rust): console script and Python API
+both work from the wheel alone. release.yml builds linux+macos wheels with the
+same smoke test. 2.2 LangSmith: flat exports rebuild the tree via
+parent_run_id (all runs kept; was first-only), tokens from run-level /
+llm_output/usage_metadata locations; golden fixtures. 2.3 OTel: protojson
+string ints, prompt/completion token keys, content from events + structured
+messages + OpenLLMetry indexed attrs; golden fixtures incl. degraded case.
+2.4 IngestQuality in every manifest + loud stderr warning >50% zero-token or
+placeholder content. 2.5 Fleet mode: audit <dir> → one aggregate (37/38
+analysable over traces/external, mean 76.8, worst-5 all airline); threshold
+gates the mean. Suites: 245 Rust + 247 Python, clippy 0.

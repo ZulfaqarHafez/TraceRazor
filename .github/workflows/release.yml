@@ -1,0 +1,30 @@
+name: Release wheels
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  wheels:
+    name: Platform wheel (${{ matrix.os }})
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build platform wheel with bundled CLI
+        run: bash scripts/build_platform_wheel.sh
+      - name: Clean-room smoke test
+        run: |
+          python -m venv /tmp/v && /tmp/v/bin/pip install dist/tracerazor-*.whl
+          /tmp/v/bin/tracerazor audit traces/support-agent-run-2847.json --hermetic
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheel-${{ matrix.os }}
+          path: dist/*.whl
