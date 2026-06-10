@@ -1,0 +1,70 @@
+{
+  "condition": "before",
+  "model": "claude-haiku-4-5-20251001",
+  "max_turns": 25,
+  "system_prompt_appended": false,
+  "completed_at": "2026-06-10T14:34:30Z",
+  "total_cost_usd": 0.1771,
+  "runs": [
+    {
+      "task": "csv-filter",
+      "condition": "before",
+      "passed": true,
+      "steps": 15,
+      "trace_tokens": 8508,
+      "num_turns": 8,
+      "cost_usd": 0.0356599,
+      "wall_s": 66.0,
+      "session_id": "8ca751ab-e986-4f8f-a3de-77ae8835f6b0",
+      "agent_exit": 0
+    },
+    {
+      "task": "dedupe-helpers",
+      "condition": "before",
+      "passed": true,
+      "steps": 27,
+      "trace_tokens": 8789,
+      "num_turns": 14,
+      "cost_usd": 0.05406355,
+      "wall_s": 36.4,
+      "session_id": "dd6d4377-dbb4-4119-8181-db2be5653655",
+      "agent_exit": 0
+    },
+    {
+      "task": "fix-imports",
+      "condition": "before",
+      "passed": true,
+      "steps": 14,
+      "trace_tokens": 6250,
+      "num_turns": 9,
+      "cost_usd": 0.027185850000000004,
+      "wall_s": 61.9,
+      "session_id": "a7db32ca-3af2-4cfa-b3e5-c045289fb839",
+      "agent_exit": 0
+    },
+    {
+      "task": "implement-median",
+      "condition": "before",
+      "passed": true,
+      "steps": 9,
+      "trace_tokens": 7814,
+      "num_turns": 5,
+      "cost_usd": 0.028382050000000002,
+      "wall_s": 23.5,
+      "session_id": "99dafdf8-5d8f-4057-bf9f-c5fb1af38133",
+      "agent_exit": 0
+    },
+    {
+      "task": "rename-api",
+      "condition": "before",
+      "passed": true,
+      "steps": 17,
+      "trace_tokens": 7197,
+      "num_turns": 11,
+      "cost_usd": 0.0318262,
+      "wall_s": 21.7,
+      "session_id": "54640ae1-9698-421b-91ca-05168edcfe36",
+      "agent_exit": 0
+    }
+  ]
+}

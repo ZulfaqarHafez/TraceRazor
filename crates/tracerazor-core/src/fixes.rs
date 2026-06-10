@@ -464,13 +464,19 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
             )
         };
 
+        // Measured live (docs/case_study.md): an earlier wording that asked the
+        // agent to *restate the objective before each reasoning step* added a
+        // per-turn output cost that exceeded the recovered drift on on-track
+        // runs (mean -5.6% tokens). The anchor must never add a standing
+        // ritual: anchor silently, skip non-advancing steps, forbid restating.
         fixes.push(Fix {
             fix_type: FixType::GoalAnchor,
             target: "system_prompt".into(),
             patch: format!(
-                "Add to system prompt: \"Before each reasoning step, restate {goal_clause} \
-                 in one sentence and verify the step moves measurably closer to it. If a step \
-                 does not advance the objective, skip it and proceed to the next concrete action.\" \
+                "Add to system prompt: \"Keep {goal_clause} as your working objective. \
+                 Before acting, check that the action moves measurably closer to it; if it \
+                 does not, skip it and take the next concrete action instead. Do not restate \
+                 the objective or summarise progress unless explicitly asked.\" \
                  (Detected drift: {drift_note}.)"
             ),
             estimated_token_savings: estimated,

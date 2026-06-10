@@ -1,0 +1,6 @@
+
+
+# ── TraceRazor auto-applied patches ──
+# goal_anchor (est. 156 tokens/run)
+Keep the stated task objective ("You are in a small Python project. `filt.py` has an unimplemented `filter_rows` function that should read a CSV file and") as your working objective. Before acting, check that the action moves measurably closer to it; if it does not, skip it and take the next concrete action instead. Do not restate the objective or summarise progress unless explicitly asked.
+

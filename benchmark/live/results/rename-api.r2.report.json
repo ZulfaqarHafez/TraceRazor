@@ -1,0 +1,1066 @@
+{
+  "trace_id": "rename-api.r2.before",
+  "agent_name": "claude-code (claude-haiku-4-5)",
+  "framework": "claude-code",
+  "total_steps": 21,
+  "total_tokens": 5432,
+  "analysis_duration_ms": 3,
+  "score": {
+    "score": 80.7,
+    "raw_tas": 80.7,
+    "task_value_score": 1.0,
+    "grade": "Good",
+    "vae": 0.81,
+    "passes_threshold": true,
+    "avs": 0.1,
+    "metric_normalised": {
+      "cce": 0.828,
+      "ccr": 0.851782363977486,
+      "csd": 0.286,
+      "dbo": 0.9,
+      "gar": 0.23,
+      "isr": 0.905,
+      "ldi": 1.0,
+      "obs": 0.573,
+      "rda": 0.571,
+      "shl": 0.9711538461538461,
+      "srr": 0.857,
+      "tca": 0.9229999999999999,
+      "tur": 1.0,
+      "vdi": 0.8799249530956847
+    },
+    "srr": {
+      "score": 14.3,
+      "redundant_steps": [
+        {
+          "step_a": 8,
+          "step_b": 9,
+          "similarity": 0.76,
+          "confidence": "medium"
+        },
+        {
+          "step_a": 14,
+          "step_b": 15,
+          "similarity": 0.86,
+          "confidence": "high"
+        },
+        {
+          "step_a": 17,
+          "step_b": 18,
+          "similarity": 0.86,
+          "confidence": "high"
+        }
+      ],
+      "redundant_count": 3,
+      "total_steps": 21,
+      "pass": true,
+      "target": 15.0
+    },
+    "ldi": {
+      "score": 0.0,
+      "loops": [],
+      "max_cycle_length": 0,
+      "total_steps": 21,
+      "pass": true,
+      "warning_threshold": 0.1
+    },
+    "tca": {
+      "score": 92.3,
+      "misfires": [
+        {
+          "failed_step": 3,
+          "retry_step": 5,
+          "tool_name": "Bash",
+          "error": "Exit code 1\nF..                                                                      [100%]\n=================================== FAILURES ===================================\n________________________ test_new_name_exists_old_gone _________________________\n\n    def test_new_name_exists_old_gone():\n>       assert hasattr(core, \"load_records\")\nE       AssertionError: assert False\nE        +  where False = hasattr(core, 'load_records')\n\n/home/user/TraceRazor/benchmark/live/tasks/rename-api/seed/tests/test_rename.py:14: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_rename.py::test_new_name_exists_old_gone - AssertionError: ...\n1 failed, 2 passed in 0.02s",
+          "wasted_tokens": 389
+        }
+      ],
+      "successful_first_attempts": 12,
+      "total_tool_calls": 13,
+      "pass": true,
+      "target": 85.0
+    },
+    "tur": {
+      "score": 0.858,
+      "useful_tokens": 4660,
+      "total_tokens": 5432,
+      "wasted_tokens": 772,
+      "pass": true,
+      "target": 0.35
+    },
+    "cce": {
+      "score": 0.828,
+      "total_input_tokens": 5432,
+      "duplicate_tokens": 934,
+      "bloated_steps": [
+        {
+          "step_id": 16,
+          "duplicate_pct": 77.0,
+          "duplicate_tokens": 190
+        },
+        {
+          "step_id": 17,
+          "duplicate_pct": 64.0,
+          "duplicate_tokens": 155
+        },
+        {
+          "step_id": 18,
+          "duplicate_pct": 82.0,
+          "duplicate_tokens": 200
+        },
+        {
+          "step_id": 19,
+          "duplicate_pct": 82.0,
+          "duplicate_tokens": 229
+        },
+        {
+          "step_id": 20,
+          "duplicate_pct": 57.0,
+          "duplicate_tokens": 160
+        }
+      ],
+      "pass": true,
+      "target": 0.6
+    },
+    "rda": {
+      "score": 0.571,
+      "classified_complexity": "expert",
+      "expected_steps": 12.0,
+      "actual_steps": 21,
+      "uses_historical_baseline": false,
+      "pass": false,
+      "target": 0.75
+    },
+    "isr": {
+      "score": 90.5,
+      "steps_with_novel_info": 19,
+      "total_steps": 21,
+      "low_novelty_steps": [
+        {
+          "step_id": 17,
+          "novelty_score": 0.07
+        },
+        {
+          "step_id": 18,
+          "novelty_score": 0.07
+        }
+      ],
+      "pass": true,
+      "target": 80.0
+    },
+    "dbo": {
+      "score": 0.9,
+      "optimal_selections": 0,
+      "total_branch_points": 0,
+      "decisions": [],
+      "cold_start": true,
+      "pass": true,
+      "target": 0.7
+    },
+    "vdi": {
+      "score": 0.8799249530956847,
+      "step_results": [
+        {
+          "step_id": 1,
+          "score": 0.855072463768116,
+          "filler_count": 10,
+          "total_words": 69,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 2,
+          "score": 0.9411764705882353,
+          "filler_count": 1,
+          "total_words": 17,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 3,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 10,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 4,
+          "score": 0.8478260869565217,
+          "filler_count": 7,
+          "total_words": 46,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 5,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 6,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 4,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 7,
+          "score": 0.6666666666666666,
+          "filler_count": 8,
+          "total_words": 24,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 8,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 9,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 10,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 11,
+          "score": 0.8717948717948718,
+          "filler_count": 15,
+          "total_words": 117,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 12,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 10,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 13,
+          "score": 0.7333333333333333,
+          "filler_count": 4,
+          "total_words": 15,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 14,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 14,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 15,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 14,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 16,
+          "score": 0.75,
+          "filler_count": 3,
+          "total_words": 12,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 17,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 14,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 18,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 14,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 19,
+          "score": 0.7619047619047619,
+          "filler_count": 5,
+          "total_words": 21,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 20,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 10,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 21,
+          "score": 0.9035087719298246,
+          "filler_count": 11,
+          "total_words": 114,
+          "low_density": false,
+          "entropy_flagged": false
+        }
+      ],
+      "low_density_steps": [],
+      "entropy_low_steps": [],
+      "top_offenders": [
+        [
+          "let me",
+          6
+        ],
+        [
+          "i need to",
+          4
+        ]
+      ],
+      "pass": true,
+      "target": 0.6
+    },
+    "shl": {
+      "score": 0.028846153846153848,
+      "flagged_sentences": 3,
+      "total_sentences": 104,
+      "pass": true,
+      "target": 0.2
+    },
+    "ccr": {
+      "score": 0.14821763602251406,
+      "step_results": [
+        {
+          "step_id": 1,
+          "original_tokens": 69,
+          "compressed_tokens": 62,
+          "ratio": 0.10144927536231885,
+          "wordlist_ratio": 0.10144927536231885,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.06060606060606055
+        },
+        {
+          "step_id": 2,
+          "original_tokens": 17,
+          "compressed_tokens": 16,
+          "ratio": 0.058823529411764705,
+          "wordlist_ratio": 0.058823529411764705,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 3,
+          "original_tokens": 10,
+          "compressed_tokens": 10,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 4,
+          "original_tokens": 46,
+          "compressed_tokens": 13,
+          "ratio": 0.717391304347826,
+          "wordlist_ratio": 0.717391304347826,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.023255813953488413
+        },
+        {
+          "step_id": 5,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 6,
+          "original_tokens": 4,
+          "compressed_tokens": 4,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 7,
+          "original_tokens": 24,
+          "compressed_tokens": 13,
+          "ratio": 0.4583333333333333,
+          "wordlist_ratio": 0.4583333333333333,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 8,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 9,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 10,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 11,
+          "original_tokens": 117,
+          "compressed_tokens": 108,
+          "ratio": 0.07692307692307693,
+          "wordlist_ratio": 0.07692307692307693,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.02631578947368418
+        },
+        {
+          "step_id": 12,
+          "original_tokens": 10,
+          "compressed_tokens": 10,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 13,
+          "original_tokens": 15,
+          "compressed_tokens": 14,
+          "ratio": 0.06666666666666667,
+          "wordlist_ratio": 0.06666666666666667,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 14,
+          "original_tokens": 14,
+          "compressed_tokens": 14,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 15,
+          "original_tokens": 14,
+          "compressed_tokens": 14,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 16,
+          "original_tokens": 12,
+          "compressed_tokens": 12,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 17,
+          "original_tokens": 14,
+          "compressed_tokens": 14,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 18,
+          "original_tokens": 14,
+          "compressed_tokens": 14,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 19,
+          "original_tokens": 21,
+          "compressed_tokens": 19,
+          "ratio": 0.09523809523809523,
+          "wordlist_ratio": 0.09523809523809523,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 20,
+          "original_tokens": 10,
+          "compressed_tokens": 10,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 21,
+          "original_tokens": 114,
+          "compressed_tokens": 99,
+          "ratio": 0.13157894736842105,
+          "wordlist_ratio": 0.13157894736842105,
+          "gzip_excess": 0.04657701711491441,
+          "ngram_repetition": 0.06306306306306309
+        }
+      ],
+      "total_cuttable_tokens": 79,
+      "pass": true,
+      "target": 0.3
+    },
+    "gar": {
+      "score": 0.23,
+      "step_results": [
+        {
+          "step_id": 1,
+          "goal_similarity": 0.641,
+          "low_advancement": false
+        },
+        {
+          "step_id": 2,
+          "goal_similarity": 0.211,
+          "low_advancement": false
+        },
+        {
+          "step_id": 4,
+          "goal_similarity": 0.167,
+          "low_advancement": true
+        },
+        {
+          "step_id": 7,
+          "goal_similarity": 0.133,
+          "low_advancement": true
+        },
+        {
+          "step_id": 11,
+          "goal_similarity": 0.295,
+          "low_advancement": false
+        },
+        {
+          "step_id": 13,
+          "goal_similarity": 0.1,
+          "low_advancement": true
+        },
+        {
+          "step_id": 14,
+          "goal_similarity": 0.187,
+          "low_advancement": true
+        },
+        {
+          "step_id": 15,
+          "goal_similarity": 0.124,
+          "low_advancement": true
+        },
+        {
+          "step_id": 16,
+          "goal_similarity": 0.068,
+          "low_advancement": true
+        },
+        {
+          "step_id": 17,
+          "goal_similarity": 0.187,
+          "low_advancement": true
+        },
+        {
+          "step_id": 18,
+          "goal_similarity": 0.124,
+          "low_advancement": true
+        },
+        {
+          "step_id": 19,
+          "goal_similarity": 0.344,
+          "low_advancement": false
+        },
+        {
+          "step_id": 21,
+          "goal_similarity": 0.414,
+          "low_advancement": false
+        }
+      ],
+      "low_advancement_steps": [
+        4,
+        7,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ],
+      "goal_step_id": null,
+      "pass": false,
+      "target": 0.4
+    },
+    "csd": {
+      "score": 0.286,
+      "step_results": [
+        {
+          "step_id_from": 1,
+          "step_id_to": 2,
+          "similarity": 0.141,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 2,
+          "step_id_to": 4,
+          "similarity": 0.076,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 4,
+          "step_id_to": 7,
+          "similarity": 0.322,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 7,
+          "step_id_to": 11,
+          "similarity": 0.201,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 11,
+          "step_id_to": 13,
+          "similarity": 0.657,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 13,
+          "step_id_to": 14,
+          "similarity": 0.28,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 14,
+          "step_id_to": 15,
+          "similarity": 0.652,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 15,
+          "step_id_to": 16,
+          "similarity": 0.096,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 16,
+          "step_id_to": 17,
+          "similarity": 0.191,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 17,
+          "step_id_to": 18,
+          "similarity": 0.652,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 18,
+          "step_id_to": 19,
+          "similarity": -0.0,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 19,
+          "step_id_to": 21,
+          "similarity": 0.168,
+          "high_drift": true
+        }
+      ],
+      "high_drift_pairs": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          7,
+          11
+        ],
+        [
+          13,
+          14
+        ],
+        [
+          15,
+          16
+        ],
+        [
+          16,
+          17
+        ],
+        [
+          18,
+          19
+        ],
+        [
+          19,
+          21
+        ]
+      ],
+      "pass": false,
+      "target": 0.6
+    },
+    "obs": {
+      "score": 0.573,
+      "observation_tokens": 3110,
+      "total_tokens": 5432,
+      "pass": true,
+      "target": 0.3
+    }
+  },
+  "diff": [
+    {
+      "action": "keep",
+      "step_id": 1,
+      "step_type": "reasoning",
+      "description": "The user wants me to:\n1. Run the tests with `pytho",
+      "justification": null,
+      "tokens_actual": 104,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 2,
+      "step_type": "tool_call",
+      "description": "Call Bash",
+      "justification": null,
+      "tokens_actual": 102,
+      "tokens_suggested": null
+    },
+    {
+      "action": "delete",
+      "step_id": 3,
+      "step_type": "tool_call",
+      "description": "Call Bash",
+      "justification": "Misfired: wrong params for Bash, retried at step 5",
+      "tokens_actual": 102,
+      "tokens_suggested": 0
+    },
+    {
+      "action": "keep",
+      "step_id": 4,
+      "step_type": "reasoning",
+      "description": "Good, so the test shows that `load_records` doesn'",
+      "justification": null,
+      "tokens_actual": 288,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 5,
+      "step_type": "tool_call",
+      "description": "Call Read",
+      "justification": null,
+      "tokens_actual": 287,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 6,
+      "step_type": "tool_call",
+      "description": "Call Grep",
+      "justification": null,
+      "tokens_actual": 287,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 7,
+      "step_type": "reasoning",
+      "description": "Now I need to check the other files to see where `",
+      "justification": null,
+      "tokens_actual": 161,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 8,
+      "step_type": "tool_call",
+      "description": "Call Read",
+      "justification": null,
+      "tokens_actual": 158,
+      "tokens_suggested": null
+    },
+    {
+      "action": "delete",
+      "step_id": 9,
+      "step_type": "tool_call",
+      "description": "Call Read",
+      "justification": "Redundant: medium: 76% sim w/ step 8",
+      "tokens_actual": 158,
+      "tokens_suggested": 0
+    },
+    {
+      "action": "keep",
+      "step_id": 10,
+      "step_type": "tool_call",
+      "description": "Call Read",
+      "justification": null,
+      "tokens_actual": 158,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 11,
+      "step_type": "reasoning",
+      "description": "Perfect! Now I have all the information I need:\n\n1",
+      "justification": null,
+      "tokens_actual": 555,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 12,
+      "step_type": "tool_call",
+      "description": "Call Edit",
+      "justification": null,
+      "tokens_actual": 554,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 13,
+      "step_type": "reasoning",
+      "description": "Good! Now I need to update the import and call in ",
+      "justification": null,
+      "tokens_actual": 267,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 14,
+      "step_type": "tool_call",
+      "description": "Call Edit",
+      "justification": null,
+      "tokens_actual": 267,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 15,
+      "step_type": "tool_call",
+      "description": "Call Edit",
+      "justification": "Successful state-changing call (kept; not deletable)",
+      "tokens_actual": 267,
+      "tokens_suggested": null
+    },
+    {
+      "action": "trim",
+      "step_id": 16,
+      "step_type": "reasoning",
+      "description": "Good! Now I need to update report.py as well.\nNow ",
+      "justification": "Compress context: 77% duplicated input context",
+      "tokens_actual": 247,
+      "tokens_suggested": 108
+    },
+    {
+      "action": "trim",
+      "step_id": 17,
+      "step_type": "tool_call",
+      "description": "Call Edit",
+      "justification": "Compress context: 64% duplicated input context",
+      "tokens_actual": 245,
+      "tokens_suggested": 107
+    },
+    {
+      "action": "keep",
+      "step_id": 18,
+      "step_type": "tool_call",
+      "description": "Call Edit",
+      "justification": "Successful state-changing call (kept; not deletable)",
+      "tokens_actual": 245,
+      "tokens_suggested": null
+    },
+    {
+      "action": "trim",
+      "step_id": 19,
+      "step_type": "reasoning",
+      "description": "Perfect! Now let me run the tests again to confirm",
+      "justification": "Compress context: 82% duplicated input context",
+      "tokens_actual": 280,
+      "tokens_suggested": 123
+    },
+    {
+      "action": "trim",
+      "step_id": 20,
+      "step_type": "tool_call",
+      "description": "Call Bash",
+      "justification": "Compress context: 57% duplicated input context",
+      "tokens_actual": 280,
+      "tokens_suggested": 123
+    },
+    {
+      "action": "keep",
+      "step_id": 21,
+      "step_type": "reasoning",
+      "description": "Excellent! All tests pass. The rename is complete.",
+      "justification": null,
+      "tokens_actual": 420,
+      "tokens_suggested": null
+    }
+  ],
+  "savings": {
+    "tokens_saved": 851,
+    "reduction_pct": 15.7,
+    "cost_saved_per_run_usd": 0.0026,
+    "monthly_savings_usd": 127.65,
+    "latency_saved_seconds": 0.6
+  },
+  "mvtg": 0.1566642120765832,
+  "fixes": [
+    {
+      "fix_type": "tool_schema",
+      "target": "Bash",
+      "patch": "Tool \"Bash\" failed at step 3 with: \"Exit code 1\nF..                                                                      [100%]\n=================================== FAILURES ===================================\n________________________ test_new_name_exists_old_gone _________________________\n\n    def test_new_name_exists_old_gone():\n>       assert hasattr(core, \"load_records\")\nE       AssertionError: assert False\nE        +  where False = hasattr(core, 'load_records')\n\n/home/user/TraceRazor/benchmark/live/tasks/rename-api/seed/tests/test_rename.py:14: AssertionError\n=========================== short test summary info ============================\nFAILED tests/test_rename.py::test_new_name_exists_old_gone - AssertionError: ...\n1 failed, 2 passed in 0.02s\". Add a pre-call check for this condition to the system prompt (e.g.recompute derived values such as totals/fees and validate identifiers against prior observations before calling \"Bash\").",
+      "estimated_token_savings": 102,
+      "risk": "needs_review"
+    },
+    {
+      "fix_type": "context_compression",
+      "target": "system_prompt",
+      "patch": "Before each tool call, summarise the conversation to the last three relevant facts. Do not re-include information that has already been established earlier in this session.",
+      "estimated_token_savings": 934,
+      "risk": "safe"
+    },
+    {
+      "fix_type": "prompt_insert",
+      "target": "system_prompt",
+      "patch": "Task complexity classified as expert (expected ~12 steps, used 21 steps). Add to system prompt: \"Complete this task in 13 steps or fewer. Do not re-verify results that have already been confirmed.\"",
+      "estimated_token_savings": 2322,
+      "risk": "safe"
+    },
+    {
+      "fix_type": "goal_anchor",
+      "target": "system_prompt",
+      "patch": "Add to system prompt: \"Keep the stated task objective (\"You are in a small Python project. The public function `fetch_data` in `core.py` must be renamed to `load_records` every\") as your working objective. Before acting, check that the action moves measurably closer to it; if it does not, skip it and take the next concrete action instead. Do not restate the objective or summarise progress unless explicitly asked.\" (Detected drift: trajectory path entropy 0.98 / focus 0.18 (regressing).)",
+      "estimated_token_savings": 497,
+      "risk": "safe"
+    }
+  ],
+  "summary": "The claude-code (claude-haiku-4-5) agent (claude-code) scored 81/100 [GOOD] — it is reasonably efficient with minor inefficiencies. The biggest efficiency gap is GAR (goal advancement) (score 0.23/1.0). Issues found: over-reasoned (21 steps used vs ~12 expected for a expert task). Applying the recommended fixes is estimated to save ~851 tokens per run ($0.0026/run; ~$128/month projected at 50K runs — a heuristic estimate, not a measured re-run).",
+  "summary_oneliner": "claude-code (claude-haiku-4-5) scores 81/100 [GOOD]. Biggest issue: GAR (goal advancement). Est. ~$128/month at 50K runs (heuristic projection).",
+  "anomalies": [],
+  "per_agent": [],
+  "path_entropy": {
+    "path_entropy": 0.985,
+    "directedness": -0.143,
+    "focus_score": 0.182,
+    "action_entropy": 0.9,
+    "advances": 3,
+    "stalls": 0,
+    "regresses": 4,
+    "distinct_actions": 5,
+    "goal_origin": "task_goal",
+    "high_drift": true,
+    "pass": false,
+    "target": 0.5
+  },
+  "iar": null,
+  "features": {
+    "mean_step_tokens_norm": 0.5173333333333334,
+    "obs_gzip_compressibility": 0.650535501785006,
+    "obs_token_share": 0.5725331369661266,
+    "reasoning_run_max": 0.047619047619047616,
+    "redundant_tool_call_rate": 0.0,
+    "repeated_obs_rate": 0.09425625920471281,
+    "revisit_rate": 0.3333333333333333,
+    "step_count_norm": 0.35,
+    "tool_diversity": 0.3076923076923077
+  },
+  "agf": {
+    "score": 0.917,
+    "action_grounding": 0.833,
+    "claim_grounding": 1.0,
+    "checked_literals": 9,
+    "ungrounded": [
+      {
+        "step_id": 2,
+        "literal": "/tmp/lcs/before/rename-api.r2",
+        "kind": "action_param"
+      }
+    ],
+    "pass": true,
+    "target": 0.7
+  },
+  "manifest": {
+    "trace_sha256": "f1afbcd72888b2181c3ce2892f171b27a954233e6660a033cc8d3a7ce975cf8a",
+    "tool_version": "0.4.0",
+    "created_at": "2026-06-10T14:53:05.786735547+00:00",
+    "similarity_backend": "bow",
+    "weights": {
+      "srr": 0.17,
+      "ldi": 0.13,
+      "tca": 0.13,
+      "rda": 0.1,
+      "isr": 0.1,
+      "tur": 0.1,
+      "cce": 0.1,
+      "dbo": 0.09,
+      "vdi": 0.08,
+      "shl": 0.05,
+      "ccr": 0.03,
+      "gar": 0.07,
+      "csd": 0.05,
+      "obs": 0.06
+    },
+    "weights_sha256": "9baac34e5021b53868c9f7ee93c4f8185fb9b6f8b847ae5ebe5721d79ec79cc0",
+    "threshold": 70.0,
+    "cost_per_million_tokens": 3.0,
+    "min_steps": 5,
+    "hermetic": true,
+    "baseline_tokens": null,
+    "historical_median_steps": null,
+    "n_historical_sequences": 0,
+    "ingest_quality": {
+      "zero_token_pct": 0.0,
+      "placeholder_content_pct": 0.19,
+      "degraded": false
+    },
+    "signature": null,
+    "signing_key_pub": null
+  }
+}

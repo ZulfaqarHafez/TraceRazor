@@ -1,0 +1,782 @@
+{
+  "trace_id": "fix-offby-one.r2.before",
+  "agent_name": "claude-code (claude-haiku-4-5)",
+  "framework": "claude-code",
+  "total_steps": 13,
+  "total_tokens": 3801,
+  "analysis_duration_ms": 2,
+  "score": {
+    "score": 82.5,
+    "raw_tas": 82.5,
+    "task_value_score": 1.0,
+    "grade": "Good",
+    "vae": 0.83,
+    "passes_threshold": true,
+    "avs": 0.155,
+    "metric_normalised": {
+      "cce": 0.955,
+      "ccr": 0.798687089715536,
+      "csd": 0.253,
+      "dbo": 0.833,
+      "gar": 0.221,
+      "isr": 1.0,
+      "ldi": 1.0,
+      "obs": 0.443,
+      "rda": 0.923,
+      "shl": 0.8867924528301887,
+      "srr": 1.0,
+      "tca": 0.667,
+      "tur": 1.0,
+      "vdi": 0.8424507658643327
+    },
+    "srr": {
+      "score": 0.0,
+      "redundant_steps": [],
+      "redundant_count": 0,
+      "total_steps": 13,
+      "pass": true,
+      "target": 15.0
+    },
+    "ldi": {
+      "score": 0.0,
+      "loops": [],
+      "max_cycle_length": 0,
+      "total_steps": 13,
+      "pass": true,
+      "warning_threshold": 0.1
+    },
+    "tca": {
+      "score": 66.7,
+      "misfires": [
+        {
+          "failed_step": 2,
+          "retry_step": 4,
+          "tool_name": "Bash",
+          "error": "Exit code 1\nFFF.F.                                                                   [100%]\n=================================== FAILURES ===================================\n_______________________________ test_even_split ________________________________\n\n    def test_even_split():\n>       assert chunk([1, 2, 3, 4], 2) == [[1, 2], [3, 4]]\nE       assert [[1, 2], [2, 3], [3, 4], [4]] == [[1, 2], [3, 4]]\nE         \nE         At index 1 diff: [2, 3] != [3, 4]\nE         Left contains 2 more items, first extra item: [3, 4]\nE         Use -v to get more diff\n\n/home/user/TraceRazor/benchmark/live/tasks/fix-offby-one/seed/tests/test_chunker.py:5: AssertionError\n________________________________ test_remainder ________________________________\n\n    def test_remainder():\n>       assert chunk([1, 2, 3, 4, 5], 2) == [[1, 2], [3, 4], [5]]\nE       assert [[1, 2], [2, ..., [4, 5], [5]] == [[1, 2], [3, 4], [5]]\nE         \nE         At index 1 diff: [2, 3] != [3, 4]\nE         Left contains 2 more items, first extra item: [4, 5]\nE         Use -v to get more diff\n\n/home/user/TraceRazor/benchmark/live/tasks/fix-offby-one/seed/tests/test_chunker.py:8: AssertionError\n____________________________ test_chunk_equals_len _____________________________\n\n    def test_chunk_equals_len():\n>       assert chunk([1, 2, 3], 3) == [[1, 2, 3]]\nE       assert [[1, 2, 3], [3]] == [[1, 2, 3]]\nE         \nE         Left contains one more item: [3]\nE         Use -v to get more diff\n\n/home/user/TraceRazor/benchmark/live/tasks/fix-offby-one/seed/tests/test_chunker.py:11: AssertionError\n_______________________________ test_no_overlap ________________________________\n\n    def test_no_overlap():\n        flat = [x for c in chunk(list(range(10)), 3) for x in c]\n>       assert flat == list(range(10))\nE       assert [0, 1, 2, 2, 3, 4, ...] == [0, 1, 2, 3, 4, 5, ...]\nE         \nE         At index 3 diff: 2 != 3\nE         Left contains 4 more items, first extra item: 7\nE         Use -v to get more diff\n\n/home/user/TraceRaz…[+516 chars]",
+          "wasted_tokens": 780
+        },
+        {
+          "failed_step": 4,
+          "retry_step": 6,
+          "tool_name": "Read",
+          "error": "EISDIR: illegal operation on a directory, read '/tmp/lcs/before/fix-offby-one.r2'",
+          "wasted_tokens": 875
+        }
+      ],
+      "successful_first_attempts": 4,
+      "total_tool_calls": 6,
+      "pass": false,
+      "target": 85.0
+    },
+    "tur": {
+      "score": 0.795,
+      "useful_tokens": 3021,
+      "total_tokens": 3801,
+      "wasted_tokens": 780,
+      "pass": true,
+      "target": 0.35
+    },
+    "cce": {
+      "score": 0.955,
+      "total_input_tokens": 3801,
+      "duplicate_tokens": 170,
+      "bloated_steps": [
+        {
+          "step_id": 10,
+          "duplicate_pct": 58.0,
+          "duplicate_tokens": 170
+        }
+      ],
+      "pass": true,
+      "target": 0.6
+    },
+    "rda": {
+      "score": 0.923,
+      "classified_complexity": "expert",
+      "expected_steps": 12.0,
+      "actual_steps": 13,
+      "uses_historical_baseline": false,
+      "pass": true,
+      "target": 0.75
+    },
+    "isr": {
+      "score": 100.0,
+      "steps_with_novel_info": 13,
+      "total_steps": 13,
+      "low_novelty_steps": [],
+      "pass": true,
+      "target": 80.0
+    },
+    "dbo": {
+      "score": 0.833,
+      "optimal_selections": 0,
+      "total_branch_points": 0,
+      "decisions": [],
+      "cold_start": true,
+      "pass": true,
+      "target": 0.7
+    },
+    "vdi": {
+      "score": 0.8424507658643327,
+      "step_results": [
+        {
+          "step_id": 1,
+          "score": 0.8392857142857143,
+          "filler_count": 9,
+          "total_words": 56,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 2,
+          "score": 0.9230769230769231,
+          "filler_count": 1,
+          "total_words": 13,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 3,
+          "score": 0.8170731707317073,
+          "filler_count": 15,
+          "total_words": 82,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 4,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 5,
+          "score": 0.38095238095238093,
+          "filler_count": 13,
+          "total_words": 21,
+          "low_density": true,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 6,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 7,
+          "score": 0.5833333333333334,
+          "filler_count": 5,
+          "total_words": 12,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 8,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 9,
+          "score": 0.9056603773584906,
+          "filler_count": 10,
+          "total_words": 106,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 10,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 34,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 11,
+          "score": 0.6666666666666666,
+          "filler_count": 10,
+          "total_words": 30,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 12,
+          "score": 0.9230769230769231,
+          "filler_count": 1,
+          "total_words": 13,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 13,
+          "score": 0.9047619047619048,
+          "filler_count": 8,
+          "total_words": 84,
+          "low_density": false,
+          "entropy_flagged": false
+        }
+      ],
+      "low_density_steps": [
+        5
+      ],
+      "entropy_low_steps": [],
+      "top_offenders": [
+        [
+          "let me",
+          9
+        ],
+        [
+          "i need to",
+          1
+        ]
+      ],
+      "pass": true,
+      "target": 0.6
+    },
+    "shl": {
+      "score": 0.11320754716981132,
+      "flagged_sentences": 6,
+      "total_sentences": 53,
+      "pass": true,
+      "target": 0.2
+    },
+    "ccr": {
+      "score": 0.2013129102844639,
+      "step_results": [
+        {
+          "step_id": 1,
+          "original_tokens": 56,
+          "compressed_tokens": 50,
+          "ratio": 0.10714285714285714,
+          "wordlist_ratio": 0.10714285714285714,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 2,
+          "original_tokens": 13,
+          "compressed_tokens": 12,
+          "ratio": 0.07692307692307693,
+          "wordlist_ratio": 0.07692307692307693,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 3,
+          "original_tokens": 82,
+          "compressed_tokens": 44,
+          "ratio": 0.4634146341463415,
+          "wordlist_ratio": 0.4634146341463415,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.03797468354430378
+        },
+        {
+          "step_id": 4,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 5,
+          "original_tokens": 21,
+          "compressed_tokens": 0,
+          "ratio": 1.0,
+          "wordlist_ratio": 1.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 6,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 7,
+          "original_tokens": 12,
+          "compressed_tokens": 10,
+          "ratio": 0.16666666666666666,
+          "wordlist_ratio": 0.16666666666666666,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 8,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 9,
+          "original_tokens": 106,
+          "compressed_tokens": 95,
+          "ratio": 0.10377358490566038,
+          "wordlist_ratio": 0.10377358490566038,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.04854368932038833
+        },
+        {
+          "step_id": 10,
+          "original_tokens": 34,
+          "compressed_tokens": 34,
+          "ratio": 0.29032258064516125,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.29032258064516125
+        },
+        {
+          "step_id": 11,
+          "original_tokens": 30,
+          "compressed_tokens": 26,
+          "ratio": 0.13333333333333333,
+          "wordlist_ratio": 0.13333333333333333,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 12,
+          "original_tokens": 13,
+          "compressed_tokens": 12,
+          "ratio": 0.07692307692307693,
+          "wordlist_ratio": 0.07692307692307693,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 13,
+          "original_tokens": 84,
+          "compressed_tokens": 76,
+          "ratio": 0.09523809523809523,
+          "wordlist_ratio": 0.09523809523809523,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.03703703703703709
+        }
+      ],
+      "total_cuttable_tokens": 92,
+      "pass": true,
+      "target": 0.3
+    },
+    "gar": {
+      "score": 0.221,
+      "step_results": [
+        {
+          "step_id": 1,
+          "goal_similarity": 0.715,
+          "low_advancement": false
+        },
+        {
+          "step_id": 2,
+          "goal_similarity": 0.434,
+          "low_advancement": false
+        },
+        {
+          "step_id": 3,
+          "goal_similarity": 0.169,
+          "low_advancement": true
+        },
+        {
+          "step_id": 5,
+          "goal_similarity": 0.225,
+          "low_advancement": false
+        },
+        {
+          "step_id": 7,
+          "goal_similarity": 0.271,
+          "low_advancement": false
+        },
+        {
+          "step_id": 9,
+          "goal_similarity": 0.091,
+          "low_advancement": true
+        },
+        {
+          "step_id": 10,
+          "goal_similarity": 0.068,
+          "low_advancement": true
+        },
+        {
+          "step_id": 11,
+          "goal_similarity": 0.239,
+          "low_advancement": false
+        },
+        {
+          "step_id": 12,
+          "goal_similarity": 0.38,
+          "low_advancement": false
+        },
+        {
+          "step_id": 13,
+          "goal_similarity": 0.192,
+          "low_advancement": true
+        }
+      ],
+      "low_advancement_steps": [
+        3,
+        9,
+        10,
+        13
+      ],
+      "goal_step_id": null,
+      "pass": false,
+      "target": 0.4
+    },
+    "csd": {
+      "score": 0.253,
+      "step_results": [
+        {
+          "step_id_from": 1,
+          "step_id_to": 2,
+          "similarity": 0.288,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 2,
+          "step_id_to": 3,
+          "similarity": 0.035,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 3,
+          "step_id_to": 5,
+          "similarity": 0.335,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 5,
+          "step_id_to": 7,
+          "similarity": 0.483,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 7,
+          "step_id_to": 9,
+          "similarity": 0.111,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 9,
+          "step_id_to": 10,
+          "similarity": 0.486,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 10,
+          "step_id_to": 11,
+          "similarity": 0.046,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 11,
+          "step_id_to": 12,
+          "similarity": 0.385,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 12,
+          "step_id_to": 13,
+          "similarity": 0.109,
+          "high_drift": true
+        }
+      ],
+      "high_drift_pairs": [
+        [
+          1,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          7,
+          9
+        ],
+        [
+          10,
+          11
+        ],
+        [
+          12,
+          13
+        ]
+      ],
+      "pass": false,
+      "target": 0.6
+    },
+    "obs": {
+      "score": 0.443,
+      "observation_tokens": 1684,
+      "total_tokens": 3801,
+      "pass": true,
+      "target": 0.3
+    }
+  },
+  "diff": [
+    {
+      "action": "keep",
+      "step_id": 1,
+      "step_type": "reasoning",
+      "description": "The user wants me to:\n1. Run the test suite to see",
+      "justification": null,
+      "tokens_actual": 101,
+      "tokens_suggested": null
+    },
+    {
+      "action": "delete",
+      "step_id": 2,
+      "step_type": "tool_call",
+      "description": "Call Bash",
+      "justification": "Misfired: wrong params for Bash, retried at step 4",
+      "tokens_actual": 100,
+      "tokens_suggested": 0
+    },
+    {
+      "action": "keep",
+      "step_id": 3,
+      "step_type": "reasoning",
+      "description": "The tests are showing that the chunking is creatin",
+      "justification": null,
+      "tokens_actual": 681,
+      "tokens_suggested": null
+    },
+    {
+      "action": "delete",
+      "step_id": 4,
+      "step_type": "tool_call",
+      "description": "Call Read",
+      "justification": "Misfired: correction of step 2",
+      "tokens_actual": 680,
+      "tokens_suggested": 0
+    },
+    {
+      "action": "keep",
+      "step_id": 5,
+      "step_type": "reasoning",
+      "description": "I need to find the chunker.py file. Let me list th",
+      "justification": null,
+      "tokens_actual": 196,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 6,
+      "step_type": "tool_call",
+      "description": "Call Glob",
+      "justification": null,
+      "tokens_actual": 195,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 7,
+      "step_type": "reasoning",
+      "description": "Good, now let me read the chunker.py file to see t",
+      "justification": null,
+      "tokens_actual": 117,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 8,
+      "step_type": "tool_call",
+      "description": "Call Read",
+      "justification": null,
+      "tokens_actual": 117,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 9,
+      "step_type": "reasoning",
+      "description": "Found the bug! On line 5, the range is using `size",
+      "justification": null,
+      "tokens_actual": 295,
+      "tokens_suggested": null
+    },
+    {
+      "action": "trim",
+      "step_id": 10,
+      "step_type": "tool_call",
+      "description": "Call Edit",
+      "justification": "Compress context: 58% duplicated input context",
+      "tokens_actual": 294,
+      "tokens_suggested": 129
+    },
+    {
+      "action": "keep",
+      "step_id": 11,
+      "step_type": "reasoning",
+      "description": "Good, I've fixed the off-by-one error. Now let me ",
+      "justification": null,
+      "tokens_actual": 299,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 12,
+      "step_type": "tool_call",
+      "description": "Call Bash",
+      "justification": null,
+      "tokens_actual": 298,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 13,
+      "step_type": "reasoning",
+      "description": "Perfect! All tests are passing now. The bug was in",
+      "justification": null,
+      "tokens_actual": 428,
+      "tokens_suggested": null
+    }
+  ],
+  "savings": {
+    "tokens_saved": 945,
+    "reduction_pct": 24.9,
+    "cost_saved_per_run_usd": 0.0028,
+    "monthly_savings_usd": 141.75,
+    "latency_saved_seconds": 0.6
+  },
+  "mvtg": 0.24861878453038674,
+  "fixes": [
+    {
+      "fix_type": "tool_schema",
+      "target": "Bash",
+      "patch": "Tool \"Bash\" failed at step 2 with: \"Exit code 1\nFFF.F.                                                                   [100%]\n=================================== FAILURES ===================================\n_______________________________ test_even_split ________________________________\n\n    def test_even_split():\n>       assert chunk([1, 2, 3, 4], 2) == [[1, 2], [3, 4]]\nE       assert [[1, 2], [2, 3], [3, 4], [4]] == [[1, 2], [3, 4]]\nE         \nE         At index 1 diff: [2, 3] != [3, 4]\nE         Left contains 2 more items, first extra item: [3, 4]\nE         Use -v to get more diff\n\n/home/user/TraceRazor/benchmark/live/tasks/fix-offby-one/seed/tests/test_chunker.py:5: AssertionError\n________________________________ test_remainder ________________________________\n\n    def test_remainder():\n>       assert chunk([1, 2, 3, 4, 5], 2) == [[1, 2], [3, 4], [5]]\nE       assert [[1, 2], [2, ..., [4, 5], [5]] == [[1, 2], [3, 4], [5]]\nE         \nE         At index 1 diff: [2, 3] != [3, 4]\nE         Left contains 2 more items, first extra item: [4, 5]\nE         Use -v to get more diff\n\n/home/user/TraceRazor/benchmark/live/tasks/fix-offby-one/seed/tests/test_chunker.py:8: AssertionError\n____________________________ test_chunk_equals_len _____________________________\n\n    def test_chunk_equals_len():\n>       assert chunk([1, 2, 3], 3) == [[1, 2, 3]]\nE       assert [[1, 2, 3], [3]] == [[1, 2, 3]]\nE         \nE         Left contains one more item: [3]\nE         Use -v to get more diff\n\n/home/user/TraceRazor/benchmark/live/tasks/fix-offby-one/seed/tests/test_chunker.py:11: AssertionError\n_______________________________ test_no_overlap ________________________________\n\n    def test_no_overlap():\n        flat = [x for c in chunk(list(range(10)), 3) for x in c]\n>       assert flat == list(range(10))\nE       assert [0, 1, 2, 2, 3, 4, ...] == [0, 1, 2, 3, 4, 5, ...]\nE         \nE         At index 3 diff: 2 != 3\nE         Left contains 4 more items, first extra item: 7\nE         Use -v to get more diff\n\n/home/user/TraceRaz…[+516 chars]\". Add a pre-call check for this condition to the system prompt (e.g.recompute derived values such as totals/fees and validate identifiers against prior observations before calling \"Bash\").",
+      "estimated_token_savings": 100,
+      "risk": "needs_review"
+    },
+    {
+      "fix_type": "tool_schema",
+      "target": "Read",
+      "patch": "Tool \"Read\" failed at step 4 with: \"EISDIR: illegal operation on a directory, read '/tmp/lcs/before/fix-offby-one.r2'\". Add a pre-call check for this condition to the system prompt (e.g.recompute derived values such as totals/fees and validate identifiers against prior observations before calling \"Read\").",
+      "estimated_token_savings": 680,
+      "risk": "needs_review"
+    },
+    {
+      "fix_type": "context_compression",
+      "target": "system_prompt",
+      "patch": "Before each tool call, summarise the conversation to the last three relevant facts. Do not re-include information that has already been established earlier in this session.",
+      "estimated_token_savings": 170,
+      "risk": "safe"
+    },
+    {
+      "fix_type": "goal_anchor",
+      "target": "system_prompt",
+      "patch": "Add to system prompt: \"Keep the stated task objective (\"You are in a small Python project. The test suite is failing because of a bug in `chunker.py`. Run `python3 -m pytest -q\") as your working objective. Before acting, check that the action moves measurably closer to it; if it does not, skip it and take the next concrete action instead. Do not restate the objective or summarise progress unless explicitly asked.\" (Detected drift: trajectory path entropy 1.00 / focus 0.25 (scattered).)",
+      "estimated_token_savings": 425,
+      "risk": "safe"
+    }
+  ],
+  "summary": "The claude-code (claude-haiku-4-5) agent (claude-code) scored 82/100 [GOOD] — it is reasonably efficient with minor inefficiencies. The biggest efficiency gap is GAR (goal advancement) (score 0.22/1.0). Issues found: 2 tool misfire(s) wasted ~780 tokens on failed calls. Applying the recommended fixes is estimated to save ~945 tokens per run ($0.0028/run; ~$142/month projected at 50K runs — a heuristic estimate, not a measured re-run).",
+  "summary_oneliner": "claude-code (claude-haiku-4-5) scores 82/100 [GOOD]. Biggest issue: GAR (goal advancement). Est. ~$142/month at 50K runs (heuristic projection).",
+  "anomalies": [],
+  "per_agent": [],
+  "path_entropy": {
+    "path_entropy": 1.0,
+    "directedness": 0.0,
+    "focus_score": 0.25,
+    "action_entropy": 0.81,
+    "advances": 3,
+    "stalls": 0,
+    "regresses": 3,
+    "distinct_actions": 5,
+    "goal_origin": "task_goal",
+    "high_drift": true,
+    "pass": false,
+    "target": 0.5
+  },
+  "iar": null,
+  "features": {
+    "context_growth": 0.0,
+    "mean_step_tokens_norm": 0.5847692307692307,
+    "obs_gzip_compressibility": 0.3830703012912482,
+    "obs_token_share": 0.44304130491975796,
+    "reasoning_run_max": 0.07692307692307693,
+    "redundant_tool_call_rate": 0.0,
+    "repeated_obs_rate": 0.0,
+    "revisit_rate": 0.46153846153846156,
+    "stale_obs_retention": 0.0,
+    "step_count_norm": 0.21666666666666667,
+    "tool_diversity": 0.6666666666666666
+  },
+  "agf": {
+    "score": 0.0,
+    "action_grounding": 0.0,
+    "claim_grounding": 0.0,
+    "checked_literals": 3,
+    "ungrounded": [
+      {
+        "step_id": 4,
+        "literal": "/tmp/lcs/before/fix-offby-one.r2",
+        "kind": "action_param"
+      },
+      {
+        "step_id": 8,
+        "literal": "/tmp/lcs/before/fix-offby-one.r2/chunker.py",
+        "kind": "action_param"
+      },
+      {
+        "step_id": 13,
+        "literal": "chunker.py`—the",
+        "kind": "claim"
+      }
+    ],
+    "pass": false,
+    "target": 0.7
+  },
+  "manifest": {
+    "trace_sha256": "459d8017d1914af5273ea32d950e3e804e8a88d9faacadda0695baea02be87b2",
+    "tool_version": "0.4.0",
+    "created_at": "2026-06-10T14:53:05.729596257+00:00",
+    "similarity_backend": "bow",
+    "weights": {
+      "srr": 0.17,
+      "ldi": 0.13,
+      "tca": 0.13,
+      "rda": 0.1,
+      "isr": 0.1,
+      "tur": 0.1,
+      "cce": 0.1,
+      "dbo": 0.09,
+      "vdi": 0.08,
+      "shl": 0.05,
+      "ccr": 0.03,
+      "gar": 0.07,
+      "csd": 0.05,
+      "obs": 0.06
+    },
+    "weights_sha256": "9baac34e5021b53868c9f7ee93c4f8185fb9b6f8b847ae5ebe5721d79ec79cc0",
+    "threshold": 70.0,
+    "cost_per_million_tokens": 3.0,
+    "min_steps": 5,
+    "hermetic": true,
+    "baseline_tokens": null,
+    "historical_median_steps": null,
+    "n_historical_sequences": 0,
+    "ingest_quality": {
+      "zero_token_pct": 0.0,
+      "placeholder_content_pct": 0.231,
+      "degraded": false
+    },
+    "signature": null,
+    "signing_key_pub": null
+  }
+}

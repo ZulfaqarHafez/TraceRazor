@@ -1,0 +1,9 @@
+[
+  {
+    "fix_type": "goal_anchor",
+    "target": "system_prompt",
+    "patch": "Add to system prompt: \"Keep the stated task objective (\"You are in a small Python project. The package `mypkg` is broken: importing it fails, and the tests expect `run_pipeline\") as your working objective. Before acting, check that the action moves measurably closer to it; if it does not, skip it and take the next concrete action instead. Do not restate the objective or summarise progress unless explicitly asked.\" (Detected drift: trajectory path entropy 0.99 / focus 0.20 (scattered).)",
+    "estimated_token_savings": 404,
+    "risk": "safe"
+  }
+]

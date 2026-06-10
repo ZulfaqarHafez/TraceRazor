@@ -213,6 +213,11 @@ Projected/month:   $724.05  (at the configured run count & token price)
 > measured before/after re-run. Use `tracerazor bench` to validate a specific
 > patch set against an actual re-run. Numbers above are reproducible from the
 > shipped trace with the command shown.
+>
+> We measured this gap ourselves with live agent runs: the heuristic estimate
+> can have the wrong *sign* (round 1 measured the old `goal_anchor` patch at
+> −5.6% — a cost, not a saving — at constant pass rate, which is why that
+> patch was rewritten). Full data: [`docs/case_study.md`](docs/case_study.md).
 
 ### Automated Fix Patches
 
@@ -977,7 +982,7 @@ tracerazor/
 │   └── openai_agents/
 │
 ├── docs/
-│   ├── case_study.md          # Measured-savings protocol + harness status (4.1)
+│   ├── case_study.md          # MEASURED live case study: 24 real agent runs, CIs, both rounds
 │   ├── findings_v5.md         # Substitutability study: full results + Mermaid charts
 │   └── tau_bench_benchmark_report.md  # Pareto analysis of sampling strategies
 │

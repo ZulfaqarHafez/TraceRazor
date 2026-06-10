@@ -1,0 +1,1 @@
+You are in a small Python project. The public function `fetch_data` in `core.py` must be renamed to `load_records` everywhere it appears — the definition and every call site. The tests expect the old name to be gone entirely. Run `python3 -m pytest -q`, make the rename, and re-run the tests until they all pass. Do not modify any files under `tests/`.

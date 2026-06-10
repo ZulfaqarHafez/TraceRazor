@@ -1,0 +1,658 @@
+{
+  "trace_id": "csv-filter.r2.before",
+  "agent_name": "claude-code (claude-haiku-4-5)",
+  "framework": "claude-code",
+  "total_steps": 11,
+  "total_tokens": 4968,
+  "analysis_duration_ms": 2,
+  "score": {
+    "score": 84.9,
+    "raw_tas": 84.9,
+    "task_value_score": 1.0,
+    "grade": "Good",
+    "vae": 0.85,
+    "passes_threshold": true,
+    "avs": 0.104,
+    "metric_normalised": {
+      "cce": 0.938,
+      "ccr": 0.8661567877629063,
+      "csd": 0.312,
+      "dbo": 0.833,
+      "gar": 0.274,
+      "isr": 0.909,
+      "ldi": 1.0,
+      "obs": 0.533,
+      "rda": 0.917,
+      "shl": 0.9642857142857143,
+      "srr": 1.0,
+      "tca": 0.833,
+      "tur": 1.0,
+      "vdi": 0.8661567877629063
+    },
+    "srr": {
+      "score": 0.0,
+      "redundant_steps": [],
+      "redundant_count": 0,
+      "total_steps": 11,
+      "pass": true,
+      "target": 15.0
+    },
+    "ldi": {
+      "score": 0.0,
+      "loops": [],
+      "max_cycle_length": 0,
+      "total_steps": 11,
+      "pass": true,
+      "warning_threshold": 0.1
+    },
+    "tca": {
+      "score": 83.3,
+      "misfires": [
+        {
+          "failed_step": 3,
+          "retry_step": 5,
+          "tool_name": "Bash",
+          "error": "Exit code 1\nFFFFF                                                                    [100%]\n=================================== FAILURES ===================================\n______________________________ test_basic_filter _______________________________\n\ntmp_path = PosixPath('/tmp/pytest-of-root/pytest-15/test_basic_filter0')\n\n    def test_basic_filter(tmp_path):\n        p = _write(tmp_path, \"name,score\\nann,10\\nbob,3\\ncid,7\\n\")\n>       assert filter_rows(p, 7) == [\n               ^^^^^^^^^^^^^^^^^\n            {\"name\": \"ann\", \"score\": 10},\n            {\"name\": \"cid\", \"score\": 7},\n        ]\n\n/home/user/TraceRazor/benchmark/live/tasks/csv-filter/seed/tests/test_filt.py:11: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\npath = '/tmp/pytest-of-root/pytest-15/test_basic_filter0/rows.csv'\nmin_score = 7\n\n    def filter_rows(path, min_score):\n        \"\"\"Read a CSV with header `name,score`; return rows with score >= min_score.\n    \n        Each returned row is a dict {\"name\": str, \"score\": int}, in file order.\n        \"\"\"\n>       raise NotImplementedError\nE       NotImplementedError\n\nfilt.py:6: NotImplementedError\n_____________________________ test_scores_are_ints _____________________________\n\ntmp_path = PosixPath('/tmp/pytest-of-root/pytest-15/test_scores_are_ints0')\n\n    def test_scores_are_ints(tmp_path):\n        p = _write(tmp_path, \"name,score\\nann,10\\n\")\n>       [row] = filter_rows(p, 0)\n                ^^^^^^^^^^^^^^^^^\n\n/home/user/TraceRazor/benchmark/live/tasks/csv-filter/seed/tests/test_filt.py:18: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\npath = '/tmp/pytest-of-root/pytest-15/test_scores_are_ints0/rows.csv'\nmin_score = 0\n\n    def filter_rows(path, min_score):\n        \"\"\"Read a CSV with header `name,score`; return rows with score >= min_score.\n    \n        Each returned row is a dict {\"name\": str, \"score\": int}, in file order.\n        \"\"\"\n>       raise NotImplementedError\nE       NotImple…[+3222 chars]",
+          "wasted_tokens": 857
+        }
+      ],
+      "successful_first_attempts": 5,
+      "total_tool_calls": 6,
+      "pass": false,
+      "target": 85.0
+    },
+    "tur": {
+      "score": 0.984,
+      "useful_tokens": 4889,
+      "total_tokens": 4968,
+      "wasted_tokens": 79,
+      "pass": true,
+      "target": 0.35
+    },
+    "cce": {
+      "score": 0.938,
+      "total_input_tokens": 4968,
+      "duplicate_tokens": 310,
+      "bloated_steps": [
+        {
+          "step_id": 10,
+          "duplicate_pct": 100.0,
+          "duplicate_tokens": 310
+        }
+      ],
+      "pass": true,
+      "target": 0.6
+    },
+    "rda": {
+      "score": 0.917,
+      "classified_complexity": "expert",
+      "expected_steps": 12.0,
+      "actual_steps": 11,
+      "uses_historical_baseline": false,
+      "pass": true,
+      "target": 0.75
+    },
+    "isr": {
+      "score": 90.9,
+      "steps_with_novel_info": 10,
+      "total_steps": 11,
+      "low_novelty_steps": [
+        {
+          "step_id": 8,
+          "novelty_score": 0.1
+        }
+      ],
+      "pass": true,
+      "target": 80.0
+    },
+    "dbo": {
+      "score": 0.833,
+      "optimal_selections": 0,
+      "total_branch_points": 0,
+      "decisions": [],
+      "cold_start": true,
+      "pass": true,
+      "target": 0.7
+    },
+    "vdi": {
+      "score": 0.8661567877629063,
+      "step_results": [
+        {
+          "step_id": 1,
+          "score": 0.8142857142857143,
+          "filler_count": 13,
+          "total_words": 70,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 2,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 3,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 5,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 4,
+          "score": 0.8028169014084507,
+          "filler_count": 14,
+          "total_words": 71,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 5,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 6,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 2,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 7,
+          "score": 0.8714285714285714,
+          "filler_count": 9,
+          "total_words": 70,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 8,
+          "score": 0.9578947368421052,
+          "filler_count": 4,
+          "total_words": 95,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 9,
+          "score": 0.6428571428571429,
+          "filler_count": 10,
+          "total_words": 28,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 10,
+          "score": 1.0,
+          "filler_count": 0,
+          "total_words": 5,
+          "low_density": false,
+          "entropy_flagged": false
+        },
+        {
+          "step_id": 11,
+          "score": 0.884393063583815,
+          "filler_count": 20,
+          "total_words": 173,
+          "low_density": false,
+          "entropy_flagged": false
+        }
+      ],
+      "low_density_steps": [],
+      "entropy_low_steps": [],
+      "top_offenders": [
+        [
+          "let me",
+          7
+        ]
+      ],
+      "pass": true,
+      "target": 0.6
+    },
+    "shl": {
+      "score": 0.03571428571428571,
+      "flagged_sentences": 2,
+      "total_sentences": 56,
+      "pass": true,
+      "target": 0.2
+    },
+    "ccr": {
+      "score": 0.1338432122370937,
+      "step_results": [
+        {
+          "step_id": 1,
+          "original_tokens": 70,
+          "compressed_tokens": 49,
+          "ratio": 0.3,
+          "wordlist_ratio": 0.3,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.08955223880597019
+        },
+        {
+          "step_id": 2,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 3,
+          "original_tokens": 5,
+          "compressed_tokens": 5,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 4,
+          "original_tokens": 71,
+          "compressed_tokens": 63,
+          "ratio": 0.11267605633802817,
+          "wordlist_ratio": 0.11267605633802817,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.02941176470588236
+        },
+        {
+          "step_id": 5,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 6,
+          "original_tokens": 2,
+          "compressed_tokens": 2,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 7,
+          "original_tokens": 70,
+          "compressed_tokens": 61,
+          "ratio": 0.12857142857142856,
+          "wordlist_ratio": 0.12857142857142856,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 8,
+          "original_tokens": 95,
+          "compressed_tokens": 91,
+          "ratio": 0.2717391304347826,
+          "wordlist_ratio": 0.042105263157894736,
+          "gzip_excess": 0.023678290213723308,
+          "ngram_repetition": 0.2717391304347826
+        },
+        {
+          "step_id": 9,
+          "original_tokens": 28,
+          "compressed_tokens": 24,
+          "ratio": 0.16000000000000003,
+          "wordlist_ratio": 0.14285714285714285,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.16000000000000003
+        },
+        {
+          "step_id": 10,
+          "original_tokens": 5,
+          "compressed_tokens": 5,
+          "ratio": 0.0,
+          "wordlist_ratio": 0.0,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.0
+        },
+        {
+          "step_id": 11,
+          "original_tokens": 173,
+          "compressed_tokens": 149,
+          "ratio": 0.13872832369942195,
+          "wordlist_ratio": 0.13872832369942195,
+          "gzip_excess": 0.0,
+          "ngram_repetition": 0.04117647058823526
+        }
+      ],
+      "total_cuttable_tokens": 70,
+      "pass": true,
+      "target": 0.3
+    },
+    "gar": {
+      "score": 0.274,
+      "step_results": [
+        {
+          "step_id": 1,
+          "goal_similarity": 0.559,
+          "low_advancement": false
+        },
+        {
+          "step_id": 4,
+          "goal_similarity": 0.223,
+          "low_advancement": false
+        },
+        {
+          "step_id": 7,
+          "goal_similarity": 0.324,
+          "low_advancement": false
+        },
+        {
+          "step_id": 8,
+          "goal_similarity": 0.15,
+          "low_advancement": true
+        },
+        {
+          "step_id": 9,
+          "goal_similarity": 0.362,
+          "low_advancement": false
+        },
+        {
+          "step_id": 11,
+          "goal_similarity": 0.341,
+          "low_advancement": false
+        }
+      ],
+      "low_advancement_steps": [
+        8
+      ],
+      "goal_step_id": null,
+      "pass": false,
+      "target": 0.4
+    },
+    "csd": {
+      "score": 0.312,
+      "step_results": [
+        {
+          "step_id_from": 1,
+          "step_id_to": 4,
+          "similarity": 0.25,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 4,
+          "step_id_to": 7,
+          "similarity": 0.478,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 7,
+          "step_id_to": 8,
+          "similarity": 0.538,
+          "high_drift": false
+        },
+        {
+          "step_id_from": 8,
+          "step_id_to": 9,
+          "similarity": -0.0,
+          "high_drift": true
+        },
+        {
+          "step_id_from": 9,
+          "step_id_to": 11,
+          "similarity": 0.292,
+          "high_drift": true
+        }
+      ],
+      "high_drift_pairs": [
+        [
+          1,
+          4
+        ],
+        [
+          8,
+          9
+        ],
+        [
+          9,
+          11
+        ]
+      ],
+      "pass": false,
+      "target": 0.6
+    },
+    "obs": {
+      "score": 0.533,
+      "observation_tokens": 2649,
+      "total_tokens": 4968,
+      "pass": true,
+      "target": 0.3
+    }
+  },
+  "diff": [
+    {
+      "action": "keep",
+      "step_id": 1,
+      "step_type": "reasoning",
+      "description": "The user wants me to:\n1. Run `python3 -m pytest -q",
+      "justification": null,
+      "tokens_actual": 81,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 2,
+      "step_type": "tool_call",
+      "description": "Call Glob",
+      "justification": null,
+      "tokens_actual": 79,
+      "tokens_suggested": null
+    },
+    {
+      "action": "delete",
+      "step_id": 3,
+      "step_type": "tool_call",
+      "description": "Call Bash",
+      "justification": "Misfired: wrong params for Bash, retried at step 5",
+      "tokens_actual": 79,
+      "tokens_suggested": 0
+    },
+    {
+      "action": "keep",
+      "step_id": 4,
+      "step_type": "reasoning",
+      "description": "The tests show what the function should do:\n1. Rea",
+      "justification": null,
+      "tokens_actual": 780,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 5,
+      "step_type": "tool_call",
+      "description": "Call Read",
+      "justification": null,
+      "tokens_actual": 778,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 6,
+      "step_type": "tool_call",
+      "description": "Call Read",
+      "justification": null,
+      "tokens_actual": 778,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 7,
+      "step_type": "reasoning",
+      "description": "Perfect. The requirements are clear:\n1. Read a CSV",
+      "justification": null,
+      "tokens_actual": 625,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 8,
+      "step_type": "tool_call",
+      "description": "Call Edit",
+      "justification": null,
+      "tokens_actual": 625,
+      "tokens_suggested": null
+    },
+    {
+      "action": "keep",
+      "step_id": 9,
+      "step_type": "reasoning",
+      "description": "Good, I've implemented the function. Now let me ru",
+      "justification": null,
+      "tokens_actual": 310,
+      "tokens_suggested": null
+    },
+    {
+      "action": "trim",
+      "step_id": 10,
+      "step_type": "tool_call",
+      "description": "Call Bash",
+      "justification": "Compress context: 100% duplicated input context",
+      "tokens_actual": 310,
+      "tokens_suggested": 136
+    },
+    {
+      "action": "keep",
+      "step_id": 11,
+      "step_type": "reasoning",
+      "description": "Perfect! All 5 tests pass. The implementation is c",
+      "justification": null,
+      "tokens_actual": 523,
+      "tokens_suggested": null
+    }
+  ],
+  "savings": {
+    "tokens_saved": 253,
+    "reduction_pct": 5.1,
+    "cost_saved_per_run_usd": 0.0008,
+    "monthly_savings_usd": 37.95,
+    "latency_saved_seconds": 0.2
+  },
+  "mvtg": 0.05092592592592592,
+  "fixes": [
+    {
+      "fix_type": "tool_schema",
+      "target": "Bash",
+      "patch": "Tool \"Bash\" failed at step 3 with: \"Exit code 1\nFFFFF                                                                    [100%]\n=================================== FAILURES ===================================\n______________________________ test_basic_filter _______________________________\n\ntmp_path = PosixPath('/tmp/pytest-of-root/pytest-15/test_basic_filter0')\n\n    def test_basic_filter(tmp_path):\n        p = _write(tmp_path, \"name,score\\nann,10\\nbob,3\\ncid,7\\n\")\n>       assert filter_rows(p, 7) == [\n               ^^^^^^^^^^^^^^^^^\n            {\"name\": \"ann\", \"score\": 10},\n            {\"name\": \"cid\", \"score\": 7},\n        ]\n\n/home/user/TraceRazor/benchmark/live/tasks/csv-filter/seed/tests/test_filt.py:11: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\npath = '/tmp/pytest-of-root/pytest-15/test_basic_filter0/rows.csv'\nmin_score = 7\n\n    def filter_rows(path, min_score):\n        \"\"\"Read a CSV with header `name,score`; return rows with score >= min_score.\n    \n        Each returned row is a dict {\"name\": str, \"score\": int}, in file order.\n        \"\"\"\n>       raise NotImplementedError\nE       NotImplementedError\n\nfilt.py:6: NotImplementedError\n_____________________________ test_scores_are_ints _____________________________\n\ntmp_path = PosixPath('/tmp/pytest-of-root/pytest-15/test_scores_are_ints0')\n\n    def test_scores_are_ints(tmp_path):\n        p = _write(tmp_path, \"name,score\\nann,10\\n\")\n>       [row] = filter_rows(p, 0)\n                ^^^^^^^^^^^^^^^^^\n\n/home/user/TraceRazor/benchmark/live/tasks/csv-filter/seed/tests/test_filt.py:18: \n_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ \n\npath = '/tmp/pytest-of-root/pytest-15/test_scores_are_ints0/rows.csv'\nmin_score = 0\n\n    def filter_rows(path, min_score):\n        \"\"\"Read a CSV with header `name,score`; return rows with score >= min_score.\n    \n        Each returned row is a dict {\"name\": str, \"score\": int}, in file order.\n        \"\"\"\n>       raise NotImplementedError\nE       NotImple…[+3222 chars]\". Add a pre-call check for this condition to the system prompt (e.g.recompute derived values such as totals/fees and validate identifiers against prior observations before calling \"Bash\").",
+      "estimated_token_savings": 79,
+      "risk": "needs_review"
+    },
+    {
+      "fix_type": "context_compression",
+      "target": "system_prompt",
+      "patch": "Before each tool call, summarise the conversation to the last three relevant facts. Do not re-include information that has already been established earlier in this session.",
+      "estimated_token_savings": 310,
+      "risk": "safe"
+    },
+    {
+      "fix_type": "goal_anchor",
+      "target": "system_prompt",
+      "patch": "Add to system prompt: \"Keep the stated task objective (\"You are in a small Python project. `filt.py` has an unimplemented `filter_rows` function that should read a CSV file and\") as your working objective. Before acting, check that the action moves measurably closer to it; if it does not, skip it and take the next concrete action instead. Do not restate the objective or summarise progress unless explicitly asked.\" (Detected drift: trajectory path entropy 1.00 / focus 0.25 (scattered).)",
+      "estimated_token_savings": 156,
+      "risk": "safe"
+    }
+  ],
+  "summary": "The claude-code (claude-haiku-4-5) agent (claude-code) scored 85/100 [GOOD] — it is reasonably efficient with minor inefficiencies. The biggest efficiency gap is GAR (goal advancement) (score 0.27/1.0). Issues found: 1 tool misfire(s) wasted ~79 tokens on failed calls. Applying the recommended fixes is estimated to save ~253 tokens per run ($0.0008/run; ~$38/month projected at 50K runs — a heuristic estimate, not a measured re-run).",
+  "summary_oneliner": "claude-code (claude-haiku-4-5) scores 85/100 [GOOD]. Biggest issue: GAR (goal advancement). Est. ~$38/month at 50K runs (heuristic projection).",
+  "anomalies": [],
+  "per_agent": [],
+  "path_entropy": {
+    "path_entropy": 1.0,
+    "directedness": 0.0,
+    "focus_score": 0.25,
+    "action_entropy": 0.879,
+    "advances": 2,
+    "stalls": 0,
+    "regresses": 2,
+    "distinct_actions": 5,
+    "goal_origin": "task_goal",
+    "high_drift": true,
+    "pass": false,
+    "target": 0.5
+  },
+  "iar": null,
+  "features": {
+    "mean_step_tokens_norm": 0.9032727272727272,
+    "obs_gzip_compressibility": 0.5411694510739857,
+    "obs_token_share": 0.5332125603864735,
+    "reasoning_run_max": 0.09090909090909091,
+    "redundant_tool_call_rate": 0.16666666666666666,
+    "repeated_obs_rate": 0.0,
+    "revisit_rate": 0.45454545454545453,
+    "step_count_norm": 0.18333333333333332,
+    "tool_diversity": 0.6666666666666666
+  },
+  "agf": {
+    "score": 0.333,
+    "action_grounding": 0.0,
+    "claim_grounding": 0.667,
+    "checked_literals": 5,
+    "ungrounded": [
+      {
+        "step_id": 5,
+        "literal": "/tmp/lcs/before/csv-filter.r2/filt.py",
+        "kind": "action_param"
+      },
+      {
+        "step_id": 6,
+        "literal": "/tmp/lcs/before/csv-filter.r2/tests/test_filt.py",
+        "kind": "action_param"
+      },
+      {
+        "step_id": 11,
+        "literal": "csv.DictReader",
+        "kind": "claim"
+      }
+    ],
+    "pass": false,
+    "target": 0.7
+  },
+  "manifest": {
+    "trace_sha256": "cfa802e91129c3758760501f3a61154f2a6cc03cc5e68a6833496b26abc0eed0",
+    "tool_version": "0.4.0",
+    "created_at": "2026-06-10T14:53:05.640656164+00:00",
+    "similarity_backend": "bow",
+    "weights": {
+      "srr": 0.17,
+      "ldi": 0.13,
+      "tca": 0.13,
+      "rda": 0.1,
+      "isr": 0.1,
+      "tur": 0.1,
+      "cce": 0.1,
+      "dbo": 0.09,
+      "vdi": 0.08,
+      "shl": 0.05,
+      "ccr": 0.03,
+      "gar": 0.07,
+      "csd": 0.05,
+      "obs": 0.06
+    },
+    "weights_sha256": "9baac34e5021b53868c9f7ee93c4f8185fb9b6f8b847ae5ebe5721d79ec79cc0",
+    "threshold": 70.0,
+    "cost_per_million_tokens": 3.0,
+    "min_steps": 5,
+    "hermetic": true,
+    "baseline_tokens": null,
+    "historical_median_steps": null,
+    "n_historical_sequences": 0,
+    "ingest_quality": {
+      "zero_token_pct": 0.0,
+      "placeholder_content_pct": 0.273,
+      "degraded": false
+    },
+    "signature": null,
+    "signing_key_pub": null
+  }
+}

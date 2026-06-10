@@ -1,0 +1,6 @@
+
+
+# ── TraceRazor auto-applied patches ──
+# goal_anchor (est. 494 tokens/run)
+Keep the stated task objective ("You are in a small Python project. `stats.py` has an unimplemented `median` function. Run `python3 -m pytest -q` to see") as your working objective. Before acting, check that the action moves measurably closer to it; if it does not, skip it and take the next concrete action instead. Do not restate the objective or summarise progress unless explicitly asked.
+

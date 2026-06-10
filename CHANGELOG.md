@@ -4,6 +4,31 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### The live measured case study (docs/case_study.md)
+- **Live case study executed** — 24 real agent runs (Claude Code headless,
+  Haiku 4.5) over 6 pytest-verified Python tasks × 2 replicates, audit →
+  `apply` → re-run per pair, measured with the bootstrap-CI harness at
+  constant 12/12 pass rate. Total spend ≈ $1.30. Round 1 measured the
+  shipped `goal_anchor` patch at **−5.6% tokens (a cost, not a saving)**;
+  the harness's estimate-accuracy check surfaced it (−102%).
+- **`goal_anchor` patch rewritten** from the measured evidence: the old
+  wording told the agent to restate the objective before every reasoning
+  step — a per-turn standing cost that exceeded recovered drift on
+  on-track runs. The anchor now forbids restating ("do not restate the
+  objective or summarise progress unless explicitly asked") while keeping
+  the skip-non-advancing directive. Detection and the conservative
+  estimate are unchanged.
+- **Claude Code transcript converter** (`benchmark/convert_claude_code.py`)
+  — turns any Claude Code session transcript into an auditable TraceRazor
+  trace: per-message usage grouped by API message id, tool results joined
+  to tool calls, marginal token accounting with cache reads and the
+  (cache-warmth-dependent, ±22k observed) first-turn prefix encoding
+  excluded and the convention stamped in trace metadata.
+- **Live-run kit** (`benchmark/live/`) — task suite with objective pytest
+  outcomes, headless runner with a tight tool envelope identical across
+  conditions, per-pair audit-and-apply orchestration, and transcript
+  reconversion so converter improvements never require re-running agents.
+
 ## [0.4.0] - 2026-06-10
 
 ### Ship-plan Phase 4 (prove it and launch)
@@ -11,8 +36,8 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
   before/after trace pairs into a published table of *measured* token deltas
   with seeded bootstrap 95% CIs, and refuses to call a delta a "saving" on
   any task whose pass flag flipped (constant-pass-rate requirement, exit 1).
-  Methodology + status in `docs/case_study.md`; the live tau-bench re-run
-  needs API budget — until it lands, all savings remain heuristic estimates.
+  Methodology + status in `docs/case_study.md`. (The live run landed
+  post-0.4.0 — see Unreleased above.)
 - **GitHub Action v2** — downloads a prebuilt release binary (works from any
   repo, no Rust toolchain; build-from-source is explicit opt-in), parses the
   report JSON (a malformed/empty report fails the step instead of silently

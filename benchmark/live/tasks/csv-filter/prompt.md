@@ -1,0 +1,1 @@
+You are in a small Python project. `filt.py` has an unimplemented `filter_rows` function that should read a CSV file and return the qualifying rows. Run `python3 -m pytest -q` to see what behaviour the tests expect, implement it (standard library only), and re-run the tests until they all pass. Do not modify any files under `tests/`.
