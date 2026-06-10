@@ -45,8 +45,15 @@ independent datasets, the first signal that replicates, though the magnitude is
 still modest ($\approx 0.1$). So TAS is a within-trace diagnostic, not yet a
 strong predictor of cross-run savings. Reported
 token ``savings'' are heuristic projections rather than measured before/after
-re-runs, and the sampling and substitutability results are preliminary
-(single-seed and synthetic, respectively). We therefore present TraceRazor as a useful
+re-runs --- and we now have direct evidence for why that distinction is
+load-bearing: a \emph{measured intervention study} on a live coding agent ($24$
+runs, audit$\to$apply$\to$re-run per pair, constant $12/12$ pass rate) found
+that the tool's one auto-applied fix \emph{cost} a mean $5.6\%$ more tokens
+(95\% bootstrap CI $[-11.4\%,\,+0.2\%]$) where the heuristic had projected a
+saving. Rewriting the fix from that evidence and re-measuring yielded a
+cost-neutral patch ($+0.7\%$, CI $[-8.9\%,\,+9.9\%]$). The sampling and
+substitutability results remain preliminary (single-seed and synthetic,
+respectively). We therefore present TraceRazor as a useful
 engineering instrument and a reproducible measurement harness, not as a
 validated scientific claim, and we devote a substantial Threats-to-Validity
 section to its limitations. All numbers in this report are reproducible from the
@@ -84,9 +91,19 @@ output includes fix patches and an ``optimal path'' diff.
         including a statistical validity audit of the fourteen sub-metrics over
         37 real traces (Section~\ref{sec:eval}), and a candid
         Threats-to-Validity analysis (Section~\ref{sec:limits}).
+  \item A \emph{measured intervention study} on a live coding agent
+        (Section~\ref{sec:livestudy}): the full audit$\to$apply$\to$re-run loop
+        executed against real agent runs with bootstrap confidence intervals at
+        constant task outcome, including a negative round that exposed a
+        mispriced fix and the re-measurement after the fix was rewritten ---
+        together with a transcript converter that makes any Claude~Code session
+        auditable, and a token-accounting protocol that removes
+        prompt-cache-warmth noise (observed $\pm22$k tokens on identical runs).
   \item Auditable runs: every report embeds a run manifest (input hash, tool
-        version, backend, exact weights), a hermetic scoring mode, a
-        \code{verify} command for third-party re-verification, and a
+        version, backend, exact weights), a hermetic scoring mode, Ed25519
+        report signing with a canonical-byte representation (any edited field
+        $\to$ \textsc{tampered}), evidence bundles, and a
+        \code{verify} command for third-party re-verification, plus a
         deterministic grounding-fidelity diagnostic (AGF)
         (Section~\ref{sec:metric-eval}).
 \end{enumerate}
@@ -103,6 +120,20 @@ tool-sequence and aggregate-scoring design, and \emph{verbosity-bias}
 studies~\cite{verbosity} inform the verbosity metrics. The adaptive-sampling
 pillar is a direct application of \emph{self-consistency}~\cite{selfconsistency}:
 sample multiple candidate answers and take the consensus.
+
+A fourth line of work motivates the measured study in
+Section~\ref{sec:livestudy}. \emph{Cost-aware agent evaluation}: Kapoor et
+al.~\cite{agentsmatter} argue that agent benchmarks must jointly report cost
+and accuracy --- optimising either alone misleads --- which is exactly the
+constant-pass-rate constraint our measurement harness enforces (a token delta
+on a task whose outcome flipped is not a saving). Empirical studies of agent
+token spend~\cite{spendmoney,tokenomics} document both the magnitude and the
+high run-to-run variance of coding-agent token consumption, which our
+replicate design and bootstrap intervals are built to absorb; and
+trajectory-efficiency interventions such as AgentDiet~\cite{agentdiet} and
+DEPO~\cite{depo} show that trimming non-advancing content can reduce cost
+without hurting task performance --- the same shape of intervention our
+\code{goal\_anchor} fix attempts at the prompt level.
 
 Relative to this literature, TraceRazor's contribution is integrative and
 practical rather than a new learned method: it packages a battery of heuristics
@@ -368,7 +399,13 @@ not the result of applying the fixes and re-running the agent. TraceRazor
 provides a \code{bench} command precisely so that a user can supply a real
 ``after'' trace and obtain a \emph{measured} before/after delta; only that path
 yields a measured saving. This distinction is load-bearing and is restated in
-Section~\ref{sec:limits}.
+Section~\ref{sec:limits}; Section~\ref{sec:livestudy} quantifies it directly:
+on a live coding-agent workload the projection for the one auto-applied fix had
+the wrong \emph{sign} (estimate accuracy $-102\%$), and the fix's patch text
+was rewritten from that measurement. The current \code{goal\_anchor} wording
+instructs the agent to keep the objective as working context and skip
+non-advancing actions \emph{without} restating the objective --- the earlier
+wording's per-step restating ritual was the measured cost driver.
 
 \section{Pillar 2: Adaptive Sampling}
 \label{sec:sampling}
@@ -540,6 +577,108 @@ Full corpus (\code{-{}-min-steps 2}) & 13/13 & mean TAS $82.9$; $20$ fix patches
 \end{tabular}
 \end{table}
 
+\subsection{A measured intervention study on a live coding agent}
+\label{sec:livestudy}
+Every evaluation above audits traces; none measures whether \emph{acting on an
+audit} actually saves tokens. This subsection reports the first closed-loop
+measurement: the full audit$\to$apply$\to$re-run protocol executed against a
+live agent, with the product's own emitted fix as the only manipulated
+variable. Following~\cite{agentsmatter}, cost is never reported without task
+outcome: the harness refuses to call a token delta a ``saving'' on any task
+whose pass flag flips between conditions, and exits non-zero.
+
+\paragraph{Design.} The subject agent is Claude~Code (v2.1.170, headless,
+model Haiku~4.5) --- a third real agent style after the function-calling and
+ReAct corpora: an interactive coding agent. The workload is six small Python
+engineering tasks (fix an off-by-one, implement to a failing spec, rename an
+API across files, deduplicate drifted helpers, implement a CSV filter, repair
+package imports), each with an objective binary outcome: the task's pytest
+suite, failing at start, must pass when the agent finishes. Each task runs
+twice per condition (12 pairs), because run-to-run variance in coding-agent
+token spend is large~\cite{spendmoney}. The tool envelope (pytest-only shell,
+file read/edit, 25-turn cap) is identical across conditions. Per pair:
+(1)~run the stock agent, convert the session transcript to a trace, record the
+pytest outcome as task value; (2)~\code{audit -{}-hermetic}, then \code{apply}
+the safe-fix subset to a prompt file (the product's default behaviour);
+(3)~re-run the same task with that file appended to the system prompt --- the
+only delta; (4)~measure with \code{bench} per pair and aggregate with a
+seeded $10{,}000$-resample percentile bootstrap. Total API cost for the study
+was $\approx\$1.30$; all traces, fixes, prompts and run logs are committed.
+
+\paragraph{Token accounting.} Converting interactive-agent transcripts
+surfaced a measurement hazard worth reporting on its own: the first turn's
+prompt-prefix encoding ($\approx20$k tokens of harness system prompt) is
+billed as a cache \emph{write} or a cache \emph{read} depending on cache
+warmth at launch --- we observed $\pm22$k-token swings between otherwise
+identical runs, several times the size of the behavioural signal. The
+converter therefore uses \emph{marginal} accounting: per turn,
+$\mathrm{input} + \mathrm{cache\ creation} + \mathrm{output}$, excluding cache
+reads and the first turn's prefix encoding (constant across compared
+conditions by construction); the convention is stamped into every trace's
+metadata. Input-side accumulation dominating agent cost is consistent
+with~\cite{tokenomics}.
+
+\paragraph{Round 1: the shipped fix, measured (a negative result).} On all 12
+stock runs the audits emitted exactly one auto-applicable fix,
+\code{goal\_anchor}, with projected savings of $0.5$--$2.4$k tokens/run.
+Measured (Table~\ref{tab:livestudy}): mean token reduction
+$\mathbf{-5.6\%}$ (95\% CI $[-11.4\%,\,+0.2\%]$) at constant $12/12$ pass rate
+--- the patch \emph{added} cost. Estimate accuracy
+(measured\,/\,projected savings) was $-102\%$: the projection had the wrong
+sign. The mechanism is visible in the patch text: the then-current wording
+instructed the agent to ``restate the stated task objective in one sentence
+before each reasoning step,'' a per-turn standing cost; and because goal
+advancement (GAR) passed on every before-trace, there was no off-path
+exploration for the anchor to recover. The remediation was triggered by the
+trajectory-path-entropy detector, whose conversational prior misreads
+read$\to$edit$\to$test cycles as drift (Section~\ref{sec:limits}).
+
+\paragraph{The intervention, revised from the measurement.} The patch wording
+was rewritten --- anchor silently, skip non-advancing actions, ``do not
+restate the objective or summarise progress unless explicitly asked'' ---
+leaving detection and the conservative estimate unchanged. This is the same
+intervention shape that trajectory-reduction methods validate at the
+context level~\cite{agentdiet,depo}: remove non-advancing content, never add
+ritual.
+
+\paragraph{Round 2: the revised fix, re-measured.} Fresh audits and 12 fresh
+after-runs: mean token reduction $\mathbf{+0.7\%}$ (95\% CI
+$[-8.9\%,\,+9.9\%]$), mean TAS delta $-0.0$, pass rate $12/12 \to 12/12$. The
+standing cost is gone, and we are explicit that \emph{zero is the correct
+value for this workload}: a drift remediation applied to non-drifting runs
+should do nothing. Whether the anchor produces positive savings on genuinely
+drifting agents (GAR failing) is the designed next experiment. Per-pair deltas
+span $-30\%$ to $+24\%$ between identical configurations, so no single pair is
+evidence of anything; the aggregate interval is the unit of claim.
+
+\begin{table}[t]
+\centering
+\caption{The measured intervention study: 6 tasks $\times$ 2 replicates per
+round, Claude~Code (Haiku~4.5), seeded 10{,}000-resample bootstrap 95\% CIs,
+pass rate constant at $12/12 \to 12/12$ in both rounds. Negative ``reduction''
+is an added cost. Round~1 measured the shipped \code{goal\_anchor} patch;
+round~2 the rewrite derived from round~1's diagnosis.}
+\label{tab:livestudy}
+\begin{tabular}{lrrr}
+\toprule
+Round & Mean token reduction (95\% CI) & Mean TAS $\Delta$ & Estimate accuracy \\
+\midrule
+1 (restate-each-step)     & $-5.6\%\ [-11.4,\,+0.2]$ & $-1.5$ & $-102\%$ \\
+2 (anchor-without-restate) & $+0.7\%\ [-8.9,\,+9.9]$  & $-0.0$ & $\approx 0\%$ (wide CI) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{What this establishes --- and what it does not.} It establishes
+that the measurement harness works as designed: it caught a mispriced fix
+(ours), quantified the gap between projection and outcome, and verified the
+repair, all at constant task success. It does \emph{not} establish that
+TraceRazor saves tokens on coding agents --- on this on-track workload there
+was nothing to save, and only one fix type fired. The study's value is
+methodological: the loop from heuristic projection to measured outcome is now
+closed, cheap ($\approx\$1$ per round), and committed as a reproducible kit
+(\code{benchmark/live/}).
+
 \subsection{Metric validity, grounding fidelity, and verifiable runs}
 \label{sec:metric-eval}
 A statistical audit of the fourteen sub-metrics over $37$ real traces
@@ -604,6 +743,21 @@ and compares every normalised metric exactly, exiting non-zero on a single
 flipped byte or score divergence. Non-reproducible conditions (embedding
 backends, store-influenced baselines) are detected and reported as
 hash-and-integrity-only verification rather than silently glossed over.
+
+Reports can additionally be \emph{signed}: an Ed25519 signature over a
+canonical byte representation of the report (timing fields zeroed, signature
+fields nulled, floating-point values normalised through a JSON round-trip so
+sign-time and verify-time bytes agree exactly). \code{verify} then proves both
+provenance and integrity --- editing any field of a signed report, from the
+headline score to a single per-step annotation, yields a \textsc{tampered}
+verdict and a non-zero exit; unsigned reports verify as
+``unsigned'' rather than being conflated with verified ones. An evidence
+bundle (\code{export -{}-bundle}) packages trace, report, weights and
+checksums into a single verifiable zip for handoff to a third party. Getting
+canonical bytes stable required fixing two real nondeterminism sources ---
+\code{HashMap}-ordered loop groups in LDI and last-digit drift in f64 JSON
+round-trips --- both of which would otherwise have made honest reports fail
+verification intermittently.
 
 \subsection{Adaptive sampling (preliminary)}
 Table~\ref{tab:sampling} reports first-attempt pass rate and total tokens over
@@ -683,7 +837,30 @@ joint optimum, and an agent can trade one against another.
 \paragraph{Savings are estimates, not outcomes.} As stressed in
 Section~\ref{sec:fixes}, reported token/cost savings are heuristic projections.
 A measured saving requires applying the fixes, re-running the agent, and
-comparing via \code{bench} at constant task quality.
+comparing via \code{bench} at constant task quality. The one such measurement
+performed to date (Section~\ref{sec:livestudy}) found the projection for the
+\code{goal\_anchor} fix had the wrong sign on an on-track coding workload
+(estimate accuracy $-102\%$), which should calibrate expectations for the
+remaining, still-unmeasured fix types.
+
+\paragraph{Scope of the measured study.} The intervention study covers one
+agent harness, one model, one domain (small Python repairs), six tasks with
+two replicates, and a single fix type --- the only one that fired. Its CIs are
+honest about small-$n$ width and must not be extrapolated across models or
+domains; the other safe fix types (verbosity, hedging, reformulation) remain
+unmeasured.
+
+\paragraph{Metric priors on coding agents.} The detection side carries a
+conversational-agent prior that the coding corpus exposes: CSD scored every
+coding trace as drifting (read$\to$edit$\to$test steps are legitimately
+semantically distant), trajectory path entropy triggered \code{goal\_anchor}
+on every trace, and TCA counts an agent's deliberate run of a failing test
+suite --- an expected-failure probe, standard practice for coding agents ---
+as a tool misfire. These penalties are identical across compared conditions,
+so before/after deltas stand, but absolute scores on coding traces are
+conservative-biased, and remediation text must therefore be cost-safe even
+when triggered spuriously (the round-1 lesson of
+Section~\ref{sec:livestudy}).
 
 \paragraph{Closed-loop self-validation.} An optional adherence metric checks
 whether the tool's own fixes improved the tool's own metrics. This is
@@ -711,10 +888,16 @@ The Rust workspace builds with \code{cargo build --release}; the Python package
 installs with \code{pip install -e .}. Audits are reproduced with
 \code{tracerazor audit <trace> --format json}; the real-trace benchmark with
 \code{python benchmark/run\_benchmarks.py}; the sampling data is shipped as
-JSON; and the test suites run with \code{cargo test --workspace} (212 tests) and
-\code{pytest} (231 tests). The audit table and benchmark numbers in
+JSON; and the test suites run with \code{cargo test --workspace} (260 tests) and
+\code{pytest} (263 tests). The audit table and benchmark numbers in
 Section~\ref{sec:eval} were produced by the current binary on the committed
-traces.
+traces. The measured intervention study (Section~\ref{sec:livestudy}) ships
+its complete dataset --- both rounds' traces, applied fixes, prompt patches
+and run logs (cost, turns, session ids) --- under \code{benchmark/live/}, so
+its measurement step,
+\code{python -m benchmark.case\_study -{}-pairs-dir benchmark/live/traces},
+re-runs without any API spend; re-running the agent halves requires a
+Claude~Code install and cost $\approx\$1.30$ in total at the study's scale.
 
 \section{Conclusion}
 TraceRazor is a fast, interpretable, offline-first tool for finding and
@@ -732,16 +915,27 @@ positive range on two independent datasets ($+0.08$ and $+0.12$), the first
 signal here that predicts real recoverable waste and replicates; the absolute
 magnitude is still modest ($\approx 0.1$), and we found that obvious extensions
 (path/length features, non-linear models) do not push past it
-(Section~\ref{sec:betterfeatures}). The path to a defensible measurement is:
-(1) richer signal beyond structural features (semantic/path-embedding features,
-per-token attribution) plus calibration on the target's own production runs (the
-procedure of Section~\ref{sec:calib} is in place and now has a feature set that
-beats the mean); (2) replace estimated savings with measured
-before/after re-runs at constant task success; (3) re-run the sampling study
-multi-seed with confidence intervals and a deployable (non-oracle) selector; and
-(4) define and label substitutability on real data. Until then, TraceRazor is
-best understood as a high-quality heuristic and a reproducible harness, which is
-how it is documented and shipped.
+(Section~\ref{sec:betterfeatures}). Of the four items we previously named as the path to a defensible
+measurement, the second --- replace estimated savings with measured
+before/after re-runs at constant task success --- is now delivered
+(Section~\ref{sec:livestudy}), and its first finding was that our own
+auto-applied fix cost tokens where the heuristic projected savings
+($-5.6\%$ measured, estimate accuracy $-102\%$); rewriting the fix from
+that evidence and re-measuring yielded a cost-neutral patch
+($+0.7\%$, CI spanning zero) at constant $12/12$ pass rate. We consider the
+willingness of the harness to indict its own product the strongest evidence
+that the methodology is sound. The remaining path: (1) richer signal beyond
+structural features (semantic/path-embedding features, per-token attribution)
+plus calibration on the target's own production runs (the procedure of
+Section~\ref{sec:calib} is in place and now has a feature set that beats the
+mean); (2$'$) extend the measured loop to a workload where drift remediation
+has something to recover (GAR failing), and to the still-unmeasured fix
+types; (3) re-run the sampling study multi-seed with confidence intervals and
+a deployable (non-oracle) selector; and (4) define and label substitutability
+on real data. Until then, TraceRazor is best understood as a high-quality
+heuristic and a reproducible harness --- now with a working, cheap, committed
+procedure for catching its own mispriced advice --- which is how it is
+documented and shipped.
 
 \begin{thebibliography}{99}
 \small
@@ -760,6 +954,11 @@ how it is documented and shipped.
 \bibitem{agentinstruct} A. Zeng et al. \emph{AgentTuning: Enabling Generalized Agent Abilities for LLMs}. arXiv:2310.12823, 2023. Dataset: \url{https://huggingface.co/datasets/zai-org/AgentInstruct}
 \bibitem{trajhall} \emph{Trajectory-level hallucination taxonomies for tool-using agents}. arXiv:2605.24219, 2026; see also arXiv:2601.06818.
 \bibitem{provagent} \emph{PROV-AGENT: Provenance graphs for agent workflows} (W3C-PROV extension). arXiv:2508.02866, 2025.
+\bibitem{agentsmatter} S. Kapoor, B. Stroebl, Z. S. Siegel, N. Nadgir, A. Narayanan. \emph{AI Agents That Matter}. arXiv:2407.01502, 2024.
+\bibitem{agentdiet} Y.-A. Xiao, P. Gao, C. Peng, Y. Xiong. \emph{Improving the Efficiency of LLM Agent Systems through Trajectory Reduction (AgentDiet)}. arXiv:2509.23586, 2025.
+\bibitem{depo} S. Chen et al. \emph{DEPO: Dual-Efficiency Preference Optimization for LLM Agents}. arXiv:2511.15392, 2025.
+\bibitem{spendmoney} L. Bai et al. \emph{How Do AI Agents Spend Your Money? Analyzing and Predicting Token Consumption in Agentic Coding Tasks}. arXiv:2604.22750, 2026.
+\bibitem{tokenomics} M. Salim, J. Latendresse, S. Khatoonabadi, E. Shihab. \emph{Tokenomics: Quantifying Where Tokens Are Used in Agentic Software Engineering}. arXiv:2601.14470, 2026.
 \end{thebibliography}
 
 \end{document}
