@@ -4,6 +4,16 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-06-10
+
+### Release plumbing
+- **PyPI publishing wired into the release workflow** — on tag push,
+  `release.yml` now uploads the built wheels to PyPI via trusted publishing
+  (OIDC, `pypa/gh-action-pypi-publish`; no long-lived token in the repo).
+  One-time setup: register this repository as a trusted publisher for the
+  `tracerazor` project on pypi.org (workflow `release.yml`, environment
+  `pypi`). `publish.sh` remains the manual fallback.
+
 ### Documentation, paper and housekeeping
 - **Paper reworked around the measured findings** (`paper/tracerazor.tex`) —
   new "measured intervention study" section reporting both rounds (the
