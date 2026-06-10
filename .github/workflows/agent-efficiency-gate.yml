@@ -28,7 +28,7 @@ jobs:
 
       # ── Audit a checked-in trace, gate on TAS and regressions ──────────────
       # In your own repo, reference the action by tag:
-      #   uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v0.4.1
+      #   uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v0.5.0
       - name: Audit agent trace
         id: audit
         uses: ./.github/actions/tracerazor
