@@ -27,6 +27,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from benchmark.case_study import find_binary
+
 REPO = Path(__file__).resolve().parent.parent.parent
 DEFAULT_TRACES_DIR = REPO / "benchmark" / "live" / "traces"
 DEFAULT_RESULTS_DIR = REPO / "benchmark" / "live" / "results"
@@ -42,14 +44,6 @@ APPLY_SAFE_TYPES = {
 }
 
 
-def find_binary() -> str:
-    for cand in ("release", "debug"):
-        p = REPO / "target" / cand / "tracerazor"
-        if p.is_file():
-            return str(p)
-    sys.exit("error: build the CLI first: cargo build --release -p tracerazor")
-
-
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--traces-dir", type=Path, default=DEFAULT_TRACES_DIR)
@@ -57,6 +51,13 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     binary = find_binary()
+    if binary is None:
+        print(
+            "error: build the CLI first: cargo build --release -p tracerazor "
+            "(or set TRACERAZOR_BIN)",
+            file=sys.stderr,
+        )
+        return 2
     args.results_dir.mkdir(parents=True, exist_ok=True)
     befores = sorted(args.traces_dir.glob("*.before.json"))
     if not befores:
@@ -93,8 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             fixes_path.unlink(missing_ok=True)
 
-        prompt_path.unlink(missing_ok=True)
-        prompt_path.touch()
+        prompt_path.write_text("", encoding="utf-8")
         applied = subprocess.run(
             [binary, "apply", str(report_path), "--to", str(prompt_path)],
             capture_output=True, text=True,
@@ -103,7 +103,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {pair}: apply failed: {applied.stderr.strip()[:300]}",
                   file=sys.stderr)
             return 1
-        n_patches = applied.stdout.count("] ")  # "[k/n] fix_type" lines
+        # applied_fixes mirrors apply's safe filter, so its length is the
+        # patch count — no parsing of apply's human-readable stdout needed.
+        n_patches = len(applied_fixes)
         patch_chars = len(prompt_path.read_text(encoding="utf-8").strip())
         rows.append((pair, report["score"]["score"], n_patches, patch_chars))
         print(

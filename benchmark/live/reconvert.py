@@ -15,11 +15,11 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
 
 from benchmark.convert_claude_code import convert
+from benchmark.live.common import pytest_passes, short_model
 
 REPO = Path(__file__).resolve().parent.parent.parent
 DEFAULT_TASKS_DIR = REPO / "benchmark" / "live" / "tasks"
@@ -60,16 +60,12 @@ def main(argv: list[str] | None = None) -> int:
             if not transcripts:
                 print(f"  skip {pair}/{condition}: no transcript", file=sys.stderr)
                 continue
-            check = subprocess.run(
-                ["python3", "-m", "pytest", "-q", "--tb=no"],
-                cwd=sandbox, capture_output=True, timeout=120,
-            )
-            passed = check.returncode == 0
+            passed = pytest_passes(sandbox)
             trace = convert(
                 transcripts[-1],
                 task=prompt_file.read_text(encoding="utf-8").strip(),
                 task_value=1.0 if passed else 0.0,
-                agent_name=f"claude-code ({args.model.split('-2')[0]})",
+                agent_name=f"claude-code ({short_model(args.model)})",
             )
             trace["trace_id"] = f"{pair}.{condition}"
             out = args.out_dir / f"{pair}.{condition}.json"

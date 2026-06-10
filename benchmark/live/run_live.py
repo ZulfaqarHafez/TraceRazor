@@ -37,6 +37,7 @@ import time
 from pathlib import Path
 
 from benchmark.convert_claude_code import convert
+from benchmark.live.common import pytest_passes, short_model
 
 REPO = Path(__file__).resolve().parent.parent.parent
 DEFAULT_TASKS_DIR = REPO / "benchmark" / "live" / "tasks"
@@ -102,14 +103,7 @@ def run_one(
     result = json.loads(proc.stdout)
     session_id = result["session_id"]
 
-    check = subprocess.run(
-        ["python3", "-m", "pytest", "-q", "--tb=no"],
-        cwd=sandbox,
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-    passed = check.returncode == 0
+    passed = pytest_passes(sandbox)
 
     matches = list(Path.home().glob(f".claude/projects/*/{session_id}.jsonl"))
     if not matches:
@@ -118,7 +112,7 @@ def run_one(
         matches[0],
         task=prompt,
         task_value=1.0 if passed else 0.0,
-        agent_name=f"claude-code ({model.split('-2')[0]})",
+        agent_name=f"claude-code ({short_model(model)})",
     )
     trace["trace_id"] = f"{task}.{condition}"
     out_path = out_dir / f"{task}.{condition}.json"
@@ -256,7 +250,8 @@ def main(argv: list[str] | None = None) -> int:
     passed = sum(r["passed"] for r in rows)
     print(
         f"done: {len(rows)}/{len(task_dirs)} runs, {passed}/{len(rows)} passed, "
-        f"total cost ${sum(r['cost_usd'] or 0 for r in rows):.3f} — log: {log_path}"
+        f"this invocation ${sum(r['cost_usd'] or 0 for r in rows):.3f} "
+        f"— log: {log_path}"
     )
     if failures:
         print("failures:\n  " + "\n  ".join(failures), file=sys.stderr)
