@@ -16,8 +16,7 @@ pip install tracerazor
 
 ```
   ┌───────────────────────────────────────────────────────────────────────────┐
-  │                           TraceRazor v1.1.0                               │
-  │                           TraceRazor v0.1.0                               │
+  │                           TraceRazor v0.4.0                               │
   │                                                                           │
   │   ┌──────────────┐    ┌──────────────────┐    ┌────────────────────────┐ │
   │   │   1. AUDIT   │    │   2. SAMPLING    │    │  3. SUBSTITUTABILITY   │ │
@@ -29,8 +28,6 @@ pip install tracerazor
   │   │ metrics.     │    │ winner.          │    │ correct prediction.    │ │
   │   │              │    │                  │    │                        │ │
   │   │ Offline.     │    │ Drop-in for      │    │ MiniLM embeddings +    │ │
-  │   │ ~2 ms on a   │    │ LangGraph.       │    │ sklearn classifier.    │ │
-  │   │ typical run. │    │                  │    │                        │ │
   │   │ ~2 ms / 50   │    │ LangGraph.       │    │ sklearn classifier     │ │
   │   │ steps; see   │    │                  │    │ (Python).              │ │
   │   │ benchmark.   │    │                  │    │                        │ │
@@ -44,8 +41,7 @@ Each pillar is independent. Use one, two, or all three.
 
 ## The Problem
 
-Independent surveys and our own audits suggest a substantial fraction, commonly **30-60%**, of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. Exact share is workload-dependent.
-A substantial fraction of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. The exact share is workload-dependent and we do not claim a universal figure. The most concrete number we can stand behind is our own measurement: on 24 public τ-bench / SWE-agent traces, **step redundancy alone runs 36–41%** (see [`docs/external_agent_audits.md`](docs/external_agent_audits.md)). Treat any broader "30–60%" rule of thumb as an unvalidated heuristic, not a measured constant.
+A substantial fraction of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. The exact share is workload-dependent and we do not claim a universal figure. The most concrete number we can stand behind is our own measurement: across 24 public τ-bench / SWE-agent traces, **mean step redundancy is 26% — 36–41% on the messy airline subset, 15% on retail, 22% on SWE-agent** (see [`docs/external_agent_audits.md`](docs/external_agent_audits.md)). Treat any broader "30–60%" rule of thumb as an unvalidated heuristic, not a measured constant.
 
 A typical production support agent handling 8 tool calls across 3 loops consumes **15,000-40,000 tokens per resolution**:
 
@@ -67,7 +63,6 @@ Most tools in this space are observability and cost dashboards: LangSmith, Langf
 
 ## Pillar 1: Audit
 
-.> Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Typical traces (tens of steps) audit in a few milliseconds; cost scales roughly linearly with step count. Reproduce locally with `cargo bench -p tracerazor-core`.
 > Identify wasted tokens, get fix patches, and estimate monthly savings. No API keys needed. Fast on typical traces — low single-digit milliseconds up to ~50 steps; cost grows with trace length (see the [Performance](#performance) note). Reproduce locally with `cargo bench -p tracerazor-core`.
 
 ### How It Works
@@ -79,19 +74,20 @@ flowchart TD
 
     subgraph M["14 Efficiency Signals (post-normalisation share of TAS)"]
         direction LR
-        S1["Step Redundancy\n14.2%"]
-        S2["Loop Detection\n10.8%"]
-        S3["Tool Accuracy\n10.8%"]
-        S4["Reasoning Depth\n8.3%"]
-        S5["Info Sufficiency\n8.3%"]
-        S6["Token Utilisation\n8.3%"]
-        S7["Context Efficiency\n8.3%"]
-        S8["Decision Optimality\n7.5%"]
-        S9["Goal Advancement\n5.8%"]
-        S10["Semantic Drift\n4.2%"]
-        V1["Verbosity Density\n6.7%"]
-        V2["Sycophancy/Hedging\n4.2%"]
-        V3["Compression Ratio\n2.5%"]
+        S1["Step Redundancy\n13.5%"]
+        S2["Loop Detection\n10.3%"]
+        S3["Tool Accuracy\n10.3%"]
+        S4["Reasoning Depth\n7.9%"]
+        S5["Info Sufficiency\n7.9%"]
+        S6["Token Utilisation\n7.9%"]
+        S7["Context Efficiency\n7.9%"]
+        S8["Decision Optimality\n7.1%"]
+        S9["Goal Advancement\n5.6%"]
+        S10["Semantic Drift\n4.0%"]
+        V1["Verbosity Density\n6.3%"]
+        V2["Sycophancy/Hedging\n4.0%"]
+        V3["Compression Ratio\n2.4%"]
+        O1["Observation Share\n4.8%"]
     end
 
     M --> W["Weighted Score 0-100 (ordinal)"]
@@ -186,8 +182,8 @@ Framework: langgraph
 Steps:     11   Tokens: 14280
 Analysed:  13ms
 ------------------------------------------------------
-TRACERAZOR SCORE:  74 / 100  [GOOD]  (raw structural: 77, task value: 0.90)
-VAE SCORE:         0.69
+TRACERAZOR SCORE:  75 / 100  [GOOD]  (raw structural: 77, task value: 0.90)
+VAE SCORE:         0.70
 MVTG:              49.1%  (trace is 49.1% above minimum viable token count)
 Note: TAS is an *ordinal* heuristic score - compare runs within one
 project over time, not as an absolute efficiency percentage.
@@ -201,18 +197,18 @@ RDA    Reasoning Depth Approp.        0.917    >0.75    PASS
 ISR    Info Sufficiency Rate          100.0%   >80%     PASS
 TUR    Token Utilisation Ratio        0.793    >0.35    PASS
 CCE    Context Carry-over Eff.        0.613    >0.60    PASS
-DBO    Decision Branch Optimality     0.750    >0.70    PASS [cold]
+DBO    Decision Branch Optimality     0.833    >0.70    PASS [cold]
 -- Verbosity Metrics ----------------------------------
 VDI    Verbosity Density Index        0.775    >0.60    PASS
 SHL    Sycophancy/Hedging Level       0.219    <0.20    FAIL
 CCR    Caveman Compression Ratio      0.384    <0.30    FAIL
 -- Goal Advancement -----------------------------------
-GAR    Goal Advancement Ratio         0.403    ≥0.40    PASS
+GAR    Goal Advancement Ratio         0.403    ≥0.40    PASS  (goal proxy: step 10)
 -- Semantic Path --------------------------------------
 CSD    Cross-Step Semantic Drift      0.438    ≥0.60    FAIL  [drifting pairs: 3→6]
 OBS    Observation Token Share        0.377    ≥0.30    PASS
 ------------------------------------------------------
-SAVINGS ESTIMATE   (estimated, not a measured re-run - see Limitations)
+SAVINGS ESTIMATE  (heuristic projection from flagged waste, not a measured re-run)
 Tokens saved:      7006  (49.1% reduction)
 Cost saved:        $0.0210 per run
 At 50K runs/month: $1050.90/month saved
@@ -322,7 +318,7 @@ with Tracer(agent_name="support-agent", framework="openai") as t:
 
 report = t.analyse()
 print(report.summary())
-# TAS 96.1/100 [Excellent] | 6 steps, 800 tokens | Saved 0 tokens (0%)
+# TAS 80.4/100 [Good] | 6 steps, 800 tokens | Saved 250 tokens (31%)
 
 report.assert_passes()   # raises AssertionError in CI if TAS < 70
 ```
@@ -333,14 +329,15 @@ Or via CLI:
 # Build the binary
 cargo build --release
 
-# Audit a trace file
-tracerazor audit traces/agent-run.json --threshold 75
+# Audit a shipped sample trace (gate CI by adding --threshold 75)
+tracerazor audit traces/support-agent-run-2847.json
 
-# Optimize the system prompt to hit TAS 82
-tracerazor optimize trace.json --output system_prompt_v2.txt --target-tas 82
+# Hermetic + verifiable: pure function of (trace, config, version)
+tracerazor audit traces/support-agent-run-2847.json --hermetic --format json > report.json
+tracerazor verify report.json traces/support-agent-run-2847.json
 
-# Compare before and after
-tracerazor bench --before trace.json --after trace_v2.json
+# Compare two traces per-metric
+tracerazor compare traces/external/tau_bench/gpt-4o_airline_task0.json traces/external/tau_bench/gpt-4o_retail_task0.json
 ```
 
 ### Audits on Real Public Agent Trajectories
@@ -377,14 +374,37 @@ assistants — we also audit trajectories sourced from the Hugging Face dataset
 ([`crates/tracerazor-cli/tests/huggingface_real_data.rs`](crates/tracerazor-cli/tests/huggingface_real_data.rs))
 and summarised in
 [`docs/huggingface_agentinstruct_audit.md`](docs/huggingface_agentinstruct_audit.md)
-(reproduce with `python -m benchmark.hf_audit_stats`). Mean TAS is **80.6** (all
-"Good"), but the exercise mattered because it exposed two metric blind spots on
-tool agents that the τ-bench traces did not — and fixed them:
+(reproduce with `python -m benchmark.hf_audit_stats`; every audit runs in a
+fresh state directory so measurements are order-independent). On the
+de-contaminated corpus mean TAS is **78.0** at the default floor (4 analysable
+traces) and **82.9** over the full 13-trace corpus with `--min-steps 2`. The
+exercise mattered because it surfaced — and fixed — a data-fidelity hazard plus
+four product blind spots that the τ-bench traces did not:
 
 | Finding on real ReAct data | Fix |
 |---|---|
-| **Loop detection never fired** (`os_6` runs `grep -o "Linux" <FILE> \| wc -l` 4×, but LDI keyed on exact tool+params) | LDI now detects **parametric loops** — same command template, different argument (LDIₙₒᵣₘ 1.00→0.56 on `os_6`) |
-| **GAR/CSD collapsed** (ReAct fuses the reasoning into the tool-call turn, which both metrics ignored) | GAR/CSD now score tool-call steps carrying substantive **reasoning prose**, not just `reasoning`-typed steps (GARₙₒᵣₘ ~doubles on tool-heavy traces) |
+| **Few-shot scaffolding audited as agent behaviour** (every row embeds the dataset's one-shot demo, `loss=false`; it pseudo-replicated one canned trajectory into every trace) | Converter audits only real-task turns via the **`loss` flag** (text-marker fallback). Mean TAS 82.8→78.0 — the demo was *padding* every score |
+| **Loop detection never fired** (`os_6` runs `grep -o "Linux" <FILE> \| wc -l` 4×, but LDI keyed on exact tool+params) | LDI now detects **parametric loops** — same command template, different argument (LDIₙₒᵣₘ 1.00→0.33 on the clean `os_6`) |
+| **GAR/CSD collapsed** (ReAct fuses the reasoning into the tool-call turn, which both metrics ignored) | GAR/CSD score tool-call steps carrying substantive **reasoning prose**, not just `reasoning`-typed steps |
+| **Code syntax diluted similarity** (wholesale fence-stripping made it *worse*: CSDₙₒᵣₘ 0.415→0.353 — the argument literals are the goal anchors) | Fenced code is reduced to its **argument literals** (paths, quoted strings, numbers); syntax dropped (GARₙₒᵣₘ 0.202→0.348 overall) |
+| **DBO structurally capped single-tool agents** (a bash operator's n calls = n−1 "retries" when keyed on tool name) | Cold-start retry/thrash signals key on the **invocation** (tool+params): DBOₙₒᵣₘ 0.59→0.88, with the one genuine-failure trace the only one below the ceiling |
+
+**Coverage finding:** with scaffolding excluded, ~69% of real trajectories
+(9/13) finish in 3–4 steps — below the default 5-step analysis floor. The
+`audit` command now takes **`--min-steps N`** (default unchanged, clamped ≥2)
+so short real-world task runs are auditable by explicit opt-in; the gate
+verifies 13/13 full-corpus coverage.
+
+**Auditable runs (provenance):** every audit now embeds a **run manifest**
+(SHA-256 of the input trace bytes, tool version, timestamp, the similarity
+backend that *actually* ran, the exact weights + their hash, step floor, and
+any store-derived baselines). `--hermetic` makes the score a pure function of
+(trace, config, version), and **`tracerazor verify <report> <trace>`**
+re-checks the hash and exactly re-scores hermetic BoW runs — one flipped byte
+fails verification. Reports also carry **AGF (Action/Claim Grounding
+Fidelity)**: a deterministic diagnostic measuring how much of what the agent
+did and concluded is traceable to prior context/observations, with every
+ungrounded literal itemised (mean 0.854 on the AgentInstruct corpus).
 
 Provenance and a live dataset-viewer fetch path are in
 [`traces/external/huggingface/agentinstruct/SOURCE.md`](traces/external/huggingface/agentinstruct/SOURCE.md);
@@ -392,7 +412,7 @@ the converter is [`tools/convert_agentinstruct.py`](tools/convert_agentinstruct.
 
 ### Calibrating TAS to your workload
 
-The thirteen sub-metrics are combined with weights that are heuristic by
+The fourteen sub-metrics are combined with weights that are heuristic by
 default. If you want TAS to be a *calibrated* indicator for your use case rather
 than an ordinal one, fit the weights to ground truth with the calibration tool
 in [`calibration/`](calibration/). The supported objective is **recoverable
@@ -618,8 +638,8 @@ once real-data labels are in place.
 
 ```bash
 # Generate synthetic training data (requires ANTHROPIC_API_KEY in .env)
-python -m redundancy.generate_data --n 300 --run-id run_synthetic
-python -m redundancy.generate_data --n 100 --run-id run_v3 --out results/run_v3/judge_transcripts.jsonl
+python -m tracerazor.redundancy.generate_data --n 300 --run-id run_synthetic
+python -m tracerazor.redundancy.generate_data --n 100 --run-id run_v3 --out results/run_v3/judge_transcripts.jsonl
 
 # Full evaluation: 5-fold CV, bootstrap CI, PR curves, confusion matrices, feature importance
 python -m tracerazor.redundancy.evaluate_full --results-dir results --test-run run_v3
@@ -763,7 +783,7 @@ hooks.assert_passes()
 ```yaml
 - uses: ./.github/actions/tracerazor
   with:
-    trace-file: traces/latest.json
+    trace-file: traces/latest-run.json
     threshold: '75'
 ```
 
@@ -793,6 +813,8 @@ Commands:
   simulate   Project TAS impact of removing or merging steps
   cost       Monthly savings estimate across a set of traces
   export     Forward a stored trace to OTEL or a webhook
+  verify     Re-verify a report against its trace and run manifest
+  list       List traces stored in the current session
 ```
 
 ```bash
@@ -838,7 +860,7 @@ Start: `./target/release/tracerazor-server`
 ```
 tracerazor/
 ├── crates/
-│   ├── tracerazor-core/       # 13 metrics, TAS scoring, fix generation, IAR
+│   ├── tracerazor-core/       # 14 metrics, TAS scoring, fix generation, IAR
 │   ├── tracerazor-ingest/     # Parsers: raw JSON, LangSmith, OpenTelemetry
 │   ├── tracerazor-semantic/   # BoW similarity + LLM backend (OpenAI / Anthropic / compatible)
 │   ├── tracerazor-store/      # SQLite: traces, KB, baselines, anomaly detection
@@ -884,15 +906,15 @@ Reproduce with `cargo test --workspace` and `pytest`.
 
 | Crate / Module | Tests |
 |---|---|
-| tracerazor-core | 146 |
+| tracerazor-core | 160 |
 | tracerazor-ingest | 3 |
-| tracerazor-semantic | 21 |
+| tracerazor-semantic | 22 |
 | tracerazor-store | 10 |
 | tracerazor-server | 17 |
-| tracerazor-cli (2 unit + 10 integration) | 12 |
+| tracerazor-cli (2 unit + 13 integration) | 15 |
 | Doc-tests | 9 |
-| **Total Rust** | **218, all pass** |
-| **Python** (pytest) | **231 pass, 1 skipped** |
+| **Total Rust** | **236, all pass** |
+| **Python** (pytest) | **238 pass, 3 skipped** |
 
 ---
 

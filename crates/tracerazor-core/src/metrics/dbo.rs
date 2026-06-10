@@ -82,19 +82,34 @@ const TARGET: f64 = 0.70;
 /// Weighted combination of three signals already present on every `TraceStep`:
 ///   * `success_rate`    — share of tool calls that returned `tool_success = true`
 ///   * `non_retry_rate`  — `1 - (retries / total_tool_calls)` where a retry is
-///     any tool call after the first to the same `tool_name`
-///   * `unique_ratio`    — `unique_tools / total_tool_calls`, penalises thrashing
+///     a repeat of the same *invocation* (tool name + parameters)
+///   * `unique_ratio`    — `unique_invocations / total_tool_calls`, penalises
+///     thrashing (re-issuing the same call instead of making progress)
+///
+/// Retries and uniqueness key on the invocation, not the bare tool name:
+/// calling `bash` with seven different commands — or `get_order` for seven
+/// different orders — is normal progress, while re-issuing an identical call
+/// is a retry. Keying on the name alone structurally capped single-tool
+/// command agents (bash/SQL operators) near the floor regardless of conduct.
+/// Steps without parameters fall back to name-keying.
 ///
 /// Final score is clamped to `[COLD_START_FLOOR, COLD_START_CEILING]` so a
 /// pathological first trace still has bounded impact on the composite TAS,
 /// and a clean first trace cannot fully replace what history would give.
 pub fn single_trace_efficiency(trace: &Trace) -> f64 {
-    let tool_calls: Vec<&str> = trace
+    let invocations: Vec<String> = trace
         .steps
         .iter()
-        .filter_map(|s| s.tool_name.as_deref())
+        .filter(|s| s.tool_name.is_some())
+        .map(|s| {
+            let tool = s.tool_name.as_deref().unwrap_or("none");
+            match s.tool_params.as_ref() {
+                Some(p) => format!("{tool}:{p}"),
+                None => tool.to_string(),
+            }
+        })
         .collect();
-    let total = tool_calls.len();
+    let total = invocations.len();
     if total == 0 {
         // No tool calls at all → defer to the non-cold-start "perfect" branch.
         return 1.0;
@@ -110,8 +125,8 @@ pub fn single_trace_efficiency(trace: &Trace) -> f64 {
 
     let mut seen: HashMap<&str, u32> = HashMap::new();
     let mut retries = 0usize;
-    for tool in &tool_calls {
-        let count = seen.entry(*tool).or_insert(0);
+    for inv in &invocations {
+        let count = seen.entry(inv.as_str()).or_insert(0);
         if *count > 0 {
             retries += 1;
         }
@@ -318,6 +333,41 @@ mod tests {
         assert!(
             (result.score - COLD_START_FLOOR).abs() < 0.001,
             "expected clamp to floor, got {}",
+            result.score
+        );
+    }
+
+    #[test]
+    fn test_cold_start_single_tool_distinct_invocations_not_penalised() {
+        // A bash operator issuing seven *different* commands is making normal
+        // progress, not retrying. Keyed on invocation (tool + params), a clean
+        // single-tool trace must reach the cold-start ceiling, not the floor.
+        let mut trace = make_trace(&["bash"; 7], 1400);
+        for (i, s) in trace.steps.iter_mut().enumerate() {
+            s.tool_params = Some(serde_json::json!({"command": format!("cmd-{i}")}));
+        }
+        let result = compute(&trace, &[]);
+        assert!(result.cold_start);
+        assert!(
+            (result.score - COLD_START_CEILING).abs() < 0.001,
+            "distinct invocations should hit the ceiling, got {}",
+            result.score
+        );
+    }
+
+    #[test]
+    fn test_cold_start_repeated_invocation_is_a_retry() {
+        // The same command re-issued three times IS thrash, even via one tool.
+        let mut trace = make_trace(&["bash"; 3], 600);
+        for s in trace.steps.iter_mut() {
+            s.tool_params = Some(serde_json::json!({"command": "ls /etc"}));
+        }
+        let result = compute(&trace, &[]);
+        assert!(result.cold_start);
+        // success 1.0, non_retry 1/3, unique 1/3 → 0.5 + 0.1 + 0.067 = 0.667.
+        assert!(
+            result.score < COLD_START_CEILING - 0.1,
+            "identical invocations must be penalised, got {}",
             result.score
         );
     }

@@ -13,7 +13,7 @@
 /// Requires Phase 2 embedding backend (similarity_fn).
 use serde::{Deserialize, Serialize};
 
-use crate::metrics::carries_reasoning;
+use crate::metrics::{carries_reasoning, reasoning_text};
 use crate::types::Trace;
 
 pub const TARGET: f64 = 0.60;
@@ -82,7 +82,10 @@ where
         };
     }
 
-    // Compute similarities for consecutive pairs.
+    // Compute similarities for consecutive pairs. Similarity sees each step's
+    // *thought* (code fences stripped) so shell/SQL tokens don't dilute the
+    // continuity between consecutive ReAct turns.
+    let texts: Vec<String> = reasoning_steps.iter().map(|s| reasoning_text(s)).collect();
     let mut step_results = Vec::new();
     let mut similarities = Vec::new();
     let mut high_drift_pairs = Vec::new();
@@ -91,7 +94,7 @@ where
         let from_step = reasoning_steps[i];
         let to_step = reasoning_steps[i + 1];
 
-        let sim = similarity_fn(&from_step.content, &to_step.content)
+        let sim = similarity_fn(&texts[i], &texts[i + 1])
             .clamp(0.0, 1.0);
 
         let sim_rounded = (sim * 1000.0).round() / 1000.0;
@@ -298,6 +301,37 @@ mod tests {
         // Three reasoning-bearing tool steps → two consecutive pairs.
         assert_eq!(result.step_results.len(), 2);
         assert_eq!(result.score, 1.0);
+    }
+
+    #[test]
+    fn code_fences_do_not_dilute_continuity() {
+        // Two consecutive ReAct turns share the same thought and the same
+        // target file, but use different command syntax. With an exact-match
+        // similarity, CSD can only score 1.0 if the fences are reduced to
+        // their literals (the shared path) — the full contents differ.
+        let thought = "Think: I will examine the system log and then narrow \
+                       down to error lines before counting them.\n\nAct: bash";
+        let trace = make_trace(vec![
+            step(
+                1,
+                &format!("{thought}\n\n```bash\ncat /var/log/syslog\n```"),
+                StepType::ToolCall,
+            ),
+            step(
+                2,
+                &format!("{thought}\n\n```bash\ngrep -c ERROR /var/log/syslog\n```"),
+                StepType::ToolCall,
+            ),
+        ]);
+        let sim = |a: &str, b: &str| {
+            let norm = |s: &str| s.split_whitespace().collect::<Vec<_>>().join(" ");
+            if norm(a) == norm(b) { 1.0 } else { 0.0 }
+        };
+        let result = compute(&trace, sim);
+        assert_eq!(
+            result.score, 1.0,
+            "command syntax must not dilute continuity: {result:?}"
+        );
     }
 
     #[test]

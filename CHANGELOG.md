@@ -4,7 +4,66 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Ship-plan Phase 0 (trust hygiene)
+- **One version everywhere: 0.4.0** — workspace Cargo.toml, inter-crate dep
+  declarations, pyproject, `__version__`, docker-compose, README banner all
+  agree; enforced by a pytest (`tests/test_readme_claims.py`).
+- **Exit-code contract** — `0` success/pass, `1` explicit gate failed
+  (`--threshold`, regression, tamper), `2` error (bad input/IO/parse).
+  Gating is now opt-in: without `--threshold`, a low TAS never exits non-zero.
+- **`_find_binary` fixed** — the Python client searched four directories up
+  and missed a source checkout's own `target/release/`; now one level up.
+- **README repaired** — dual-version banner, duplicated ASCII/blockquote
+  lines, contradictory problem paragraphs, stale sample outputs (75/0.70/0.833
+  as the binary actually prints), quickstart output corrected to the measured
+  `TAS 80.4`, phantom file paths replaced with shipped traces, mermaid now
+  shows all 14 signals with table-consistent shares, "thirteen"→fourteen,
+  CLI table gains `verify`/`list`, redundancy claim restated corpus-wide
+  (26% mean; 36–41% airline / 15% retail / 22% SWE). Internal ticket IDs
+  stripped from `--help`.
+- **Doc tables regenerated + CI drift check** — `benchmark/RESULTS.md` and
+  `docs/external_agent_audits.md` regenerated against 0.4.0 with hermetic,
+  order-independent audits (`run_benchmarks.py` now uses `--hermetic` with a
+  fresh state dir per audit); CI fails if RESULTS.md drifts from the scorer.
+- **Repo hygiene** — `LOOP_LOG.md` → `docs/research_log.md`; PRD `.docx`
+  removed; `benchmarks/` merged into `benchmark/`; `publish.sh` no longer
+  references a non-existent crate; example fixes (package name, `.env` path).
+
 ### Added
+- **Run manifest + `tracerazor verify`** — every audit report embeds a
+  provenance manifest (trace SHA-256, tool version, timestamp, actual
+  similarity backend incl. recorded embedding→BoW fallbacks, exact weights +
+  weights SHA-256, threshold, step floor, store-derived baselines). New
+  `--hermetic` flag makes scoring a pure function of (trace, config, version);
+  `tracerazor verify <report> <trace>` re-checks the hash and exactly
+  re-scores hermetic BoW runs, exiting non-zero on tamper or divergence.
+  Non-reproducible conditions (embeddings, store-influenced baselines) are
+  detected and reported as hash-only verification.
+- **AGF (Action/Claim Grounding Fidelity) diagnostic** — deterministic,
+  model-free provenance metric: share of tool-call argument literals grounded
+  in prior context, and of final-answer literals grounded in
+  environment-provided text; every ungrounded literal itemised per step.
+  Reported alongside TAS, not folded into the composite pending calibration.
+- **Metric-validity audit on 37 real traces** — per-metric fire rates,
+  realised-vs-nominal weight influence, and correlation structure documented
+  in the paper: TVI dominates final TAS (r=0.89), TUR carries 28% of raw-TAS
+  variance, GAR/CSD never exceed 0.62/0.68 on real data, DBO≈TCA (r=0.81).
+  Recorded as the baseline for quantile recalibration in `calibration/`.
+
+### Fixed
+- **`--store false` now works** — the flag previously rejected an explicit
+  value, making store write-back impossible to disable.
+
+### Performance
+- **Memoised TF vectors in the default similarity closure** — the BoW backend
+  re-tokenised both strings on every call (9,534 calls over 191 distinct
+  texts on a 100-step trace); each distinct text is now tokenised once.
+  Output is identical (equivalence-tested).
+- **Incremental CCE prior-n-gram set** — replaces the O(n²·len) whole-prefix
+  re-join per step; boundary-spanning n-grams preserved via a tail carry,
+  equivalence-tested against the original implementation.
+
+### Added (real-data evaluation cycle)
 - **Hugging Face real-data audit harness** — sourced real ReAct agent
   trajectories from the Hugging Face dataset `zai-org/AgentInstruct` (bash + SQL
   splits), a converter (`tools/convert_agentinstruct.py`), a bundled/disk/live
@@ -13,9 +72,38 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
   and a `cargo test` statistics gate
   (`crates/tracerazor-cli/tests/huggingface_real_data.rs`) that audits the
   corpus end-to-end. Establishes measured behaviour on tool-using agents
-  (mean TAS 80.6, all "Good").
+  (de-contaminated corpus: mean TAS 78.0 at the default floor, 82.9 over the
+  full corpus with `--min-steps 2`). Every audit runs in a fresh state
+  directory so measurements are independent of audit order.
+- **`tracerazor audit --min-steps N`** — opt-in floor override (default
+  unchanged at 5; clamped ≥2). With few-shot scaffolding excluded, ~69% of real
+  AgentInstruct trajectories finish in 3–4 steps; the flag makes that real
+  trace class auditable by explicit choice, and the skip notice now points at
+  it.
+
+### Fixed (real-data evaluation cycle)
+- **AgentInstruct converter no longer audits few-shot scaffolding** — upstream
+  rows embed the dataset's fixed one-shot demo (and the db split's "Ok." ack)
+  before the real task, marked `loss=false` on gpt turns. The converter now
+  audits only real-task turns (loss-flag rule, text-marker fallback).
+  Previously the identical demo steps were pseudo-replicated into every trace
+  and mis-anchored goal metrics; their removal moved mean TAS 82.8→78.0 (the
+  demo was padding every score). Corpus widened with 4 more real rows (os_7,
+  os_11, os_16, os_18) fetched live from the Hub.
+- **DBO cold-start no longer structurally penalises single-tool agents** — the
+  retry/thrash signals keyed on the bare tool name, capping a bash/SQL operator
+  near the 0.5 floor by construction (n calls = n−1 "retries"). They now key on
+  the invocation (tool + params): re-running a tool with new arguments is
+  progress; re-issuing an identical call is a retry. Corpus mean DBOₙₒᵣₘ
+  0.59→0.88 with genuine-failure traces still discriminated.
 
 ### Changed
+- **GAR/CSD reduce fenced code to its argument literals** — scored ReAct turns
+  previously fed prose+code into BoW similarity. A wholesale fence-strip
+  ablation made scores *worse* (the code's paths/quoted strings are the goal
+  anchors); the shipped reduction keeps argument literals and drops command
+  names/flags/operators — the inverse of the LDI skeleton. Corpus mean GARₙₒᵣₘ
+  0.202→0.348 across the exercise.
 - **LDI now detects parametric loops** — loop detection previously keyed on an
   exact tool+params state hash and missed the dominant real loop shape for
   tool-using agents: the same command template run once per argument (e.g. a

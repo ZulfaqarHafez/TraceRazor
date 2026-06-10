@@ -355,6 +355,163 @@ _OS_ROWS = [
                 "counts from all the files, which is 1+3+1+1=6.\n\nAct: answer(6)"},
         ],
     ),
+    _os_row(
+        "os_7",
+        'Calculate the total number of bytes in all ".pdf" files present in the '
+        'directory "/home/user/documents".',
+        [
+            {"from": "gpt", "loss": True, "value":
+                "Think: Let's start the task step by step. Initially, we would like to "
+                "list down all the \".pdf\" files existing within \"/home/user/documents\" "
+                "directory. \n\nAct: bash\n\n```bash\nfind /home/user/documents -type f "
+                "-name \"*.pdf\"\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\n/home/user/documents/project2.pdf\n"
+                "/home/user/documents/document3.pdf\n/home/user/documents/project1.pdf\n"
+                "root@4dde335fe6c6:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: The list of files has been provided. Now the task is to calculate "
+                "the size of each file. \n\nAct: bash\n\n```bash\ndu -b "
+                "/home/user/documents/project2.pdf /home/user/documents/document3.pdf "
+                "/home/user/documents/project1.pdf\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\n95\t/home/user/documents/project2.pdf\n"
+                "25\t/home/user/documents/document3.pdf\n"
+                "52\t/home/user/documents/project1.pdf\nroot@4dde335fe6c6:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: I got the byte sizes of all the given files. Now I'll add up "
+                "these sizes.\n\nAct: bash\n\n```bash\necho $((95 + 25 + 52))\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\nroot@4dde335fe6c6:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: I need to find the sum of the byte sizes 95, 25, and 52.\n\n"
+                "Act: answer(172)"},
+        ],
+    ),
+    _os_row(
+        "os_11",
+        "Check the current users logged into the system who have a bash shell. "
+        "Print out those users' login, shell, and their home directory.",
+        [
+            {"from": "gpt", "loss": True, "value":
+                "Think: To check the current users logged into the system with bash "
+                "shell, I first need to access the system's password file /etc/passwd. "
+                "This file includes user account information, including the login shell "
+                "and home directory.\n\nAct: bash\n\n```bash\ncat /etc/passwd\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\nroot:x:0:0:root:/root:/bin/bash\n"
+                "daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin\n"
+                "bin:x:2:2:bin:/bin:/usr/sbin/nologin\n"
+                "sys:x:3:3:sys:/dev:/usr/sbin/nologin\n"
+                "sync:x:4:65534:sync:/bin:/bin/sync\n"
+                "games:x:5:60:games:/usr/games:/usr/sbin/nologin\n"
+                "man:x:6:12:man:/var/cache/man:/usr/sbin/nologin\n"
+                "lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin\n"
+                "mail:x:8:8:mail:/var/mail:/usr/sbin/nologin\n"
+                "news:x:9:9:news:/var/spool/news:/usr/sbin/nologin\n"
+                "uucp:x:10:10:uucp:/var/spool/uucp:/usr/sbin/nologin\n"
+                "proxy:x:13:13:proxy:/bin:/usr/sbin/nologin\n"
+                "www-data:x:33:33:www-data:/var/www:/usr/sbin/nologin\n"
+                "backup:x:34:34:backup:/var/backups:/usr/sbin/nologin\n"
+                "list:x:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin\n"
+                "irc:x:39:39:ircd:/var/run/ircd:/usr/sbin/nologin\n"
+                "gnats:x:41:41:Gnats Bug-Repo\n"
+                "[truncated because the output is too long]"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: The password file contains records for many users and not all of "
+                "them have a bash shell based on their last entry in each line. I need to "
+                "filter those lines which have \"/bin/bash\" which signifies that the "
+                "user's login shell is bash.\n\nAct: bash\n\n```bash\ncat /etc/passwd | "
+                "grep \"/bin/bash\"\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\nroot:x:0:0:root:/root:/bin/bash\n"
+                "root@8cd1ba423ce0:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: Now that I have the records of users who are using \"/bin/bash\" "
+                "shell, I need to extract the username, the home directory, and the shell "
+                "using `cut` command’s `-d` and `-f` options. The `-d` option is used "
+                "to specify the delimiter, which is `:` in this case. The `-f` option is "
+                "used to specify the fields that we want to extract, which are 1st field "
+                "(username), 6th field (home directory) and 7th field (shell).\n\n"
+                "Act: bash\n\n```bash\ncat /etc/passwd | grep \"/bin/bash\" | cut -d: "
+                "-f1,6,7\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\nroot:/root:/bin/bash\nroot@8cd1ba423ce0:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: Now I get the user info, however, the format of the info is not "
+                "the required format. I should convert the format into \"User: <login>, "
+                "Home Directory: <directory>, Shell: <shell>\".\n\nAct: bash\n\n```bash\n"
+                "cat /etc/passwd | grep \"/bin/bash\" | cut -d: -f1,6,7 | awk -F: "
+                "'{print \"User: \" $1 \", Home Directory: \" $2 \", Shell: \" $3}'\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\nUser: root, Home Directory: /root, Shell: "
+                "/bin/bash\nroot@8cd1ba423ce0:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: Now I get the answer, the user is root.\n\n"
+                "Act: answer(User: root, Home Directory: /root, Shell: /bin/bash)"},
+        ],
+    ),
+    _os_row(
+        "os_16",
+        "Zip all .txt files in the current directory into an archive named "
+        "'archived_texts.zip'",
+        [
+            {"from": "gpt", "loss": True, "value":
+                "Think: Check if there are any .txt files present in the current "
+                "directory.\n\nAct: bash\n\n```bash\nls *.txt\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\nfile1.txt  file2.txt  file3.txt\n"
+                "root@193c97cbad3c:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: There are .txt files in the current directory. Now I can zip "
+                "these files into archived_texts.zip.\n\nAct: bash\n\n```bash\nzip "
+                "archived_texts.zip *.txt\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\n  adding: file1.txt (stored 0%)\n"
+                "  adding: file2.txt (stored 0%)\n  adding: file3.txt (stored 0%)\n"
+                "root@193c97cbad3c:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: The .txt files have been added to the zip file successfully. Now "
+                "check if the archived_texts.zip file has been created in the current "
+                "directory.\n\nAct: bash\n\n```bash\nls *.zip\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\narchived_texts.zip\nroot@193c97cbad3c:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: The file 'archived_texts.zip' exists in the current directory. "
+                "The task is finished.\n\nAct: finish"},
+        ],
+    ),
+    _os_row(
+        "os_18",
+        "Find out the total used disk space by JPEG pictures in your home "
+        "directory (including subdirectories).",
+        [
+            {"from": "gpt", "loss": True, "value":
+                "Think: First, I need to find and list all .jpeg files in the home "
+                "directory including its subdirectories. The 'find' command is used with "
+                "'~/' to represent the home directory. \n\nAct: bash\n\n```bash\nfind ~/ "
+                "-name \"*.jpeg\"\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\n/root/medias/images/pic1.jpeg\n"
+                "/root/medias/images/pic2.jpeg\nroot@6cf615885aba:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: Now, I have to find the used disk space by each file, to do this "
+                "I can use the du -b command and pipe the output of the find command into "
+                "it.\n\nAct: bash\n\n```bash\nfind ~/ -name \"*.jpeg\" | xargs du -b\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\n14\t/root/medias/images/pic1.jpeg\n"
+                "14\t/root/medias/images/pic2.jpeg\nroot@6cf615885aba:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: Now that I have the disk usage by each file, I can sum up the "
+                "sizes using awk. \n\nAct: bash\n\n```bash\nfind ~/ -name \"*.jpeg\" | "
+                "xargs du -b | awk '{total = total + $1} END{print total}'\n```"},
+            {"from": "human", "loss": None, "value":
+                "The output of the OS:\n\n28\nroot@6cf615885aba:/#"},
+            {"from": "gpt", "loss": True, "value":
+                "Think: Now, I got the answer as 28. It means the total disk space used "
+                "by JPEG pictures in the home directory is 28 bytes.\n\nAct: answer(28)"},
+        ],
+    ),
 ]
 
 # ── Database split: a SQL agent (ReAct: explanation / Action: Operation|Answer) ──

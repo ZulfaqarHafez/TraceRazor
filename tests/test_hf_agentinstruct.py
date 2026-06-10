@@ -15,6 +15,7 @@ from tools.convert_agentinstruct import (
     convert_row,
     _classify_gpt_turn,
     _looks_failed,
+    _real_task_turns,
 )
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -86,6 +87,53 @@ class TestFailureDetection:
         assert not _looks_failed("Timeout error --- task:33 --- on:worker:1908")
 
 
+# ── Few-shot scaffolding exclusion ───────────────────────────────────────────
+
+class TestRealTaskTurns:
+    def test_loss_flags_split_demo_from_real_task(self):
+        # AgentInstruct os rows: gpt turns with loss=False are the dataset's
+        # one-shot demo; the real trajectory carries loss=True.
+        rows = {r["id"]: r for r in HFAgentInstructLoader(source="bundled").load()}
+        turns = _real_task_turns(rows["os_0"]["conversations"])
+        gpt = [t for t in turns if t["from"] == "gpt"]
+        assert gpt and all(t["loss"] is True for t in gpt)
+        # The kept human turn states the *real* problem, not the demo's.
+        assert "new problem" in turns[0]["value"].lower()
+
+    def test_db_ack_scaffolding_excluded(self):
+        # The db split's "Ok." acknowledgement is scaffolding (loss=False).
+        rows = {r["id"]: r for r in HFAgentInstructLoader(source="bundled").load()}
+        trace = convert_row(rows["db_0"])
+        assert all("ok." != s["content"].strip().lower() for s in trace["steps"])
+        assert len(trace["steps"]) == 2
+
+    def test_marker_fallback_without_loss_flags(self):
+        conv = [
+            {"from": "human", "value": "demo task"},
+            {"from": "gpt", "value": "demo answer"},
+            {"from": "human", "value": "Now, I will start a new problem in a new OS. My problem is: real task"},
+            {"from": "gpt", "value": "real answer"},
+        ]
+        turns = _real_task_turns(conv)
+        assert len(turns) == 2
+        assert "real task" in turns[0]["value"]
+
+    def test_passthrough_without_scaffolding(self):
+        conv = [
+            {"from": "human", "value": "the task"},
+            {"from": "gpt", "value": "the answer", "loss": True},
+        ]
+        assert _real_task_turns(conv) == conv
+
+    def test_first_steps_differ_across_rows(self):
+        # Before scaffolding exclusion every converted trace began with the
+        # identical demo step ("count the files in /etc"), pseudo-replicating
+        # it into the statistics. Real first steps must differ across tasks.
+        rows = HFAgentInstructLoader(source="bundled", split="os").load()
+        firsts = {convert_row(r)["steps"][0]["content"] for r in rows}
+        assert len(firsts) == len(rows), "first steps must be task-specific"
+
+
 # ── Converter end-to-end ─────────────────────────────────────────────────────
 
 class TestConvertConversations:
@@ -128,9 +176,14 @@ class TestGeneratedCorpus:
             assert trace["steps"]
             assert trace["total_tokens"] == sum(s["tokens"] for s in trace["steps"])
 
-    def test_majority_are_analysable(self):
+    def test_corpus_shape_documents_floor_coverage(self):
+        # With the dataset's few-shot scaffolding excluded, most real
+        # AgentInstruct trajectories are 3-4 steps. The corpus keeps that
+        # sub-floor majority on purpose: it measures the 5-step analysis
+        # floor's coverage cost on real data (and exercises the skip path).
         files = sorted(CORPUS_DIR.glob("agentinstruct-*.json"))
-        analysable = [
-            f for f in files if len(json.loads(f.read_text())["steps"]) >= 5
-        ]
-        assert len(analysable) >= 7
+        n_steps = [len(json.loads(f.read_text())["steps"]) for f in files]
+        analysable = sum(1 for n in n_steps if n >= 5)
+        sub_floor = sum(1 for n in n_steps if n < 5)
+        assert analysable >= 4
+        assert sub_floor >= analysable

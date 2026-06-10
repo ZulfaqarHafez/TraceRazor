@@ -122,6 +122,70 @@ pub struct TraceReport {
     /// **not** part of the TAS composite. Keys are stable snake_case strings.
     #[serde(default)]
     pub features: std::collections::BTreeMap<String, f64>,
+    /// Action/Claim Grounding Fidelity (AGF) — deterministic provenance
+    /// diagnostic: the share of tool-call argument literals and final-answer
+    /// claims that are traceable to prior context/observations. Reported
+    /// alongside TAS but **not** folded into the composite pending weight
+    /// calibration (see `metrics::agf`).
+    #[serde(default)]
+    pub agf: Option<crate::metrics::AgfResult>,
+    /// Run manifest binding this report to its inputs: trace content hash,
+    /// tool version, weights, similarity backend, and the store-derived
+    /// baselines that influenced scoring. `None` on reports produced by
+    /// embedding callers that do not supply one.
+    #[serde(default)]
+    pub manifest: Option<RunManifest>,
+}
+
+/// Provenance manifest: everything needed to attribute — and, for hermetic
+/// bag-of-words runs, byte-for-byte re-verify — a TraceRazor score.
+///
+/// Auditable-run rationale: a score is only evidence if a third party can
+/// check *what* was scored (`trace_sha256`), *by what* (`tool_version`,
+/// `similarity_backend`), *under which configuration* (`weights` + hash,
+/// `threshold`, `min_steps`), and *with which hidden inputs* (the store-derived
+/// baselines). `tracerazor verify` consumes this block.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RunManifest {
+    /// SHA-256 of the raw input trace file bytes (before parsing).
+    pub trace_sha256: String,
+    /// `CARGO_PKG_VERSION` of the binary that produced the report.
+    pub tool_version: String,
+    /// RFC 3339 UTC timestamp of the audit.
+    pub created_at: String,
+    /// Similarity backend actually used: `"bow"` or `"embeddings:<model>"`.
+    /// Silent embedding→BoW fallbacks are recorded here as fact.
+    pub similarity_backend: String,
+    /// The exact composite weights used (inline — small and self-contained).
+    pub weights: crate::scoring::Weights,
+    /// SHA-256 of the canonical JSON serialisation of `weights`.
+    pub weights_sha256: String,
+    /// TAS pass threshold in force.
+    pub threshold: f64,
+    /// Cost basis used for savings estimates (USD per million tokens).
+    pub cost_per_million_tokens: f64,
+    /// Step floor the audit ran with.
+    pub min_steps: usize,
+    /// True when the run read nothing from and wrote nothing to the local
+    /// store — scoring was a pure function of (trace, config, version).
+    pub hermetic: bool,
+    /// Store-derived baseline token count that influenced VAE, if any.
+    pub baseline_tokens: Option<u32>,
+    /// Store-derived historical median steps that influenced RDA, if any.
+    pub historical_median_steps: Option<f64>,
+    /// Number of store-derived historical tool sequences fed to DBO.
+    pub n_historical_sequences: usize,
+}
+
+impl RunManifest {
+    /// A non-hermetic run with any store-derived input is not exactly
+    /// reproducible from the manifest alone; verification is then limited to
+    /// hash/version checks.
+    pub fn store_influenced(&self) -> bool {
+        self.baseline_tokens.is_some()
+            || self.historical_median_steps.is_some()
+            || self.n_historical_sequences > 0
+    }
 }
 
 impl TraceReport {

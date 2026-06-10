@@ -17,10 +17,10 @@ name = "tracerazor"
 path = "src/main.rs"
 
 [dependencies]
-tracerazor-core = { path = "../tracerazor-core", version = "0.1.0" }
-tracerazor-ingest = { path = "../tracerazor-ingest", version = "0.1.0" }
-tracerazor-semantic = { path = "../tracerazor-semantic", version = "0.1.0" }
-tracerazor-store = { path = "../tracerazor-store", version = "0.1.0" }
+tracerazor-core = { path = "../tracerazor-core", version = "0.4.0" }
+tracerazor-ingest = { path = "../tracerazor-ingest", version = "0.4.0" }
+tracerazor-semantic = { path = "../tracerazor-semantic", version = "0.4.0" }
+tracerazor-store = { path = "../tracerazor-store", version = "0.4.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
@@ -28,6 +28,8 @@ tokio = { workspace = true }
 clap = { version = "4", features = ["derive"] }
 reqwest = { workspace = true }
 dotenvy = "0.15"
+sha2 = { workspace = true }
+chrono = { workspace = true }
 
 [dev-dependencies]
 assert_cmd = "2"

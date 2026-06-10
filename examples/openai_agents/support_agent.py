@@ -1,7 +1,7 @@
 """
 Example: TraceRazor + OpenAI Agents SDK.
 
-pip install tracerazor-openai-agents[agents]
+pip install "tracerazor[agents]"
 export OPENAI_API_KEY=sk-...
 export TRACERAZOR_BIN=/path/to/TraceRazor/target/release/tracerazor
 """

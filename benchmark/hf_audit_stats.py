@@ -40,14 +40,17 @@ def _find_binary() -> str:
     raise SystemExit("tracerazor binary not found; run `cargo build --release -p tracerazor`")
 
 
-def _audit(binary: str, trace: Path, home: str) -> Optional[Dict[str, Any]]:
-    env = dict(os.environ, HOME=home)
+def _audit(binary: str, trace: Path,
+           min_steps: Optional[int] = None) -> Optional[Dict[str, Any]]:
+    # Fresh HOME per audit: each measurement is independent (no cross-trace
+    # history effects on DBO/RDA baselines, no audit-order dependence).
+    env = dict(os.environ, HOME=tempfile.mkdtemp())
     env.pop("OPENAI_API_KEY", None)
     env.pop("ANTHROPIC_API_KEY", None)
-    out = subprocess.run(
-        [binary, "audit", str(trace), "--format", "json"],
-        capture_output=True, text=True, env=env,
-    )
+    cmd = [binary, "audit", str(trace), "--format", "json"]
+    if min_steps is not None:
+        cmd += ["--min-steps", str(min_steps)]
+    out = subprocess.run(cmd, capture_output=True, text=True, env=env)
     try:
         return json.loads(out.stdout)
     except json.JSONDecodeError:
@@ -62,9 +65,8 @@ def collect() -> Dict[str, Any]:
 
     per_trace: List[Dict[str, Any]] = []
     skipped: List[str] = []
-    home = tempfile.mkdtemp()
     for f in files:
-        report = _audit(binary, f, home)
+        report = _audit(binary, f)
         if report is None:
             skipped.append(f.stem)
             continue
@@ -78,6 +80,7 @@ def collect() -> Dict[str, Any]:
             "grade": str(score["grade"]),
             "mvtg": round(report.get("mvtg", 0.0), 3),
             "fixes": len(report.get("fixes", [])),
+            "agf": round((report.get("agf") or {}).get("score", float("nan")), 3),
             "metrics": {k: round(mn.get(k, float("nan")), 3) for k in _METRIC_CODES},
         })
 
@@ -90,6 +93,22 @@ def collect() -> Dict[str, Any]:
         for k in _METRIC_CODES
     } if per_trace else {}
 
+    # Second pass: the full corpus with the short-trace opt-in (--min-steps 2).
+    # Real ReAct task runs are mostly 3–4 steps; this measures the product on
+    # the entire corpus rather than only the traces above the default floor.
+    full_corpus: List[Dict[str, Any]] = []
+    for f in files:
+        report = _audit(binary, f, min_steps=2)
+        if report is not None:
+            full_corpus.append({
+                "trace_id": report["trace_id"],
+                "steps": report["total_steps"],
+                "tas": round(report["score"]["score"], 1),
+                "grade": str(report["score"]["grade"]),
+                "fixes": len(report.get("fixes", [])),
+            })
+    fc_tas = [t["tas"] for t in full_corpus]
+
     return {
         "dataset": "zai-org/AgentInstruct (Hugging Face)",
         "n_traces": len(files),
@@ -101,8 +120,15 @@ def collect() -> Dict[str, Any]:
         "grade_distribution": grades,
         "mean_mvtg": round(statistics.fmean([t["mvtg"] for t in per_trace]), 3) if per_trace else None,
         "total_fixes": sum(t["fixes"] for t in per_trace),
+        "mean_agf": round(statistics.fmean([t["agf"] for t in per_trace]), 3) if per_trace else None,
         "metric_means_normalised": metric_means,
         "per_trace": per_trace,
+        "full_corpus_min_steps_2": {
+            "n_audited": len(full_corpus),
+            "mean_tas": round(statistics.fmean(fc_tas), 1) if fc_tas else None,
+            "total_fixes": sum(t["fixes"] for t in full_corpus),
+            "per_trace": full_corpus,
+        },
     }
 
 
@@ -126,6 +152,7 @@ def render_markdown(stats: Dict[str, Any]) -> str:
         f"- Grade distribution: {stats['grade_distribution']}",
         f"- Mean MVTG (structural waste): **{stats['mean_mvtg']}**",
         f"- Fix patches emitted: **{stats['total_fixes']}**",
+        f"- Mean AGF (grounding-fidelity diagnostic): **{stats.get('mean_agf')}**",
         "",
         "## Mean normalised metric scores (1.0 = no waste detected)",
         "",
@@ -148,6 +175,26 @@ def render_markdown(stats: Dict[str, Any]) -> str:
             f"| {t['trace_id']} | {t['steps']} | {t['tokens']} | {t['tas']} | "
             f"{t['grade']} | {m['srr']} | {m['ldi']} | {m['gar']} | {m['obs']} | {t['fixes']} |"
         )
+    fc = stats.get("full_corpus_min_steps_2") or {}
+    if fc:
+        lines += [
+            "",
+            "## Full corpus with the short-trace opt-in (`--min-steps 2`)",
+            "",
+            "Most real ReAct task runs finish in 3-4 steps — below the default",
+            "5-step floor. With `--min-steps 2` the audit covers the entire corpus:",
+            "",
+            f"- Audited: **{fc['n_audited']}/{stats['n_traces']}**",
+            f"- Mean TAS: **{fc['mean_tas']}**",
+            f"- Fix patches: **{fc['total_fixes']}**",
+            "",
+            "| Trace | Steps | TAS | Grade | Fixes |",
+            "|---|---:|---:|---|---:|",
+        ]
+        for t in fc["per_trace"]:
+            lines.append(
+                f"| {t['trace_id']} | {t['steps']} | {t['tas']} | {t['grade']} | {t['fixes']} |"
+            )
     lines.append("")
     return "\n".join(lines)
 

@@ -14,7 +14,7 @@ use std::time::Instant;
 use anyhow::Result;
 
 use crate::fixes::generate_fixes;
-use crate::metrics::{ccr, cce, csd, dbo, gar, isr, ldi, obs, rda, reformulation, shl, srr, tca, tpe, tur, vdi};
+use crate::metrics::{agf, ccr, cce, csd, dbo, gar, isr, ldi, obs, rda, reformulation, shl, srr, tca, tpe, tur, vdi};
 use crate::report::{AgentBreakdown, TraceReport, generate_oneliner, generate_summary};
 use crate::scoring::{ScoringConfig, estimate_savings};
 use crate::types::{MIN_TRACE_STEPS, Trace};
@@ -148,6 +148,9 @@ fn analyse_dyn(
     // Experimental context-accumulation features (diagnostic; not in the composite).
     let features = features::compute(trace);
 
+    // Grounding-fidelity provenance diagnostic (deterministic; not in the composite).
+    let agf_result = agf::compute(trace);
+
     Ok(TraceReport {
         trace_id: trace.trace_id.clone(),
         agent_name: trace.agent_name.clone(),
@@ -167,6 +170,8 @@ fn analyse_dyn(
         path_entropy: tpe_result,
         iar: None, // populated by explicit IAR comparison, not during fresh analysis
         features,
+        agf: Some(agf_result),
+        manifest: None, // attached by the caller, which knows the input bytes/config
     })
 }
 

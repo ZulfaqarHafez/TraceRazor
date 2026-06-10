@@ -46,7 +46,7 @@ pub const TARGET: f64 = 0.40;
 /// Steps below this similarity to the goal are flagged as "low advancement".
 pub const LOW_ADVANCEMENT_THRESHOLD: f64 = 0.20;
 
-use crate::metrics::carries_reasoning;
+use crate::metrics::{carries_reasoning, reasoning_text};
 
 /// Per-step GAR result.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -139,7 +139,7 @@ pub fn compute_with_goal(
             None => {
                 let goal_step = *reasoning.last().unwrap();
                 (
-                    goal_step.content.clone(),
+                    reasoning_text(goal_step),
                     Some(goal_step.id),
                     &reasoning[..reasoning.len() - 1],
                 )
@@ -147,13 +147,16 @@ pub fn compute_with_goal(
         };
     let goal_text = goal_text.as_str();
 
-    // Score each step against the goal.
+    // Score each step against the goal. Similarity sees the step's *thought*
+    // (code fences stripped) so shell/SQL tokens don't dilute the overlap with
+    // the natural-language goal.
     let mut step_results = Vec::with_capacity(scored.len());
     let mut weighted_sum = 0.0_f64;
     let mut total_weight = 0.0_f64;
 
     for step in scored {
-        let raw_sim = similarity_fn(&step.content, goal_text);
+        let step_text = reasoning_text(step);
+        let raw_sim = similarity_fn(&step_text, goal_text);
         let sim = raw_sim.clamp(0.0, 1.0);
         let weight = (step.tokens as f64).max(1.0);
 
@@ -431,6 +434,41 @@ mod tests {
             with_goal.score > 0.10,
             "ReAct tool reasoning should advance the goal, got {}",
             with_goal.score
+        );
+    }
+
+    #[test]
+    fn code_fences_do_not_dilute_goal_similarity() {
+        use crate::types::StepType;
+        // Two ReAct turns share the same thought and operate on the same file,
+        // but use *different command syntax*. With an exact-match similarity,
+        // GAR can only score 1.0 if the fences are reduced to their literals
+        // (the shared path) — the full contents differ in syntax.
+        let thought = "Think: inspect the system log so I can answer the question \
+                       about recent failures completely.\n\nAct: bash";
+        let mut s1 = step(
+            1,
+            &format!("{thought}\n\n```bash\ncat /var/log/syslog\n```"),
+            120,
+        );
+        s1.step_type = StepType::ToolCall;
+        let mut s2 = step(
+            2,
+            &format!("{thought}\n\n```bash\ntail -n50 /var/log/syslog\n```"),
+            120,
+        );
+        s2.step_type = StepType::ToolCall;
+        let trace = make_trace(vec![s1, s2]);
+        // Whitespace-normalised exact match: 1.0 only for identical stripped texts.
+        let sim = |a: &str, b: &str| {
+            let norm = |s: &str| s.split_whitespace().collect::<Vec<_>>().join(" ");
+            if norm(a) == norm(b) { 1.0 } else { 0.0 }
+        };
+        // Internal-proxy mode: s2 is the goal proxy, s1 is scored against it.
+        let result = compute(&trace, sim);
+        assert_eq!(
+            result.score, 1.0,
+            "command syntax must not dilute goal similarity: {result:?}"
         );
     }
 

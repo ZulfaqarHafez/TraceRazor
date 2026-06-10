@@ -2,7 +2,7 @@
 """
 Run every real public agent trace under `traces/external/` through
 `tracerazor audit` and produce a markdown table of measured TAS scores, grades,
-tokens, waste, and estimated savings. Output is written to benchmarks/RESULTS.md.
+tokens, waste, and estimated savings. Output is written to benchmark/RESULTS.md.
 
 These are real trajectories (tau-bench airline/retail; SWE-agent edit-format
 variants), not synthetic scenarios. Reproduce with:
@@ -43,9 +43,18 @@ def find_binary() -> str:
 
 
 def audit(binary: str, trace_path: Path) -> dict | None:
+    # Hermetic + fresh HOME per audit: results are a pure function of
+    # (trace, binary), independent of audit order and local store history —
+    # required for the CI drift check on RESULTS.md to be meaningful.
+    import os
+    import tempfile
+
+    env = dict(os.environ, HOME=tempfile.mkdtemp())
+    env.pop("OPENAI_API_KEY", None)
+    env.pop("ANTHROPIC_API_KEY", None)
     result = subprocess.run(
-        [binary, "audit", str(trace_path), "--format", "json"],
-        capture_output=True, text=True, check=False,
+        [binary, "audit", str(trace_path), "--format", "json", "--hermetic"],
+        capture_output=True, text=True, check=False, env=env,
     )
     if result.returncode not in (0, 1) or not result.stdout.strip():
         return None  # e.g. fewer than the minimum steps

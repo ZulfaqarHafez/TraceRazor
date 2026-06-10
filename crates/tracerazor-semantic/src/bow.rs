@@ -65,6 +65,24 @@ impl BowSimilarity {
         counts
     }
 
+    /// Tokenise + build the TF vector for one text in a single pass.
+    ///
+    /// Public so callers can memoise per-text vectors: metric computation is
+    /// dominated by pairwise similarity loops that present the same few step
+    /// texts thousands of times, and re-tokenising on every call is ~99%
+    /// redundant work.
+    pub fn tf(&self, text: &str) -> HashMap<String, f64> {
+        let tokens = self.tokenise(text);
+        self.tf_vector(&tokens)
+    }
+
+    /// Cosine similarity between two pre-computed TF vectors (see [`Self::tf`]).
+    /// Result matches [`Similarity::similarity`] including its 4-dp rounding.
+    pub fn cosine_tf(a: &HashMap<String, f64>, b: &HashMap<String, f64>) -> f64 {
+        let sim = Self::cosine(a, b);
+        (sim * 10000.0).round() / 10000.0
+    }
+
     /// Cosine similarity between two TF vectors.
     fn cosine(a: &HashMap<String, f64>, b: &HashMap<String, f64>) -> f64 {
         if a.is_empty() || b.is_empty() {

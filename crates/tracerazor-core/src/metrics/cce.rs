@@ -64,12 +64,42 @@ pub fn compute(trace: &Trace) -> CceResult {
     let mut duplicate_tokens: u32 = 0;
     let mut bloated_steps: Vec<ContextBloatStep> = Vec::new();
 
-    // Build cumulative "seen" vocabulary from all prior steps.
-    for i in 1..steps.len() {
-        let prior_text: String = texts[..i].join(" ");
-        let current_text = &texts[i];
+    // Build the cumulative prior-n-gram set incrementally instead of
+    // re-joining the whole prefix per step (O(n²·len) → O(n·len)). A tail of
+    // the last n-1 words is carried so n-grams spanning step boundaries are
+    // produced exactly as `texts[..i].join(" ")` would; output is identical.
+    const N: usize = 4;
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut tail: Vec<String> = Vec::new();
+    let mut cum_words: usize = 0;
 
-        let overlap = ngram_overlap_ratio(current_text, &prior_text, 4);
+    for i in 1..steps.len() {
+        // Absorb texts[i-1] into the cumulative reference.
+        {
+            let mut window: Vec<&str> = tail.iter().map(String::as_str).collect();
+            window.extend(texts[i - 1].split_whitespace());
+            cum_words += texts[i - 1].split_whitespace().count();
+            for w in window.windows(N) {
+                seen.insert(w.join(" "));
+            }
+            let keep = window.len().saturating_sub(N - 1);
+            tail = window[keep..].iter().map(|s| s.to_string()).collect();
+        }
+
+        let current_text = &texts[i];
+        let cur_ngrams = extract_ngrams(current_text, N);
+        let overlap = if cur_ngrams.is_empty() {
+            0.0
+        } else if cum_words < N {
+            // Mirror extract_ngrams' short-reference behaviour: the whole
+            // prior text (< N words) acts as one "short-gram".
+            let ref_single = tail.join(" ");
+            cur_ngrams.iter().filter(|g| **g == ref_single).count() as f64
+                / cur_ngrams.len() as f64
+        } else {
+            cur_ngrams.iter().filter(|g| seen.contains(*g)).count() as f64
+                / cur_ngrams.len() as f64
+        };
 
         if overlap > 0.40 {
             let dup_tokens = (steps[i].tokens as f64 * overlap) as u32;
@@ -101,6 +131,9 @@ pub fn compute(trace: &Trace) -> CceResult {
 
 /// Compute the n-gram overlap ratio between `text` and `reference`.
 /// Returns the fraction of `text`'s n-grams that appear in `reference`.
+/// Retained as the reference implementation the incremental path in
+/// [`compute`] is equivalence-tested against.
+#[cfg_attr(not(test), allow(dead_code))]
 fn ngram_overlap_ratio(text: &str, reference: &str, n: usize) -> f64 {
     let text_ngrams = extract_ngrams(text, n);
     if text_ngrams.is_empty() {
@@ -211,5 +244,78 @@ mod tests {
         // All steps carry the same context — bloat should be detected.
         assert!(!result.bloated_steps.is_empty());
         assert!(result.score < 0.8);
+    }
+
+    #[test]
+    fn incremental_overlap_matches_reference_implementation() {
+        // The incremental cumulative-set path must reproduce the original
+        // whole-prefix-join semantics exactly, including n-grams spanning
+        // step boundaries and the short-reference (<4 words) edge case.
+        let corpora: Vec<Vec<&str>> = vec![
+            // boundary-spanning: "delta echo foxtrot golf" spans steps 1|2
+            vec![
+                "alpha bravo charlie delta echo",
+                "foxtrot golf hotel india juliet",
+                "delta echo foxtrot golf something else entirely here",
+            ],
+            // short reference + exact short repeat
+            vec!["hello world", "hello world", "now a much longer step text"],
+            // empties and tiny texts
+            vec!["", "one", "one two three four five", "one two three four five"],
+        ];
+        for texts_src in corpora {
+            let trace = make_trace_with_contexts(&texts_src);
+            let result = compute(&trace);
+
+            // Reference recomputation, the original O(n²) way.
+            let texts: Vec<String> = trace
+                .steps
+                .iter()
+                .map(|s| s.input_context.clone().unwrap_or_else(|| s.content.clone()))
+                .collect();
+            let mut ref_dup: u32 = 0;
+            for i in 1..trace.steps.len() {
+                let prior: String = texts[..i].join(" ");
+                let overlap = ngram_overlap_ratio(&texts[i], &prior, 4);
+                if overlap > 0.40 {
+                    ref_dup += (trace.steps[i].tokens as f64 * overlap) as u32;
+                }
+            }
+            assert_eq!(
+                result.duplicate_tokens, ref_dup,
+                "incremental CCE diverged from reference on {texts_src:?}"
+            );
+        }
+    }
+
+    fn make_trace_with_contexts(contexts: &[&str]) -> Trace {
+        let steps: Vec<TraceStep> = contexts
+            .iter()
+            .enumerate()
+            .map(|(i, c)| TraceStep {
+                id: (i + 1) as u32,
+                step_type: StepType::Reasoning,
+                content: format!("step {i}"),
+                tokens: 100,
+                tool_name: None,
+                tool_params: None,
+                tool_success: None,
+                tool_error: None,
+                agent_id: None,
+                input_context: Some(c.to_string()),
+                output: None,
+                flags: vec![],
+                flag_details: vec![],
+            })
+            .collect();
+        Trace {
+            trace_id: "cce-eq".into(),
+            agent_name: "a".into(),
+            framework: "raw".into(),
+            total_tokens: steps.iter().map(|s| s.tokens).sum(),
+            steps,
+            task_value_score: 1.0,
+            metadata: std::collections::HashMap::new(),
+        }
     }
 }

@@ -16,12 +16,22 @@ dataset's six task splits:
 
 | Split | Agent | Action format | Traces |
 |---|---|---|---|
-| `os` | Linux/bash operator | `Think: … / Act: bash \`\`\`…\`\`\`` | os_0 … os_6 |
+| `os` | Linux/bash operator | `Think: … / Act: bash \`\`\`…\`\`\`` | os_0…os_7, os_11, os_16, os_18 |
 | `db` | MySQL operator | `… / Action: Operation \`\`\`sql…\`\`\`` | db_0, db_1 |
 
-The `os` trajectories are multi-step (5–9 steps) and analysable; the `db`
-trajectories are short (3 steps) and intentionally land below TraceRazor's
-5-step floor, exercising the skip path.
+**Few-shot scaffolding is excluded.** Upstream rows embed the dataset's fixed
+one-shot demonstration (the "count files in /etc" example, identical in every
+`os` row) and the `db` split's "Ok." acknowledgement before the real
+trajectory, marked with `loss: false` on the gpt turns (the real agent turns
+carry `loss: true`). The converter audits only the real-task turns: auditing
+the scaffolding would pseudo-replicate the same canned steps into every trace
+and mis-anchor the goal metrics.
+
+With scaffolding excluded, most real `os` trajectories are 3–4 steps: 4 traces
+(os_0, os_5, os_6, os_11) meet TraceRazor's 5-step analysis floor and 9 land
+below it. The sub-floor majority is kept deliberately — it exercises the skip
+path and *measures the floor's coverage cost on real data* (≈69% of this
+sample).
 
 ## How the rows were obtained
 

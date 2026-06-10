@@ -70,7 +70,6 @@ fn mean(xs: &[f64]) -> f64 {
 /// End-to-end statistics over the real Hugging Face corpus.
 #[test]
 fn huggingface_agentinstruct_audit_statistics() {
-    let home = TempDir::new().unwrap();
     let files = trace_files();
     assert!(
         files.len() >= 8,
@@ -83,6 +82,7 @@ fn huggingface_agentinstruct_audit_statistics() {
     let mut ldi: Vec<f64> = Vec::new();
     let mut obs: Vec<f64> = Vec::new();
     let mut gar: Vec<f64> = Vec::new();
+    let mut agf: Vec<f64> = Vec::new();
     let mut mvtg: Vec<f64> = Vec::new();
     let mut grades: BTreeMap<String, usize> = BTreeMap::new();
     let mut total_fixes = 0usize;
@@ -90,6 +90,9 @@ fn huggingface_agentinstruct_audit_statistics() {
     let mut skipped = 0usize;
 
     for f in &files {
+        // Fresh HOME per audit: measurements are independent (no cross-trace
+        // history effects on DBO/RDA baselines, no audit-order dependence).
+        let home = TempDir::new().unwrap();
         let out = cli(&home)
             .args(["audit", f.to_str().unwrap(), "--format", "json"])
             .assert()
@@ -131,6 +134,10 @@ fn huggingface_agentinstruct_audit_statistics() {
                 if let Some(v) = report["mvtg"].as_f64() {
                     mvtg.push(v);
                 }
+                if let Some(v) = report["agf"]["score"].as_f64() {
+                    assert!((0.0..=1.0).contains(&v), "AGF out of range: {v}");
+                    agf.push(v);
+                }
                 total_fixes += report["fixes"].as_array().map(|a| a.len()).unwrap_or(0);
             }
             Err(_) => {
@@ -150,9 +157,18 @@ fn huggingface_agentinstruct_audit_statistics() {
     }
 
     // ── Invariants that demonstrate the product works on real data ───────────
+    // After excluding the dataset's few-shot scaffolding (loss=false turns),
+    // most real AgentInstruct trajectories are 3–4 steps: the corpus carries 4
+    // analysable traces and deliberately keeps the sub-floor majority to
+    // exercise — and measure — the 5-step floor's coverage cost on real data.
     assert!(
-        analysable >= 7,
-        "expected >=7 analysable real traces, got {analysable}"
+        analysable >= 4,
+        "expected >=4 analysable real traces, got {analysable}"
+    );
+    assert!(
+        skipped >= analysable,
+        "the corpus must retain the sub-floor majority that documents the \
+         analysis floor's real-data coverage (skipped={skipped}, analysable={analysable})"
     );
     assert!(
         !tas.is_empty() && (0.0..=100.0).contains(&mean(&tas)),
@@ -179,6 +195,49 @@ fn huggingface_agentinstruct_audit_statistics() {
         "loop detection never fired on the real corpus (min normalised LDI = {min_ldi})"
     );
 
+    // ── Full-corpus coverage via the short-trace opt-in ──────────────────────
+    // The sub-floor majority (3–4-step real trajectories) must be auditable
+    // with `--min-steps 2`: every trace in the corpus produces a valid
+    // in-range report when the user opts in.
+    let mut short_audited = 0usize;
+    for f in &files {
+        let home = TempDir::new().unwrap();
+        let out = cli(&home)
+            .args([
+                "audit",
+                f.to_str().unwrap(),
+                "--format",
+                "json",
+                "--min-steps",
+                "2",
+            ])
+            .assert()
+            .success()
+            .get_output()
+            .clone();
+        let report: Value = serde_json::from_slice(&out.stdout).unwrap_or_else(|e| {
+            panic!(
+                "--min-steps 2 audit of {:?} must produce JSON: {e}; stderr: {}",
+                f.file_name().unwrap(),
+                String::from_utf8_lossy(&out.stderr)
+            )
+        });
+        let t = report["score"]["score"]
+            .as_f64()
+            .expect("short-trace TAS must be a number");
+        assert!(
+            (0.0..=100.0).contains(&t),
+            "short-trace TAS for {:?} out of range: {t}",
+            f.file_name().unwrap()
+        );
+        short_audited += 1;
+    }
+    assert_eq!(
+        short_audited,
+        files.len(),
+        "with --min-steps 2 the entire real corpus must be auditable"
+    );
+
     // ── Emit the statistics (visible with --nocapture) ───────────────────────
     println!("\n==== Hugging Face AgentInstruct real-data audit ====");
     println!("source            : zai-org/AgentInstruct (ReAct trajectories)");
@@ -190,8 +249,10 @@ fn huggingface_agentinstruct_audit_statistics() {
     println!("mean SRR (norm)   : {:.3}", mean(&srr));
     println!("mean LDI (norm)   : {:.3}", mean(&ldi));
     println!("mean GAR (norm)   : {:.3}", mean(&gar));
+    println!("mean AGF (diag)   : {:.3}", mean(&agf));
     println!("mean OBS (norm)   : {:.3}", mean(&obs));
     println!("mean MVTG         : {:.3}", mean(&mvtg));
     println!("fix patches (sum) : {total_fixes}");
+    println!("full-corpus audit : {short_audited}/{} with --min-steps 2", files.len());
     println!("====================================================\n");
 }

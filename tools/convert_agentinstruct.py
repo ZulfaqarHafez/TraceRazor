@@ -71,6 +71,35 @@ def _extract_code(value: str) -> Optional[str]:
     return None
 
 
+def _real_task_turns(conversations: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Return only the turns of the *real* task, excluding few-shot scaffolding.
+
+    AgentInstruct rows embed the dataset's fixed one-shot demonstration (and the
+    db split's "Ok." acknowledgement) before the real trajectory, and mark it
+    via the ``loss`` flag: scaffolding gpt turns carry ``loss: false``, the real
+    agent turns carry ``loss: true``. Auditing scaffolding as agent behaviour
+    pseudo-replicates the same canned steps into every trace and misanchors the
+    goal metrics, so it is excluded. The human turn immediately preceding the
+    first real gpt turn (which states the real problem) is kept as context.
+
+    When loss flags are absent, fall back to the textual boundary marker; when
+    neither exists, the row has no scaffolding and is returned unchanged.
+    """
+    losses = [t.get("loss") for t in conversations if t.get("from") == "gpt"]
+    if True in losses and False in losses:
+        for i, t in enumerate(conversations):
+            if t.get("from") == "gpt" and t.get("loss") is True:
+                if i > 0 and conversations[i - 1].get("from") == "human":
+                    return conversations[i - 1:]
+                return conversations[i:]
+    marker = "i will start a new problem"
+    for i in range(len(conversations) - 1, -1, -1):
+        t = conversations[i]
+        if t.get("from") == "human" and marker in (t.get("value") or "").lower():
+            return conversations[i:]
+    return conversations
+
+
 def _classify_gpt_turn(value: str) -> Dict[str, Any]:
     """Classify one assistant turn into an action.
 
@@ -110,6 +139,8 @@ def convert_conversations(
     pending_input: List[str] = []
     prev_tool_step: Optional[Dict[str, Any]] = None
     step_id = 0
+
+    conversations = _real_task_turns(conversations)
 
     for turn in conversations:
         who = turn.get("from")

@@ -107,6 +107,14 @@ jobs:
       - name: Run pytest
         run: pytest -q
 
+      - name: Doc tables track the current scorer (drift check)
+        # Ship-plan 0.6: committed result tables must be regenerated whenever
+        # scoring changes; stale numbers read as dishonesty.
+        run: |
+          python benchmark/run_benchmarks.py
+          git diff --exit-code benchmark/RESULTS.md \
+            || { echo "::error::benchmark/RESULTS.md is stale — regenerate with 'python benchmark/run_benchmarks.py' and commit."; exit 1; }
+
       - name: End-to-end audit via real binary
         run: |
           python - <<'PY'

@@ -76,8 +76,17 @@ enum Commands {
         cost_per_million: f64,
 
         /// Save trace and report to the store for historical benchmarking.
-        #[arg(long, default_value = "true")]
+        /// Pass `--store false` to disable.
+        #[arg(long, default_value_t = true, action = clap::ArgAction::Set,
+              num_args = 1, value_name = "BOOL")]
         store: bool,
+
+        /// Hermetic mode: read nothing from and write nothing to the local
+        /// store, making the score a pure function of (trace, config,
+        /// version). Recorded in the report's run manifest — required for
+        /// exact third-party re-verification with `tracerazor verify`.
+        #[arg(long, default_value_t = false)]
+        hermetic: bool,
 
         /// Enable enhanced semantic analysis using configured LLM embeddings.
         /// Significantly improves SRR and ISR accuracy by replacing bag-of-words
@@ -92,6 +101,28 @@ enum Commands {
         /// TRACERAZOR_WEIGHTS env var, then the built-in default weights.
         #[arg(long, value_name = "FILE")]
         weights: Option<PathBuf>,
+
+        /// Minimum trace steps required to audit (clamped to >= 2). The
+        /// default keeps the statistically conservative floor; lower it to
+        /// audit short real-world trajectories (most ReAct task runs finish
+        /// in 3-4 steps). Pair-based metrics carry less evidence on very
+        /// short traces — interpret scores accordingly.
+        #[arg(long, value_name = "N", default_value_t = MIN_TRACE_STEPS)]
+        min_steps: usize,
+    },
+
+    /// Verify a historical report against its trace and run manifest.
+    ///
+    /// Checks the trace file hash against the manifest, and — for hermetic
+    /// bag-of-words runs — re-scores the trace with the manifest's exact
+    /// configuration and compares every metric. Exit 0 = verified.
+    Verify {
+        /// The report JSON produced by `audit --format json`.
+        #[arg(value_name = "REPORT")]
+        report: PathBuf,
+        /// The original trace file the report claims to describe.
+        #[arg(value_name = "TRACE")]
+        trace: PathBuf,
     },
 
     /// List all stored traces in the current session.
@@ -120,7 +151,7 @@ enum Commands {
         regression_threshold: f64,
     },
 
-    /// Project monthly and annual costs at a given run volume (E-05).
+    /// Project monthly and annual costs at a given run volume .
     ///
     /// Provide one or more trace files. Each file contributes one data point.
     Cost {
@@ -144,7 +175,7 @@ enum Commands {
         format: OutputFormat,
     },
 
-    /// Simulate removing or merging steps and project the TAS/token impact (E-02).
+    /// Simulate removing or merging steps and project the TAS/token impact.
     Simulate {
         /// Trace file to simulate.
         #[arg(value_name = "FILE")]
@@ -234,7 +265,7 @@ enum Commands {
         format: OutputFormat,
     },
 
-    /// Export a report to an observability platform or webhook (E-07).
+    /// Export a report to an observability platform or webhook.
     Export {
         /// Trace file to audit and export.
         #[arg(value_name = "FILE")]
@@ -306,13 +337,26 @@ impl From<InputFormat> for TraceFormat {
 }
 
 #[tokio::main]
-async fn main() -> Result<()> {
+async fn main() {
     let _ = dotenvy::dotenv();
+    // Exit-code contract: 0 = success / gate passed, 1 = an explicit gate
+    // failed (threshold, regression, tamper), 2 = error (bad input, IO,
+    // parse). Batch jobs can rely on the distinction.
+    if let Err(e) = run().await {
+        eprintln!("Error: {e:#}");
+        std::process::exit(2);
+    }
+}
+
+async fn run() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, enhanced, weights } => {
-            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, enhanced, weights).await?;
+        Commands::Audit { file, format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps } => {
+            cmd_audit(file, format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps).await?;
+        }
+        Commands::Verify { report, trace } => {
+            cmd_verify(report, trace)?;
         }
         Commands::List { agent } => {
             cmd_list(agent).await?;
@@ -353,26 +397,33 @@ async fn cmd_audit(
     trace_format: InputFormat,
     cost_per_million: f64,
     do_store: bool,
+    hermetic: bool,
     enhanced: bool,
     weights: Option<PathBuf>,
+    min_steps: usize,
 ) -> Result<()> {
     let data = std::fs::read_to_string(&file)
         .with_context(|| format!("Cannot read file: {}", file.display()))?;
+    // Hash the raw input bytes before parsing: the manifest must bind the
+    // report to exactly what was on disk, not to a normalised re-encoding.
+    let trace_sha256 = sha256_hex(data.as_bytes());
 
     let mut trace = ingest_parse(&data, trace_format.into())
         .with_context(|| format!("Failed to parse trace: {}", file.display()))?;
 
-    if !is_analysable(&trace) {
+    // Pair-based metrics need at least two steps; below the default floor the
+    // user opts in explicitly (most real ReAct task runs are 3–4 steps).
+    let min_steps = min_steps.max(2);
+    if trace.steps.len() < min_steps {
         eprintln!(
-            "Notice: Trace '{}' has {} steps (minimum {} required).",
+            "Notice: Trace '{}' has {} steps (minimum {} required). \
+             Use --min-steps to audit short traces.",
             trace.trace_id,
             trace.steps.len(),
-            MIN_TRACE_STEPS
+            min_steps
         );
         return Ok(());
     }
-
-    let store = open_store().await;
 
     let mut config = ScoringConfig {
         cost_per_million_tokens: cost_per_million,
@@ -389,17 +440,23 @@ async fn cmd_audit(
             .with_context(|| format!("Invalid weights JSON: {}", path.display()))?;
         eprintln!("Using calibrated weights from {}", path.display());
     }
-    if let Ok(Some(baseline)) = store.baseline_tokens(&trace.agent_name).await {
-        config.baseline_tokens = Some(baseline);
-    }
-    if let Ok(Some(median)) = store.historical_median_steps(&trace.agent_name).await {
-        config.historical_median_steps = Some(median);
-    }
-    if let Ok(sequences) = store.historical_sequences(&trace.agent_name).await {
-        config.historical_sequences = sequences;
+
+    // Store-derived baselines make the score depend on local history; in
+    // hermetic mode scoring is a pure function of (trace, config, version).
+    let store = if hermetic { None } else { Some(open_store().await) };
+    if let Some(store) = &store {
+        if let Ok(Some(baseline)) = store.baseline_tokens(&trace.agent_name).await {
+            config.baseline_tokens = Some(baseline);
+        }
+        if let Ok(Some(median)) = store.historical_median_steps(&trace.agent_name).await {
+            config.historical_median_steps = Some(median);
+        }
+        if let Ok(sequences) = store.historical_sequences(&trace.agent_name).await {
+            config.historical_sequences = sequences;
+        }
     }
 
-    let mut report = if enhanced {
+    let (mut report, backend_identity) = if enhanced {
         // Build embedding cache from all step texts in one batched call.
         let texts: Vec<String> = trace.steps.iter().map(|s| s.content.clone()).collect();
         if tracerazor_semantic::LlmConfig::from_env().is_none() {
@@ -409,28 +466,58 @@ async fn cmd_audit(
                  Falling back to BoW similarity."
             );
         }
-        let sim_fn = tracerazor_semantic::embedding_similarity_fn(texts).await;
-        tracerazor_core::analyse(&mut trace, sim_fn, &config)?
+        let (sim_fn, identity) =
+            tracerazor_semantic::embedding_similarity_fn_with_identity(texts).await;
+        (tracerazor_core::analyse(&mut trace, sim_fn, &config)?, identity)
     } else {
         let sim_fn = default_similarity_fn();
-        tracerazor_core::analyse(&mut trace, sim_fn, &config)?
+        (
+            tracerazor_core::analyse(&mut trace, sim_fn, &config)?,
+            tracerazor_semantic::BOW_BACKEND_ID.to_string(),
+        )
     };
 
     // Detect anomalies against historical baseline (E-04) — all 8 metrics + TAS.
-    if let Ok(anomalies) = store.detect_all_anomalies(&trace.agent_name, &report).await {
-        report.anomalies = anomalies;
+    if let Some(store) = &store {
+        if let Ok(anomalies) = store.detect_all_anomalies(&trace.agent_name, &report).await {
+            report.anomalies = anomalies;
+        }
     }
+
+    // Run manifest: bind the report to its inputs so a third party can
+    // attribute — and for hermetic BoW runs exactly re-verify — the score.
+    let weights_json = serde_json::to_string(&config.weights)?;
+    report.manifest = Some(tracerazor_core::report::RunManifest {
+        trace_sha256,
+        tool_version: env!("CARGO_PKG_VERSION").to_string(),
+        created_at: chrono::Utc::now().to_rfc3339(),
+        similarity_backend: backend_identity,
+        weights: config.weights.clone(),
+        weights_sha256: sha256_hex(weights_json.as_bytes()),
+        threshold: config.threshold,
+        cost_per_million_tokens: config.cost_per_million_tokens,
+        min_steps,
+        hermetic,
+        baseline_tokens: config.baseline_tokens,
+        historical_median_steps: config.historical_median_steps,
+        n_historical_sequences: config.historical_sequences.len(),
+    });
 
     match format {
         OutputFormat::Markdown => println!("{}", report.to_markdown()),
         OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&report)?),
     }
 
-    if do_store {
-        store.save_trace(&trace, Some(&report)).await?;
+    if do_store && !hermetic {
+        if let Some(store) = &store {
+            store.save_trace(&trace, Some(&report)).await?;
+        }
     }
 
-    if !report.score.passes_threshold {
+    // Gating is opt-in: only an explicit --threshold turns a low score into a
+    // non-zero exit. Without it, batch jobs can tell "inefficient agent"
+    // (exit 0, low TAS in the report) apart from "broken input" (exit 2).
+    if threshold.is_some() && !report.score.passes_threshold {
         eprintln!(
             "FAIL: TAS {:.1} is below threshold {:.1}",
             report.score.score, config.threshold
@@ -439,6 +526,132 @@ async fn cmd_audit(
     }
 
     Ok(())
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    use sha2::{Digest, Sha256};
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    let digest = hasher.finalize();
+    digest.iter().map(|b| format!("{b:02x}")).collect()
+}
+
+// ── verify ────────────────────────────────────────────────────────────────────
+
+/// Verify a historical report against its trace file and embedded manifest.
+fn cmd_verify(report_path: PathBuf, trace_path: PathBuf) -> Result<()> {
+    let report_raw = std::fs::read_to_string(&report_path)
+        .with_context(|| format!("Cannot read report: {}", report_path.display()))?;
+    let report: serde_json::Value = serde_json::from_str(&report_raw)
+        .with_context(|| format!("Report is not valid JSON: {}", report_path.display()))?;
+
+    let Some(manifest_value) = report.get("manifest").filter(|m| !m.is_null()) else {
+        anyhow::bail!(
+            "report carries no run manifest (produced by a pre-provenance \
+             TraceRazor version); re-audit with this version to get one"
+        );
+    };
+    let manifest: tracerazor_core::report::RunManifest =
+        serde_json::from_value(manifest_value.clone())
+            .context("malformed run manifest in report")?;
+
+    // 1) The trace file must be byte-identical to what was scored.
+    let trace_raw = std::fs::read_to_string(&trace_path)
+        .with_context(|| format!("Cannot read trace: {}", trace_path.display()))?;
+    let actual_sha = sha256_hex(trace_raw.as_bytes());
+    if actual_sha != manifest.trace_sha256 {
+        eprintln!("TAMPERED: trace file hash does not match the manifest.");
+        eprintln!("  manifest : {}", manifest.trace_sha256);
+        eprintln!("  on disk  : {actual_sha}");
+        std::process::exit(1);
+    }
+    println!("trace hash      : OK ({actual_sha})");
+
+    // 2) Version awareness — a different scorer version may legitimately
+    //    produce different numbers; report it rather than guess.
+    let this_version = env!("CARGO_PKG_VERSION");
+    if manifest.tool_version != this_version {
+        println!(
+            "tool version    : report {} vs current {this_version} (re-score check skipped)",
+            manifest.tool_version
+        );
+        println!("verified        : hash + manifest integrity only");
+        return Ok(());
+    }
+    println!("tool version    : OK ({this_version})");
+
+    // 3) Exact re-score is only sound for runs that were a pure function of
+    //    (trace, config, version): BoW backend and no store-derived inputs.
+    if manifest.similarity_backend != tracerazor_semantic::BOW_BACKEND_ID {
+        println!(
+            "backend         : {} — embedding scores are not locally \
+             reproducible; verified hash + manifest integrity only",
+            manifest.similarity_backend
+        );
+        return Ok(());
+    }
+    if manifest.store_influenced() {
+        println!(
+            "store baselines : run used local history (baseline_tokens={:?}, \
+             median_steps={:?}, sequences={}) — exact re-score requires that \
+             state; verified hash + manifest integrity only. \
+             Tip: audit with --hermetic for fully re-verifiable reports.",
+            manifest.baseline_tokens,
+            manifest.historical_median_steps,
+            manifest.n_historical_sequences
+        );
+        return Ok(());
+    }
+
+    let mut trace = ingest_parse(&trace_raw, tracerazor_ingest::TraceFormat::Auto)
+        .with_context(|| format!("Failed to parse trace: {}", trace_path.display()))?;
+    if trace.steps.len() < manifest.min_steps.max(2) {
+        anyhow::bail!(
+            "trace has {} steps but the manifest floor is {} — nothing to re-score",
+            trace.steps.len(),
+            manifest.min_steps
+        );
+    }
+
+    let config = ScoringConfig {
+        weights: manifest.weights.clone(),
+        threshold: manifest.threshold,
+        cost_per_million_tokens: manifest.cost_per_million_tokens,
+        ..Default::default()
+    };
+    let recomputed = tracerazor_core::analyse(&mut trace, default_similarity_fn(), &config)?;
+
+    let original_tas = report["score"]["score"].as_f64().unwrap_or(f64::NAN);
+    let recomputed_tas = recomputed.score.score;
+    let mut mismatches: Vec<String> = Vec::new();
+    if (original_tas - recomputed_tas).abs() > 1e-9 {
+        mismatches.push(format!("TAS {original_tas} -> {recomputed_tas}"));
+    }
+    let recomputed_mn = serde_json::to_value(&recomputed.score)?;
+    if let (Some(orig), Some(new)) = (
+        report["score"]["metric_normalised"].as_object(),
+        recomputed_mn["metric_normalised"].as_object(),
+    ) {
+        for (k, ov) in orig {
+            let o = ov.as_f64().unwrap_or(f64::NAN);
+            let n = new.get(k).and_then(|v| v.as_f64()).unwrap_or(f64::NAN);
+            if (o - n).abs() > 1e-9 {
+                mismatches.push(format!("{k} {o} -> {n}"));
+            }
+        }
+    }
+
+    if mismatches.is_empty() {
+        println!("re-score        : OK (TAS {recomputed_tas:.1}; all normalised metrics match)");
+        println!("verified        : full — report reproduces from (trace, manifest, {this_version})");
+        Ok(())
+    } else {
+        eprintln!("MISMATCH: re-scored values differ from the report:");
+        for m in &mismatches {
+            eprintln!("  {m}");
+        }
+        std::process::exit(1);
+    }
 }
 
 // ── list ──────────────────────────────────────────────────────────────────────
