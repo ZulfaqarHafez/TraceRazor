@@ -33,6 +33,33 @@ fn cli(home: &TempDir) -> Command {
 }
 
 #[test]
+fn audit_rejects_zero_sum_weights() {
+    // A zero-sum weights file used to produce a NaN TAS; it must now be a
+    // clean usage error (exit 2) at load time.
+    let home = TempDir::new().unwrap();
+    let weights_path = home.path().join("weights.json");
+    std::fs::write(
+        &weights_path,
+        r#"{"srr":0,"ldi":0,"tca":0,"tur":0,"cce":0,"rda":0,"isr":0,
+            "dbo":0,"vdi":0,"shl":0,"ccr":0,"gar":0,"csd":0,"obs":0}"#,
+    )
+    .unwrap();
+
+    cli(&home)
+        .args([
+            "audit",
+            fixture_path().to_str().unwrap(),
+            "--hermetic",
+            "--weights",
+            weights_path.to_str().unwrap(),
+        ])
+        .assert()
+        .failure()
+        .code(2)
+        .stderr(predicate::str::contains("weights"));
+}
+
+#[test]
 fn version_prints() {
     let home = TempDir::new().unwrap();
     cli(&home)

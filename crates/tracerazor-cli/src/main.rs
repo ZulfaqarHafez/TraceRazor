@@ -501,6 +501,10 @@ async fn cmd_audit(
             .with_context(|| format!("Cannot read weights file: {}", path.display()))?;
         config.weights = serde_json::from_str(&raw)
             .with_context(|| format!("Invalid weights JSON: {}", path.display()))?;
+        config
+            .weights
+            .validate()
+            .with_context(|| format!("Invalid weights in {}", path.display()))?;
         eprintln!("Using calibrated weights from {}", path.display());
     }
 
@@ -672,6 +676,10 @@ fn cmd_audit_batch(
             .with_context(|| format!("Cannot read weights file: {}", path.display()))?;
         config.weights = serde_json::from_str(&raw)
             .with_context(|| format!("Invalid weights JSON: {}", path.display()))?;
+        config
+            .weights
+            .validate()
+            .with_context(|| format!("Invalid weights in {}", path.display()))?;
     }
 
     let min_steps = min_steps.max(2);
@@ -712,12 +720,12 @@ fn cmd_audit_batch(
     }
 
     let mut tas: Vec<f64> = rows.iter().map(|r| r.1).collect();
-    tas.sort_by(|a, b| a.partial_cmp(b).expect("TAS is never NaN"));
+    tas.sort_by(|a, b| a.total_cmp(b));
     let mean = tas.iter().sum::<f64>() / tas.len() as f64;
     let median = tas[tas.len() / 2];
     let total_savings: u32 = rows.iter().map(|r| r.4).sum();
     let mut worst = rows.clone();
-    worst.sort_by(|a, b| a.1.partial_cmp(&b.1).expect("TAS is never NaN"));
+    worst.sort_by(|a, b| a.1.total_cmp(&b.1));
     worst.truncate(5);
 
     match format {
@@ -919,11 +927,10 @@ fn check_report_signature(
 
     let (sig_hex, pub_hex) = match (&manifest.signature, &manifest.signing_key_pub) {
         (Some(s), Some(p)) => (s.as_str(), p.as_str()),
-        (None, _) => return Ok(SigCheck::Unsigned),
-        (Some(_), None) => {
-            // Signature present but no public key: looks tampered
-            return Ok(SigCheck::Invalid);
-        }
+        (None, None) => return Ok(SigCheck::Unsigned),
+        // A signing audit embeds both fields; exactly one present means the
+        // signature or the key was stripped after signing — never legitimate.
+        _ => return Ok(SigCheck::Invalid),
     };
 
     let sig_bytes = match hex_decode_64(sig_hex) {

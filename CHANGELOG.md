@@ -4,6 +4,24 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Hardening
+- **Weights files are validated on load** — a negative, non-finite or
+  zero-sum weight set is rejected with a clear error (exit 2) instead of
+  producing a NaN TAS, which crashed fleet mode's sort. `Weights::validate()`
+  also runs inside `analyse()` for library callers, and fleet sorting now
+  uses `total_cmp` so it can never panic on NaN.
+- **LangSmith ingest depth-limits the run tree** (128 levels) — a malformed
+  `parent_run_id` chain in an export now fails with a clean parse error
+  instead of overflowing the stack during tree rebuild/flatten.
+- **Raw-JSON ingest rejects duplicate step ids** — metrics and fixes resolve
+  steps by id and previously bound silently to the first match.
+- **One-sided signature manifests now verify as TAMPERED** — a report
+  carrying `signing_key_pub` without `signature` (or vice versa) fails
+  verification (exit 1) instead of downgrading to the "unsigned" verdict;
+  covered by two new strip-field forgery tests in `tests/signing.rs`.
+- Ship plan (`docs/ship_plan.md`) marked executed — Phases 0–4 all shipped
+  (releases v0.4.1, v0.5.0); the doc previously still read as future work.
+
 ## [0.5.0] - 2026-06-10
 
 ### Metric rationalisation: an evidence-gated composite (breaking: TAS values shift)

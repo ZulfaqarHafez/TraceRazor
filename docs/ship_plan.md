@@ -1,5 +1,14 @@
 # TraceRazor Ship Plan
 
+> **Status (2026-06-11): executed.** Phases 0–4 have shipped — see
+> `CHANGELOG.md` (releases v0.4.1 and v0.5.0). Highlights: Ed25519 signing
+> and evidence bundles landed with the forgery suite as integration tests
+> (`crates/tracerazor-cli/tests/signing.rs`), the measured case study is
+> published in `docs/case_study.md`, the GitHub Action resolves prebuilt
+> binaries, and 0.5.0 rationalised the composite to nine evidence-gated
+> metrics. The tables below are kept as the historical plan of record; the
+> "Now" scores reflect the pre-plan baseline, not the current state.
+
 Drafted from the six-reviewer critique (academic researcher, platform engineer,
 compliance officer, DX reviewer, eval engineer, technical buyer). Baseline
 weighted product score: **4.6/10**. This plan targets **≥7.5/10** in 8 weeks.
@@ -15,7 +24,7 @@ Effort key: **S** < 1 day · **M** 1–3 days · **L** 1–2 weeks.
 
 ---
 
-## Phase 0 — Stop the bleeding (week 1) — trust hygiene
+## Phase 0 — Stop the bleeding (week 1) — trust hygiene — ✅ shipped
 
 These cost days and currently make everything else look untrustworthy.
 
@@ -28,7 +37,7 @@ These cost days and currently make everything else look untrustworthy.
 | 0.5 | **Repo hygiene.** Move `LOOP_LOG.md` → `docs/research_log.md`; remove the `.docx` PRD from root; reconcile `benchmark/` vs `benchmarks/`; fix `examples/openai_agents` stale package name and the `../../../../.env` path; fix `publish.sh` (references non-existent `crates/tracerazor-proxy`). | S | Root contains only product files; `bash -n publish.sh` + dry-run passes. |
 | 0.6 | **Regenerate stale doc tables from the current binary in CI** (`docs/external_agent_audits.md` says 55.9, `benchmarks/RESULTS.md` 55.5, binary prints 55.1; README "36–41% redundancy" is the airline subset — corpus-wide is 26.0%, report per-domain). | S | A CI step regenerates the tables and fails on drift. |
 
-## Phase 1 — Make the verdicts right (weeks 1–3) — the product's actual job
+## Phase 1 — Make the verdicts right (weeks 1–3) — the product's actual job — ✅ shipped
 
 Eval-engineer adjudication: **1 of 6 delete recommendations correct; AGF
 ungrounded[] ≈ 0/10 correct.** This phase is the credibility core and the
@@ -43,7 +52,7 @@ largest single score lever (precision 3 → target ≥7).
 | 1.5 | **Fix generator: diagnose from the error, not boilerplate.** The `tool_schema` fix ("mark required parameters as required") was wrong on every adjudicated failure (the real cause was a $50 fee omission). Derive fix text from `tool_error` content; emit fixes as structured ops (no meta-prose — `apply` currently injects "Add to system prompt:" and debug entropy stats verbatim). | M | Adjudicated failures produce cause-specific fixes; `apply` output contains no meta-prose; `bench` runs as a post-apply validation gate. |
 | 1.6 | **SRR "most similar prior" bug** — comment promises the most similar prior step, code breaks on the *first* ≥ threshold. | S | Unit test with two priors above threshold flags the more similar one. |
 
-## Phase 2 — Make it installable and ingestible (weeks 2–5)
+## Phase 2 — Make it installable and ingestible (weeks 2–5) — ✅ shipped
 
 A buyer cannot currently install it as advertised (`pip` ships a shim that
 finds no binary) nor feed it their traces (both adapters fail on real exports).
@@ -56,7 +65,7 @@ finds no binary) nor feed it their traces (both adapters fail on real exports).
 | 2.4 | **Degraded-ingest detection.** If > X% of steps carry 0 tokens or content == span name, print a loud warning and record `ingest_quality` in the report + manifest (a TAS computed on span names should never look authoritative). | S | Bad fixtures trigger the warning; manifest records it. |
 | 2.5 | **Batch mode.** `audit --jsonl` / directory glob with an aggregate summary (mean/p50 TAS, worst-N list) + a documented LangSmith fetch script (`pull --langsmith` as M follow-up). | M | Fleet run over `traces/external/` produces one aggregate report. |
 
-## Phase 3 — Make "verifiable" survive an adversary (weeks 4–6)
+## Phase 3 — Make "verifiable" survive an adversary (weeks 4–6) — ✅ shipped
 
 The compliance reviewer forged a "verified: full" report by flipping one
 unsigned manifest field, and freely edited `agf`/`savings` on a verified
@@ -68,7 +77,7 @@ report. Provenance is the differentiator — it must be sound.
 | 3.2 | **`verify` compares the whole report** (agf, savings, fixes, summary), not just `score` + `metric_normalised`; a backend mismatch under a valid signature is TAMPERED, not "integrity-only". | M | Same forgery suite; unsigned legacy reports get an explicit "unsigned" verdict, never "full". |
 | 3.3 | **Evidence bundle + store integrity.** `export --bundle` (zip: trace, report, weights, sha256 manifest, optional hash chain) for WORM handoff; append-only store mode and a retention window. | L | Bundle round-trips through `verify`; store append-only mode covered by tests. |
 
-## Phase 4 — Prove it and launch (weeks 6–8)
+## Phase 4 — Prove it and launch (weeks 6–8) — ✅ shipped
 
 | # | Item | Effort | Acceptance criterion |
 |---|------|--------|----------------------|

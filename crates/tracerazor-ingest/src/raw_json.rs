@@ -44,9 +44,17 @@ fn validate(trace: &Trace) -> Result<()> {
     if trace.steps.is_empty() {
         bail!("trace must contain at least one step");
     }
+    let mut seen = std::collections::HashSet::with_capacity(trace.steps.len());
     for step in &trace.steps {
         if step.id == 0 {
             bail!("step id must be >= 1");
+        }
+        if !seen.insert(step.id) {
+            bail!(
+                "duplicate step id {}: step ids must be unique (metrics and \
+                 fixes resolve steps by id)",
+                step.id
+            );
         }
     }
     Ok(())
@@ -97,5 +105,27 @@ mod tests {
         let trace = parse(json).unwrap();
         assert_eq!(trace.task_value_score, 0.9);
         assert!(trace.steps[0].input_context.is_some());
+    }
+
+    #[test]
+    fn test_duplicate_step_ids_rejected() {
+        // Metric lookups resolve steps by id; a duplicate would silently bind
+        // to the first match, so it must be rejected at ingest.
+        let json = r#"
+        {
+          "trace_id": "test-003",
+          "agent_name": "test-agent",
+          "framework": "raw",
+          "steps": [
+            {"id": 1, "type": "reasoning", "content": "first", "tokens": 10},
+            {"id": 1, "type": "reasoning", "content": "second", "tokens": 10}
+          ]
+        }
+        "#;
+        let err = parse(json).unwrap_err();
+        assert!(
+            format!("{err:#}").contains("duplicate step id 1"),
+            "expected duplicate-id error, got: {err:#}"
+        );
     }
 }
