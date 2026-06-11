@@ -276,3 +276,47 @@ fn bundle_round_trip_verify_ok() {
         .stdout(predicates::str::contains("bundle integrity: OK"))
         .stdout(predicates::str::contains("signature       : OK (Ed25519)"));
 }
+
+// ── 9. Attack 5 — strip the signature, keep the public key ───────────────────
+// Downgrade attempt: removing just the signature from a signed report must
+// read as TAMPERED, not as a legitimately unsigned report.
+
+#[test]
+fn attack_strip_signature_exits_1() {
+    let home = TempDir::new().unwrap();
+    let trace = corpus_trace();
+    let mut report = signed_audit(&home, &trace);
+
+    report["manifest"]["signature"] = Value::Null;
+
+    let dir = TempDir::new().unwrap();
+    let report_path = write_report(&dir, &report);
+
+    cli(&home)
+        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .assert()
+        .failure()
+        .code(1)
+        .stderr(predicates::str::contains("TAMPERED"));
+}
+
+// ── 10. Attack 6 — strip the public key, keep the signature ──────────────────
+
+#[test]
+fn attack_strip_pubkey_exits_1() {
+    let home = TempDir::new().unwrap();
+    let trace = corpus_trace();
+    let mut report = signed_audit(&home, &trace);
+
+    report["manifest"]["signing_key_pub"] = Value::Null;
+
+    let dir = TempDir::new().unwrap();
+    let report_path = write_report(&dir, &report);
+
+    cli(&home)
+        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .assert()
+        .failure()
+        .code(1)
+        .stderr(predicates::str::contains("TAMPERED"));
+}

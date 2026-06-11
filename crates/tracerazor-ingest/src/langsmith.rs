@@ -68,7 +68,7 @@ pub fn parse(data: &str) -> Result<Trace> {
 
     let mut steps: Vec<TraceStep> = Vec::new();
     let mut counter = 1u32;
-    flatten_run(&root, &mut steps, &mut counter, None);
+    flatten_run(&root, &mut steps, &mut counter, None, 0)?;
 
     // Derive framework from tags or extra.
     let framework = root
@@ -96,6 +96,12 @@ pub fn parse(data: &str) -> Result<Trace> {
     })
 }
 
+/// Maximum run-tree depth accepted from an export. Real agent traces nest at
+/// most a few dozen levels; an unbounded `parent_run_id` chain in a malformed
+/// or adversarial export would otherwise overflow the stack in
+/// `attach`/`flatten_run`.
+const MAX_RUN_DEPTH: usize = 128;
+
 /// Rebuild a run tree from a flat `list_runs()` array via `parent_run_id`.
 /// Runs are ordered by `start_time` (exports are often reverse-chronological);
 /// roots are runs whose parent is absent from the export. Multiple roots are
@@ -113,16 +119,27 @@ fn rebuild_tree(mut runs: Vec<LangSmithRun>) -> Result<LangSmithRun> {
             None => roots.push(run),
         }
     }
-    fn attach(run: &mut LangSmithRun, children: &mut HashMap<String, Vec<LangSmithRun>>) {
+    fn attach(
+        run: &mut LangSmithRun,
+        children: &mut HashMap<String, Vec<LangSmithRun>>,
+        depth: usize,
+    ) -> Result<()> {
+        if depth >= MAX_RUN_DEPTH {
+            anyhow::bail!(
+                "LangSmith run tree exceeds the maximum depth of {MAX_RUN_DEPTH} \
+                 (malformed parent_run_id chain?)"
+            );
+        }
         if let Some(mut kids) = children.remove(&run.id) {
             for k in &mut kids {
-                attach(k, children);
+                attach(k, children, depth + 1)?;
             }
             run.child_runs.append(&mut kids);
         }
+        Ok(())
     }
     for r in &mut roots {
-        attach(r, &mut children);
+        attach(r, &mut children, 0)?;
     }
     if roots.is_empty() {
         anyhow::bail!("LangSmith export has no root runs (cyclic parent_run_id?)");
@@ -160,7 +177,14 @@ fn flatten_run(
     steps: &mut Vec<TraceStep>,
     counter: &mut u32,
     agent_id: Option<&str>,
-) {
+    depth: usize,
+) -> Result<()> {
+    if depth >= MAX_RUN_DEPTH {
+        anyhow::bail!(
+            "LangSmith run tree exceeds the maximum depth of {MAX_RUN_DEPTH} \
+             (malformed parent_run_id chain?)"
+        );
+    }
     let step_type = match run.run_type.as_str() {
         "llm" => StepType::Reasoning,
         "tool" | "retriever" => StepType::ToolCall,
@@ -168,9 +192,9 @@ fn flatten_run(
             // Chain runs are orchestration wrappers — skip the wrapper itself
             // and only include children.
             for child in &run.child_runs {
-                flatten_run(child, steps, counter, Some(&run.name));
+                flatten_run(child, steps, counter, Some(&run.name), depth + 1)?;
             }
-            return;
+            return Ok(());
         }
         _ => StepType::Reasoning,
     };
@@ -225,8 +249,9 @@ fn flatten_run(
     *counter += 1;
 
     for child in &run.child_runs {
-        flatten_run(child, steps, counter, agent_id);
+        flatten_run(child, steps, counter, agent_id, depth + 1)?;
     }
+    Ok(())
 }
 
 /// Token count, checked in the order real exports actually use:
@@ -352,5 +377,34 @@ mod tests {
         assert_eq!(trace.steps[0].step_type, StepType::Reasoning);
         assert_eq!(trace.steps[1].step_type, StepType::ToolCall);
         assert_eq!(trace.steps[1].tool_name.as_deref(), Some("get_order_details"));
+    }
+
+    #[test]
+    fn deep_parent_chain_errors_instead_of_overflowing() {
+        // 600 runs chained via parent_run_id — far past MAX_RUN_DEPTH. The
+        // tree rebuild must fail with a clean parse error, not blow the stack.
+        let mut runs = String::from("[");
+        for i in 0..600 {
+            if i > 0 {
+                runs.push(',');
+            }
+            if i == 0 {
+                runs.push_str(&format!(
+                    r#"{{"id":"run-{i}","name":"step","run_type":"llm","inputs":{{}},"outputs":{{}}}}"#
+                ));
+            } else {
+                runs.push_str(&format!(
+                    r#"{{"id":"run-{i}","name":"step","run_type":"llm","inputs":{{}},"outputs":{{}},"parent_run_id":"run-{}"}}"#,
+                    i - 1
+                ));
+            }
+        }
+        runs.push(']');
+
+        let err = parse(&runs).unwrap_err();
+        assert!(
+            format!("{err:#}").contains("maximum depth"),
+            "expected a depth-limit error, got: {err:#}"
+        );
     }
 }

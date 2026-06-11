@@ -51,6 +51,7 @@ fn analyse_dyn(
     config: &ScoringConfig,
 ) -> Result<TraceReport> {
     let start = Instant::now();
+    config.weights.validate()?;
     let total_tokens = trace.effective_total_tokens();
 
     // ── Structural metrics ────────────────────────────────────────────────────

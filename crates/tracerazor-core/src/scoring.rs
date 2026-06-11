@@ -123,6 +123,57 @@ impl Default for Weights {
     }
 }
 
+impl Weights {
+    /// Sum of all composite weights — the divisor `compute()` normalises by.
+    pub fn total(&self) -> f64 {
+        self.srr
+            + self.ldi
+            + self.tca
+            + self.tur
+            + self.cce
+            + self.rda
+            + self.isr
+            + self.dbo
+            + self.vdi
+            + self.shl
+            + self.ccr
+            + self.gar
+            + self.csd
+            + self.obs
+    }
+
+    /// Reject weight sets that would poison the composite: any negative or
+    /// non-finite entry, or a zero total (`compute()` divides by the total,
+    /// so an all-zero weights file would yield a NaN TAS).
+    pub fn validate(&self) -> anyhow::Result<()> {
+        let entries = [
+            ("srr", self.srr),
+            ("ldi", self.ldi),
+            ("tca", self.tca),
+            ("tur", self.tur),
+            ("cce", self.cce),
+            ("rda", self.rda),
+            ("isr", self.isr),
+            ("dbo", self.dbo),
+            ("vdi", self.vdi),
+            ("shl", self.shl),
+            ("ccr", self.ccr),
+            ("gar", self.gar),
+            ("csd", self.csd),
+            ("obs", self.obs),
+        ];
+        for (name, value) in entries {
+            if !value.is_finite() || value < 0.0 {
+                anyhow::bail!("weight '{name}' must be a finite value >= 0, got {value}");
+            }
+        }
+        if self.total() <= 0.0 {
+            anyhow::bail!("weights sum to zero: at least one metric weight must be positive");
+        }
+        Ok(())
+    }
+}
+
 /// The composite TraceRazor Score and all component results.
 /// All thirteen metrics are always present — no Option wrappers.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -250,23 +301,10 @@ pub fn compute(
     let csd_n = csd.normalised();
     let obs_n = obs.normalised();
 
-    // Sum weights so the composite remains in [0, 1] even if weights don't
-    // add up to exactly 1.0.  GAR uses 7% of the composite; CCR reduced from
-    // 4% to 3% to partially offset (both overlap with verbosity waste signal).
-    let weight_total = w.srr
-        + w.ldi
-        + w.tca
-        + w.tur
-        + w.cce
-        + w.rda
-        + w.isr
-        + w.dbo
-        + w.vdi
-        + w.shl
-        + w.ccr
-        + w.gar
-        + w.csd
-        + w.obs;
+    // Normalise by the weight total so the composite stays in [0, 1] even if
+    // the weights don't sum to exactly 1.0. `Weights::validate()` (run by
+    // `analyse`) guarantees the total is positive.
+    let weight_total = w.total();
 
     let weighted_sum = srr_n * w.srr
         + ldi_n * w.ldi
@@ -488,5 +526,58 @@ mod tests {
             Grade::Excellent,
             "partial-failure trace (tvs=0.5) should not grade as Excellent"
         );
+    }
+
+    // ── Weights validation ────────────────────────────────────────────────────
+
+    fn zero_weights() -> Weights {
+        Weights {
+            srr: 0.0,
+            ldi: 0.0,
+            tca: 0.0,
+            tur: 0.0,
+            cce: 0.0,
+            rda: 0.0,
+            isr: 0.0,
+            dbo: 0.0,
+            vdi: 0.0,
+            shl: 0.0,
+            ccr: 0.0,
+            gar: 0.0,
+            csd: 0.0,
+            obs: 0.0,
+        }
+    }
+
+    #[test]
+    fn default_weights_validate() {
+        assert!(Weights::default().validate().is_ok());
+    }
+
+    #[test]
+    fn all_zero_weights_rejected() {
+        // A zero-sum weights file used to produce a NaN TAS (division by
+        // zero in compute()), which crashed fleet mode's sort.
+        let err = zero_weights().validate().unwrap_err().to_string();
+        assert!(err.contains("zero"), "got: {err}");
+    }
+
+    #[test]
+    fn negative_weight_rejected() {
+        let w = Weights {
+            srr: -0.1,
+            ..Weights::default()
+        };
+        let err = w.validate().unwrap_err().to_string();
+        assert!(err.contains("srr"), "got: {err}");
+    }
+
+    #[test]
+    fn nan_weight_rejected() {
+        let w = Weights {
+            ldi: f64::NAN,
+            ..Weights::default()
+        };
+        assert!(w.validate().is_err());
     }
 }
