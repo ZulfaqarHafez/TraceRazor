@@ -744,11 +744,20 @@ impl TraceReport {
 
         // Savings (heuristic projection — see note below)
         let sv = &self.savings;
+        let runs_note = if sv.monthly_runs_assumed {
+            format!(
+                "at an ASSUMED {} runs/month — illustration, not your bill; \
+                 size it with `tracerazor cost <trace> --runs <n>`",
+                sv.monthly_runs
+            )
+        } else {
+            format!("at {} runs/month", sv.monthly_runs)
+        };
         out += &format!(
             "SAVINGS ESTIMATE  (heuristic projection from flagged waste, not a measured re-run)\n\
              Tokens saved:      {}  ({:.1}% reduction)\n\
              Cost saved:        ${:.4} per run\n\
-             Projected/month:   ${:.2}  (at the configured run count & token price)\n\
+             Projected/month:   ${:.2}  ({runs_note})\n\
              Latency saved:     ~{:.1}s per run\n\
              {sep}\n",
             sv.tokens_saved,
@@ -945,9 +954,14 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
     };
 
     let savings_text = if savings.tokens_saved > 0 {
+        let runs_label = if savings.monthly_runs_assumed {
+            format!("an assumed {} runs", savings.monthly_runs)
+        } else {
+            format!("{} runs", savings.monthly_runs)
+        };
         format!(
             " Applying the recommended fixes is estimated to save ~{} tokens per run \
-             (${:.4}/run; ~${:.0}/month projected at 50K runs — a heuristic estimate, \
+             (${:.4}/run; ~${:.0}/month projected at {runs_label} — a heuristic estimate, \
              not a measured re-run).",
             savings.tokens_saved,
             savings.cost_saved_per_run_usd,
@@ -980,9 +994,14 @@ pub fn generate_oneliner(trace: &Trace, score: &TasScore, savings: &SavingsEstim
     let (worst_name, _) = worst_metric(score);
 
     if savings.monthly_savings_usd > 0.0 {
+        let runs_label = if savings.monthly_runs_assumed {
+            format!("an assumed {} runs", savings.monthly_runs)
+        } else {
+            format!("{} runs", savings.monthly_runs)
+        };
         format!(
             "{} scores {:.0}/100 [{}]. Biggest issue: {}. \
-             Est. ~${:.0}/month at 50K runs (heuristic projection).",
+             Est. ~${:.0}/month at {runs_label} (heuristic projection).",
             trace.agent_name,
             score.score,
             score.grade,

@@ -1,6 +1,6 @@
 # TraceRazor
 
-**An offline auditor that decomposes AI-agent token waste into 9 evidence-validated efficiency signals (plus 5 detection-only diagnostics), emits risk-tagged fix patches, and produces cryptographically verifiable (Ed25519-signed) reports.**
+**An offline auditor that decomposes AI-agent token waste into 8 evidence-validated efficiency signals (plus 6 detection-only diagnostics), emits risk-tagged fix patches, and produces cryptographically verifiable (Ed25519-signed) reports.**
 
 [![CI](https://github.com/ZulfaqarHafez/tracerazor/actions/workflows/tracerazor.yml/badge.svg)](https://github.com/ZulfaqarHafez/tracerazor/actions)
 [![PyPI](https://img.shields.io/pypi/v/tracerazor)](https://pypi.org/project/tracerazor/)
@@ -36,7 +36,7 @@ flowchart LR
     T["📄 Trace JSON<br/>LangSmith · OTel · raw ·<br/>Claude Code transcripts"]
 
     subgraph AUDIT["1 · AUDIT — offline, no API keys, ~ms"]
-        A["9 composite signals<br/>+ 5 diagnostics"] --> R["Report<br/>TAS 0–100 + fix patches<br/>+ run manifest<br/>+ Ed25519 signature"]
+        A["8 composite signals<br/>+ 6 diagnostics"] --> R["Report<br/>TAS 0–100 + fix patches<br/>+ run manifest<br/>+ Ed25519 signature"]
     end
 
     subgraph MEASURE["2 · MEASURE — the only real proof"]
@@ -99,14 +99,14 @@ flowchart TD
 
     subgraph M["9 Composite Signals (post-normalisation share of TAS)"]
         direction LR
-        S1["Step Redundancy\n18.5%"]
-        S2["Loop Detection\n14.1%"]
-        S3["Tool Accuracy\n14.1%"]
-        S4["Reasoning Depth\n10.9%"]
-        S5["Info Sufficiency\n10.9%"]
-        S6["Token Utilisation\n10.9%"]
-        S7["Context Efficiency\n10.9%"]
-        O1["Observation Share\n6.5%"]
+        S1["Step Redundancy\n20.7%"]
+        S2["Loop Detection\n15.9%"]
+        S3["Tool Accuracy\n15.9%"]
+        S4["Reasoning Depth\n12.2%"]
+        S5["Info Sufficiency\n12.2%"]
+        S6["Token Utilisation\n(diagnostic)"]
+        S7["Context Efficiency\n12.2%"]
+        O1["Observation Share\n7.3%"]
         V3["Compression Ratio\n3.3%"]
     end
 
@@ -134,28 +134,29 @@ flowchart TD
 > *one project over time*, not as an absolute percentage. Override via
 > `ScoringConfig.weights`.
 
-### The metrics: 9 composite + 5 diagnostic
+### The metrics: 8 composite + 6 diagnostic
 
 A self-evaluation over **61 real traces** decided which metrics keep
 composite weight — criteria pre-stated, data committed, regenerable with
 `python -m benchmark.metric_effectiveness`
 (see [`docs/metric_effectiveness.md`](docs/metric_effectiveness.md)).
-Shares are *post-normalisation* (the raw composite weights sum to 0.92;
-`compute()` divides by the sum).
+Shares are *post-normalisation* (the raw composite weights sum to 0.82;
+`compute()` divides by the sum). TUR was demoted in this release on logical
+grounds: its "useful tokens" are defined as tokens *not already flagged* by
+SRR/LDI/TCA, so it double-counted signal the composite already carries.
 
 **Composite signals** (these shape TAS)
 
 | Metric | Share | What It Detects |
 |---|---|---|
-| Step Redundancy Rate (SRR) | 18.5% | Near-duplicate steps wasting tokens |
-| Loop Detection Index (LDI) | 14.1% | Repeated tool calls re-attempting the same action |
-| Tool Call Accuracy (TCA) | 14.1% | Failed tool calls and retries |
-| Reasoning Depth (RDA) | 10.9% | Over-deep reasoning for simple tasks |
-| Information Sufficiency (ISR) | 10.9% | Steps adding no novel information |
-| Token Utilisation (TUR) | 10.9% | Off-task token spending |
-| Context Efficiency (CCE) | 10.9% | Duplicate context across steps |
-| Observation Token Share (OBS) | 6.5% | Share of tokens spent on tool I/O vs recoverable reasoning — the one signal validated against real recoverable waste (see [Better features](#better-features-observation-accumulation)) |
-| Compression Ratio (CCR) | 3.3% | Highly compressible text |
+| Step Redundancy Rate (SRR) | 20.7% | Near-duplicate steps wasting tokens |
+| Loop Detection Index (LDI) | 15.9% | Repeated tool calls re-attempting the same action |
+| Tool Call Accuracy (TCA) | 15.9% | Failed tool calls and retries |
+| Reasoning Depth (RDA) | 12.2% | Over-deep reasoning for simple tasks |
+| Information Sufficiency (ISR) | 12.2% | Steps adding no novel information |
+| Context Efficiency (CCE) | 12.2% | Duplicate context across steps |
+| Observation Token Share (OBS) | 7.3% | Share of tokens spent on tool I/O vs recoverable reasoning — the one signal validated against real recoverable waste (see [Better features](#better-features-observation-accumulation)) |
+| Compression Ratio (CCR) | 3.7% | Highly compressible text |
 
 **Diagnostics** (detection-only: full per-step annotations and fixes, no
 composite weight by default — re-enable any of them via a weights file)
@@ -166,6 +167,7 @@ composite weight by default — re-enable any of them via a weights file)
 | Semantic Drift (CSD) | max 0.68 ever observed; misreads coding workflows as drift | flags drifting step pairs |
 | Decision Optimality (DBO) | sd 0.037 (near-constant); r = 0.76 with TCA | flags sub-optimal tool sequences |
 | Verbosity Density (VDI) | sd 0.038; zero correlation with the composite | drives the AVS verbosity alert + fixes |
+| Token Utilisation (TUR) | circular: "useful tokens" = tokens not already flagged by SRR/LDI/TCA (double-counts their signal); 0.70 divisor uncalibrated | per-step utilisation breakdown |
 | Sycophancy/Hedging (SHL) | sd 0.033 (near-constant) | drives the AVS verbosity alert + hedge fixes |
 
 **TAS Grade Scale**
@@ -212,12 +214,12 @@ Trace:     support-agent-run-2847
 Agent:     customer-support-v3
 Framework: langgraph
 Steps:     11   Tokens: 14280
-Analysed:  13ms
+Analysed:  10ms
 ------------------------------------------------------
-TRACERAZOR SCORE:  79 / 100  [GOOD]  (raw structural: 82, task value: 0.90)
-VAE SCORE:         0.73
+TRACERAZOR SCORE:  83 / 100  [GOOD]  (raw structural: 86, task value: 0.90)
+VAE SCORE:         0.77
 MVTG:              33.8%  (trace is 33.8% above minimum viable token count)
-Note: TAS is an *ordinal* heuristic score - compare runs within one
+Note: TAS is an *ordinal* heuristic score — compare runs within one
 project over time, not as an absolute efficiency percentage.
 ------------------------------------------------------
 METRIC BREAKDOWN
@@ -229,21 +231,71 @@ RDA    Reasoning Depth Approp.        0.917    >0.75    PASS
 ISR    Info Sufficiency Rate          100.0%   >80%     PASS
 TUR    Token Utilisation Ratio        0.959    >0.35    PASS
 CCE    Context Carry-over Eff.        0.613    >0.60    PASS
+CCR    Caveman Compression Ratio      0.384    <0.30    FAIL
+OBS    Observation Token Share        0.377    ≥0.30    PASS
+-- Diagnostics (no default composite weight) ----------
 DBO    Decision Branch Optimality     0.833    >0.70    PASS [cold]
--- Verbosity Metrics ----------------------------------
 VDI    Verbosity Density Index        0.775    >0.60    PASS
 SHL    Sycophancy/Hedging Level       0.219    <0.20    FAIL
-CCR    Caveman Compression Ratio      0.384    <0.30    FAIL
--- Goal Advancement -----------------------------------
 GAR    Goal Advancement Ratio         0.403    ≥0.40    PASS  (goal proxy: step 10)
--- Semantic Path --------------------------------------
 CSD    Cross-Step Semantic Drift      0.438    ≥0.60    FAIL  [drifting pairs: 3→6]
-OBS    Observation Token Share        0.377    ≥0.30    PASS
+------------------------------------------------------
+SUMMARY
+The customer-support-v3 agent (langgraph) scored 83/100 [GOOD] — it is reasonably efficient with minor inefficiencies. The biggest efficiency gap is OBS (observation share) (score 0.38/1.0). Issues found: 1 tool misfire(s) wasted ~580 tokens on failed calls. Applying the recommended fixes is estimated to save ~4827 tokens per run ($0.0145/run; ~$724/month projected at an assumed 50000 runs — a heuristic estimate, not a measured re-run).
+------------------------------------------------------
+PER-STEP ANNOTATIONS
+  #  Type         Tokens    Flags
+  1  reasoning         820  -
+  2  tool_call         340  Compress context: 100% duplicated input context
+  3  reasoning        1450  -
+  4  tool_call         580  Misfired: wrong params for check_refund_eligibility, retried at step 5
+  5  tool_call         620  Compress context: correction of step 4
+  6  reasoning        2100  Compress context: 67% duplicated input context
+  7  tool_call         380  -
+  8  reasoning        2840  Compress context: 60% duplicated input context
+  9  tool_call         920  -
+ 10  reasoning        1680  Compress context: 52% duplicated input context
+ 11  tool_call        2550  -
+------------------------------------------------------
+OPTIMAL PATH RECOMMENDATION
+Suggested: 10 steps (vs 11 actual)  |  Est. tokens: 9453 (vs 14280)
+
+  KEEP  Step  1  reasoning     Parse the user request. The customer wants a refun
+~ TRIM  Step  2  tool_call     Call get_order_details  [Compress context: 100% duplicated input context]
+  KEEP  Step  3  reasoning     Parse the user request again. The customer wants a
+- DEL   Step  4  tool_call     Call check_refund_eligibility  [Misfired: wrong params for check_refund_eligibility, retried at step 5]
+~ TRIM  Step  5  tool_call     Call check_refund_eligibility  [Compress context: correction of step 4]
+~ TRIM  Step  6  reasoning     Now I need to think deeply about whether this is t  [Compress context: 67% duplicated input context]
+  KEEP  Step  7  tool_call     Call process_refund
+~ TRIM  Step  8  reasoning     Let me re-evaluate whether the refund was processe  [Compress context: 60% duplicated input context]
+  KEEP  Step  9  tool_call     Call get_order_details
+~ TRIM  Step 10  reasoning     Re-evaluating whether the refund was correct. The   [Compress context: 52% duplicated input context]
+  KEEP  Step 11  tool_call     Call send_confirmation
+------------------------------------------------------
+AUTO-GENERATED FIXES
+  Fix 1: [tool_schema] → check_refund_eligibility
+  Patch: Tool "check_refund_eligibility" failed at step 4 with: "missing required parameter: order_id". Mark the missing parameter(s) as required in the tool schema so the model cannot omit them.
+  Est. savings: 580 tokens/run
+
+  Fix 2: [context_compression] → system_prompt
+  Patch: Before each tool call, summarise the conversation to the last three relevant facts. Do not re-include information that has already been established earlier in this session.
+  Est. savings: 5524 tokens/run
+
+  Fix 3: [goal_anchor] → system_prompt
+  Patch: Add to system prompt: "Keep the task objective established at the start of the trace as your working objective. Before acting, check that the action moves measurably closer to it; if it does not, skip it and take the next concrete action instead. Do not restate the objective or summarise progress unless explicitly asked." (Detected drift: trajectory path entropy 1.00 / focus 0.25 (scattered).)
+  Est. savings: 445 tokens/run
+
+------------------------------------------------------
+PATH ENTROPY  (staying-on-path diagnostic, not part of TAS)
+Path entropy:      1.000   (0 = directed, 1 = random walk)
+Focus score:       0.250   [scattered]   target ≥ 0.50
+Trajectory:        1 advance / 1 stall / 1 regress   (vs final step (no task goal in trace))
+   note:           lexical backend — re-run with --enhanced for embedding-based drift
 ------------------------------------------------------
 SAVINGS ESTIMATE  (heuristic projection from flagged waste, not a measured re-run)
 Tokens saved:      4827  (33.8% reduction)
 Cost saved:        $0.0145 per run
-Projected/month:   $724.05  (at the configured run count & token price)
+Projected/month:   $724.05  (at an ASSUMED 50000 runs/month — illustration, not your bill; size it with `tracerazor cost <trace> --runs <n>`)
 ```
 
 > Savings figures are **estimates** derived from per-fix heuristics, not a
@@ -450,7 +502,7 @@ the converter is [`tools/convert_agentinstruct.py`](tools/convert_agentinstruct.
 
 ### Calibrating TAS to your workload
 
-The sub-metrics (all fourteen are computed and fittable; nine carry default
+The sub-metrics (all fourteen are computed and fittable; eight carry default
 composite weight) are combined with weights that are heuristic by
 default. If you want TAS to be a *calibrated* indicator for your use case rather
 than an ordinal one, fit the weights to ground truth with the calibration tool
@@ -1055,7 +1107,7 @@ Repository layout:
 ```
 tracerazor/
 ├── crates/
-│   ├── tracerazor-core/       # 9 composite + 5 diagnostic metrics, TAS, fixes, IAR
+│   ├── tracerazor-core/       # 8 composite + 6 diagnostic metrics, TAS, fixes, IAR
 │   ├── tracerazor-ingest/     # Parsers: raw JSON, LangSmith, OpenTelemetry
 │   ├── tracerazor-semantic/   # BoW similarity + LLM backend (OpenAI / Anthropic / compatible)
 │   ├── tracerazor-store/      # SQLite: traces, KB, baselines, anomaly detection
