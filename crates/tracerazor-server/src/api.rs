@@ -65,6 +65,14 @@ async fn index() -> impl IntoResponse {
 pub struct AuditRequest {
     /// Raw trace JSON (same schema as the CLI).
     pub trace: serde_json::Value,
+    /// When true, score as a pure function of (trace, config, version):
+    /// no store-derived history is read and nothing is persisted — the
+    /// result matches `tracerazor audit --hermetic` exactly. Default false
+    /// (server scoring uses the agent's accumulated history for RDA/DBO,
+    /// which is why repeat audits can drift from a fresh CLI run; the
+    /// attached manifest records that influence).
+    #[serde(default)]
+    pub hermetic: bool,
 }
 
 #[derive(Serialize)]
@@ -88,6 +96,10 @@ pub struct AuditResponse {
     pub avs: f64,
     /// Auto-generated fix suggestions.
     pub fixes: Vec<tracerazor_core::fixes::Fix>,
+    /// Provenance manifest: trace hash, tool version, weights, and any
+    /// store-derived baselines that influenced this score (see
+    /// `store_influenced`). Lets clients explain server-vs-CLI deltas.
+    pub manifest: Option<tracerazor_core::report::RunManifest>,
 }
 
 /// POST /api/audit
@@ -112,16 +124,24 @@ async fn audit(
     }
 
     // ── Build historical context for local-first RDA/DBO ─────────────────────
-    let historical_sequences = state
-        .store
-        .historical_sequences(&trace.agent_name)
-        .await
-        .unwrap_or_default();
-    let historical_median_steps = state
-        .store
-        .historical_median_steps(&trace.agent_name)
-        .await
-        .unwrap_or(None);
+    // Skipped entirely for hermetic requests so the score is a pure function
+    // of (trace, config, version) — identical to `tracerazor audit --hermetic`.
+    let (historical_sequences, historical_median_steps) = if req.hermetic {
+        (Vec::new(), None)
+    } else {
+        (
+            state
+                .store
+                .historical_sequences(&trace.agent_name)
+                .await
+                .unwrap_or_default(),
+            state
+                .store
+                .historical_median_steps(&trace.agent_name)
+                .await
+                .unwrap_or(None),
+        )
+    };
 
     let sim_fn = default_similarity_fn();
     let config = ScoringConfig {
@@ -132,29 +152,56 @@ async fn audit(
     let mut report = analyse(&mut trace, sim_fn, &config)
         .map_err(AppError::internal)?;
 
+    // Provenance manifest: binds the score to the server's canonical trace
+    // serialisation and records any store influence, so a server-vs-CLI
+    // score delta is always explainable from the response itself.
+    let ingest_quality = tracerazor_core::report::IngestQuality::assess(&trace);
+    report.manifest = Some(
+        tracerazor_core::report::RunManifest::build(
+            tracerazor_core::provenance::sha256_hex(trace_str.as_bytes()),
+            env!("CARGO_PKG_VERSION"),
+            tracerazor_semantic::BOW_BACKEND_ID.to_string(),
+            &config,
+            2,
+            req.hermetic,
+            Some(ingest_quality),
+        )
+        .map_err(|e| AppError::internal(anyhow::anyhow!(e)))?,
+    );
+
     // ── E-04: Anomaly detection against agent baseline (all 8 metrics) ───────
-    let anomalies = state
-        .store
-        .detect_all_anomalies(&trace.agent_name, &report)
-        .await
-        .unwrap_or_default();
+    let anomalies = if req.hermetic {
+        Vec::new()
+    } else {
+        state
+            .store
+            .detect_all_anomalies(&trace.agent_name, &report)
+            .await
+            .unwrap_or_default()
+    };
     report.anomalies = anomalies.clone();
 
-    state
-        .store
-        .save_trace(&trace, Some(&report))
-        .await
-        .map_err(AppError::internal)?;
+    if !req.hermetic {
+        state
+            .store
+            .save_trace(&trace, Some(&report))
+            .await
+            .map_err(AppError::internal)?;
+    }
 
     let tokens_saved = report.savings.tokens_saved;
     let tas_score = report.score.score;
     let grade = report.score.grade.to_string();
 
     // ── KB: find similar prior runs before potentially adding this one ────────
-    let kb_match = find_kb_match(&state, &trace, &report).await;
+    let kb_match = if req.hermetic {
+        None
+    } else {
+        find_kb_match(&state, &trace, &report).await
+    };
 
     // ── KB: auto-capture if this trace scores above the threshold ─────────────
-    let captured_to_kb = if tas_score >= KGP_CAPTURE_THRESHOLD {
+    let captured_to_kb = if !req.hermetic && tas_score >= KGP_CAPTURE_THRESHOLD {
         let entry = build_kb_entry(&trace, &report);
         state.store.save_kb_entry(&entry).await.map_err(AppError::internal)?;
         true
@@ -172,6 +219,7 @@ async fn audit(
 
     let avs = report.score.avs;
     let fixes = report.fixes.clone();
+    let manifest = report.manifest.clone();
 
     Ok((
         StatusCode::OK,
@@ -190,6 +238,7 @@ async fn audit(
             anomalies,
             avs,
             fixes,
+            manifest,
         }),
     ))
 }

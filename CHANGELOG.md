@@ -4,6 +4,35 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Adoption: get your own traces in, trust the server's numbers
+- **`tools/convert_openai.py`** — converts plain OpenAI/Anthropic
+  chat-completions logs (`{"messages": [...]}` or a bare messages array,
+  including `tool_calls`/`tool_use`/`tool_result`) into native traces; the
+  first user message becomes `metadata.task` so GAR/TPE anchor on the real
+  goal. Token fallback is `len/4` when usage is absent.
+- **Chat logs no longer dead-end** — feeding a `messages` payload to
+  `audit` now explains what it is and points at the converter,
+  `docs/trace-format.md` and `-F langsmith` / `-F otel`, instead of
+  failing with a bare `missing field trace_id`.
+- **`docs/trace-format.md` + `schemas/trace.schema.json`** — the native
+  schema is now documented outside a Rust doc comment, with the
+  field-level notes that change scores (`input_context` redundancy
+  exemption, `metadata.task` goal anchoring, degraded-ingest triggers).
+- **Server scoring is now explainable and CLI-reproducible** —
+  `POST /api/audit` accepts `"hermetic": true` (no store reads/writes;
+  verified to produce the exact CLI `--hermetic` TAS) and every response
+  carries the provenance `manifest`, so server-vs-CLI deltas are always
+  attributable to recorded store baselines instead of being mystery drift.
+- **README: 60-second start** at the very top (pip / cargo install /
+  docker, the bundled sample, the CI gate) plus the exit-code contract
+  and trace-acquisition pointers; the Python quickstart's pinned sample
+  numbers were replaced with a shape contract (they drifted every scorer
+  release).
+- **`publish.sh` ships the binary again** — the manual path now builds the
+  sdist and the platform wheel (via `scripts/build_platform_wheel.sh`)
+  instead of a binary-less wheel, and says plainly that multi-platform
+  publishing is `release.yml`'s job.
+
 ### Hardening
 - **Weights files are validated on load** — a negative, non-finite or
   zero-sum weight set is rejected with a clear error (exit 2) instead of

@@ -6,9 +6,22 @@
 [![PyPI](https://img.shields.io/pypi/v/tracerazor)](https://pypi.org/project/tracerazor/)
 &nbsp;·&nbsp; MIT &nbsp;·&nbsp; Rust + Python &nbsp;·&nbsp; Author: Zulfaqar Hafez
 
+## 60-second start
+
 ```bash
-pip install tracerazor
+pip install tracerazor            # platform wheels bundle the CLI — no Rust toolchain needed
+# or: cargo install tracerazor    # build the CLI from crates.io
+# or: docker compose up           # REST API + dashboard on :8080
+
+tracerazor audit traces/support-agent-run-2847.json     # bundled sample trace
+tracerazor audit my-trace.json --threshold 75           # CI gate: exit 1 below 75
 ```
+
+**Exit codes:** `0` pass · `1` threshold gate failed (only with `--threshold`) · `2` error (unreadable/invalid input).
+
+**Your own traces:** LangSmith and OTel GenAI exports parse directly (`-F langsmith` / `-F otel`);
+plain OpenAI/Anthropic chat logs convert with `python tools/convert_openai.py chat.json -o trace.json`.
+Native schema: [docs/trace-format.md](docs/trace-format.md) ([JSON Schema](schemas/trace.schema.json)).
 
 ---
 
@@ -342,7 +355,8 @@ with Tracer(agent_name="support-agent", framework="openai") as t:
 
 report = t.analyse()
 print(report.summary())
-# TAS 80.4/100 [Good] | 6 steps, 800 tokens | Saved 250 tokens (31%)
+# TAS <score>/100 [<grade>] | 6 steps, 800 tokens | Saved <n> tokens
+# (exact numbers shift between scorer versions — the shape is the contract)
 
 report.assert_passes()   # raises AssertionError in CI if TAS < 70
 ```
@@ -978,7 +992,15 @@ export TRACERAZOR_LLM_MODEL=llama3.1
 Start: `tracerazor serve` (alias for `./target/release/tracerazor-server`).
 
 The audit endpoint takes a `{"trace": ...}` envelope — the raw trace JSON
-(same schema as the CLI) wrapped in a `trace` key:
+(same schema as the CLI) wrapped in a `trace` key.
+
+By default the server scores with the agent's accumulated history (RDA/DBO
+baselines from its store) and persists the run — so repeat audits of the same
+trace can legitimately differ from a fresh `tracerazor audit`. The response's
+`manifest` records exactly which baselines influenced the score. Add
+`"hermetic": true` to the request body to score as a pure function of
+(trace, config, version) — identical to `tracerazor audit --hermetic` — with
+no store reads or writes:
 
 ```bash
 tracerazor serve --port 8080 &
@@ -1002,7 +1024,7 @@ curl -s -H "Authorization: Bearer s3cret" http://127.0.0.1:8080/api/traces
 
 | Method | Path | Description |
 |---|---|---|
-| `POST` | `/api/audit` | Score a trace (`{"trace": ...}` envelope); auto-captures to KB if TAS >= 85 |
+| `POST` | `/api/audit` | Score a trace (`{"trace": ...}` envelope, optional `"hermetic": true`); auto-captures to KB if TAS >= 85 |
 | `GET` | `/api/traces` | List stored traces |
 | `GET/DELETE` | `/api/traces/:id` | Full trace + report / delete |
 | `GET` | `/api/dashboard` | Aggregate stats |
