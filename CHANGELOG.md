@@ -4,6 +4,63 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+### Scoring credibility (breaking: TAS values shift)
+- **TUR demoted from the composite to diagnostics** (weight 0.10 → 0;
+  non-zero weights now sum to 0.82). Unlike the five variance-based 0.5.0
+  demotions, this one is on logical grounds: TUR's "useful tokens" are
+  defined as tokens in steps *not already flagged* by SRR/LDI/TCA, so it
+  re-aggregated signal the composite already carries (double-counting),
+  and its 0.70 normalisation divisor was never calibrated. The detector,
+  per-step utilisation breakdown and report row all still run. New
+  post-normalisation shares: SRR 20.7%, LDI/TCA 15.9%, RDA/ISR/CCE 12.2%,
+  OBS 7.3%, CCR 3.7%. `benchmark/RESULTS.md` regenerated (corpus mean
+  74.1); README tables, mermaid and sample output refreshed from the
+  current binary.
+- **TCA retries are now matched by tool name** — previously *any* next
+  tool call after a failure was attributed as "the retry", so a
+  legitimate pivot to a different tool was mislabelled (wrong Retry flag,
+  wrong annotation text, pivot tokens charged as waste). A retry is now
+  the next call to the *same tool* within the next 3 tool calls; pivots
+  are annotated as "no same-tool retry (agent pivoted or abandoned)".
+  The score itself is unchanged (every failed call was and is a misfire);
+  a dead, condition-shadowed second detection pass was removed. Two new
+  unit tests pin the pivot and the gap-retry cases.
+- **The 50,000 runs/month assumption is no longer silent** —
+  `SavingsEstimate` now carries `monthly_runs` + `monthly_runs_assumed`
+  (serialized only when set, so previously signed reports still verify),
+  and every rendered surface (savings table, executive summary,
+  one-liner) says "at an ASSUMED 50000 runs/month — illustration, not
+  your bill" when the volume was defaulted rather than supplied.
+
+### Adoption: get your own traces in, trust the server's numbers
+- **`tools/convert_openai.py`** — converts plain OpenAI/Anthropic
+  chat-completions logs (`{"messages": [...]}` or a bare messages array,
+  including `tool_calls`/`tool_use`/`tool_result`) into native traces; the
+  first user message becomes `metadata.task` so GAR/TPE anchor on the real
+  goal. Token fallback is `len/4` when usage is absent.
+- **Chat logs no longer dead-end** — feeding a `messages` payload to
+  `audit` now explains what it is and points at the converter,
+  `docs/trace-format.md` and `-F langsmith` / `-F otel`, instead of
+  failing with a bare `missing field trace_id`.
+- **`docs/trace-format.md` + `schemas/trace.schema.json`** — the native
+  schema is now documented outside a Rust doc comment, with the
+  field-level notes that change scores (`input_context` redundancy
+  exemption, `metadata.task` goal anchoring, degraded-ingest triggers).
+- **Server scoring is now explainable and CLI-reproducible** —
+  `POST /api/audit` accepts `"hermetic": true` (no store reads/writes;
+  verified to produce the exact CLI `--hermetic` TAS) and every response
+  carries the provenance `manifest`, so server-vs-CLI deltas are always
+  attributable to recorded store baselines instead of being mystery drift.
+- **README: 60-second start** at the very top (pip / cargo install /
+  docker, the bundled sample, the CI gate) plus the exit-code contract
+  and trace-acquisition pointers; the Python quickstart's pinned sample
+  numbers were replaced with a shape contract (they drifted every scorer
+  release).
+- **`publish.sh` ships the binary again** — the manual path now builds the
+  sdist and the platform wheel (via `scripts/build_platform_wheel.sh`)
+  instead of a binary-less wheel, and says plainly that multi-platform
+  publishing is `release.yml`'s job.
+
 ### Hardening
 - **Weights files are validated on load** — a negative, non-finite or
   zero-sum weight set is rejected with a clear error (exit 2) instead of

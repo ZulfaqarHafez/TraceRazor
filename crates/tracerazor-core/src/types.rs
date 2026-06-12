@@ -83,7 +83,10 @@ impl std::fmt::Display for Confidence {
 }
 
 /// A single step in an agent trace.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// Implements [`Default`] so callers can fill only the fields they care
+/// about: `TraceStep { id: 1, content: "...".into(), ..Default::default() }`.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct TraceStep {
     /// 1-based step index.
     pub id: u32,
@@ -205,6 +208,22 @@ pub struct Trace {
 
 fn default_task_value() -> f64 {
     1.0
+}
+
+impl Default for Trace {
+    /// Empty trace with `task_value_score = 1.0` (matching the serde
+    /// default), for struct-update construction in tests and examples.
+    fn default() -> Self {
+        Trace {
+            trace_id: String::new(),
+            agent_name: String::new(),
+            framework: String::new(),
+            steps: Vec::new(),
+            total_tokens: 0,
+            task_value_score: 1.0,
+            metadata: HashMap::new(),
+        }
+    }
 }
 
 impl Trace {

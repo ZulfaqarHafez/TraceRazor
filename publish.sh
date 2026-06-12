@@ -54,9 +54,16 @@ if [[ "$RUST" == "1" ]]; then
 fi
 
 if [[ "$PYTHON" == "1" ]]; then
-    echo "==> Building Python wheel (PyPI)"
+    echo "==> Building Python artifacts (PyPI)"
     rm -rf dist build *.egg-info
-    python -m build
+    # sdist first, then the platform wheel with the bundled CLI binary —
+    # `python -m build` alone produces a binary-less wheel whose `tracerazor`
+    # command cannot work after install.
+    python -m build --sdist
+    bash scripts/build_platform_wheel.sh
+    echo "NOTE: this builds only THIS machine's platform wheel; the"
+    echo "      release.yml matrix (tag push / release-cut branch) is the"
+    echo "      real multi-platform publish path."
     if [[ "$DRY_RUN" == "0" ]]; then
         echo "==> Uploading to PyPI"
         twine upload dist/*

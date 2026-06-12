@@ -5,6 +5,7 @@ use tracerazor_core::{
     cost::{CostConfig, ProviderPreset, project_cost},
     fixes::{Fix, FixType},
     is_analysable,
+    provenance::{hex_encode, sha256_hex},
     scoring::ScoringConfig,
     simulate::{SimulationSpec, simulate},
     types::MIN_TRACE_STEPS,
@@ -568,33 +569,22 @@ async fn cmd_audit(
 
     // Run manifest: bind the report to its inputs so a third party can
     // attribute — and for hermetic BoW runs exactly re-verify — the score.
-    let weights_json = serde_json::to_string(&config.weights)?;
-    report.manifest = Some(tracerazor_core::report::RunManifest {
+    report.manifest = Some(tracerazor_core::report::RunManifest::build(
         trace_sha256,
-        tool_version: env!("CARGO_PKG_VERSION").to_string(),
-        created_at: chrono::Utc::now().to_rfc3339(),
-        similarity_backend: backend_identity,
-        weights: config.weights.clone(),
-        weights_sha256: sha256_hex(weights_json.as_bytes()),
-        threshold: config.threshold,
-        cost_per_million_tokens: config.cost_per_million_tokens,
+        env!("CARGO_PKG_VERSION"),
+        backend_identity,
+        &config,
         min_steps,
         hermetic,
-        baseline_tokens: config.baseline_tokens,
-        historical_median_steps: config.historical_median_steps,
-        n_historical_sequences: config.historical_sequences.len(),
-        ingest_quality: Some(ingest_quality),
-        signature: None,
-        signing_key_pub: None,
-    });
+        Some(ingest_quality),
+    )?);
 
     // Sign the canonical report if TRACERAZOR_SIGNING_KEY is configured.
     // The signature covers every field (including manifest.similarity_backend,
     // agf, savings, fixes, summary) so any post-audit edit breaks it.
     if let Ok(key_hex) = std::env::var("TRACERAZOR_SIGNING_KEY") {
-        match sign_report(&mut report, &key_hex) {
-            Ok(()) => {}
-            Err(e) => eprintln!("Warning: could not sign report ({e}); report will be unsigned"),
+        if let Err(e) = sign_with_env_key(&mut report, &key_hex) {
+            eprintln!("Warning: could not sign report ({e}); report will be unsigned");
         }
     }
 
@@ -773,77 +763,15 @@ fn cmd_audit_batch(
     Ok(())
 }
 
-fn sha256_hex(bytes: &[u8]) -> String {
-    use sha2::{Digest, Sha256};
-    let mut hasher = Sha256::new();
-    hasher.update(bytes);
-    let digest = hasher.finalize();
-    digest.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-fn hex_encode(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
-fn hex_decode(s: &str) -> Result<Vec<u8>> {
-    if !s.len().is_multiple_of(2) {
-        anyhow::bail!("odd-length hex string");
-    }
-    (0..s.len())
-        .step_by(2)
-        .map(|i| {
-            u8::from_str_radix(&s[i..i + 2], 16)
-                .map_err(|_| anyhow::anyhow!("invalid hex character at position {i}"))
-        })
-        .collect()
-}
-
-fn hex_decode_32(s: &str) -> Result<[u8; 32]> {
-    let v = hex_decode(s)?;
-    v.try_into().map_err(|v: Vec<u8>| {
-        anyhow::anyhow!("expected 32 bytes (64 hex chars), got {} bytes", v.len())
-    })
-}
-
-fn hex_decode_64(s: &str) -> Result<[u8; 64]> {
-    let v = hex_decode(s)?;
-    v.try_into().map_err(|v: Vec<u8>| {
-        anyhow::anyhow!("expected 64 bytes (128 hex chars), got {} bytes", v.len())
-    })
-}
-
-/// Sign the report's canonical bytes with the Ed25519 private key and store
-/// the signature + verifying key in the manifest.
-fn sign_report(
+/// Decode `TRACERAZOR_SIGNING_KEY` (64 hex chars = 32-byte Ed25519 seed) and
+/// sign the report's canonical bytes via `tracerazor_core::provenance`.
+fn sign_with_env_key(
     report: &mut tracerazor_core::report::TraceReport,
     key_hex: &str,
 ) -> Result<()> {
-    use ed25519_dalek::{Signer, SigningKey};
-    let key_bytes = hex_decode_32(key_hex)
+    let seed = tracerazor_core::provenance::hex_decode_32(key_hex)
         .context("TRACERAZOR_SIGNING_KEY must be 64 hex chars (32-byte Ed25519 seed)")?;
-    let signing_key = SigningKey::from_bytes(&key_bytes);
-    let verifying_key = signing_key.verifying_key();
-
-    // Normalise f64 values via a JSON round-trip before computing canonical
-    // bytes. Without this, some f64s serialise differently depending on whether
-    // they were computed in-process (sign time) vs deserialized from a JSON
-    // file (verify time), producing last-digit differences such as
-    // `0.9333333333333333` vs `0.9333333333333332`. Round-tripping here
-    // guarantees both sides use the same parsed-from-JSON f64 values.
-    let json = serde_json::to_string(report)
-        .context("failed to serialise report for float normalisation")?;
-    let normalized: tracerazor_core::report::TraceReport = serde_json::from_str(&json)
-        .context("failed to deserialise report for float normalisation")?;
-
-    let canonical = normalized
-        .canonical_bytes()
-        .context("failed to serialise report for signing")?;
-    let sig: ed25519_dalek::Signature = signing_key.sign(&canonical);
-    if let Some(ref mut m) = report.manifest {
-        m.signature = Some(hex_encode(&sig.to_bytes()));
-        m.signing_key_pub = Some(hex_encode(verifying_key.as_bytes()));
-    }
-    Ok(())
+    tracerazor_core::provenance::sign_report(report, &seed)
 }
 
 fn cmd_keygen() {
@@ -911,246 +839,134 @@ fn create_bundle(
 
 // ── verify ────────────────────────────────────────────────────────────────────
 
-/// Signature check outcome.
-enum SigCheck { Valid, Invalid, Unsigned }
-
-/// Verify the Ed25519 signature on a report, if present.
-fn check_report_signature(
-    report: &tracerazor_core::report::TraceReport,
-) -> Result<SigCheck> {
-    use ed25519_dalek::{Verifier, VerifyingKey, Signature};
-
-    let manifest = match report.manifest.as_ref() {
-        Some(m) => m,
-        None => return Ok(SigCheck::Unsigned),
-    };
-
-    let (sig_hex, pub_hex) = match (&manifest.signature, &manifest.signing_key_pub) {
-        (Some(s), Some(p)) => (s.as_str(), p.as_str()),
-        (None, None) => return Ok(SigCheck::Unsigned),
-        // A signing audit embeds both fields; exactly one present means the
-        // signature or the key was stripped after signing — never legitimate.
-        _ => return Ok(SigCheck::Invalid),
-    };
-
-    let sig_bytes = match hex_decode_64(sig_hex) {
-        Ok(b) => b,
-        Err(_) => return Ok(SigCheck::Invalid),
-    };
-    let pub_bytes = match hex_decode_32(pub_hex) {
-        Ok(b) => b,
-        Err(_) => return Ok(SigCheck::Invalid),
-    };
-
-    let verifying_key = match VerifyingKey::from_bytes(&pub_bytes) {
-        Ok(k) => k,
-        Err(_) => return Ok(SigCheck::Invalid),
-    };
-    let sig = Signature::from_bytes(&sig_bytes);
-    let canonical = report
-        .canonical_bytes()
-        .context("failed to compute canonical bytes for signature check")?;
-
-    match verifying_key.verify(&canonical, &sig) {
-        Ok(()) => Ok(SigCheck::Valid),
-        Err(_) => Ok(SigCheck::Invalid),
-    }
-}
-
 /// Core verify logic operating on in-memory strings (shared by file and
-/// bundle paths).
+/// bundle paths): a thin presentation layer over
+/// `tracerazor_core::provenance::verify_report`.
 fn verify_from_bytes(report_raw: &str, trace_bytes: &[u8]) -> Result<()> {
-    let report_value: serde_json::Value = serde_json::from_str(report_raw)
-        .context("report is not valid JSON")?;
-    let report_struct: tracerazor_core::report::TraceReport =
-        serde_json::from_str(report_raw).context("report JSON does not match TraceReport schema")?;
+    use tracerazor_core::provenance::{RescoreStatus, VerifyError, verify_report};
 
-    let Some(manifest_value) = report_value.get("manifest").filter(|m| !m.is_null()) else {
-        anyhow::bail!(
-            "report carries no run manifest (produced by a pre-provenance \
-             TraceRazor version); re-audit with this version to get one"
-        );
-    };
-    let manifest: tracerazor_core::report::RunManifest =
-        serde_json::from_value(manifest_value.clone())
-            .context("malformed run manifest in report")?;
+    let this_version = env!("CARGO_PKG_VERSION");
+    let outcome = verify_report(
+        report_raw,
+        trace_bytes,
+        this_version,
+        tracerazor_semantic::BOW_BACKEND_ID,
+        |s| ingest_parse(s, tracerazor_ingest::TraceFormat::Auto),
+        default_similarity_fn(),
+    );
 
-    // ── Phase 3.1: Signature check — FIRST, before any other check ──────────
-    // A valid signature proves the ENTIRE report is authentic: TAS, AGF,
-    // savings, fixes, summary, similarity_backend — every field is covered.
-    // Any post-audit edit to any field breaks the signature.
-    let sig_status = check_report_signature(&report_struct)?;
-    let is_signed = match sig_status {
-        SigCheck::Valid => {
+    fn print_sig_line(signed: bool) {
+        if signed {
             println!("signature       : OK (Ed25519)");
-            true
+        } else {
+            println!("signature       : none (report is unsigned)");
         }
-        SigCheck::Invalid => {
+    }
+
+    match outcome {
+        Ok(v) => {
+            print_sig_line(v.signed);
+            println!("trace hash      : OK ({})", v.trace_sha256);
+            match v.rescore {
+                RescoreStatus::Reproduced { tas } => {
+                    println!("tool version    : OK ({this_version})");
+                    println!("re-score        : OK (TAS {tas:.1}; all metrics match)");
+                    let verdict = if v.signed {
+                        format!(
+                            "full (Ed25519-authenticated + reproduced from trace, manifest, {this_version})"
+                        )
+                    } else {
+                        format!(
+                            "rescore-only (unsigned — reproduced from trace, manifest, {this_version})"
+                        )
+                    };
+                    println!("verified        : {verdict}");
+                }
+                RescoreStatus::SkippedVersionMismatch { report_version } => {
+                    println!(
+                        "tool version    : report {report_version} vs current {this_version} (re-score skipped)"
+                    );
+                    let verdict = if v.signed {
+                        "signature + hash (Ed25519-authenticated)"
+                    } else {
+                        "hash-only (unsigned — not cryptographically authenticated)"
+                    };
+                    println!("verified        : {verdict}");
+                }
+                RescoreStatus::SkippedEmbeddingBackend { backend } => {
+                    println!("tool version    : OK ({this_version})");
+                    if v.signed {
+                        println!(
+                            "backend         : {backend} — embedding scores are not locally \
+                             reproducible; score verified via Ed25519 signature"
+                        );
+                        println!(
+                            "verified        : signature-only (Ed25519-authenticated, re-score skipped)"
+                        );
+                    } else {
+                        println!(
+                            "backend         : {backend} — embedding scores are not locally \
+                             reproducible; verified hash + manifest integrity only"
+                        );
+                        println!(
+                            "verified        : hash-only (unsigned — not cryptographically authenticated)"
+                        );
+                    }
+                }
+                RescoreStatus::SkippedStoreInfluenced {
+                    baseline_tokens,
+                    historical_median_steps,
+                    n_historical_sequences,
+                } => {
+                    println!("tool version    : OK ({this_version})");
+                    if v.signed {
+                        println!(
+                            "store baselines : run used local history — re-score skipped; verified via signature"
+                        );
+                        println!(
+                            "verified        : signature-only (Ed25519-authenticated, re-score skipped)"
+                        );
+                    } else {
+                        println!(
+                            "store baselines : run used local history (baseline_tokens={:?}, \
+                             median_steps={:?}, sequences={}) — exact re-score requires that \
+                             state; verified hash + manifest integrity only. Tip: audit with \
+                             --hermetic for fully re-verifiable reports.",
+                            baseline_tokens, historical_median_steps, n_historical_sequences
+                        );
+                        println!(
+                            "verified        : hash-only (unsigned — not cryptographically authenticated)"
+                        );
+                    }
+                }
+            }
+            Ok(())
+        }
+        Err(VerifyError::SignatureInvalid) => {
             eprintln!(
                 "TAMPERED: Ed25519 signature verification failed. \
                  Report has been modified after signing."
             );
             std::process::exit(1);
         }
-        SigCheck::Unsigned => {
-            println!("signature       : none (report is unsigned)");
-            false
+        Err(VerifyError::TraceHashMismatch { signed, manifest, actual }) => {
+            print_sig_line(signed);
+            eprintln!("TAMPERED: trace file hash does not match the manifest.");
+            eprintln!("  manifest : {manifest}");
+            eprintln!("  on disk  : {actual}");
+            std::process::exit(1);
         }
-    };
-
-    // ── Trace hash ────────────────────────────────────────────────────────────
-    let actual_sha = sha256_hex(trace_bytes);
-    if actual_sha != manifest.trace_sha256 {
-        eprintln!("TAMPERED: trace file hash does not match the manifest.");
-        eprintln!("  manifest : {}", manifest.trace_sha256);
-        eprintln!("  on disk  : {actual_sha}");
-        std::process::exit(1);
-    }
-    println!("trace hash      : OK ({actual_sha})");
-
-    // ── Version check ─────────────────────────────────────────────────────────
-    let this_version = env!("CARGO_PKG_VERSION");
-    if manifest.tool_version != this_version {
-        println!(
-            "tool version    : report {} vs current {this_version} (re-score skipped)",
-            manifest.tool_version
-        );
-        let verdict = if is_signed {
-            "signature + hash (Ed25519-authenticated)"
-        } else {
-            "hash-only (unsigned — not cryptographically authenticated)"
-        };
-        println!("verified        : {verdict}");
-        return Ok(());
-    }
-    println!("tool version    : OK ({this_version})");
-
-    // ── Re-score — only sound for BoW + hermetic ─────────────────────────────
-    // Phase 3.2: under a valid signature, a backend mismatch is TAMPERED
-    // (the signature covers similarity_backend, so a signed report cannot
-    // legitimately have a mismatched backend).
-    if manifest.similarity_backend != tracerazor_semantic::BOW_BACKEND_ID {
-        if is_signed {
-            // Signed reports that claim embedding backend: signed means the
-            // backend claim is authentic; we just cannot locally re-score it.
-            println!(
-                "backend         : {} — embedding scores are not locally \
-                 reproducible; score verified via Ed25519 signature",
-                manifest.similarity_backend
-            );
-            println!("verified        : signature-only (Ed25519-authenticated, re-score skipped)");
-        } else {
-            println!(
-                "backend         : {} — embedding scores are not locally \
-                 reproducible; verified hash + manifest integrity only",
-                manifest.similarity_backend
-            );
-            println!("verified        : hash-only (unsigned — not cryptographically authenticated)");
-        }
-        return Ok(());
-    }
-    if manifest.store_influenced() {
-        let tip = "Tip: audit with --hermetic for fully re-verifiable reports.";
-        if is_signed {
-            println!("store baselines : run used local history — re-score skipped; verified via signature");
-            println!("verified        : signature-only (Ed25519-authenticated, re-score skipped)");
-        } else {
-            println!(
-                "store baselines : run used local history (baseline_tokens={:?}, \
-                 median_steps={:?}, sequences={}) — exact re-score requires that \
-                 state; verified hash + manifest integrity only. {tip}",
-                manifest.baseline_tokens,
-                manifest.historical_median_steps,
-                manifest.n_historical_sequences
-            );
-            println!("verified        : hash-only (unsigned — not cryptographically authenticated)");
-        }
-        return Ok(());
-    }
-
-    let trace_str = std::str::from_utf8(trace_bytes).context("trace is not valid UTF-8")?;
-    let mut trace = ingest_parse(trace_str, tracerazor_ingest::TraceFormat::Auto)
-        .context("failed to parse trace for re-score")?;
-    if trace.steps.len() < manifest.min_steps.max(2) {
-        anyhow::bail!(
-            "trace has {} steps but the manifest floor is {} — nothing to re-score",
-            trace.steps.len(),
-            manifest.min_steps
-        );
-    }
-
-    let config = ScoringConfig {
-        weights: manifest.weights.clone(),
-        threshold: manifest.threshold,
-        cost_per_million_tokens: manifest.cost_per_million_tokens,
-        ..Default::default()
-    };
-    let recomputed = tracerazor_core::analyse(&mut trace, default_similarity_fn(), &config)?;
-
-    // ── Phase 3.2: compare the WHOLE report — not just TAS + metric_normalised
-    let original_tas = report_value["score"]["score"].as_f64().unwrap_or(f64::NAN);
-    let recomputed_tas = recomputed.score.score;
-    let mut mismatches: Vec<String> = Vec::new();
-    if (original_tas - recomputed_tas).abs() > 1e-9 {
-        mismatches.push(format!("TAS {original_tas} -> {recomputed_tas}"));
-    }
-    let recomputed_score_json = serde_json::to_value(&recomputed.score)?;
-    if let (Some(orig), Some(new)) = (
-        report_value["score"]["metric_normalised"].as_object(),
-        recomputed_score_json["metric_normalised"].as_object(),
-    ) {
-        for (k, ov) in orig {
-            let o = ov.as_f64().unwrap_or(f64::NAN);
-            let n = new.get(k).and_then(|v| v.as_f64()).unwrap_or(f64::NAN);
-            if (o - n).abs() > 1e-9 {
-                mismatches.push(format!("{k} {o} -> {n}"));
+        Err(VerifyError::RescoreMismatch { signed, trace_sha256, mismatches, .. }) => {
+            print_sig_line(signed);
+            println!("trace hash      : OK ({trace_sha256})");
+            println!("tool version    : OK ({this_version})");
+            eprintln!("MISMATCH: re-scored values differ from the report:");
+            for m in &mismatches {
+                eprintln!("  {m}");
             }
+            std::process::exit(1);
         }
-    }
-    // Compare AGF score
-    if let (Some(orig_agf_score), Some(new_agf_score)) = (
-        report_value["agf"]["score"].as_f64(),
-        recomputed.agf.as_ref().map(|a| a.score),
-    ) {
-        if (orig_agf_score - new_agf_score).abs() > 1e-9 {
-            mismatches.push(format!("agf.score {orig_agf_score:.6} -> {new_agf_score:.6}"));
-        }
-    }
-    // Compare savings.tokens_saved
-    if let Some(orig_saved) = report_value["savings"]["tokens_saved"].as_u64() {
-        let new_saved = recomputed.savings.tokens_saved as u64;
-        if orig_saved != new_saved {
-            mismatches.push(format!("savings.tokens_saved {orig_saved} -> {new_saved}"));
-        }
-    }
-    // Compare fix count
-    let orig_fix_count = report_value["fixes"].as_array().map(|a| a.len()).unwrap_or(0);
-    let new_fix_count = recomputed.fixes.len();
-    if orig_fix_count != new_fix_count {
-        mismatches.push(format!("fixes count {orig_fix_count} -> {new_fix_count}"));
-    }
-    // Compare summary (existence; exact text may differ with trailing whitespace)
-    let orig_summary = report_value["summary"].as_str().unwrap_or("").trim();
-    let new_summary = recomputed.summary.trim();
-    if !orig_summary.is_empty() && orig_summary != new_summary {
-        mismatches.push("summary text differs".to_string());
-    }
-
-    if mismatches.is_empty() {
-        println!("re-score        : OK (TAS {recomputed_tas:.1}; all metrics match)");
-        let verdict = if is_signed {
-            format!("full (Ed25519-authenticated + reproduced from trace, manifest, {this_version})")
-        } else {
-            format!("rescore-only (unsigned — reproduced from trace, manifest, {this_version})")
-        };
-        println!("verified        : {verdict}");
-        Ok(())
-    } else {
-        eprintln!("MISMATCH: re-scored values differ from the report:");
-        for m in &mismatches {
-            eprintln!("  {m}");
-        }
-        std::process::exit(1);
+        Err(e) => Err(anyhow::Error::new(e)),
     }
 }
 
@@ -2200,30 +2016,20 @@ async fn cmd_export(
     let mut report = tracerazor_core::analyse(&mut trace, sim_fn, &config)?;
 
     // Attach a run manifest so the bundle can be verified.
-    let weights_json = serde_json::to_string(&config.weights)?;
     let ingest_quality = tracerazor_core::report::IngestQuality::assess(&trace);
-    report.manifest = Some(tracerazor_core::report::RunManifest {
+    report.manifest = Some(tracerazor_core::report::RunManifest::build(
         trace_sha256,
-        tool_version: env!("CARGO_PKG_VERSION").to_string(),
-        created_at: chrono::Utc::now().to_rfc3339(),
-        similarity_backend: tracerazor_semantic::BOW_BACKEND_ID.to_string(),
-        weights: config.weights.clone(),
-        weights_sha256: sha256_hex(weights_json.as_bytes()),
-        threshold: config.threshold,
-        cost_per_million_tokens: config.cost_per_million_tokens,
-        min_steps: MIN_TRACE_STEPS.max(2),
-        hermetic: true,
-        baseline_tokens: None,
-        historical_median_steps: None,
-        n_historical_sequences: 0,
-        ingest_quality: Some(ingest_quality),
-        signature: None,
-        signing_key_pub: None,
-    });
+        env!("CARGO_PKG_VERSION"),
+        tracerazor_semantic::BOW_BACKEND_ID.to_string(),
+        &config,
+        MIN_TRACE_STEPS.max(2),
+        true,
+        Some(ingest_quality),
+    )?);
 
     // Sign if key is configured (so the bundle contains a signed report)
     if let Ok(key_hex) = std::env::var("TRACERAZOR_SIGNING_KEY") {
-        if let Err(e) = sign_report(&mut report, &key_hex) {
+        if let Err(e) = sign_with_env_key(&mut report, &key_hex) {
             eprintln!("Warning: could not sign report ({e}); bundle will be unsigned");
         }
     }

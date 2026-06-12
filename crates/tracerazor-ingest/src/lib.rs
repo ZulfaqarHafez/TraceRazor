@@ -42,6 +42,49 @@ fn detect_and_parse(data: &str) -> Result<Trace> {
         return otel::parse(data);
     }
 
+    // Plain chat-completions log (the artifact most developers actually
+    // have): point at the converter instead of failing with a bare
+    // "missing field trace_id".
+    if looks_like_chat_log(&v) {
+        anyhow::bail!(
+            "this looks like an OpenAI/Anthropic chat log (a \"messages\" \
+             array), not a TraceRazor trace. Convert it first:\n  \
+             python tools/convert_openai.py <file> -o trace.json\n\
+             See docs/trace-format.md for the native schema. LangSmith and \
+             OTel GenAI exports parse directly (-F langsmith / -F otel)."
+        );
+    }
+
     // Default: raw JSON.
     raw_json::parse(data)
+}
+
+/// A `{"messages": [{"role": ...}]}` envelope or a bare `[{"role": ...}]`
+/// array — the shape of OpenAI/Anthropic chat-completions request logs.
+fn looks_like_chat_log(v: &serde_json::Value) -> bool {
+    let messages = match v.get("messages") {
+        Some(m) => m,
+        None => v,
+    };
+    messages
+        .as_array()
+        .and_then(|a| a.first())
+        .is_some_and(|m| m.get("role").is_some() && m.get("run_type").is_none())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn chat_log_payload_points_at_the_converter() {
+        let chat = r#"{"messages": [{"role": "user", "content": "find my order"}]}"#;
+        let err = parse(chat, TraceFormat::Auto).unwrap_err();
+        let msg = format!("{err:#}");
+        assert!(msg.contains("convert_openai"), "got: {msg}");
+
+        let bare = r#"[{"role": "assistant", "content": "checking"}]"#;
+        let err = parse(bare, TraceFormat::Auto).unwrap_err();
+        assert!(format!("{err:#}").contains("convert_openai"));
+    }
 }

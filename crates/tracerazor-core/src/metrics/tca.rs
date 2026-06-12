@@ -45,13 +45,23 @@ impl TcaResult {
 
 const TARGET_PERCENT: f64 = 85.0;
 
+/// How many subsequent tool calls to scan for a same-tool retry. Allows a
+/// diagnostic call or two between the failure and the corrected attempt
+/// without attributing an unrelated tool as "the retry".
+const RETRY_LOOKAHEAD: usize = 3;
+
 /// Compute the TCA metric for a trace.
 ///
 /// Detection algorithm:
-/// 1. Scan for tool_call steps where `tool_success == false` or `tool_error` is set.
-/// 2. If the next non-reasoning step is a tool_call to the same tool (or any tool),
-///    that pair is classified as a misfire + retry.
-/// 3. A tool call that has no success/error signal is optimistically treated as success.
+/// 1. Every tool_call with `tool_success == false` or `tool_error` set is a
+///    misfire (it failed on first attempt — score is charged regardless of
+///    what happens next).
+/// 2. The retry is the next call **to the same tool** within the next
+///    `RETRY_LOOKAHEAD` tool calls. A follow-up call to a *different* tool
+///    is a pivot, not a retry — it is neither flagged nor counted as wasted
+///    tokens for this misfire.
+/// 3. A tool call that has no success/error signal is optimistically treated
+///    as success.
 pub fn compute(trace: &Trace) -> TcaResult {
     let steps = &trace.steps;
     let total_tool_calls = steps
@@ -60,7 +70,6 @@ pub fn compute(trace: &Trace) -> TcaResult {
         .count();
 
     let mut misfires: Vec<ToolMisfire> = Vec::new();
-    let mut retry_step_ids: std::collections::HashSet<u32> = std::collections::HashSet::new();
 
     let tool_steps: Vec<&TraceStep> = steps
         .iter()
@@ -73,14 +82,14 @@ pub fn compute(trace: &Trace) -> TcaResult {
             continue;
         }
 
-        // Look for a retry: the next tool call step.
-        let retry = tool_steps.get(i + 1).copied();
+        // The retry must target the same tool; anything else is a pivot.
+        let retry = tool_steps[i + 1..]
+            .iter()
+            .take(RETRY_LOOKAHEAD)
+            .find(|r| r.tool_name == step.tool_name)
+            .copied();
         let retry_id = retry.map(|r| r.id);
         let wasted_tokens = step.tokens + retry.map(|r| r.tokens).unwrap_or(0);
-
-        if let Some(rid) = retry_id {
-            retry_step_ids.insert(rid);
-        }
 
         misfires.push(ToolMisfire {
             failed_step: step.id,
@@ -89,37 +98,6 @@ pub fn compute(trace: &Trace) -> TcaResult {
             error: step.tool_error.clone(),
             wasted_tokens,
         });
-    }
-
-    // Also detect retry pairs by looking for steps already flagged as retries
-    // (tool_success None following a failure without an explicit error field).
-    // Second pass: look for consecutive tool calls to the same tool where
-    // the first has success=false and the second has success=true.
-    for i in 0..steps.len().saturating_sub(1) {
-        let curr = &steps[i];
-        if curr.step_type != StepType::ToolCall {
-            continue;
-        }
-        if curr.tool_success != Some(false) && curr.tool_error.is_none() {
-            continue;
-        }
-        if misfires.iter().any(|m| m.failed_step == curr.id) {
-            continue;
-        }
-        // Find next tool call
-        if let Some(next_tool) = steps[i + 1..]
-            .iter()
-            .find(|s| s.step_type == StepType::ToolCall)
-        {
-            retry_step_ids.insert(next_tool.id);
-            misfires.push(ToolMisfire {
-                failed_step: curr.id,
-                retry_step: Some(next_tool.id),
-                tool_name: curr.tool_name.clone().unwrap_or_default(),
-                error: curr.tool_error.clone(),
-                wasted_tokens: curr.tokens + next_tool.tokens,
-            });
-        }
     }
 
     let misfire_count = misfires.len();
@@ -147,11 +125,16 @@ pub fn annotate_steps(steps: &mut [TraceStep], result: &TcaResult) {
     for misfire in &result.misfires {
         if let Some(step) = steps.iter_mut().find(|s| s.id == misfire.failed_step) {
             step.flags.push(StepFlag::Misfire);
-            step.flag_details.push(format!(
-                "wrong params for {}, retried at step {}",
-                misfire.tool_name,
-                misfire.retry_step.map(|id| id.to_string()).unwrap_or("?".into())
-            ));
+            step.flag_details.push(match misfire.retry_step {
+                Some(retry_id) => format!(
+                    "wrong params for {}, retried at step {retry_id}",
+                    misfire.tool_name
+                ),
+                None => format!(
+                    "{} failed; no same-tool retry (agent pivoted or abandoned)",
+                    misfire.tool_name
+                ),
+            });
         }
         if let Some(retry_id) = misfire.retry_step {
             if let Some(step) = steps.iter_mut().find(|s| s.id == retry_id) {
@@ -255,5 +238,64 @@ mod tests {
         assert_eq!(result.misfires[0].failed_step, 2);
         assert_eq!(result.misfires[0].retry_step, Some(3));
         assert!(!result.pass);
+    }
+
+    #[test]
+    fn test_pivot_to_different_tool_is_not_a_retry() {
+        // A failed search followed by a *different* tool is a pivot: the
+        // failure is still a misfire, but the pivot step is neither the
+        // retry nor charged as wasted tokens, and must not be flagged Retry.
+        let trace = Trace {
+            trace_id: "t3".into(),
+            agent_name: "a".into(),
+            framework: "raw".into(),
+            steps: vec![
+                reason_step(1),
+                tool_step(2, "search_products", false), // misfire
+                tool_step(3, "get_order", true),        // pivot, not retry
+                reason_step(4),
+                reason_step(5),
+            ],
+            total_tokens: 0,
+            task_value_score: 1.0,
+            metadata: HashMap::new(),
+        };
+        let mut steps = trace.steps.clone();
+        let result = compute(&trace);
+        assert_eq!(result.misfires.len(), 1);
+        assert_eq!(result.misfires[0].retry_step, None, "pivot misattributed as retry");
+        assert_eq!(
+            result.misfires[0].wasted_tokens, 300,
+            "pivot tokens must not be charged to the misfire"
+        );
+        annotate_steps(&mut steps, &result);
+        assert!(
+            !steps[2].flags.contains(&StepFlag::Retry),
+            "pivot step must not carry the Retry flag"
+        );
+    }
+
+    #[test]
+    fn test_same_tool_retry_found_across_an_intervening_call() {
+        // fail search -> diagnostic get_config -> retry search: the retry is
+        // the same-tool call, not the intervening diagnostic.
+        let trace = Trace {
+            trace_id: "t4".into(),
+            agent_name: "a".into(),
+            framework: "raw".into(),
+            steps: vec![
+                tool_step(1, "search_products", false),
+                tool_step(2, "get_config", true),
+                tool_step(3, "search_products", true),
+                reason_step(4),
+                reason_step(5),
+            ],
+            total_tokens: 0,
+            task_value_score: 1.0,
+            metadata: HashMap::new(),
+        };
+        let result = compute(&trace);
+        assert_eq!(result.misfires.len(), 1);
+        assert_eq!(result.misfires[0].retry_step, Some(3));
     }
 }
