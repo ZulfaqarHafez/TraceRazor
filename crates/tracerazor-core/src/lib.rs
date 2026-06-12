@@ -1,9 +1,52 @@
+//! TraceRazor core: deterministic efficiency metrics, the composite TAS
+//! score, auto-fix generation, and auditable-run provenance for LLM-agent
+//! traces.
+//!
+//! The engine is offline and dependency-injected: the similarity backend is
+//! a plain `Fn(&str, &str) -> f64` closure (the `tracerazor-semantic` crate
+//! ships the bundled BoW and embedding backends) and trace parsing lives in
+//! `tracerazor-ingest`, so this crate never touches the network.
+//!
+//! Score a trace in three steps — build (or parse) a [`types::Trace`],
+//! inject a similarity function, call [`analyse`]:
+//!
+//! ```
+//! use tracerazor_core::{analyse, scoring::ScoringConfig};
+//! use tracerazor_core::types::{StepType, Trace, TraceStep};
+//!
+//! let mut trace = Trace {
+//!     trace_id: "example-1".into(),
+//!     agent_name: "demo-agent".into(),
+//!     steps: vec![
+//!         TraceStep { id: 1, step_type: StepType::Reasoning, tokens: 40,
+//!                     content: "plan the lookup".into(), ..Default::default() },
+//!         TraceStep { id: 2, step_type: StepType::ToolCall, tokens: 120,
+//!                     content: "get_order(order_id=9182)".into(),
+//!                     tool_name: Some("get_order".into()),
+//!                     tool_success: Some(true), ..Default::default() },
+//!         TraceStep { id: 3, step_type: StepType::Reasoning, tokens: 60,
+//!                     content: "summarise the order status".into(),
+//!                     ..Default::default() },
+//!     ],
+//!     total_tokens: 220,
+//!     ..Default::default()
+//! };
+//!
+//! let report = analyse(&mut trace, |_a, _b| 0.0, &ScoringConfig::default())?;
+//! assert!(report.score.score > 0.0);
+//! # Ok::<(), anyhow::Error>(())
+//! ```
+//!
+//! For provenance-bound, verifiable reports see [`report::RunManifest::build`]
+//! and the [`provenance`] module (`sign_report`, `verify_report`).
+
 pub mod cost;
 pub mod features;
 pub mod fixes;
 pub mod graph;
 pub mod iar;
 pub mod metrics;
+pub mod provenance;
 pub mod report;
 pub mod scoring;
 pub mod simulate;

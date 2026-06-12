@@ -2745,7 +2745,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "sha2",
  "tempfile",
  "tokio",
  "tracerazor-core",
@@ -2763,13 +2762,13 @@ dependencies = [
  "anyhow",
  "chrono",
  "criterion",
+ "ed25519-dalek",
  "flate2",
  "petgraph",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror 2.0.18",
- "tokio",
- "uuid",
 ]
 
 [[package]]
@@ -2780,7 +2779,6 @@ dependencies = [
  "chrono",
  "serde",
  "serde_json",
- "thiserror 2.0.18",
  "tracerazor-core",
 ]
 
@@ -2792,7 +2790,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "thiserror 2.0.18",
  "tokio",
  "wiremock",
 ]
@@ -2830,7 +2827,6 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
- "thiserror 2.0.18",
  "tokio",
  "tokio-rusqlite",
  "tracerazor-core",

@@ -1,9 +1,10 @@
-/// Scoring engine: composites all thirteen metrics into the TraceRazor Score
-/// (TAS) and computes the Value-Adjusted Efficiency (VAE) multiplier.
-///
-/// All thirteen metrics are always computed (no API key required). RDA and DBO
-/// use local heuristics / historical data; ISR/GAR/CSD use the BoW similarity
-/// backend.
+//! Scoring engine: composites all thirteen metrics into the TraceRazor Score
+//! (TAS) and computes the Value-Adjusted Efficiency (VAE) multiplier.
+//!
+//! All thirteen metrics are always computed (no API key required). RDA and DBO
+//! use local heuristics / historical data; ISR/GAR/CSD use the BoW similarity
+//! backend.
+
 use serde::{Deserialize, Serialize};
 
 use crate::metrics::{

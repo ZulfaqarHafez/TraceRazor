@@ -67,7 +67,7 @@ fn gzip_compressibility(text: &str) -> f64 {
 }
 
 /// Compute the candidate feature map for a trace. Keys are stable snake_case
-/// strings; values are in [0,1]. Context-dependent features (`stale_*`,
+/// strings; values are in \[0,1\]. Context-dependent features (`stale_*`,
 /// `context_growth_*`) are omitted entirely when `input_context` coverage is too
 /// low for them to be meaningful, so calibration can drop ragged samples.
 pub fn compute(trace: &Trace) -> BTreeMap<String, f64> {

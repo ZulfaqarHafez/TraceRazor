@@ -1,4 +1,5 @@
-/// Report generation: produces JSON and Markdown output from a TasScore.
+//! Report generation: produces JSON and Markdown output from a TasScore.
+
 use serde::{Deserialize, Serialize};
 
 use crate::fixes::Fix;
@@ -146,6 +147,7 @@ pub struct TraceReport {
 /// `threshold`, `min_steps`), and *with which hidden inputs* (the store-derived
 /// baselines). `tracerazor verify` consumes this block.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[non_exhaustive]
 pub struct RunManifest {
     /// SHA-256 of the raw input trace file bytes (before parsing).
     pub trace_sha256: String,
@@ -190,6 +192,40 @@ pub struct RunManifest {
 }
 
 impl RunManifest {
+    /// Build the provenance manifest binding a report to its inputs.
+    ///
+    /// `created_at` is stamped now (UTC). The signature fields start empty —
+    /// see [`crate::provenance::sign_report`] to sign the finished report.
+    pub fn build(
+        trace_sha256: String,
+        tool_version: &str,
+        similarity_backend: String,
+        config: &crate::scoring::ScoringConfig,
+        min_steps: usize,
+        hermetic: bool,
+        ingest_quality: Option<IngestQuality>,
+    ) -> Result<RunManifest, serde_json::Error> {
+        let weights_json = serde_json::to_string(&config.weights)?;
+        Ok(RunManifest {
+            trace_sha256,
+            tool_version: tool_version.to_string(),
+            created_at: chrono::Utc::now().to_rfc3339(),
+            similarity_backend,
+            weights: config.weights.clone(),
+            weights_sha256: crate::provenance::sha256_hex(weights_json.as_bytes()),
+            threshold: config.threshold,
+            cost_per_million_tokens: config.cost_per_million_tokens,
+            min_steps,
+            hermetic,
+            baseline_tokens: config.baseline_tokens,
+            historical_median_steps: config.historical_median_steps,
+            n_historical_sequences: config.historical_sequences.len(),
+            ingest_quality,
+            signature: None,
+            signing_key_pub: None,
+        })
+    }
+
     /// A non-hermetic run with any store-derived input is not exactly
     /// reproducible from the manifest alone; verification is then limited to
     /// hash/version checks.
@@ -938,8 +974,8 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
 
 /// Generate an executive one-liner for stakeholder communication (E-08).
 ///
-/// Format: "<Agent> scores <N>/100 [<Grade>]. Biggest issue: <worst metric>.
-/// Fix saves $<Z>/month."
+/// Format: "`<Agent>` scores `<N>`/100 \[`<Grade>`\]. Biggest issue: `<worst metric>`.
+/// Fix saves `$<Z>`/month."
 pub fn generate_oneliner(trace: &Trace, score: &TasScore, savings: &SavingsEstimate) -> String {
     let (worst_name, _) = worst_metric(score);
 

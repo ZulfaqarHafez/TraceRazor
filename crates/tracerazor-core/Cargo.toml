@@ -19,9 +19,9 @@ thiserror = { workspace = true }
 anyhow = { workspace = true }
 petgraph = { workspace = true }
 chrono = { workspace = true }
-uuid = { workspace = true }
-tokio = { workspace = true }
 flate2 = { workspace = true }
+sha2 = { workspace = true }
+ed25519-dalek = { workspace = true }
 
 [dev-dependencies]
 criterion = { version = "0.5", default-features = false, features = ["cargo_bench_support"] }

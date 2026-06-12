@@ -1,14 +1,15 @@
-/// Semantic similarity engine for TraceRazor.
-///
-/// Phase 1: Term-frequency bag-of-words cosine similarity (fully offline, no API key).
-/// Phase 2: Dense sentence embeddings via a pluggable LLM backend — OpenAI,
-///          Anthropic (chat only), or any OpenAI-compatible endpoint (Ollama,
-///          vLLM, Azure OpenAI, OpenRouter, Groq, Together, LM Studio, …).
-///
-/// Backend selection is controlled by `tracerazor_semantic::llm::LlmConfig`,
-/// which reads `TRACERAZOR_LLM_PROVIDER` / `TRACERAZOR_LLM_BASE_URL` /
-/// `TRACERAZOR_LLM_MODEL` / `TRACERAZOR_LLM_API_KEY` from the environment,
-/// with graceful fallback to `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`.
+//! Semantic similarity engine for TraceRazor.
+//!
+//! Phase 1: Term-frequency bag-of-words cosine similarity (fully offline, no API key).
+//! Phase 2: Dense sentence embeddings via a pluggable LLM backend — OpenAI,
+//!          Anthropic (chat only), or any OpenAI-compatible endpoint (Ollama,
+//!          vLLM, Azure OpenAI, OpenRouter, Groq, Together, LM Studio, …).
+//!
+//! Backend selection is controlled by `tracerazor_semantic::llm::LlmConfig`,
+//! which reads `TRACERAZOR_LLM_PROVIDER` / `TRACERAZOR_LLM_BASE_URL` /
+//! `TRACERAZOR_LLM_MODEL` / `TRACERAZOR_LLM_API_KEY` from the environment,
+//! with graceful fallback to `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`.
+
 pub mod bow;
 pub mod llm;
 pub mod openai;
