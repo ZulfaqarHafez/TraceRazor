@@ -20,7 +20,7 @@ C1 sd >= 0.05; C2 max >= 0.8; C3 |r| < 0.85 vs kept metrics.
 | SHL | 0.970 | 0.033 | 0.87 | 1.00 | 38% | -0.13 | demote to diagnostic — C1: sd 0.033 < 0.05 |
 | SRR | 0.872 | 0.141 | 0.40 | 1.00 | 34% | +0.64 | **KEEP (composite)** |
 | TCA | 0.892 | 0.121 | 0.60 | 1.00 | 46% | +0.28 | **KEEP (composite)** |
-| TUR | 0.911 | 0.199 | 0.20 | 1.00 | 75% | +0.81 | **KEEP (composite)** |
+| TUR | 0.911 | 0.199 | 0.20 | 1.00 | 75% | +0.81 | demote to diagnostic — logical grounds: "useful tokens" defined as tokens not already flagged by SRR/LDI/TCA (circular, double-counts their signal); 0.70 divisor uncalibrated |
 | VDI | 0.896 | 0.038 | 0.83 | 0.98 | 0% | -0.04 | demote to diagnostic — C1: sd 0.038 < 0.05 |
 
 ## Pairwise |r| >= 0.6 (collinearity map)

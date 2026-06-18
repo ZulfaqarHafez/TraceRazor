@@ -135,6 +135,10 @@ class TraceRazorCallback(BaseCallbackHandler):
     def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> None:
         pass
 
+    def on_chain_error(self, error: Exception, **kwargs: Any) -> None:
+        """Called when a chain raises an error — close any open pending step."""
+        self._builder.abort_current_step(error=str(error))
+
     # ── Analysis ─────────────────────────────────────────────────────────────
 
     def analyse(self) -> TraceRazorReport:

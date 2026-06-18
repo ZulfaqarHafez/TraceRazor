@@ -178,6 +178,12 @@ class TraceRazorClient:
                 text=True,
                 timeout=60,
             )
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(
+                "tracerazor audit timed out after 60 s. "
+                "The trace may be unusually large; try reducing it or increasing the timeout."
+            )
+        try:
             # Exit code 1 means below threshold but output is still valid JSON.
             if result.returncode not in (0, 1):
                 raise RuntimeError(
@@ -185,9 +191,14 @@ class TraceRazorClient:
                 )
             stdout = result.stdout.strip()
             if not stdout:
-                # CLI emitted a notice (e.g. too few steps) but no JSON — surface it.
+                # CLI emitted a notice (e.g. too few steps) but no JSON.
+                # The binary requires at least 5 steps to compute metrics.
                 notice = result.stderr.strip() or "tracerazor returned no output"
-                raise RuntimeError(f"tracerazor produced no JSON output: {notice}")
+                raise RuntimeError(
+                    f"tracerazor produced no JSON output.\n"
+                    f"Note: traces need at least 5 steps to be analysed.\n"
+                    f"Binary message: {notice}"
+                )
             data = json.loads(stdout)
             return self._parse_cli_report(data)
         finally:
@@ -295,6 +306,7 @@ class TraceRazorClient:
             "tracerazor binary not found.\n"
             "Options:\n"
             "  1. Set TRACERAZOR_BIN=/path/to/tracerazor\n"
-            "  2. Build from source: cargo build --release\n"
-            "  3. Use HTTP mode: TraceRazorClient(server='http://localhost:8080')"
+            "  2. Build from source: cargo build --release -p tracerazor\n"
+            "  3. Install a platform wheel (bundles the binary): pip install tracerazor\n"
+            "  4. Use HTTP mode: TraceRazorClient(server='http://localhost:8080')"
         )

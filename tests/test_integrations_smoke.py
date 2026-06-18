@@ -49,6 +49,27 @@ def _patched(cb) -> _FakeClient:
     return fake
 
 
+def _assert_step_schema(steps: list, adapter_name: str) -> None:
+    """Assert every step uses 'type' key (Rust serde), not 'step_type'.
+
+    If 'step_type' is present the Rust binary silently deserialises every step
+    as StepType::Unknown, bypassing the waste detectors and inflating TAS.
+    """
+    for i, s in enumerate(steps):
+        assert "type" in s, (
+            f"{adapter_name}: step[{i}] missing 'type' key — Rust will treat it as Unknown "
+            f"and silently inflate TAS. Keys present: {list(s.keys())}"
+        )
+        assert "step_type" not in s, (
+            f"{adapter_name}: step[{i}] still has 'step_type' key — Rust ignores it "
+            f"(field is renamed to 'type' via serde). Remove it."
+        )
+        valid = {"reasoning", "tool_call", "handoff"}
+        assert s["type"] in valid, (
+            f"{adapter_name}: step[{i}]['type'] = {s['type']!r} not in {valid}"
+        )
+
+
 def test_crewai_callback_analyse_uses_correct_signature():
     from tracerazor.integrations.crewai import TraceRazorCallback
 
@@ -60,6 +81,33 @@ def test_crewai_callback_analyse_uses_correct_signature():
     assert report.tas_score == 88.0
 
 
+def test_crewai_callback_step_schema():
+    """Steps emitted by CrewAI adapter must use 'type' key, not 'step_type'.
+
+    Regression for the silent Unknown-deserialization bug: if the adapter
+    emits 'step_type', Rust's serde rename drops it silently and every step
+    becomes StepType::Unknown, bypassing all waste detectors.
+    """
+    from tracerazor.integrations.crewai import TraceRazorCallback
+
+    cb = TraceRazorCallback(agent_name="x", tracerazor_bin="unused")
+    fake = _patched(cb)
+
+    # Simulate a minimal CrewAI-style event sequence.
+    task_mock = type("T", (), {"description": "Check order ORD-1"})()
+    agent_mock = type("A", (), {"role": "support"})()
+
+    cb.on_task_start(task_mock, agent_mock)
+    cb.on_tool_use_start("lookup_order", tool_input={"order_id": "1"})
+    cb.on_tool_use_end("lookup_order", output="Order found")
+    cb.on_task_end(task_mock, output="Done")
+
+    cb.analyse()
+    steps = fake.calls[0]["steps"]
+    assert len(steps) >= 2
+    _assert_step_schema(steps, "CrewAI")
+
+
 def test_openai_agents_hooks_analyse_uses_correct_signature():
     from tracerazor.integrations.openai_agents import TraceRazorHooks
 
@@ -69,6 +117,34 @@ def test_openai_agents_hooks_analyse_uses_correct_signature():
     assert len(fake.calls) == 1
     assert "steps" in fake.calls[0]
     assert report.tas_score == 88.0
+
+
+def test_openai_agents_hooks_step_schema():
+    """Steps emitted by OpenAI Agents adapter must use 'type' key, not 'step_type'.
+
+    Same regression class as the CrewAI adapter — serde rename means 'step_type'
+    is silently ignored by the Rust binary.
+    """
+    import asyncio
+    from tracerazor.integrations.openai_agents import TraceRazorHooks
+
+    cb = TraceRazorHooks(agent_name="x", tracerazor_bin="unused")
+    fake = _patched(cb)
+
+    agent_mock = type("A", (), {"name": "support"})()
+    tool_mock = type("T", (), {"name": "lookup_order"})()
+
+    async def _run():
+        await cb.on_agent_start(None, agent_mock)
+        await cb.on_tool_start(None, agent_mock, tool_mock)
+        await cb.on_tool_end(None, agent_mock, tool_mock, "Order found")
+        await cb.on_agent_end(None, agent_mock, "Done")
+
+    asyncio.run(_run())
+    cb.analyse()
+    steps = fake.calls[0]["steps"]
+    assert len(steps) >= 2
+    _assert_step_schema(steps, "OpenAI Agents")
 
 
 def test_langgraph_callback_analyse_uses_correct_signature():

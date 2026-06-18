@@ -57,8 +57,9 @@ jobs:
     strategy:
       matrix:
         # ubuntu-22.04 (glibc 2.35) keeps the manylinux floor low; macos-latest
-        # covers arm64 and macos-13 covers Intel.
-        os: [ubuntu-22.04, macos-latest, macos-13]
+        # covers arm64 and macos-13 covers Intel. windows-latest bundles the
+        # .exe so `pip install tracerazor` works on Windows without Rust.
+        os: [ubuntu-22.04, macos-latest, macos-13, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -68,17 +69,37 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Build platform wheel with bundled CLI
+      - name: Build platform wheel with bundled CLI (Unix)
+        if: runner.os != 'Windows'
         run: bash scripts/build_platform_wheel.sh
+      - name: Build platform wheel with bundled CLI (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          cargo build --release -p tracerazor
+          New-Item -ItemType Directory -Force tracerazor/bin | Out-Null
+          Copy-Item target/release/tracerazor.exe tracerazor/bin/tracerazor.exe
+          python -m pip install --quiet build wheel
+          python -m build --wheel
+          $wheel = Get-ChildItem dist\tracerazor-*-py3-none-any.whl | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          python -m wheel tags --platform-tag win_amd64 --remove $wheel.FullName
       - name: Build sdist (once, on the Linux builder)
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           rm -rf tracerazor/bin   # sdist is source-only; no prebuilt binary
           python -m build --sdist
-      - name: Clean-room smoke test
+      - name: Clean-room smoke test (Unix)
+        if: runner.os != 'Windows'
         run: |
           python -m venv /tmp/v && /tmp/v/bin/pip install dist/tracerazor-*.whl
           /tmp/v/bin/tracerazor audit traces/support-agent-run-2847.json --hermetic
+      - name: Clean-room smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m venv C:\tmp\v
+          C:\tmp\v\Scripts\pip install (Get-ChildItem dist\*.whl | Select-Object -First 1).FullName
+          C:\tmp\v\Scripts\tracerazor audit traces/support-agent-run-2847.json --hermetic
       - uses: actions/upload-artifact@v4
         with:
           name: wheel-${{ matrix.os }}
@@ -96,10 +117,16 @@ jobs:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            ext: ""
           - os: macos-latest
             target: aarch64-apple-darwin
+            ext: ""
           - os: macos-13
             target: x86_64-apple-darwin
+            ext: ""
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            ext: ".exe"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -110,16 +137,30 @@ jobs:
           targets: ${{ matrix.target }}
       - name: Build CLI
         run: cargo build --release -p tracerazor --target ${{ matrix.target }}
-      - name: Smoke test
+      - name: Smoke test (Unix)
+        if: runner.os != 'Windows'
         run: ./target/${{ matrix.target }}/release/tracerazor audit traces/support-agent-run-2847.json --hermetic
-      - name: Package
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\target\${{ matrix.target }}\release\tracerazor.exe audit traces/support-agent-run-2847.json --hermetic
+      - name: Package (Unix)
+        if: runner.os != 'Windows'
         run: |
           tar -czf tracerazor-${{ matrix.target }}.tar.gz \
             -C target/${{ matrix.target }}/release tracerazor
+      - name: Package (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Compress-Archive -Path target\${{ matrix.target }}\release\tracerazor.exe `
+            -DestinationPath tracerazor-${{ matrix.target }}.zip
       - uses: actions/upload-artifact@v4
         with:
           name: binary-${{ matrix.target }}
-          path: tracerazor-*.tar.gz
+          path: |
+            tracerazor-*.tar.gz
+            tracerazor-*.zip
 
   # Upload wheels + sdist to PyPI via trusted publishing (OIDC — no token
   # stored in the repo). One-time setup on pypi.org: project "tracerazor" →

@@ -91,7 +91,7 @@ def openai_llm(
 
 def anthropic_llm(
     client: Any,
-    model: str = "claude-sonnet-4-5",
+    model: str = "claude-sonnet-4-6",
     temperature: float = 1.0,
     **kwargs: Any,
 ) -> Callable:
@@ -102,7 +102,7 @@ def anthropic_llm(
     client:
         An ``anthropic.AsyncAnthropic`` instance.
     model:
-        Model ID.  Default is claude-sonnet-4-5 (secondary benchmark model).
+        Model ID.  Default is claude-sonnet-4-6.
     temperature:
         Sampling temperature.
     """

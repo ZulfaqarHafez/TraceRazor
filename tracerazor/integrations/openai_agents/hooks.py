@@ -176,17 +176,12 @@ class TraceRazorHooks:
         return self._report
 
     def assert_passes(self) -> None:
-        """Analyse (if needed) and raise ``AssertionError`` if TAS < threshold."""
+        """Analyse (if needed) and raise ``AssertionError`` if TAS < threshold.
+
+        Note: call ``hooks.analyse()`` explicitly in an async context before
+        asserting, or use ``await hooks.analyse()`` if you add an async wrapper.
+        """
         if self._report is None:
-            import asyncio
-            # Synchronous wrapper for test environments.
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    # In async context, user should have called await hooks.analyse() directly.
-                    pass
-            except RuntimeError:
-                pass
             self.analyse()
         assert self._report is not None
         if not self._report.passes:
@@ -208,7 +203,7 @@ class TraceRazorHooks:
     def _commit(self, step: Dict) -> None:
         out: Dict = {
             "id": self._step_counter,
-            "step_type": step["step_type"],
+            "type": step["step_type"],
             "content": step.get("content", ""),
             "tokens": max(step.get("tokens", 50), 1),
         }

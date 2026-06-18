@@ -265,7 +265,7 @@ class TraceRazorCallback:
     def _commit_step(self, step: Dict) -> None:
         out: Dict = {
             "id": step["id"],
-            "step_type": step["step_type"],
+            "type": step["step_type"],
             "content": step.get("content", ""),
             "tokens": max(step.get("tokens", 50), 1),
         }

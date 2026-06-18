@@ -1,6 +1,6 @@
 # TraceRazor
 
-**An offline auditor that decomposes AI-agent token waste into 8 evidence-validated efficiency signals (plus 6 detection-only diagnostics), emits risk-tagged fix patches, and produces cryptographically verifiable (Ed25519-signed) reports.**
+**An offline auditor that decomposes AI-agent token waste into 8 composite efficiency signals (1 evidence-validated against real recoverable waste + 7 statistically-screened; plus 6 detection-only diagnostics), emits risk-tagged fix patches, and produces tamper-evident (Ed25519-signed) reports.**
 
 [![CI](https://github.com/ZulfaqarHafez/tracerazor/actions/workflows/tracerazor.yml/badge.svg)](https://github.com/ZulfaqarHafez/tracerazor/actions)
 [![PyPI](https://img.shields.io/pypi/v/tracerazor)](https://pypi.org/project/tracerazor/)
@@ -97,21 +97,21 @@ flowchart TD
     T[Trace JSON] --> P[Parse & Ingest]
     P --> M
 
-    subgraph M["9 Composite Signals (post-normalisation share of TAS)"]
+    subgraph M["8 Composite Signals (post-normalisation share of TAS)"]
         direction LR
         S1["Step Redundancy\n20.7%"]
         S2["Loop Detection\n15.9%"]
         S3["Tool Accuracy\n15.9%"]
         S4["Reasoning Depth\n12.2%"]
         S5["Info Sufficiency\n12.2%"]
-        S6["Token Utilisation\n(diagnostic)"]
         S7["Context Efficiency\n12.2%"]
         O1["Observation Share\n7.3%"]
-        V3["Compression Ratio\n3.3%"]
+        V3["Compression Ratio\n3.7%"]
     end
 
-    subgraph D["5 Diagnostics (detection-only, weight 0 by default)"]
+    subgraph D["6 Diagnostics (detection-only, weight 0 by default)"]
         direction LR
+        S6["Token Utilisation"]
         S8["Decision Optimality"]
         S9["Goal Advancement"]
         S10["Semantic Drift"]
@@ -1060,7 +1060,7 @@ tracerazor serve --port 8080 &
 curl -s -X POST http://127.0.0.1:8080/api/audit \
   -H "Content-Type: application/json" \
   -d '{"trace": {"trace_id": "t1", "agent_name": "support", "framework": "raw",
-        "steps": [{"id": 1, "step_type": "reasoning", "content": "...", "tokens": 100}]}}'
+        "steps": [{"id": 1, "type": "reasoning", "content": "...", "tokens": 100}]}}'
 ```
 
 **Auth:** set `TRACERAZOR_API_TOKEN` to require
@@ -1093,7 +1093,7 @@ How a trace flows through the crates:
 
 ```mermaid
 flowchart LR
-    IN["tracerazor-ingest<br/>raw JSON · LangSmith · OTel"] --> CORE["tracerazor-core<br/>9+5 metrics · TAS · fixes · manifest<br/>(zero network deps)"]
+    IN["tracerazor-ingest<br/>raw JSON · LangSmith · OTel"] --> CORE["tracerazor-core<br/>8+6 metrics · TAS · fixes · manifest<br/>(zero network deps)"]
     SEM["tracerazor-semantic<br/>BoW default · LLM opt-in"] -.-> CORE
     STORE["tracerazor-store<br/>SQLite baselines · history"] -.-> CORE
     CORE --> CLI["tracerazor-cli<br/>audit · verify · bench · apply · serve"]

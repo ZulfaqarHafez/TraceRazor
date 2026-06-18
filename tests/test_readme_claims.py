@@ -80,4 +80,9 @@ def test_find_binary_locates_repo_build(monkeypatch):
     found = TraceRazorClient._find_binary()
     # Either the source build (one level up) or a wheel-bundled binary
     # (tracerazor/bin/) is a correct resolution in a checkout.
-    assert str(REPO / "target") in found or str(REPO / "tracerazor" / "bin") in found
+    # Use normcase for Windows case-insensitive path comparison.
+    found_nc = os.path.normcase(found)
+    assert (
+        os.path.normcase(str(REPO / "target")) in found_nc
+        or os.path.normcase(str(REPO / "tracerazor" / "bin")) in found_nc
+    )
