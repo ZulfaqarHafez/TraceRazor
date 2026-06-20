@@ -46,6 +46,7 @@ pub mod fixes;
 pub mod graph;
 pub mod iar;
 pub mod metrics;
+pub mod minhash;
 pub mod provenance;
 pub mod report;
 pub mod scoring;

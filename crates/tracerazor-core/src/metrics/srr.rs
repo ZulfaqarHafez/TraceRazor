@@ -2,7 +2,10 @@
 ///
 /// Measures the percentage of reasoning steps that are semantically redundant.
 /// Uses cosine similarity on bag-of-words vectors; pairs above the threshold
-/// are flagged. Three confidence tiers: High (≥0.95), Medium (0.85–0.94), Low (0.75–0.84).
+/// are flagged. Three confidence tiers, in BoW similarity terms:
+/// High (≥ `HIGH_CONFIDENCE` = 0.85), Medium (`LOW_CONFIDENCE`–`HIGH_CONFIDENCE`,
+/// 0.55–0.84), Low (below `LOW_CONFIDENCE`, only reachable when a caller lowers
+/// the flagging threshold below 0.55).
 ///
 /// Target: SRR < 15%. Traces above 30% are flagged critical.
 use serde::{Deserialize, Serialize};
@@ -74,6 +77,23 @@ pub const LOOKBACK_WINDOW: usize = 256;
 /// 3. **Verification after a state change**: two successful tool calls with
 ///    an intervening mutating step (an edit, a write, a booking) — re-running
 ///    a check after changing the world is how agents verify, not waste.
+/// Map a BoW similarity score onto the three documented confidence tiers.
+///
+/// Restores the `Low` tier: scores at/above [`HIGH_CONFIDENCE`] are `High`,
+/// scores at/above [`LOW_CONFIDENCE`] are `Medium`, and anything below
+/// [`LOW_CONFIDENCE`] is `Low`. With the default flagging threshold (0.65) only
+/// `High`/`Medium` are reachable, but a caller that lowers the threshold below
+/// 0.55 now gets the `Low` tier instead of every pair collapsing to `Medium`.
+fn classify_confidence(sim: f64) -> Confidence {
+    if sim >= HIGH_CONFIDENCE {
+        Confidence::High
+    } else if sim >= LOW_CONFIDENCE {
+        Confidence::Medium
+    } else {
+        Confidence::Low
+    }
+}
+
 fn pair_is_responsive(steps: &[TraceStep], a: usize, b: usize) -> bool {
     use crate::types::StepType;
 
@@ -110,11 +130,52 @@ fn pair_is_responsive(steps: &[TraceStep], a: usize, b: usize) -> bool {
     false
 }
 
+/// MinHash-LSH candidate recall threshold.
+///
+/// Deliberately permissive: the LSH index only narrows the search to plausible
+/// near-duplicates, and the injected `similarity_fn` (BoW cosine) makes the
+/// final flagging decision. A loose recall threshold keeps the exact verifier
+/// authoritative while still pruning the all-pairs scan.
+const LSH_RECALL_THRESHOLD: f64 = 0.3;
+
+/// Build, for each step, the set of prior steps within `LOOKBACK_WINDOW` that
+/// the MinHash-LSH index considers plausible near-duplicates.
+///
+/// Returns `candidates[i]` = sorted prior indices `j < i` to verify exactly.
+/// This replaces the dense `O(n·LOOKBACK_WINDOW)` inner scan with LSH candidate
+/// generation; exact verification (and all precision rules) still runs on the
+/// returned candidates so results are identical to the dense scan up to the
+/// LSH recall threshold.
+fn lsh_candidates(steps: &[TraceStep]) -> Vec<Vec<usize>> {
+    use crate::minhash::LshIndex;
+
+    let mut index = LshIndex::new(LSH_RECALL_THRESHOLD);
+    for (i, step) in steps.iter().enumerate() {
+        index.insert(i, &step.semantic_content());
+    }
+
+    let mut candidates: Vec<Vec<usize>> = vec![Vec::new(); steps.len()];
+    for (a, b) in index.candidate_pairs() {
+        // candidate_pairs yields a < b; b is the later (current) step, a the prior.
+        if b - a <= LOOKBACK_WINDOW {
+            candidates[b].push(a);
+        }
+    }
+    for c in candidates.iter_mut() {
+        c.sort_unstable();
+    }
+    candidates
+}
+
 /// Compute the SRR metric for a trace.
 ///
 /// `similarity_fn` is a closure that takes two step text strings and returns
 /// a cosine similarity score (0.0–1.0). This is injected so the metric crate
 /// remains independent of the embedding backend.
+///
+/// A MinHash-LSH index (see [`crate::minhash`]) generates candidate
+/// near-duplicate pairs so the exact `similarity_fn` only runs on plausible
+/// matches instead of the full `LOOKBACK_WINDOW` prefix of every step.
 pub fn compute<F>(trace: &Trace, similarity_fn: F, threshold: Option<f64>) -> SrrResult
 where
     F: Fn(&str, &str) -> f64,
@@ -126,18 +187,19 @@ where
     let mut pairs: Vec<SrrRedundantPair> = Vec::new();
     let mut redundant_step_ids: std::collections::HashSet<u32> = std::collections::HashSet::new();
 
-    // Compare every step against its most recent LOOKBACK_WINDOW prior steps.
+    // LSH candidate generation: prior near-duplicates per step within window.
+    let candidates = lsh_candidates(steps);
+
+    // Verify each LSH candidate exactly and keep the *most similar* qualifying
+    // prior step (the previous code broke on the first/oldest prior above
+    // threshold, contradicting its own "most similar" comment).
     for i in 1..steps.len() {
         let curr = &steps[i];
         let curr_text = curr.semantic_content();
-        let window_start = i.saturating_sub(LOOKBACK_WINDOW);
 
-        // Track the *most similar* qualifying prior step (the previous code
-        // broke on the first/oldest prior above threshold, contradicting its
-        // own "most similar" comment).
         let mut best: Option<(usize, f64)> = None;
-        for (off, prev) in steps[window_start..i].iter().enumerate() {
-            let j = window_start + off;
+        for &j in &candidates[i] {
+            let prev = &steps[j];
             let sim = similarity_fn(&curr_text, &prev.semantic_content());
             if sim >= threshold
                 && !pair_is_responsive(steps, j, i)
@@ -147,11 +209,7 @@ where
             }
         }
         if let Some((j, sim)) = best {
-            let confidence = if sim >= HIGH_CONFIDENCE {
-                Confidence::High
-            } else {
-                Confidence::Medium
-            };
+            let confidence = classify_confidence(sim);
             redundant_step_ids.insert(curr.id);
             pairs.push(SrrRedundantPair {
                 step_a: steps[j].id,
