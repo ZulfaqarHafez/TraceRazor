@@ -23,6 +23,12 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+try:
+    from benchmark._binary import find_tracerazor_binary
+except ModuleNotFoundError:  # support `python benchmark/hf_audit_stats.py`
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from benchmark._binary import find_tracerazor_binary
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
 CORPUS_DIR = REPO_ROOT / "traces" / "external" / "huggingface" / "agentinstruct"
 STATS_JSON = CORPUS_DIR / "STATS.json"
@@ -33,11 +39,10 @@ _METRIC_CODES = ["srr", "ldi", "tca", "rda", "isr", "tur", "cce", "dbo",
 
 
 def _find_binary() -> str:
-    for cand in ("release", "debug"):
-        p = REPO_ROOT / "target" / cand / "tracerazor"
-        if p.exists():
-            return str(p)
-    raise SystemExit("tracerazor binary not found; run `cargo build --release -p tracerazor`")
+    try:
+        return find_tracerazor_binary(REPO_ROOT)
+    except RuntimeError as exc:
+        raise SystemExit(str(exc)) from exc
 
 
 def _audit(binary: str, trace: Path,
@@ -47,14 +52,21 @@ def _audit(binary: str, trace: Path,
     env = dict(os.environ, HOME=tempfile.mkdtemp())
     env.pop("OPENAI_API_KEY", None)
     env.pop("ANTHROPIC_API_KEY", None)
-    cmd = [binary, "audit", str(trace), "--format", "json"]
+    cmd = [binary, "audit", str(trace), "--format", "json", "--hermetic"]
     if min_steps is not None:
         cmd += ["--min-steps", str(min_steps)]
     out = subprocess.run(cmd, capture_output=True, text=True, env=env)
+    if out.returncode not in (0, 1):
+        raise RuntimeError(
+            f"audit failed for {trace} (exit {out.returncode}): "
+            f"{out.stderr.strip()[:500]}"
+        )
+    if not out.stdout.strip():
+        return None
     try:
         return json.loads(out.stdout)
     except json.JSONDecodeError:
-        return None  # sub-floor trace, skipped with a notice
+        raise RuntimeError(f"audit for {trace} did not emit JSON: {out.stdout[:500]}")
 
 
 def collect() -> Dict[str, Any]:

@@ -21,7 +21,7 @@ task solved with very different token costs (e.g. `xml` ~3.6k vs `cursors` ~7.6k
 
 ```bash
 cargo build --release -p tracerazor
-python benchmarks/run_benchmarks.py
+python -m benchmark.run_benchmarks
 ```
 
 The script audits every `.json` under `traces/external/` and writes the markdown

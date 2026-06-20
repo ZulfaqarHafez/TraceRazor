@@ -23,7 +23,7 @@ Usage::
 
 The pass signal is each trace's ``task_value_score`` (tau-bench reward:
 1.0 = solved).  A token saving that costs task success is a regression, not
-a saving — any task whose pass flag flips from before to after is called
+a saving: any task whose pass flag flips from before to after is called
 out and fails the constant-pass-rate requirement.
 """
 
@@ -38,6 +38,12 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+try:
+    from benchmark._binary import find_tracerazor_binary
+except ModuleNotFoundError:  # support `python benchmark/case_study.py`
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from benchmark._binary import find_tracerazor_binary
+
 REPO = Path(__file__).resolve().parent.parent
 
 #: Bootstrap resamples for the confidence intervals (seeded, reproducible).
@@ -48,14 +54,10 @@ PASS_EPS = 1e-9
 
 def find_binary() -> str | None:
     """Locate the tracerazor CLI like the test suite does."""
-    env = os.environ.get("TRACERAZOR_BIN")
-    if env and Path(env).is_file():
-        return env
-    for cand in ("release", "debug"):
-        p = REPO / "target" / cand / "tracerazor"
-        if p.is_file():
-            return str(p)
-    return None
+    try:
+        return find_tracerazor_binary(REPO)
+    except RuntimeError:
+        return None
 
 
 def bootstrap_ci(
@@ -198,11 +200,11 @@ def render_markdown(results: list[TaskResult], synthetic: bool = False) -> str:
             "",
         ]
     lines += [
-        "| Task | Tokens before | Tokens after | Saved | Saved % | TAS Δ | Pass held |",
+        "| Task | Tokens before | Tokens after | Saved | Saved % | TAS delta | Pass held |",
         "|---|---:|---:|---:|---:|---:|:---:|",
     ]
     for r in results:
-        held = "✅" if r.pass_held else "❌ FLIPPED"
+        held = "yes" if r.pass_held else "NO - FLIPPED"
         lines.append(
             f"| {r.task} | {r.tokens_before} | {r.tokens_after} "
             f"| {r.tokens_saved} | {r.pct_saved:.1f}% | {r.tas_delta:+.1f} | {held} |"
@@ -213,11 +215,11 @@ def render_markdown(results: list[TaskResult], synthetic: bool = False) -> str:
         f"**{pct_mean:.1f}%** (95% bootstrap CI [{pct_lo:.1f}%, {pct_hi:.1f}%]); "
         f"mean TAS delta {tas_mean:+.1f} (95% CI [{tas_lo:+.1f}, {tas_hi:+.1f}]).",
         "",
-        f"**Pass rate:** {pass_before}/{n} before → {pass_after}/{n} after — "
+        f"**Pass rate:** {pass_before}/{n} before -> {pass_after}/{n} after - "
         + (
             "constant task outcome on every pair (the savings are at unchanged pass rate)."
             if all_held
-            else "⚠️ **at least one task outcome flipped; the token delta on those "
+            else "**at least one task outcome flipped; the token delta on those "
             "tasks is not a saving.**"
         ),
     ]

@@ -111,9 +111,9 @@ jobs:
         # Ship-plan 0.6: committed result tables must be regenerated whenever
         # scoring changes; stale numbers read as dishonesty.
         run: |
-          python benchmark/run_benchmarks.py
+          python -m benchmark.run_benchmarks
           git diff --exit-code benchmark/RESULTS.md \
-            || { echo "::error::benchmark/RESULTS.md is stale — regenerate with 'python benchmark/run_benchmarks.py' and commit."; exit 1; }
+            || { echo "::error::benchmark/RESULTS.md is stale — regenerate with 'python -m benchmark.run_benchmarks' and commit."; exit 1; }
 
       - name: End-to-end audit via real binary
         run: |

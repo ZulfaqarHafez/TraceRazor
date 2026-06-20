@@ -8,38 +8,36 @@ These are real trajectories (tau-bench airline/retail; SWE-agent edit-format
 variants), not synthetic scenarios. Reproduce with:
 
     cargo build --release -p tracerazor
-    python benchmarks/run_benchmarks.py
+    python -m benchmark.run_benchmarks
 
 Requires the `tracerazor` binary on PATH or in target/{release,debug}/.
 """
 from __future__ import annotations
 
 import json
-import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+try:
+    from benchmark._binary import find_tracerazor_binary
+except ModuleNotFoundError:  # support `python benchmark/run_benchmarks.py`
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    from benchmark._binary import find_tracerazor_binary
 
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 TRACES = REPO / "traces" / "external"
 RESULTS = HERE / "RESULTS.md"
+NON_TRACE_JSON = {"STATS.json"}
 
 
 def find_binary() -> str:
-    which = shutil.which("tracerazor")
-    if which:
-        return which
-    for c in (
-        REPO / "target" / "release" / "tracerazor",
-        REPO / "target" / "release" / "tracerazor.exe",
-        REPO / "target" / "debug" / "tracerazor",
-        REPO / "target" / "debug" / "tracerazor.exe",
-    ):
-        if c.exists():
-            return str(c)
-    sys.exit("Could not find `tracerazor` binary. Run `cargo build --release -p tracerazor` first.")
+    try:
+        return find_tracerazor_binary(REPO)
+    except RuntimeError as exc:
+        sys.exit(str(exc))
 
 
 def audit(binary: str, trace_path: Path) -> dict | None:
@@ -56,14 +54,24 @@ def audit(binary: str, trace_path: Path) -> dict | None:
         [binary, "audit", str(trace_path), "--format", "json", "--hermetic"],
         capture_output=True, text=True, check=False, env=env,
     )
-    if result.returncode not in (0, 1) or not result.stdout.strip():
+    if result.returncode not in (0, 1):
+        raise RuntimeError(
+            f"audit failed for {trace_path} (exit {result.returncode}): "
+            f"{result.stderr.strip()[:500]}"
+        )
+    if not result.stdout.strip():
         return None  # e.g. fewer than the minimum steps
-    return json.loads(result.stdout)
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"audit for {trace_path} did not emit valid JSON: {result.stdout[:500]}"
+        ) from exc
 
 
 def main() -> None:
     binary = find_binary()
-    traces = sorted(TRACES.rglob("*.json"))
+    traces = sorted(t for t in TRACES.rglob("*.json") if t.name not in NON_TRACE_JSON)
     if not traces:
         sys.exit(f"No trace files found under {TRACES}")
 
@@ -87,13 +95,18 @@ def main() -> None:
             "waste_pct": waste_pct,
             "n_fixes": len(report.get("fixes", [])),
         })
+    if not rows:
+        sys.exit(
+            "No analysable traces were audited. Refusing to overwrite "
+            f"{RESULTS} with an empty benchmark report."
+        )
 
     md = ["# TraceRazor Benchmark Results", ""]
     md.append(
         "Measured by running `tracerazor audit` on every real public agent trace "
         "under `traces/external/` (tau-bench airline/retail; SWE-agent edit-format "
         "variants). These are real trajectories, not synthetic scenarios. "
-        "Reproduce with `python benchmarks/run_benchmarks.py`."
+        "Reproduce with `python -m benchmark.run_benchmarks`."
     )
     md.append("")
     md.append("| Source | Trace | TAS | Grade | Tokens | Waste | Est. savings | Fixes |")

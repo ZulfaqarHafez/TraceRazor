@@ -14,16 +14,16 @@
     "agentinstruct-os_4",
     "agentinstruct-os_7"
   ],
-  "mean_tas": 79.8,
-  "median_tas": 80.2,
+  "mean_tas": 85.1,
+  "median_tas": 85.8,
   "grade_distribution": {
     "Good": 4
   },
-  "mean_mvtg": 0.364,
+  "mean_mvtg": 0.281,
   "total_fixes": 11,
   "mean_agf": 0.951,
   "metric_means_normalised": {
-    "srr": 0.65,
+    "srr": 0.958,
     "ldi": 0.833,
     "tca": 0.9,
     "rda": 0.367,
@@ -43,13 +43,13 @@
       "trace_id": "agentinstruct-os_0",
       "steps": 6,
       "tokens": 414,
-      "tas": 86.1,
+      "tas": 87.9,
       "grade": "Good",
-      "mvtg": 0.283,
+      "mvtg": 0.21,
       "fixes": 3,
       "agf": 1.0,
       "metrics": {
-        "srr": 0.833,
+        "srr": 1.0,
         "ldi": 1.0,
         "tca": 1.0,
         "rda": 0.25,
@@ -69,13 +69,13 @@
       "trace_id": "agentinstruct-os_11",
       "steps": 5,
       "tokens": 638,
-      "tas": 83.6,
+      "tas": 89.9,
       "grade": "Good",
-      "mvtg": 0.262,
+      "mvtg": 0.0,
       "fixes": 1,
       "agf": 0.929,
       "metrics": {
-        "srr": 0.6,
+        "srr": 1.0,
         "ldi": 1.0,
         "tca": 1.0,
         "rda": 0.3,
@@ -95,13 +95,13 @@
       "trace_id": "agentinstruct-os_5",
       "steps": 6,
       "tokens": 691,
-      "tas": 76.9,
+      "tas": 83.8,
       "grade": "Good",
       "mvtg": 0.457,
       "fixes": 4,
       "agf": 0.875,
       "metrics": {
-        "srr": 0.667,
+        "srr": 1.0,
         "ldi": 1.0,
         "tca": 0.6,
         "rda": 0.25,
@@ -121,13 +121,13 @@
       "trace_id": "agentinstruct-os_6",
       "steps": 6,
       "tokens": 305,
-      "tas": 72.6,
+      "tas": 78.9,
       "grade": "Good",
       "mvtg": 0.456,
       "fixes": 3,
       "agf": 1.0,
       "metrics": {
-        "srr": 0.5,
+        "srr": 0.833,
         "ldi": 0.333,
         "tca": 1.0,
         "rda": 0.667,
@@ -146,97 +146,97 @@
   ],
   "full_corpus_min_steps_2": {
     "n_audited": 13,
-    "mean_tas": 86.1,
+    "mean_tas": 90.0,
     "total_fixes": 20,
     "per_trace": [
       {
         "trace_id": "agentinstruct-db_0",
         "steps": 2,
-        "tas": 90.1,
-        "grade": "Excellent",
+        "tas": 88.9,
+        "grade": "Good",
         "fixes": 0
       },
       {
         "trace_id": "agentinstruct-db_1",
         "steps": 2,
-        "tas": 92.9,
+        "tas": 92.1,
         "grade": "Excellent",
         "fixes": 1
       },
       {
         "trace_id": "agentinstruct-os_0",
         "steps": 6,
-        "tas": 86.1,
+        "tas": 87.9,
         "grade": "Good",
         "fixes": 3
       },
       {
         "trace_id": "agentinstruct-os_1",
         "steps": 3,
-        "tas": 93.7,
+        "tas": 92.9,
         "grade": "Excellent",
         "fixes": 1
       },
       {
         "trace_id": "agentinstruct-os_11",
         "steps": 5,
-        "tas": 83.6,
+        "tas": 89.9,
         "grade": "Good",
         "fixes": 1
       },
       {
         "trace_id": "agentinstruct-os_16",
         "steps": 4,
-        "tas": 77.3,
-        "grade": "Good",
+        "tas": 91.1,
+        "grade": "Excellent",
         "fixes": 1
       },
       {
         "trace_id": "agentinstruct-os_18",
         "steps": 4,
-        "tas": 87.2,
-        "grade": "Good",
+        "tas": 91.1,
+        "grade": "Excellent",
         "fixes": 1
       },
       {
         "trace_id": "agentinstruct-os_2",
         "steps": 3,
-        "tas": 93.9,
+        "tas": 93.2,
         "grade": "Excellent",
         "fixes": 2
       },
       {
         "trace_id": "agentinstruct-os_3",
         "steps": 3,
-        "tas": 87.2,
-        "grade": "Good",
+        "tas": 92.5,
+        "grade": "Excellent",
         "fixes": 1
       },
       {
         "trace_id": "agentinstruct-os_4",
         "steps": 4,
-        "tas": 94.6,
+        "tas": 99.1,
         "grade": "Excellent",
         "fixes": 1
       },
       {
         "trace_id": "agentinstruct-os_5",
         "steps": 6,
-        "tas": 76.9,
+        "tas": 83.8,
         "grade": "Good",
         "fixes": 4
       },
       {
         "trace_id": "agentinstruct-os_6",
         "steps": 6,
-        "tas": 72.6,
+        "tas": 78.9,
         "grade": "Good",
         "fixes": 3
       },
       {
         "trace_id": "agentinstruct-os_7",
         "steps": 4,
-        "tas": 83.7,
+        "tas": 88.4,
         "grade": "Good",
         "fixes": 1
       }
