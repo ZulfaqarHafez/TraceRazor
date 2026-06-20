@@ -447,11 +447,11 @@ pub fn parse(data: &str) -> Result<Trace> {
         .map(|s| s.tokens)
         .fold(0u32, u32::saturating_add);
 
-    let mut metadata: HashMap<String, String> = HashMap::new();
+    let mut metadata: HashMap<String, serde_json::Value> = HashMap::new();
     if mixed_traces {
         metadata.insert(
             "warning".to_string(),
-            "export contained spans from multiple OTEL traces; only the most-common traceId was kept".to_string(),
+            serde_json::Value::String("export contained spans from multiple OTEL traces; only the most-common traceId was kept".to_string()),
         );
     }
 
