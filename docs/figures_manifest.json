@@ -1,0 +1,30 @@
+{
+  "schema_version": "1",
+  "tracerazor_version": "1.1.0",
+  "generated_date": "2026-06-20",
+  "figures": {
+    "sample_trace_tas": 83,
+    "sample_trace_steps": 11,
+    "sample_trace_tokens": 14280,
+    "hf_agentinstruct_mean_tas_default_floor": 78.0,
+    "hf_agentinstruct_mean_tas_full_corpus_min2": 82.9,
+    "hf_agentinstruct_analysable_traces_default": 4,
+    "hf_agentinstruct_analysable_traces_min2": 13,
+    "tau_bench_gpt4o_airline_avg_tas": 53,
+    "tau_bench_gpt4o_retail_avg_tas": 85,
+    "tau_bench_claude_sonnet_airline_avg_tas": 67,
+    "tau_bench_claude_sonnet_retail_avg_tas": 81,
+    "external_audits_airline_mean_redundancy_pct": 36,
+    "external_audits_retail_mean_redundancy_pct": 14,
+    "calibration_injected_waste_cv_r2_calibrated": 0.64,
+    "calibration_injected_waste_cv_r2_default": 0.09,
+    "sampling_sc_k5_pass_rate_pct": 48,
+    "sampling_sc_k5_token_multiplier": 2.2
+  },
+  "notes": {
+    "sample_trace_tas": "tracerazor audit traces/support-agent-run-2847.json",
+    "hf_figures": "python -m benchmark.hf_audit_stats",
+    "calibration_figures": "python -m calibration.calibrate with injected-waste dataset",
+    "sampling_figures": "docs/tau_bench_benchmark_report.md"
+  }
+}

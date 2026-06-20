@@ -1,6 +1,6 @@
 # TAS Weight Calibration
 
-TraceRazor's composite efficiency is a convex combination of 13 sub-metrics:
+TraceRazor's composite efficiency is a convex combination of 14 sub-metrics:
 
 ```
 raw_efficiency = Σ_k (w_k · m_k) / Σ_k w_k        # m_k ∈ [0,1]
