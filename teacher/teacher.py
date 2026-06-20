@@ -20,6 +20,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 
+from .bandit import LinUCBBandit
 from .diagnose import Diagnoser
 from .gate import QualityGate
 from .interventions import apply, propose
@@ -69,13 +70,14 @@ class Teacher:
     def __init__(self, base_config: AgentConfig, *, framework: str = "langgraph",
                  mode: Mode = Mode.CURRICULUM, gate: QualityGate | None = None,
                  playbook: Playbook | None = None, diagnoser: Diagnoser | None = None,
-                 patience: int = 2):
+                 bandit: LinUCBBandit | None = None, patience: int = 2):
         self.base_config = base_config
         self.framework = framework
         self.mode = mode
         self.gate = gate or QualityGate()
         self.playbook = playbook or Playbook()
         self.diagnoser = diagnoser or Diagnoser()
+        self.bandit = bandit
         self.patience = patience
 
     # -- main entry point --------------------------------------------------- #
@@ -138,6 +140,11 @@ class Teacher:
                 token_delta_pct=vr.token_delta_pct, tas_delta=vr.tas_after - vr.tas_before)
             self.playbook.record(outcome.pattern_signature, iv.waste_pattern,
                                  self.framework, iv.key, outcome)
+            if self.bandit is not None:
+                # Reward = fractional token saving on ACCEPT; small penalty on REJECT
+                # so the bandit learns both what works and what wastes an iteration.
+                reward = -vr.token_delta_pct / 100.0 if vr.accepted else -0.05
+                self.bandit.update(iv.key, iv, diagnosis, reward)
 
             if decision is Decision.ACCEPT and promote:
                 cfg = trial_cfg
@@ -207,8 +214,10 @@ class Teacher:
     def _select(self, candidates: list[Intervention], diagnosis) -> Intervention:
         lowest = min(c.tier for c in candidates)
         tier_cands = [c for c in candidates if c.tier == lowest]
-        # Within the tier, prefer interventions with a strong playbook prior
-        # and high expected savings per unit risk.
+        # When a LinUCB bandit is wired in, let it choose (explore/exploit).
+        # Without one, fall back to the playbook-primed greedy score.
+        if self.bandit is not None:
+            return self.bandit.select(tier_cands, diagnosis)  # type: ignore[return-value]
         def score(iv: Intervention) -> float:
             prior = self.playbook.prior_winrate(self._signature(iv, diagnosis), iv.key)
             return prior * iv.predicted_savings / (1.0 + iv.predicted_risk)
