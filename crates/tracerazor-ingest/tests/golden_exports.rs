@@ -65,6 +65,24 @@ fn otel_protojson_string_ints_and_event_content() {
 }
 
 #[test]
+fn langsmith_3runs_tree_and_tokens() {
+    // Fixture: chain root → llm child + tool child (flat list_runs export).
+    // The chain wrapper must be skipped; 2 leaf steps must survive with tokens.
+    let trace =
+        tracerazor_ingest::parse(&fixture("langsmith_3runs.json"),
+                                 tracerazor_ingest::TraceFormat::LangSmith)
+            .unwrap();
+    assert_eq!(trace.steps.len(), 2, "chain root is skipped; 2 leaf steps: {:#?}", trace.steps);
+    // run-2 (llm) has outputs.llm_output.token_usage.total_tokens = 120.
+    let llm_step = trace.steps.iter().find(|s| s.tool_name.is_none()).expect("llm step");
+    assert!(llm_step.tokens > 0, "llm step must have tokens > 0, got {}", llm_step.tokens);
+    assert_eq!(llm_step.tokens, 120, "tokens from llm_output.token_usage");
+    // run-3 (tool) should be present.
+    let tool_step = trace.steps.iter().find(|s| s.tool_name.is_some()).expect("tool step");
+    assert_eq!(tool_step.tool_name.as_deref(), Some("weather_api"));
+}
+
+#[test]
 fn span_name_fallback_is_detected_as_degraded() {
     let trace = tracerazor_ingest::parse(&fixture("otel_spannames_only.json"),
                                          tracerazor_ingest::TraceFormat::Otel)

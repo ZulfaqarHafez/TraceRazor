@@ -106,13 +106,30 @@ struct SpanStatus {
     message: Option<String>,
 }
 
-/// Pull span content from the shapes real exporters use, in order:
-/// flat `gen_ai.prompt`/`gen_ai.completion`, structured
-/// `gen_ai.input.messages`/`gen_ai.output.messages`, OpenLLMetry indexed
-/// attributes (`gen_ai.prompt.0.content`, ...), then message events.
-/// Returns None when nothing content-like exists — the caller falls back to
-/// the span name, and the ingest-quality check makes that fallback loud.
-fn extract_content(span: &Span, attrs: &HashMap<&str, &AttributeValue>) -> Option<String> {
+/// Returns true for span event names that carry prompt/input content.
+fn is_input_event(name: &str) -> bool {
+    matches!(
+        name,
+        "gen_ai.content.prompt"
+            | "gen_ai.input.messages"
+            | "gen_ai.user.message"
+            | "gen_ai.system.message"
+    )
+}
+
+/// Returns true for span event names that carry completion/output content.
+fn is_output_event(name: &str) -> bool {
+    matches!(
+        name,
+        "gen_ai.content.completion"
+            | "gen_ai.output.messages"
+            | "gen_ai.choice"
+            | "gen_ai.assistant.message"
+    )
+}
+
+/// Extract the prompt/input side of a span as a string, or None.
+fn extract_input_content(span: &Span, attrs: &HashMap<&str, &AttributeValue>) -> Option<String> {
     let mut parts: Vec<String> = Vec::new();
 
     for key in ["gen_ai.prompt", "gen_ai.input.messages"] {
@@ -121,35 +138,29 @@ fn extract_content(span: &Span, attrs: &HashMap<&str, &AttributeValue>) -> Optio
         }
     }
 
-    // OpenLLMetry style: gen_ai.prompt.<i>.content / gen_ai.completion.<i>.content
-    let mut indexed: Vec<(&str, usize, &str)> = Vec::new();
+    // OpenLLMetry indexed: gen_ai.prompt.<i>.content
+    let mut indexed: Vec<(usize, &str)> = Vec::new();
     for (k, v) in attrs {
-        for prefix in ["gen_ai.prompt.", "gen_ai.completion."] {
-            if let Some(rest) = k.strip_prefix(prefix) {
-                if let Some(idx) = rest.strip_suffix(".content").and_then(|i| i.parse().ok()) {
-                    if let Some(text) = v.as_str() {
-                        indexed.push((prefix, idx, text));
-                    }
+        if let Some(rest) = k.strip_prefix("gen_ai.prompt.") {
+            if let Some(idx) = rest.strip_suffix(".content").and_then(|i| i.parse().ok()) {
+                if let Some(text) = v.as_str() {
+                    indexed.push((idx, text));
                 }
             }
         }
     }
-    // Prompts before completions, then by message index.
-    indexed.sort_by_key(|(p, i, _)| (usize::from(*p != "gen_ai.prompt."), *i));
-    parts.extend(indexed.into_iter().map(|(_, _, t)| t.to_string()));
+    indexed.sort_by_key(|(i, _)| *i);
+    parts.extend(indexed.into_iter().map(|(_, t)| t.to_string()));
 
-    for key in ["gen_ai.completion", "gen_ai.output.messages"] {
-        if let Some(v) = attrs.get(key).and_then(|v| v.as_str()) {
-            parts.push(v.to_string());
-        }
-    }
-
-    // Message events (gen_ai.user.message / gen_ai.assistant.message /
-    // gen_ai.choice / gen_ai.content.prompt ...): take their content attrs.
+    // Input events.
     for ev in &span.events {
-        if ev.name.starts_with("gen_ai.") {
+        if is_input_event(&ev.name) {
             for a in &ev.attributes {
-                if a.key == "content" || a.key.ends_with(".content") || a.key == "body" {
+                if a.key == "content"
+                    || a.key == "gen_ai.prompt"
+                    || a.key.ends_with(".content")
+                    || a.key == "body"
+                {
                     if let Some(text) = a.value.as_str() {
                         parts.push(text.to_string());
                     }
@@ -162,29 +173,109 @@ fn extract_content(span: &Span, attrs: &HashMap<&str, &AttributeValue>) -> Optio
     if joined.is_empty() { None } else { Some(joined) }
 }
 
+/// Extract the completion/output side of a span as a string, or None.
+fn extract_output_content(span: &Span, attrs: &HashMap<&str, &AttributeValue>) -> Option<String> {
+    let mut parts: Vec<String> = Vec::new();
+
+    for key in ["gen_ai.completion", "gen_ai.output.messages"] {
+        if let Some(v) = attrs.get(key).and_then(|v| v.as_str()) {
+            parts.push(v.to_string());
+        }
+    }
+
+    // OpenLLMetry indexed: gen_ai.completion.<i>.content
+    let mut indexed: Vec<(usize, &str)> = Vec::new();
+    for (k, v) in attrs {
+        if let Some(rest) = k.strip_prefix("gen_ai.completion.") {
+            if let Some(idx) = rest.strip_suffix(".content").and_then(|i| i.parse().ok()) {
+                if let Some(text) = v.as_str() {
+                    indexed.push((idx, text));
+                }
+            }
+        }
+    }
+    indexed.sort_by_key(|(i, _)| *i);
+    parts.extend(indexed.into_iter().map(|(_, t)| t.to_string()));
+
+    // Output events.
+    for ev in &span.events {
+        if is_output_event(&ev.name) {
+            for a in &ev.attributes {
+                if a.key == "content"
+                    || a.key == "gen_ai.completion"
+                    || a.key.ends_with(".content")
+                    || a.key == "body"
+                {
+                    if let Some(text) = a.value.as_str() {
+                        parts.push(text.to_string());
+                    }
+                }
+            }
+        }
+    }
+
+    let joined = parts.join(" ").trim().to_string();
+    if joined.is_empty() { None } else { Some(joined) }
+}
+
+/// Pull span content from the shapes real exporters use, in order:
+/// flat `gen_ai.prompt`/`gen_ai.completion`, structured
+/// `gen_ai.input.messages`/`gen_ai.output.messages`, OpenLLMetry indexed
+/// attributes (`gen_ai.prompt.0.content`, ...), then message events.
+/// Returns None when nothing content-like exists — the caller falls back to
+/// the span name, and the ingest-quality check makes that fallback loud.
+fn extract_content(span: &Span, attrs: &HashMap<&str, &AttributeValue>) -> Option<String> {
+    let input = extract_input_content(span, attrs);
+    let output = extract_output_content(span, attrs);
+    match (input, output) {
+        (None, None) => None,
+        (Some(i), None) => Some(i),
+        (None, Some(o)) => Some(o),
+        (Some(i), Some(o)) => Some(format!("{i} {o}")),
+    }
+}
+
+/// A span coupled with the service.name of its ResourceSpan.
+struct TaggedSpan {
+    span: Span,
+    service_name: Option<String>,
+}
+
 /// Parse an OTEL JSON export into a Trace.
 pub fn parse(data: &str) -> Result<Trace> {
     let export: OtelExport =
         serde_json::from_str(data).context("Failed to parse OTEL JSON")?;
 
-    let mut all_spans: Vec<Span> = Vec::new();
+    // Collect spans tagged with their resource's service.name.
+    let mut all_spans: Vec<TaggedSpan> = Vec::new();
     let mut agent_name = "unknown".to_string();
 
     for rs in export.resource_spans {
-        // Extract agent name from resource attributes.
-        if let Some(resource) = rs.resource {
-            if let Some(attrs) = resource.attributes {
-                for attr in &attrs {
-                    if attr.key == "service.name" {
-                        if let Some(s) = attr.value.as_str() {
-                            agent_name = s.to_string();
-                        }
-                    }
+        // Extract service.name from resource attributes.
+        let svc_name: Option<String> = rs.resource.as_ref().and_then(|r| {
+            r.attributes.as_ref()?.iter().find_map(|a| {
+                if a.key == "service.name" {
+                    a.value.as_str().map(|s| s.to_string())
+                } else {
+                    None
                 }
+            })
+        });
+
+        // Use the first service.name encountered as the top-level agent name.
+        if agent_name == "unknown" {
+            if let Some(ref s) = svc_name {
+                agent_name = s.clone();
             }
         }
+
         for ss in rs.scope_spans {
-            all_spans.extend(ss.spans);
+            for span in ss.spans {
+                all_spans.push(TaggedSpan {
+                    span,
+                    service_name: svc_name.clone(),
+                });
+            }
         }
     }
 
@@ -192,21 +283,48 @@ pub fn parse(data: &str) -> Result<Trace> {
         anyhow::bail!("OTEL export contains no spans");
     }
 
-    // Use the first span's trace_id.
-    let trace_id = all_spans[0].trace_id.clone();
-
     // Sort spans by start time (lexicographic on nanosecond timestamps works).
     all_spans.sort_by(|a, b| {
-        a.start_time_unix_nano
+        a.span
+            .start_time_unix_nano
             .as_deref()
             .unwrap_or("")
-            .cmp(b.start_time_unix_nano.as_deref().unwrap_or(""))
+            .cmp(b.span.start_time_unix_nano.as_deref().unwrap_or(""))
     });
+
+    // Guard against mixed-traceId exports: if spans come from more than one
+    // OTEL trace, using the first span's traceId would silently merge them.
+    // Emit a warning in metadata and keep only the most-common traceId's spans.
+    let first_trace_id = all_spans[0].span.trace_id.clone();
+    let mixed_traces = all_spans
+        .iter()
+        .any(|ts| ts.span.trace_id != first_trace_id);
+
+    let (trace_id, spans_to_process): (String, Vec<&TaggedSpan>) = if mixed_traces {
+        // Count spans per traceId, pick the most common.
+        let mut counts: HashMap<&str, usize> = HashMap::new();
+        for ts in &all_spans {
+            *counts.entry(ts.span.trace_id.as_str()).or_default() += 1;
+        }
+        let best_tid = counts
+            .into_iter()
+            .max_by_key(|(_, c)| *c)
+            .map(|(tid, _)| tid.to_string())
+            .unwrap_or_else(|| first_trace_id.clone());
+        let filtered: Vec<&TaggedSpan> = all_spans
+            .iter()
+            .filter(|ts| ts.span.trace_id == best_tid)
+            .collect();
+        (best_tid, filtered)
+    } else {
+        (first_trace_id, all_spans.iter().collect())
+    };
 
     let mut steps: Vec<TraceStep> = Vec::new();
     let mut counter = 1u32;
 
-    for span in &all_spans {
+    for tagged in &spans_to_process {
+        let span = &tagged.span;
         let attrs: HashMap<&str, &AttributeValue> =
             span.attributes.iter().map(|a| (a.key.as_str(), &a.value)).collect();
 
@@ -247,6 +365,8 @@ pub fn parse(data: &str) -> Result<Trace> {
                 // saturating_add: avoid overflow on pathological inputs.
                 Some(i.saturating_add(o))
             })
+            // OpenLLMetry total.
+            .or_else(|| attrs.get("llm.usage.total_tokens").and_then(|v| v.as_i64()))
             .unwrap_or(0);
         // Clamp negatives to 0 and saturate at u32::MAX instead of silently
         // truncating the upper bits of an attacker-supplied token count.
@@ -274,7 +394,31 @@ pub fn parse(data: &str) -> Result<Trace> {
             None
         };
 
-        let content = extract_content(span, &attrs).unwrap_or_else(|| span.name.clone());
+        // Split content into input and output for CCE and downstream metrics.
+        let input_context = extract_input_content(span, &attrs);
+        let output = extract_output_content(span, &attrs);
+        let content = match (&input_context, &output) {
+            (None, None) => span.name.clone(),
+            (Some(i), None) => i.clone(),
+            (None, Some(o)) => o.clone(),
+            (Some(i), Some(o)) => format!("{i} {o}"),
+        };
+
+        // Determine agent_id: prefer gen_ai.agent.name span attribute, then
+        // fall back to service.name if it differs from the top-level agent.
+        let agent_id: Option<String> = attrs
+            .get("gen_ai.agent.name")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string())
+            .or_else(|| {
+                tagged.service_name.as_ref().and_then(|svc| {
+                    if svc != &agent_name {
+                        Some(svc.clone())
+                    } else {
+                        None
+                    }
+                })
+            });
 
         steps.push(TraceStep {
             id: counter,
@@ -288,9 +432,9 @@ pub fn parse(data: &str) -> Result<Trace> {
                 .status
                 .as_ref()
                 .and_then(|s| s.message.clone()),
-            agent_id: None,
-            input_context: None,
-            output: None,
+            agent_id,
+            input_context,
+            output,
             flags: vec![],
             flag_details: vec![],
         });
@@ -303,6 +447,14 @@ pub fn parse(data: &str) -> Result<Trace> {
         .map(|s| s.tokens)
         .fold(0u32, u32::saturating_add);
 
+    let mut metadata: HashMap<String, String> = HashMap::new();
+    if mixed_traces {
+        metadata.insert(
+            "warning".to_string(),
+            "export contained spans from multiple OTEL traces; only the most-common traceId was kept".to_string(),
+        );
+    }
+
     Ok(Trace {
         trace_id,
         agent_name,
@@ -310,6 +462,6 @@ pub fn parse(data: &str) -> Result<Trace> {
         steps,
         total_tokens,
         task_value_score: 1.0,
-        metadata: HashMap::new(),
+        metadata,
     })
 }

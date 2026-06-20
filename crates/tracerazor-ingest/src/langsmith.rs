@@ -148,18 +148,29 @@ fn rebuild_tree(mut runs: Vec<LangSmithRun>) -> Result<LangSmithRun> {
         return Ok(roots.into_iter().next().expect("len checked"));
     }
     // Multiple traces in one export: wrap them under a synthetic chain.
-    let trace_id = roots[0]
-        .trace_id
-        .clone()
-        .unwrap_or_else(|| roots[0].id.clone());
+    //
+    // If all roots share the same trace_id, use that shared id (the common
+    // case when a list_runs export captures parallel sub-agents of one run).
+    // If the roots belong to *different* traces, using the first root's
+    // trace_id would falsely attribute the whole export to that one trace;
+    // instead generate a synthetic id so the audit report is not misleading.
+    let first_tid = roots[0].trace_id.clone().unwrap_or_else(|| roots[0].id.clone());
+    let all_same_trace = roots
+        .iter()
+        .all(|r| r.trace_id.as_deref().unwrap_or(&r.id) == first_tid);
+    let (trace_id, name) = if all_same_trace {
+        (first_tid, roots[0].name.clone())
+    } else {
+        (format!("multi-{}-runs", roots.len()), "multi-trace-export".to_string())
+    };
     Ok(LangSmithRun {
         id: trace_id.clone(),
-        name: roots[0].name.clone(),
+        name,
         run_type: "chain".into(),
         inputs: serde_json::Value::Null,
         outputs: serde_json::Value::Null,
         error: None,
-        extra: roots[0].extra.clone(),
+        extra: None,
         child_runs: roots,
         parent_run_id: None,
         trace_id: Some(trace_id),
@@ -306,14 +317,34 @@ fn build_content(
 ) -> String {
     match run_type {
         "llm" => {
-            // Extract the last message content from inputs.
-            let input_text = inputs
+            // Concatenate ALL messages so multi-turn histories are not
+            // silently truncated to a single exchange (bug: arr.last() only).
+            // LangChain llm runs include the full conversation in messages[].
+            let input_text: String = inputs
                 .get("messages")
                 .and_then(|m| m.as_array())
-                .and_then(|arr| arr.last())
-                .and_then(|msg| msg.get("content"))
-                .and_then(|c| c.as_str())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|msg| {
+                            // messages can be plain objects {"content":…}
+                            // or wrapped arrays [[{"content":…}]]
+                            msg.get("content")
+                                .and_then(|c| c.as_str())
+                                .map(|s| s.to_string())
+                                .or_else(|| {
+                                    msg.as_array().and_then(|inner| {
+                                        inner.first()
+                                            .and_then(|m| m.get("content"))
+                                            .and_then(|c| c.as_str())
+                                            .map(|s| s.to_string())
+                                    })
+                                })
+                        })
+                        .collect::<Vec<_>>()
+                        .join(" ")
+                })
                 .unwrap_or_default();
+            let input_text = input_text.as_str();
 
             let output_text = outputs
                 .get("generations")
