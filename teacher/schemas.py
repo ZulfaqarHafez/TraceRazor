@@ -77,6 +77,7 @@ class Target(str, Enum):
     TOOL_DEF = "tool_def"
     RUNTIME_POLICY = "runtime_policy"   # proxy / middleware config
     DECODING = "decoding"
+    MEMORY_POLICY = "memory_policy"     # context-window / history limits
 
 
 class Tier(int, Enum):
@@ -101,7 +102,7 @@ class Intervention:
     @property
     def id(self) -> str:
         raw = f"{self.waste_pattern.value}|{self.target.value}|{self.key}"
-        return "iv_" + hashlib.sha1(raw.encode()).hexdigest()[:10]
+        return "iv_" + hashlib.sha256(raw.encode()).hexdigest()[:10]
 
 
 @dataclass
