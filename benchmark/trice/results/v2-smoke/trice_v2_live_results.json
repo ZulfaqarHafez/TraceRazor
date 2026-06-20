@@ -1,0 +1,1131 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "profile": {
+    "allow_test_edits": false,
+    "budget_ratio": 0.4,
+    "lessons": [
+      "user target set to 60% input-token savings",
+      "user requires live rollout evidence, not replay-only acceptance",
+      "replay is allowed only as a preflight, not as final proof",
+      "adapt budget and safety from user feedback before acting",
+      "prefer aggressive compression when live pass preservation holds",
+      "never edit tests during managed rollouts",
+      "round 1: accepted 77% savings with pass preservation",
+      "round 2: accepted 80% savings with pass preservation",
+      "round 3: accepted 81% savings with pass preservation",
+      "round 4: accepted 75% savings with pass preservation",
+      "round 5: accepted 78% savings with pass preservation",
+      "round 6: accepted 81% savings with pass preservation"
+    ],
+    "max_rounds": 3,
+    "pass_noninferiority_margin_pp": -2.0,
+    "prefer_receipts": true,
+    "require_live_rollout": true,
+    "rounds_seen": 6,
+    "target_savings": 0.6,
+    "user_id": "local"
+  },
+  "report_path": "benchmark\\trice\\results\\v2-smoke\\trice_v2_live_report.md",
+  "result_path": "benchmark\\trice\\results\\v2-smoke\\trice_v2_live_results.json",
+  "rounds": [
+    {
+      "accepted": true,
+      "baseline": {
+        "condition": "baseline-full-context",
+        "context_path": null,
+        "input_tokens": 1895,
+        "modified_files": [
+          "filt.py"
+        ],
+        "passed": true,
+        "policy": null,
+        "policy_path": null,
+        "task_id": "csv-filter",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\csv-filter\\round-1\\baseline-full-context\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": ".....                                                                    [100%]\n5 passed in 0.20s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\csv-filter\\round-1\\baseline-full-context\\workspace"
+      },
+      "learning_update": {
+        "error": -1.41942,
+        "prediction": 2.113087,
+        "reward": 0.693668,
+        "weights": {
+          "cache": 0.38644643799472295,
+          "cost": 0.8,
+          "hallucination": 1.1,
+          "risk": 1.3318678627968337,
+          "utility": 0.9122132093204587
+        }
+      },
+      "measured_input_savings": 0.773087,
+      "optimized": {
+        "condition": "trice-v2",
+        "context_path": "benchmark\\trice\\results\\v2-smoke\\csv-filter\\round-1\\trice-v2\\compressed_context.txt",
+        "input_tokens": 430,
+        "modified_files": [
+          "filt.py"
+        ],
+        "passed": true,
+        "policy": {
+          "algorithm": "trice-v0.1-multi-choice-knapsack",
+          "baseline_input_tokens": 1895,
+          "bucket_size": 128,
+          "budget_exceeded": false,
+          "budget_ratio": 0.4,
+          "budget_tokens": 758,
+          "constraints": {
+            "evidence_recall_min": 0.95,
+            "locked_anchors_unchanged": true,
+            "pass_rate_noninferiority_pp": -2
+          },
+          "decisions": [
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 75,
+              "policy_tokens": 75,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "acac4705a4c0180d8fb63b117f87bd377b988c532766535db90cc9cc333dd776",
+              "rehydrate_pointer": "trace:csv-filter.decision:step:1",
+              "segment_id": "s1",
+              "state": "essential",
+              "step_id": 1,
+              "value": 1.40964
+            },
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 184,
+              "policy_tokens": 184,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "504dc3047673a8f2c7a16e9069faf5a43da94ed2735bb2a5d1164ec8985c8ee9",
+              "rehydrate_pointer": "trace:csv-filter.decision:step:2",
+              "segment_id": "s2",
+              "state": "essential",
+              "step_id": 2,
+              "value": 1.499117
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c8f8912f82d1d0ad7c822d27449c4fb23404793694a95f6a1231e282a91a2d12",
+              "rehydrate_pointer": "trace:csv-filter.decision:step:3",
+              "segment_id": "s3",
+              "state": "rehydratable",
+              "step_id": 3,
+              "value": 0.067471
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "7cdd9054c0a675fdc4d1aba93bd3a8628deb4efec322027badcd27edcde90363",
+              "rehydrate_pointer": "trace:csv-filter.decision:step:4",
+              "segment_id": "s4",
+              "state": "rehydratable",
+              "step_id": 4,
+              "value": 0.050671
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 640,
+              "policy_tokens": 44,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "8a38cf52aac60d30d0e282e50fae0e9cb3fb2730222144983c672ebb5c32f766",
+              "rehydrate_pointer": "trace:csv-filter.decision:step:5",
+              "segment_id": "s5",
+              "state": "redundant",
+              "step_id": 5,
+              "value": -0.023412
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 420,
+              "policy_tokens": 29,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+              "rehydrate_pointer": "trace:csv-filter.decision:step:6",
+              "segment_id": "s6",
+              "state": "redundant",
+              "step_id": 6,
+              "value": -0.064356
+            },
+            {
+              "action": "keep",
+              "locked": true,
+              "original_tokens": 64,
+              "policy_tokens": 64,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+              "rehydrate_pointer": "trace:csv-filter.decision:step:7",
+              "segment_id": "s7",
+              "state": "essential",
+              "step_id": 7,
+              "value": 1.349693
+            }
+          ],
+          "policy_tokens": 430,
+          "projected_input_savings_pct": 77.31
+        },
+        "policy_path": "benchmark\\trice\\results\\v2-smoke\\csv-filter\\round-1\\trice-v2\\context_policy.json",
+        "task_id": "csv-filter",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\csv-filter\\round-1\\trice-v2\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": ".....                                                                    [100%]\n5 passed in 0.31s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\csv-filter\\round-1\\trice-v2\\workspace"
+      },
+      "pass_noninferior": true,
+      "profile_after": {
+        "allow_test_edits": false,
+        "budget_ratio": 0.4,
+        "lessons": [
+          "user target set to 60% input-token savings",
+          "user requires live rollout evidence, not replay-only acceptance",
+          "replay is allowed only as a preflight, not as final proof",
+          "adapt budget and safety from user feedback before acting",
+          "prefer aggressive compression when live pass preservation holds",
+          "never edit tests during managed rollouts",
+          "round 1: accepted 77% savings with pass preservation"
+        ],
+        "max_rounds": 3,
+        "pass_noninferiority_margin_pp": -2.0,
+        "prefer_receipts": true,
+        "require_live_rollout": true,
+        "rounds_seen": 1,
+        "target_savings": 0.6,
+        "user_id": "local"
+      },
+      "quality_delta": 0.0,
+      "round_index": 1,
+      "task_id": "csv-filter"
+    },
+    {
+      "accepted": true,
+      "baseline": {
+        "condition": "baseline-full-context",
+        "context_path": null,
+        "input_tokens": 1826,
+        "modified_files": [
+          "textutil.py",
+          "utils_a.py",
+          "utils_b.py"
+        ],
+        "passed": true,
+        "policy": null,
+        "policy_path": null,
+        "task_id": "dedupe-helpers",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\dedupe-helpers\\round-1\\baseline-full-context\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "....                                                                     [100%]\n4 passed in 0.18s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\dedupe-helpers\\round-1\\baseline-full-context\\workspace"
+      },
+      "learning_update": {
+        "error": -1.184331,
+        "prediction": 1.917436,
+        "reward": 0.733105,
+        "weights": {
+          "cache": 0.2916999767499016,
+          "cost": 0.8,
+          "hallucination": 1.1,
+          "risk": 1.275019986049941,
+          "utility": 0.836198113086251
+        }
+      },
+      "measured_input_savings": 0.8023,
+      "optimized": {
+        "condition": "trice-v2",
+        "context_path": "benchmark\\trice\\results\\v2-smoke\\dedupe-helpers\\round-1\\trice-v2\\compressed_context.txt",
+        "input_tokens": 361,
+        "modified_files": [
+          "textutil.py",
+          "utils_a.py",
+          "utils_b.py"
+        ],
+        "passed": true,
+        "policy": {
+          "algorithm": "trice-v0.1-multi-choice-knapsack",
+          "baseline_input_tokens": 1826,
+          "bucket_size": 128,
+          "budget_exceeded": false,
+          "budget_ratio": 0.4,
+          "budget_tokens": 730,
+          "constraints": {
+            "evidence_recall_min": 0.95,
+            "locked_anchors_unchanged": true,
+            "pass_rate_noninferiority_pp": -2
+          },
+          "decisions": [
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 94,
+              "policy_tokens": 94,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "5a0048ae7752e97ab703e446c544848a3bb1fa3242bd0b1667d8d9f1d550e0d7",
+              "rehydrate_pointer": "trace:dedupe-helpers.decision:step:1",
+              "segment_id": "s1",
+              "state": "essential",
+              "step_id": 1,
+              "value": 1.439549
+            },
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 96,
+              "policy_tokens": 96,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "4ba0e765b9598058d04fc3898f92fe0456a85c263c2869029b730b2a214ba885",
+              "rehydrate_pointer": "trace:dedupe-helpers.decision:step:2",
+              "segment_id": "s2",
+              "state": "essential",
+              "step_id": 2,
+              "value": 1.469539
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "9cac7219c178e8be97a58d5fcb0600f828ebd4bb9058961d45a883148eb789ae",
+              "rehydrate_pointer": "trace:dedupe-helpers.decision:step:3",
+              "segment_id": "s3",
+              "state": "rehydratable",
+              "step_id": 3,
+              "value": 0.067471
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "0e8349fe3a5204a1ae3407b67ab1ea77ca6a43243ef119f8b05786eb4c53a236",
+              "rehydrate_pointer": "trace:dedupe-helpers.decision:step:4",
+              "segment_id": "s4",
+              "state": "rehydratable",
+              "step_id": 4,
+              "value": 0.067471
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 640,
+              "policy_tokens": 44,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "db2f433399ae0183b754bfaf3757a32add982b00c455d84a893f3b7cd58170bd",
+              "rehydrate_pointer": "trace:dedupe-helpers.decision:step:5",
+              "segment_id": "s5",
+              "state": "redundant",
+              "step_id": 5,
+              "value": -0.031812
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 420,
+              "policy_tokens": 29,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+              "rehydrate_pointer": "trace:dedupe-helpers.decision:step:6",
+              "segment_id": "s6",
+              "state": "redundant",
+              "step_id": 6,
+              "value": -0.064356
+            },
+            {
+              "action": "keep",
+              "locked": true,
+              "original_tokens": 64,
+              "policy_tokens": 64,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+              "rehydrate_pointer": "trace:dedupe-helpers.decision:step:7",
+              "segment_id": "s7",
+              "state": "essential",
+              "step_id": 7,
+              "value": 1.349693
+            }
+          ],
+          "policy_tokens": 361,
+          "projected_input_savings_pct": 80.23
+        },
+        "policy_path": "benchmark\\trice\\results\\v2-smoke\\dedupe-helpers\\round-1\\trice-v2\\context_policy.json",
+        "task_id": "dedupe-helpers",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\dedupe-helpers\\round-1\\trice-v2\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "....                                                                     [100%]\n4 passed in 0.85s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\dedupe-helpers\\round-1\\trice-v2\\workspace"
+      },
+      "pass_noninferior": true,
+      "profile_after": {
+        "allow_test_edits": false,
+        "budget_ratio": 0.4,
+        "lessons": [
+          "user target set to 60% input-token savings",
+          "user requires live rollout evidence, not replay-only acceptance",
+          "replay is allowed only as a preflight, not as final proof",
+          "adapt budget and safety from user feedback before acting",
+          "prefer aggressive compression when live pass preservation holds",
+          "never edit tests during managed rollouts",
+          "round 1: accepted 77% savings with pass preservation",
+          "round 2: accepted 80% savings with pass preservation"
+        ],
+        "max_rounds": 3,
+        "pass_noninferiority_margin_pp": -2.0,
+        "prefer_receipts": true,
+        "require_live_rollout": true,
+        "rounds_seen": 2,
+        "target_savings": 0.6,
+        "user_id": "local"
+      },
+      "quality_delta": 0.0,
+      "round_index": 1,
+      "task_id": "dedupe-helpers"
+    },
+    {
+      "accepted": true,
+      "baseline": {
+        "condition": "baseline-full-context",
+        "context_path": null,
+        "input_tokens": 1806,
+        "modified_files": [
+          "api.py",
+          "mypkg/__init__.py"
+        ],
+        "passed": true,
+        "policy": null,
+        "policy_path": null,
+        "task_id": "fix-imports",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\fix-imports\\round-1\\baseline-full-context\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "...                                                                      [100%]\n3 passed in 0.98s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\fix-imports\\round-1\\baseline-full-context\\workspace"
+      },
+      "learning_update": {
+        "error": -0.989924,
+        "prediction": 1.735023,
+        "reward": 0.7451,
+        "weights": {
+          "cache": 0.2125060874668276,
+          "cost": 0.8,
+          "hallucination": 1.1,
+          "risk": 1.2275036524800966,
+          "utility": 0.7719572228317088
+        }
+      },
+      "measured_input_savings": 0.811185,
+      "optimized": {
+        "condition": "trice-v2",
+        "context_path": "benchmark\\trice\\results\\v2-smoke\\fix-imports\\round-1\\trice-v2\\compressed_context.txt",
+        "input_tokens": 341,
+        "modified_files": [
+          "api.py",
+          "mypkg/__init__.py"
+        ],
+        "passed": true,
+        "policy": {
+          "algorithm": "trice-v0.1-multi-choice-knapsack",
+          "baseline_input_tokens": 1806,
+          "bucket_size": 128,
+          "budget_exceeded": false,
+          "budget_ratio": 0.4,
+          "budget_tokens": 722,
+          "constraints": {
+            "evidence_recall_min": 0.95,
+            "locked_anchors_unchanged": true,
+            "pass_rate_noninferiority_pp": -2
+          },
+          "decisions": [
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 74,
+              "policy_tokens": 74,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "954230d48dfecdda811eadcb105b4ea49a91ba2f08b941b867d3714aa8d36d35",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:1",
+              "segment_id": "s1",
+              "state": "essential",
+              "step_id": 1,
+              "value": 1.349645
+            },
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 96,
+              "policy_tokens": 96,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "e09c6f9064dfee34741febe0f55c279474ecdfbf503b22bcf59dbadf24d95de5",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:2",
+              "segment_id": "s2",
+              "state": "essential",
+              "step_id": 2,
+              "value": 1.469539
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "5e6b664ab601a44b707143e47f7038bd35839809603e0ac98dcd3a0323c3e71b",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:3",
+              "segment_id": "s3",
+              "state": "rehydratable",
+              "step_id": 3,
+              "value": 0.084271
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "57b7fbca058196e0ac679219bb6c74d2bdae6b8c5c66bd3660d2124cdb78f5f5",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:4",
+              "segment_id": "s4",
+              "state": "rehydratable",
+              "step_id": 4,
+              "value": 0.050671
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 640,
+              "policy_tokens": 44,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "9d85ecc4b5767bde1e57dd504a6e0b398b1aa652cb793829052387c73e52c235",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:5",
+              "segment_id": "s5",
+              "state": "redundant",
+              "step_id": 5,
+              "value": -0.031812
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 420,
+              "policy_tokens": 29,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:6",
+              "segment_id": "s6",
+              "state": "redundant",
+              "step_id": 6,
+              "value": -0.064356
+            },
+            {
+              "action": "keep",
+              "locked": true,
+              "original_tokens": 64,
+              "policy_tokens": 64,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:7",
+              "segment_id": "s7",
+              "state": "essential",
+              "step_id": 7,
+              "value": 1.349693
+            }
+          ],
+          "policy_tokens": 341,
+          "projected_input_savings_pct": 81.12
+        },
+        "policy_path": "benchmark\\trice\\results\\v2-smoke\\fix-imports\\round-1\\trice-v2\\context_policy.json",
+        "task_id": "fix-imports",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\fix-imports\\round-1\\trice-v2\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "...                                                                      [100%]\n3 passed in 0.17s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\fix-imports\\round-1\\trice-v2\\workspace"
+      },
+      "pass_noninferior": true,
+      "profile_after": {
+        "allow_test_edits": false,
+        "budget_ratio": 0.4,
+        "lessons": [
+          "user target set to 60% input-token savings",
+          "user requires live rollout evidence, not replay-only acceptance",
+          "replay is allowed only as a preflight, not as final proof",
+          "adapt budget and safety from user feedback before acting",
+          "prefer aggressive compression when live pass preservation holds",
+          "never edit tests during managed rollouts",
+          "round 1: accepted 77% savings with pass preservation",
+          "round 2: accepted 80% savings with pass preservation",
+          "round 3: accepted 81% savings with pass preservation"
+        ],
+        "max_rounds": 3,
+        "pass_noninferiority_margin_pp": -2.0,
+        "prefer_receipts": true,
+        "require_live_rollout": true,
+        "rounds_seen": 3,
+        "target_savings": 0.6,
+        "user_id": "local"
+      },
+      "quality_delta": 0.0,
+      "round_index": 1,
+      "task_id": "fix-imports"
+    },
+    {
+      "accepted": true,
+      "baseline": {
+        "condition": "baseline-full-context",
+        "context_path": null,
+        "input_tokens": 2527,
+        "modified_files": [
+          "chunker.py"
+        ],
+        "passed": true,
+        "policy": null,
+        "policy_path": null,
+        "task_id": "fix-offby-one",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\fix-offby-one\\round-1\\baseline-full-context\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "......                                                                   [100%]\n6 passed in 0.73s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\fix-offby-one\\round-1\\baseline-full-context\\workspace"
+      },
+      "learning_update": {
+        "error": -0.865991,
+        "prediction": 1.527289,
+        "reward": 0.661298,
+        "weights": {
+          "cache": 0.14322681738406,
+          "cost": 0.8,
+          "hallucination": 1.1,
+          "risk": 1.1859360904304361,
+          "utility": 0.7200594554131575
+        }
+      },
+      "measured_input_savings": 0.74911,
+      "optimized": {
+        "condition": "trice-v2",
+        "context_path": "benchmark\\trice\\results\\v2-smoke\\fix-offby-one\\round-1\\trice-v2\\compressed_context.txt",
+        "input_tokens": 634,
+        "modified_files": [
+          "chunker.py"
+        ],
+        "passed": true,
+        "policy": {
+          "algorithm": "trice-v0.1-multi-choice-knapsack",
+          "baseline_input_tokens": 2527,
+          "bucket_size": 128,
+          "budget_exceeded": false,
+          "budget_ratio": 0.4,
+          "budget_tokens": 1011,
+          "constraints": {
+            "evidence_recall_min": 0.95,
+            "locked_anchors_unchanged": true,
+            "pass_rate_noninferiority_pp": -2
+          },
+          "decisions": [
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 63,
+              "policy_tokens": 63,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "182fe64004d56f78356c5d1c8e406859a8fdbcb67c0bb8a810f241a9d48d38c6",
+              "rehydrate_pointer": "trace:fix-offby-one.decision:step:1",
+              "segment_id": "s1",
+              "state": "essential",
+              "step_id": 1,
+              "value": 1.379698
+            },
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 367,
+              "policy_tokens": 367,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "cbb27aa66b310d7cbadc7988f21a9fe88f9602e233f3f6e6798691d35ecc07ed",
+              "rehydrate_pointer": "trace:fix-offby-one.decision:step:2",
+              "segment_id": "s2",
+              "state": "essential",
+              "step_id": 2,
+              "value": 1.468238
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "6a79aebb857796de853630f3119461df60dd93ae694261351d7b6b77a3f0a3c3",
+              "rehydrate_pointer": "trace:fix-offby-one.decision:step:3",
+              "segment_id": "s3",
+              "state": "rehydratable",
+              "step_id": 3,
+              "value": 0.059071
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "67453feea9bfd46e25659360459cbd6c50403fd8496e656016dafc72bb1c379a",
+              "rehydrate_pointer": "trace:fix-offby-one.decision:step:4",
+              "segment_id": "s4",
+              "state": "rehydratable",
+              "step_id": 4,
+              "value": 0.050671
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 1101,
+              "policy_tokens": 77,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "9fdf4f4e33867394af7b55a2c2e5a6536cecc617e30d44f8a5aa09502d521af3",
+              "rehydrate_pointer": "trace:fix-offby-one.decision:step:5",
+              "segment_id": "s5",
+              "state": "redundant",
+              "step_id": 5,
+              "value": -0.034025
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 420,
+              "policy_tokens": 29,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+              "rehydrate_pointer": "trace:fix-offby-one.decision:step:6",
+              "segment_id": "s6",
+              "state": "redundant",
+              "step_id": 6,
+              "value": -0.064356
+            },
+            {
+              "action": "keep",
+              "locked": true,
+              "original_tokens": 64,
+              "policy_tokens": 64,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+              "rehydrate_pointer": "trace:fix-offby-one.decision:step:7",
+              "segment_id": "s7",
+              "state": "essential",
+              "step_id": 7,
+              "value": 1.349693
+            }
+          ],
+          "policy_tokens": 634,
+          "projected_input_savings_pct": 74.91
+        },
+        "policy_path": "benchmark\\trice\\results\\v2-smoke\\fix-offby-one\\round-1\\trice-v2\\context_policy.json",
+        "task_id": "fix-offby-one",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\fix-offby-one\\round-1\\trice-v2\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "......                                                                   [100%]\n6 passed in 0.14s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\fix-offby-one\\round-1\\trice-v2\\workspace"
+      },
+      "pass_noninferior": true,
+      "profile_after": {
+        "allow_test_edits": false,
+        "budget_ratio": 0.4,
+        "lessons": [
+          "user target set to 60% input-token savings",
+          "user requires live rollout evidence, not replay-only acceptance",
+          "replay is allowed only as a preflight, not as final proof",
+          "adapt budget and safety from user feedback before acting",
+          "prefer aggressive compression when live pass preservation holds",
+          "never edit tests during managed rollouts",
+          "round 1: accepted 77% savings with pass preservation",
+          "round 2: accepted 80% savings with pass preservation",
+          "round 3: accepted 81% savings with pass preservation",
+          "round 4: accepted 75% savings with pass preservation"
+        ],
+        "max_rounds": 3,
+        "pass_noninferiority_margin_pp": -2.0,
+        "prefer_receipts": true,
+        "require_live_rollout": true,
+        "rounds_seen": 4,
+        "target_savings": 0.6,
+        "user_id": "local"
+      },
+      "quality_delta": 0.0,
+      "round_index": 1,
+      "task_id": "fix-offby-one"
+    },
+    {
+      "accepted": true,
+      "baseline": {
+        "condition": "baseline-full-context",
+        "context_path": null,
+        "input_tokens": 1889,
+        "modified_files": [
+          "stats.py"
+        ],
+        "passed": true,
+        "policy": null,
+        "policy_path": null,
+        "task_id": "implement-median",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\implement-median\\round-1\\baseline-full-context\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "......                                                                   [100%]\n6 passed in 0.15s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\implement-median\\round-1\\baseline-full-context\\workspace"
+      },
+      "learning_update": {
+        "error": -0.716243,
+        "prediction": 1.413225,
+        "reward": 0.696983,
+        "weights": {
+          "cache": 0.08592739863921631,
+          "cost": 0.8,
+          "hallucination": 1.1,
+          "risk": 1.15155643918353,
+          "utility": 0.6756213143537632
+        }
+      },
+      "measured_input_savings": 0.775543,
+      "optimized": {
+        "condition": "trice-v2",
+        "context_path": "benchmark\\trice\\results\\v2-smoke\\implement-median\\round-1\\trice-v2\\compressed_context.txt",
+        "input_tokens": 424,
+        "modified_files": [
+          "stats.py"
+        ],
+        "passed": true,
+        "policy": {
+          "algorithm": "trice-v0.1-multi-choice-knapsack",
+          "baseline_input_tokens": 1889,
+          "bucket_size": 128,
+          "budget_exceeded": false,
+          "budget_ratio": 0.4,
+          "budget_tokens": 756,
+          "constraints": {
+            "evidence_recall_min": 0.95,
+            "locked_anchors_unchanged": true,
+            "pass_rate_noninferiority_pp": -2
+          },
+          "decisions": [
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 56,
+              "policy_tokens": 56,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "a3667876c0565f9e2649304e5e13d062cfcaf953123eefc22fca28ad1686f6fa",
+              "rehydrate_pointer": "trace:implement-median.decision:step:1",
+              "segment_id": "s1",
+              "state": "essential",
+              "step_id": 1,
+              "value": 1.379731
+            },
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 197,
+              "policy_tokens": 197,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "c31c09e96bd020ce85e3d003f1223f5b073df18b38c548830eebaa4c34b89327",
+              "rehydrate_pointer": "trace:implement-median.decision:step:2",
+              "segment_id": "s2",
+              "state": "essential",
+              "step_id": 2,
+              "value": 1.499054
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "b12a84e2962aa9d7935984b475283185275da4de1d1e3e93b20f27da681980d0",
+              "rehydrate_pointer": "trace:implement-median.decision:step:3",
+              "segment_id": "s3",
+              "state": "rehydratable",
+              "step_id": 3,
+              "value": 0.059071
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "fb1dee4f454b457383a5b20e31b2240f1e2f461436e734bf72ed96caf33e7717",
+              "rehydrate_pointer": "trace:implement-median.decision:step:4",
+              "segment_id": "s4",
+              "state": "rehydratable",
+              "step_id": 4,
+              "value": 0.050671
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 640,
+              "policy_tokens": 44,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "28fc6e2b2f63f21b932d709379b5171c8a2bc57e2b877bc5be40c7eace87e789",
+              "rehydrate_pointer": "trace:implement-median.decision:step:5",
+              "segment_id": "s5",
+              "state": "redundant",
+              "step_id": 5,
+              "value": -0.023412
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 420,
+              "policy_tokens": 29,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+              "rehydrate_pointer": "trace:implement-median.decision:step:6",
+              "segment_id": "s6",
+              "state": "redundant",
+              "step_id": 6,
+              "value": -0.064356
+            },
+            {
+              "action": "keep",
+              "locked": true,
+              "original_tokens": 64,
+              "policy_tokens": 64,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+              "rehydrate_pointer": "trace:implement-median.decision:step:7",
+              "segment_id": "s7",
+              "state": "essential",
+              "step_id": 7,
+              "value": 1.349693
+            }
+          ],
+          "policy_tokens": 424,
+          "projected_input_savings_pct": 77.55
+        },
+        "policy_path": "benchmark\\trice\\results\\v2-smoke\\implement-median\\round-1\\trice-v2\\context_policy.json",
+        "task_id": "implement-median",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\implement-median\\round-1\\trice-v2\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "......                                                                   [100%]\n6 passed in 0.15s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\implement-median\\round-1\\trice-v2\\workspace"
+      },
+      "pass_noninferior": true,
+      "profile_after": {
+        "allow_test_edits": false,
+        "budget_ratio": 0.4,
+        "lessons": [
+          "user target set to 60% input-token savings",
+          "user requires live rollout evidence, not replay-only acceptance",
+          "replay is allowed only as a preflight, not as final proof",
+          "adapt budget and safety from user feedback before acting",
+          "prefer aggressive compression when live pass preservation holds",
+          "never edit tests during managed rollouts",
+          "round 1: accepted 77% savings with pass preservation",
+          "round 2: accepted 80% savings with pass preservation",
+          "round 3: accepted 81% savings with pass preservation",
+          "round 4: accepted 75% savings with pass preservation",
+          "round 5: accepted 78% savings with pass preservation"
+        ],
+        "max_rounds": 3,
+        "pass_noninferiority_margin_pp": -2.0,
+        "prefer_receipts": true,
+        "require_live_rollout": true,
+        "rounds_seen": 5,
+        "target_savings": 0.6,
+        "user_id": "local"
+      },
+      "quality_delta": 0.0,
+      "round_index": 1,
+      "task_id": "implement-median"
+    },
+    {
+      "accepted": true,
+      "baseline": {
+        "condition": "baseline-full-context",
+        "context_path": null,
+        "input_tokens": 1814,
+        "modified_files": [
+          "cli.py",
+          "core.py",
+          "report.py"
+        ],
+        "passed": true,
+        "policy": null,
+        "policy_path": null,
+        "task_id": "rename-api",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\rename-api\\round-1\\baseline-full-context\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "...                                                                      [100%]\n3 passed in 0.22s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\rename-api\\round-1\\baseline-full-context\\workspace"
+      },
+      "learning_update": {
+        "error": -0.582228,
+        "prediction": 1.322498,
+        "reward": 0.74027,
+        "weights": {
+          "cache": 0.03934916026800769,
+          "cost": 0.8,
+          "hallucination": 1.1,
+          "risk": 1.1236094961608047,
+          "utility": 0.6380043798367727
+        }
+      },
+      "measured_input_savings": 0.807607,
+      "optimized": {
+        "condition": "trice-v2",
+        "context_path": "benchmark\\trice\\results\\v2-smoke\\rename-api\\round-1\\trice-v2\\compressed_context.txt",
+        "input_tokens": 349,
+        "modified_files": [
+          "cli.py",
+          "core.py",
+          "report.py"
+        ],
+        "passed": true,
+        "policy": {
+          "algorithm": "trice-v0.1-multi-choice-knapsack",
+          "baseline_input_tokens": 1814,
+          "bucket_size": 128,
+          "budget_exceeded": false,
+          "budget_ratio": 0.4,
+          "budget_tokens": 726,
+          "constraints": {
+            "evidence_recall_min": 0.95,
+            "locked_anchors_unchanged": true,
+            "pass_rate_noninferiority_pp": -2
+          },
+          "decisions": [
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 82,
+              "policy_tokens": 82,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "dca6ed8fcefd9a46c7dfb486897a6670faa569150de6df5322745fd9d7be9caf",
+              "rehydrate_pointer": "trace:rename-api.decision:step:1",
+              "segment_id": "s1",
+              "state": "essential",
+              "step_id": 1,
+              "value": 1.379606
+            },
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 96,
+              "policy_tokens": 96,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "266e1c90f592e4f443ffb0ca41c2e896b80889821e2eb445ca4b74a9f3372d30",
+              "rehydrate_pointer": "trace:rename-api.decision:step:2",
+              "segment_id": "s2",
+              "state": "essential",
+              "step_id": 2,
+              "value": 1.439539
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "8c96635ca51a6d945785626d0ec60d3df4435191b44ce9d494cb04789cf7fac6",
+              "rehydrate_pointer": "trace:rename-api.decision:step:3",
+              "segment_id": "s3",
+              "state": "rehydratable",
+              "step_id": 3,
+              "value": 0.084271
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "fa36b06a6695d8a6b5ed4c725b00e7385f11dfbac9d4df95b4c0aeecf6f6bb67",
+              "rehydrate_pointer": "trace:rename-api.decision:step:4",
+              "segment_id": "s4",
+              "state": "rehydratable",
+              "step_id": 4,
+              "value": 0.059071
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 640,
+              "policy_tokens": 44,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "5d69003cc4ee211aff010f333ac58d8c13a34b09826c3d24aa64610732c335cc",
+              "rehydrate_pointer": "trace:rename-api.decision:step:5",
+              "segment_id": "s5",
+              "state": "redundant",
+              "step_id": 5,
+              "value": -0.040212
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 420,
+              "policy_tokens": 29,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+              "rehydrate_pointer": "trace:rename-api.decision:step:6",
+              "segment_id": "s6",
+              "state": "redundant",
+              "step_id": 6,
+              "value": -0.064356
+            },
+            {
+              "action": "keep",
+              "locked": true,
+              "original_tokens": 64,
+              "policy_tokens": 64,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+              "rehydrate_pointer": "trace:rename-api.decision:step:7",
+              "segment_id": "s7",
+              "state": "essential",
+              "step_id": 7,
+              "value": 1.349693
+            }
+          ],
+          "policy_tokens": 349,
+          "projected_input_savings_pct": 80.76
+        },
+        "policy_path": "benchmark\\trice\\results\\v2-smoke\\rename-api\\round-1\\trice-v2\\context_policy.json",
+        "task_id": "rename-api",
+        "trace_path": "benchmark\\trice\\results\\v2-smoke\\rename-api\\round-1\\trice-v2\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "...                                                                      [100%]\n3 passed in 1.34s",
+        "workspace": "benchmark\\trice\\results\\v2-smoke\\rename-api\\round-1\\trice-v2\\workspace"
+      },
+      "pass_noninferior": true,
+      "profile_after": {
+        "allow_test_edits": false,
+        "budget_ratio": 0.4,
+        "lessons": [
+          "user target set to 60% input-token savings",
+          "user requires live rollout evidence, not replay-only acceptance",
+          "replay is allowed only as a preflight, not as final proof",
+          "adapt budget and safety from user feedback before acting",
+          "prefer aggressive compression when live pass preservation holds",
+          "never edit tests during managed rollouts",
+          "round 1: accepted 77% savings with pass preservation",
+          "round 2: accepted 80% savings with pass preservation",
+          "round 3: accepted 81% savings with pass preservation",
+          "round 4: accepted 75% savings with pass preservation",
+          "round 5: accepted 78% savings with pass preservation",
+          "round 6: accepted 81% savings with pass preservation"
+        ],
+        "max_rounds": 3,
+        "pass_noninferiority_margin_pp": -2.0,
+        "prefer_receipts": true,
+        "require_live_rollout": true,
+        "rounds_seen": 6,
+        "target_savings": 0.6,
+        "user_id": "local"
+      },
+      "quality_delta": 0.0,
+      "round_index": 1,
+      "task_id": "rename-api"
+    }
+  ]
+}

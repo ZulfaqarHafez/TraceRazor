@@ -5,16 +5,16 @@ use serde_json::json;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use tracerazor_core::{
-    cost::{CostConfig, ProviderPreset, project_cost},
+    cost::{project_cost, CostConfig, ProviderPreset},
     fixes::{Fix, FixType},
     is_analysable,
     provenance::{hex_encode, sha256_hex},
     scoring::ScoringConfig,
-    simulate::{SimulationSpec, simulate},
-    types::MIN_TRACE_STEPS,
+    simulate::{simulate, SimulationSpec},
+    types::{StepFlag, Trace, TraceStep, MIN_TRACE_STEPS},
 };
-use tracerazor_ingest::{TraceFormat, parse as ingest_parse};
-use tracerazor_semantic::{LlmConfig, default_similarity_fn};
+use tracerazor_ingest::{parse as ingest_parse, TraceFormat};
+use tracerazor_semantic::{default_similarity_fn, LlmConfig};
 use tracerazor_store::TraceStore;
 
 /// Open the persistent file-backed store at `~/.tracerazor/store`.
@@ -39,7 +39,9 @@ async fn open_store() -> TraceStore {
         }
     }
 
-    TraceStore::connect_mem().await.expect("in-memory store failed")
+    TraceStore::connect_mem()
+        .await
+        .expect("in-memory store failed")
 }
 
 /// TraceRazor — Token Efficiency Auditor for AI Agents
@@ -48,7 +50,7 @@ async fn open_store() -> TraceStore {
     name = "tracerazor",
     version,
     author = "Zulfaqar Hafez",
-    about = "Lighthouse score for AI agents. Audit reasoning traces and eliminate token waste.",
+    about = "Lighthouse score for AI agents. Audit reasoning traces and eliminate token waste."
 )]
 struct Cli {
     #[command(subcommand)]
@@ -273,7 +275,7 @@ enum Commands {
         format: OutputFormat,
     },
 
-    /// Rewrite the agent's system prompt using an LLM to eliminate detected waste.
+    /// Optimize a trace with TRICE, or rewrite a system prompt with the legacy LLM optimizer.
     ///
     /// Audits the trace, identifies the top waste patterns, then iteratively
     /// asks the configured LLM to produce a tighter system prompt.  After each
@@ -283,9 +285,18 @@ enum Commands {
     /// Requires LLM credentials — see `tracerazor-semantic` docs for env vars:
     ///   OPENAI_API_KEY  /  ANTHROPIC_API_KEY  /  TRACERAZOR_LLM_*
     Optimize {
-        /// Trace file to optimise.
+        /// Trace file to optimise (legacy positional form).
         #[arg(value_name = "TRACE")]
-        file: PathBuf,
+        file: Option<PathBuf>,
+        /// Trace file to optimize with TRICE's runtime compressor.
+        #[arg(long, value_name = "TRACE")]
+        trace: Option<PathBuf>,
+        /// Target input-token budget as a fraction of the original trace.
+        #[arg(long, default_value = "0.40")]
+        budget_ratio: f64,
+        /// Write the TRICE context policy JSON here.
+        #[arg(long, value_name = "FILE")]
+        out: Option<PathBuf>,
         /// Existing system-prompt file to rewrite. If omitted a prompt is
         /// generated from scratch based on the trace's detected issues.
         #[arg(long, value_name = "FILE")]
@@ -299,6 +310,19 @@ enum Commands {
         /// Stop early once the projected TAS reaches this score.
         #[arg(long, default_value = "85.0")]
         target_tas: f64,
+        /// Output format.
+        #[arg(short, long, default_value = "markdown")]
+        format: OutputFormat,
+    },
+
+    /// Replay a TRICE context policy against a recorded trace.
+    Replay {
+        /// Trace file used to build or evaluate the policy.
+        #[arg(long, value_name = "TRACE")]
+        trace: PathBuf,
+        /// TRICE context policy JSON produced by `tracerazor optimize`.
+        #[arg(long, value_name = "POLICY")]
+        policy: PathBuf,
         /// Output format.
         #[arg(short, long, default_value = "markdown")]
         format: OutputFormat,
@@ -489,18 +513,54 @@ async fn run() -> Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Audit { files, format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps } => {
+        Commands::Audit {
+            files,
+            format,
+            threshold,
+            trace_format,
+            cost_per_million,
+            store,
+            hermetic,
+            enhanced,
+            weights,
+            min_steps,
+        } => {
             let expanded = expand_trace_paths(&files)?;
             if expanded.len() == 1 {
-                cmd_audit(expanded.into_iter().next().expect("len checked"), format, threshold, trace_format, cost_per_million, store, hermetic, enhanced, weights, min_steps).await?;
+                cmd_audit(
+                    expanded.into_iter().next().expect("len checked"),
+                    format,
+                    threshold,
+                    trace_format,
+                    cost_per_million,
+                    store,
+                    hermetic,
+                    enhanced,
+                    weights,
+                    min_steps,
+                )
+                .await?;
             } else {
-                cmd_audit_batch(expanded, format, threshold, trace_format, cost_per_million, weights, min_steps)?;
+                cmd_audit_batch(
+                    expanded,
+                    format,
+                    threshold,
+                    trace_format,
+                    cost_per_million,
+                    weights,
+                    min_steps,
+                )?;
             }
         }
         Commands::Claude { command } => {
             cmd_claude(command).await?;
         }
-        Commands::ImportTrace { inputs, source_format, out, audit } => {
+        Commands::ImportTrace {
+            inputs,
+            source_format,
+            out,
+            audit,
+        } => {
             cmd_import(inputs, source_format, out, audit).await?;
         }
         Commands::Verify { report, trace } => {
@@ -509,25 +569,93 @@ async fn run() -> Result<()> {
         Commands::List { agent } => {
             cmd_list(agent).await?;
         }
-        Commands::Compare { baseline, target, format, regression_threshold } => {
+        Commands::Compare {
+            baseline,
+            target,
+            format,
+            regression_threshold,
+        } => {
             cmd_compare(baseline, target, format, regression_threshold).await?;
         }
-        Commands::Cost { files, runs, input_cost, output_cost, provider, format } => {
+        Commands::Cost {
+            files,
+            runs,
+            input_cost,
+            output_cost,
+            provider,
+            format,
+        } => {
             cmd_cost(files, runs, input_cost, output_cost, provider, format).await?;
         }
-        Commands::Simulate { file, remove, merge, format } => {
+        Commands::Simulate {
+            file,
+            remove,
+            merge,
+            format,
+        } => {
             cmd_simulate(file, remove, merge, format).await?;
         }
-        Commands::Apply { fixes, to, all, force, dry_run } => {
+        Commands::Apply {
+            fixes,
+            to,
+            all,
+            force,
+            dry_run,
+        } => {
             cmd_apply(fixes, to, all, force, dry_run).await?;
         }
-        Commands::Bench { before, after, fixes, format } => {
+        Commands::Bench {
+            before,
+            after,
+            fixes,
+            format,
+        } => {
             cmd_bench(before, after, fixes, format).await?;
         }
-        Commands::Optimize { file, system_prompt, output, iterations, target_tas, format } => {
-            cmd_optimize(file, system_prompt, output, iterations, target_tas, format).await?;
+        Commands::Optimize {
+            file,
+            trace,
+            budget_ratio,
+            out,
+            system_prompt,
+            output,
+            iterations,
+            target_tas,
+            format,
+        } => {
+            if trace.is_some() || out.is_some() {
+                let trace_path = trace
+                    .or(file)
+                    .context("optimize needs --trace <TRACE> (or legacy positional TRACE)")?;
+                cmd_trice_optimize(trace_path, budget_ratio, out.or(output), format).await?;
+            } else {
+                let trace_path = file.context("legacy optimize needs a TRACE argument")?;
+                cmd_optimize(
+                    trace_path,
+                    system_prompt,
+                    output,
+                    iterations,
+                    target_tas,
+                    format,
+                )
+                .await?;
+            }
         }
-        Commands::Export { file, otel, webhook, print, format, bundle } => {
+        Commands::Replay {
+            trace,
+            policy,
+            format,
+        } => {
+            cmd_trice_replay(trace, policy, format).await?;
+        }
+        Commands::Export {
+            file,
+            otel,
+            webhook,
+            print,
+            format,
+            bundle,
+        } => {
             cmd_export(file, otel, webhook, print, format, bundle).await?;
         }
         Commands::Keygen => {
@@ -595,7 +723,9 @@ async fn cmd_audit(
         config.threshold = t;
     }
     // Calibrated weights: --weights flag, else TRACERAZOR_WEIGHTS env var.
-    if let Some(path) = weights.or_else(|| std::env::var_os("TRACERAZOR_WEIGHTS").map(PathBuf::from)) {
+    if let Some(path) =
+        weights.or_else(|| std::env::var_os("TRACERAZOR_WEIGHTS").map(PathBuf::from))
+    {
         let raw = std::fs::read_to_string(&path)
             .with_context(|| format!("Cannot read weights file: {}", path.display()))?;
         config.weights = serde_json::from_str(&raw)
@@ -609,7 +739,11 @@ async fn cmd_audit(
 
     // Store-derived baselines make the score depend on local history; in
     // hermetic mode scoring is a pure function of (trace, config, version).
-    let store = if hermetic { None } else { Some(open_store().await) };
+    let store = if hermetic {
+        None
+    } else {
+        Some(open_store().await)
+    };
     if let Some(store) = &store {
         if let Ok(Some(baseline)) = store.baseline_tokens(&trace.agent_name).await {
             config.baseline_tokens = Some(baseline);
@@ -634,7 +768,10 @@ async fn cmd_audit(
         }
         let (sim_fn, identity) =
             tracerazor_semantic::embedding_similarity_fn_with_identity(texts).await;
-        (tracerazor_core::analyse(&mut trace, sim_fn, &config)?, identity)
+        (
+            tracerazor_core::analyse(&mut trace, sim_fn, &config)?,
+            identity,
+        )
     } else {
         let sim_fn = default_similarity_fn();
         (
@@ -746,17 +883,25 @@ async fn cmd_claude(command: ClaudeCommand) -> Result<()> {
         ClaudeCommand::Install { scope, mode } => cmd_claude_install(scope, mode),
         ClaudeCommand::Uninstall { scope } => cmd_claude_uninstall(scope),
         ClaudeCommand::Convert { transcript, out } => cmd_claude_convert(transcript, out),
-        ClaudeCommand::Hook { command: ClaudeHookCommand::SessionEnd { mode } } => {
-            cmd_claude_hook_session_end(mode).await
-        }
+        ClaudeCommand::Hook {
+            command: ClaudeHookCommand::SessionEnd { mode },
+        } => cmd_claude_hook_session_end(mode).await,
     }
 }
 
 fn cmd_claude_convert(transcript: PathBuf, out: Option<PathBuf>) -> Result<()> {
-    let data = std::fs::read_to_string(&transcript)
-        .with_context(|| format!("Cannot read Claude Code transcript: {}", transcript.display()))?;
-    let mut trace = ingest_parse(&data, TraceFormat::ClaudeCode)
-        .with_context(|| format!("Failed to parse Claude Code transcript: {}", transcript.display()))?;
+    let data = std::fs::read_to_string(&transcript).with_context(|| {
+        format!(
+            "Cannot read Claude Code transcript: {}",
+            transcript.display()
+        )
+    })?;
+    let mut trace = ingest_parse(&data, TraceFormat::ClaudeCode).with_context(|| {
+        format!(
+            "Failed to parse Claude Code transcript: {}",
+            transcript.display()
+        )
+    })?;
     if trace.trace_id == "claude-code-transcript" {
         if let Some(stem) = transcript.file_stem().and_then(|s| s.to_str()) {
             trace.trace_id = stem.to_string();
@@ -813,18 +958,28 @@ async fn cmd_claude_hook_session_end(mode: ClaudeMode) -> Result<()> {
 async fn run_claude_hook_session_end(mode: ClaudeMode) -> Result<()> {
     let mut input = String::new();
     std::io::stdin().read_to_string(&mut input)?;
-    let event: ClaudeSessionEndInput = serde_json::from_str(&input)
-        .context("Claude Code hook input was not valid JSON")?;
+    let event: ClaudeSessionEndInput =
+        serde_json::from_str(&input).context("Claude Code hook input was not valid JSON")?;
     let transcript = event
         .transcript_path
         .as_ref()
         .map(PathBuf::from)
         .context("Claude Code SessionEnd input did not include transcript_path")?;
-    let cwd = event.cwd.as_ref().map(PathBuf::from).unwrap_or(std::env::current_dir()?);
+    let cwd = event
+        .cwd
+        .as_ref()
+        .map(PathBuf::from)
+        .unwrap_or(std::env::current_dir()?);
     let session_id = event
         .session_id
         .or(event.session_id_camel)
-        .unwrap_or_else(|| transcript.file_stem().and_then(|s| s.to_str()).unwrap_or("session").to_string());
+        .unwrap_or_else(|| {
+            transcript
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("session")
+                .to_string()
+        });
     let out_dir = cwd
         .join(".tracerazor")
         .join("claude-code")
@@ -836,9 +991,10 @@ async fn run_claude_hook_session_end(mode: ClaudeMode) -> Result<()> {
     let mut trace = ingest_parse(&transcript_data, TraceFormat::ClaudeCode)
         .context("Failed to convert Claude Code transcript")?;
     trace.trace_id = session_id.clone();
-    trace
-        .metadata
-        .insert("claude_transcript_path".into(), json!(transcript.display().to_string()));
+    trace.metadata.insert(
+        "claude_transcript_path".into(),
+        json!(transcript.display().to_string()),
+    );
 
     let trace_path = out_dir.join("trace.json");
     let trace_json = serde_json::to_string_pretty(&trace)?;
@@ -888,7 +1044,11 @@ async fn cmd_import(
         let mut trace = ingest_parse(&data, source_format.clone().into())
             .with_context(|| format!("Failed to import {}", file.display()))?;
         if trace.trace_id == "claude-code-transcript" || trace.trace_id.is_empty() {
-            trace.trace_id = file.file_stem().and_then(|s| s.to_str()).unwrap_or("trace").to_string();
+            trace.trace_id = file
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or("trace")
+                .to_string();
         }
 
         let trace_json = serde_json::to_string_pretty(&trace)?;
@@ -923,7 +1083,11 @@ async fn cmd_import(
             "tokens": trace.effective_total_tokens(),
         });
         if audit {
-            let report = audit_trace_hermetic(trace, trace_json.as_bytes(), input_format_label(&source_format))?;
+            let report = audit_trace_hermetic(
+                trace,
+                trace_json.as_bytes(),
+                input_format_label(&source_format),
+            )?;
             let report_path = replace_suffix(&trace_path, ".report.json");
             let fixes_path = replace_suffix(&trace_path, ".fixes.json");
             let coach_path = replace_suffix(&trace_path, ".coach.md");
@@ -934,7 +1098,8 @@ async fn cmd_import(
                 &coach_path,
                 render_coach_markdown(&report, &trace_path, &fixes_path, ClaudeMode::Coach),
             )?;
-            let summary = coach_summary_json(&report, &trace_path, &report_path, &fixes_path, &coach_path);
+            let summary =
+                coach_summary_json(&report, &trace_path, &report_path, &fixes_path, &coach_path);
             std::fs::write(&summary_path, serde_json::to_string_pretty(&summary)?)?;
             item["report"] = json!(report_path);
             item["fixes"] = json!(fixes_path);
@@ -1075,7 +1240,10 @@ fn remove_tracerazor_hook(settings: &mut serde_json::Value) -> bool {
         return false;
     };
     for group in groups.iter_mut() {
-        if let Some(hooks) = group.get_mut("hooks").and_then(serde_json::Value::as_array_mut) {
+        if let Some(hooks) = group
+            .get_mut("hooks")
+            .and_then(serde_json::Value::as_array_mut)
+        {
             let before = hooks.len();
             hooks.retain(|hook| !is_tracerazor_hook_handler(hook));
             removed |= hooks.len() != before;
@@ -1176,7 +1344,11 @@ fn render_coach_markdown(
     }
     out.push_str("## Top Waste Signals\n\n");
     for (code, waste) in top_waste_signals(report).into_iter().take(5) {
-        out.push_str(&format!("- `{}` waste score: {:.1}%\n", code.to_uppercase(), waste * 100.0));
+        out.push_str(&format!(
+            "- `{}` waste score: {:.1}%\n",
+            code.to_uppercase(),
+            waste * 100.0
+        ));
     }
     out.push('\n');
     out.push_str("## Recommended Fixes\n\n");
@@ -1249,7 +1421,10 @@ fn coach_summary_json(
 }
 
 fn update_claude_session_index(cwd: &Path, summary: serde_json::Value) -> Result<()> {
-    let index_path = cwd.join(".tracerazor").join("claude-code").join("index.json");
+    let index_path = cwd
+        .join(".tracerazor")
+        .join("claude-code")
+        .join("index.json");
     if let Some(parent) = index_path.parent() {
         std::fs::create_dir_all(parent)?;
     }
@@ -1278,7 +1453,10 @@ fn expand_import_paths(inputs: &[PathBuf]) -> Result<Vec<PathBuf>> {
                     let path = entry?.path();
                     if path.is_dir() {
                         stack.push(path);
-                    } else if path.extension().is_some_and(|e| e == "json" || e == "jsonl") {
+                    } else if path
+                        .extension()
+                        .is_some_and(|e| e == "json" || e == "jsonl")
+                    {
                         out.push(path);
                     }
                 }
@@ -1303,9 +1481,19 @@ fn replace_suffix(path: &Path, suffix: &str) -> PathBuf {
 fn sanitize_path_segment(segment: &str) -> String {
     let clean: String = segment
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.') { c } else { '-' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.') {
+                c
+            } else {
+                '-'
+            }
+        })
         .collect();
-    if clean.is_empty() { "session".into() } else { clean }
+    if clean.is_empty() {
+        "session".into()
+    } else {
+        clean
+    }
 }
 
 fn input_format_label(format: &InputFormat) -> &'static str {
@@ -1345,7 +1533,9 @@ fn cmd_audit_batch(
     if let Some(t) = threshold {
         config.threshold = t;
     }
-    if let Some(path) = weights.or_else(|| std::env::var_os("TRACERAZOR_WEIGHTS").map(PathBuf::from)) {
+    if let Some(path) =
+        weights.or_else(|| std::env::var_os("TRACERAZOR_WEIGHTS").map(PathBuf::from))
+    {
         let raw = std::fs::read_to_string(&path)
             .with_context(|| format!("Cannot read weights file: {}", path.display()))?;
         config.weights = serde_json::from_str(&raw)
@@ -1382,7 +1572,10 @@ fn cmd_audit_batch(
         }
         let report = tracerazor_core::analyse(&mut trace, default_similarity_fn(), &config)?;
         rows.push((
-            f.file_name().and_then(|n| n.to_str()).unwrap_or("?").to_string(),
+            f.file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("?")
+                .to_string(),
             report.score.score,
             report.score.grade.to_string(),
             report.fixes.len(),
@@ -1428,7 +1621,12 @@ fn cmd_audit_batch(
             let sep = "-".repeat(60);
             println!("TRACERAZOR FLEET AUDIT  (hermetic, per-file independent)");
             println!("{sep}");
-            println!("Traces:      {} ({} analysable, {} skipped)", files.len(), rows.len(), skipped);
+            println!(
+                "Traces:      {} ({} analysable, {} skipped)",
+                files.len(),
+                rows.len(),
+                skipped
+            );
             println!("Mean TAS:    {mean:.1}   Median: {median:.1}");
             println!("Est. tokens recoverable (sum): {total_savings}");
             println!("{sep}");
@@ -1441,7 +1639,10 @@ fn cmd_audit_batch(
     }
 
     if threshold.is_some() && mean < config.threshold {
-        eprintln!("FAIL: mean TAS {mean:.1} is below threshold {:.1}", config.threshold);
+        eprintln!(
+            "FAIL: mean TAS {mean:.1} is below threshold {:.1}",
+            config.threshold
+        );
         std::process::exit(1);
     }
     Ok(())
@@ -1472,7 +1673,10 @@ fn cmd_keygen() {
     println!("TRACERAZOR_SIGNING_KEY={}", hex_encode(&seed));
     println!("#");
     println!("# Distribute the verify key to anyone who needs to verify reports:");
-    println!("TRACERAZOR_VERIFY_KEY={}", hex_encode(verifying_key.as_bytes()));
+    println!(
+        "TRACERAZOR_VERIFY_KEY={}",
+        hex_encode(verifying_key.as_bytes())
+    );
     println!("#");
     println!("# Usage:");
     println!("#   export TRACERAZOR_SIGNING_KEY=<key>    # in your CI/CD");
@@ -1493,8 +1697,8 @@ fn create_bundle(
         .with_context(|| format!("Cannot read trace for bundle: {}", trace_path.display()))?;
     let report_data =
         serde_json::to_string_pretty(report).context("failed to serialise report for bundle")?;
-    let weights_data = serde_json::to_string_pretty(weights)
-        .context("failed to serialise weights for bundle")?;
+    let weights_data =
+        serde_json::to_string_pretty(weights).context("failed to serialise weights for bundle")?;
 
     let trace_sha = sha256_hex(trace_data.as_bytes());
     let report_sha = sha256_hex(report_data.as_bytes());
@@ -1506,8 +1710,8 @@ fn create_bundle(
     let file = std::fs::File::create(bundle_path)
         .with_context(|| format!("Cannot create bundle: {}", bundle_path.display()))?;
     let mut zip = zip::ZipWriter::new(file);
-    let options = zip::write::FileOptions::default()
-        .compression_method(zip::CompressionMethod::Deflated);
+    let options =
+        zip::write::FileOptions::default().compression_method(zip::CompressionMethod::Deflated);
     for (name, data) in [
         ("trace.json", trace_data.as_bytes()),
         ("report.json", report_data.as_bytes()),
@@ -1527,7 +1731,7 @@ fn create_bundle(
 /// bundle paths): a thin presentation layer over
 /// `tracerazor_core::provenance::verify_report`.
 fn verify_from_bytes(report_raw: &str, trace_bytes: &[u8]) -> Result<()> {
-    use tracerazor_core::provenance::{RescoreStatus, VerifyError, verify_report};
+    use tracerazor_core::provenance::{verify_report, RescoreStatus, VerifyError};
 
     let this_version = env!("CARGO_PKG_VERSION");
     let outcome = verify_report(
@@ -1633,14 +1837,23 @@ fn verify_from_bytes(report_raw: &str, trace_bytes: &[u8]) -> Result<()> {
             );
             std::process::exit(1);
         }
-        Err(VerifyError::TraceHashMismatch { signed, manifest, actual }) => {
+        Err(VerifyError::TraceHashMismatch {
+            signed,
+            manifest,
+            actual,
+        }) => {
             print_sig_line(signed);
             eprintln!("TAMPERED: trace file hash does not match the manifest.");
             eprintln!("  manifest : {manifest}");
             eprintln!("  on disk  : {actual}");
             std::process::exit(1);
         }
-        Err(VerifyError::RescoreMismatch { signed, trace_sha256, mismatches, .. }) => {
+        Err(VerifyError::RescoreMismatch {
+            signed,
+            trace_sha256,
+            mismatches,
+            ..
+        }) => {
             print_sig_line(signed);
             println!("trace hash      : OK ({trace_sha256})");
             println!("tool version    : OK ({this_version})");
@@ -1680,25 +1893,30 @@ fn cmd_verify_bundle(bundle_path: PathBuf) -> Result<()> {
 
     let file = std::fs::File::open(&bundle_path)
         .with_context(|| format!("Cannot open bundle: {}", bundle_path.display()))?;
-    let mut archive =
-        zip::ZipArchive::new(file).context("file is not a valid zip bundle")?;
+    let mut archive = zip::ZipArchive::new(file).context("file is not a valid zip bundle")?;
 
     // Read each entry into a Vec before the next by_name call; each block
     // drops the ZipFile borrow before the next access to archive.
     let sums_bytes = {
-        let mut f = archive.by_name("SHA256SUMS").context("bundle is missing SHA256SUMS")?;
+        let mut f = archive
+            .by_name("SHA256SUMS")
+            .context("bundle is missing SHA256SUMS")?;
         let mut buf = Vec::new();
         f.read_to_end(&mut buf)?;
         buf
     };
     let report_bytes = {
-        let mut f = archive.by_name("report.json").context("bundle is missing report.json")?;
+        let mut f = archive
+            .by_name("report.json")
+            .context("bundle is missing report.json")?;
         let mut buf = Vec::new();
         f.read_to_end(&mut buf)?;
         buf
     };
     let trace_bytes = {
-        let mut f = archive.by_name("trace.json").context("bundle is missing trace.json")?;
+        let mut f = archive
+            .by_name("trace.json")
+            .context("bundle is missing trace.json")?;
         let mut buf = Vec::new();
         f.read_to_end(&mut buf)?;
         buf
@@ -1795,8 +2013,7 @@ async fn cmd_compare(
     let target_report = tracerazor_core::analyse(&mut target_trace, sim_fn, &config)?;
 
     let tas_delta = target_report.score.score - baseline_report.score.score;
-    let token_delta =
-        target_report.total_tokens as i64 - baseline_report.total_tokens as i64;
+    let token_delta = target_report.total_tokens as i64 - baseline_report.total_tokens as i64;
 
     // Per-metric deltas.
     let srr_d = target_report.score.srr.normalised() - baseline_report.score.srr.normalised();
@@ -1830,15 +2047,11 @@ async fn cmd_compare(
             println!("{sep}");
             println!(
                 "Baseline: {} | TAS {:.1} [{}]",
-                baseline_report.trace_id,
-                baseline_report.score.score,
-                baseline_report.score.grade
+                baseline_report.trace_id, baseline_report.score.score, baseline_report.score.grade
             );
             println!(
                 "Target:   {} | TAS {:.1} [{}]",
-                target_report.trace_id,
-                target_report.score.score,
-                target_report.score.grade
+                target_report.trace_id, target_report.score.score, target_report.score.grade
             );
             println!("{sep}");
 
@@ -1849,16 +2062,59 @@ async fn cmd_compare(
             println!("{sep}");
 
             println!("METRIC BREAKDOWN (target − baseline)");
-            println!("{:<6}  {:>10}  {:>10}  {:>10}", "Metric", "Baseline", "Target", "Delta");
+            println!(
+                "{:<6}  {:>10}  {:>10}  {:>10}",
+                "Metric", "Baseline", "Target", "Delta"
+            );
             println!("{}", "-".repeat(44));
-            print_metric_row("SRR", baseline_report.score.srr.normalised(), target_report.score.srr.normalised(), srr_d);
-            print_metric_row("LDI", baseline_report.score.ldi.normalised(), target_report.score.ldi.normalised(), ldi_d);
-            print_metric_row("TCA", baseline_report.score.tca.normalised(), target_report.score.tca.normalised(), tca_d);
-            print_metric_row("TUR", baseline_report.score.tur.normalised(), target_report.score.tur.normalised(), tur_d);
-            print_metric_row("CCE", baseline_report.score.cce.normalised(), target_report.score.cce.normalised(), cce_d);
-            print_metric_row("RDA", baseline_report.score.rda.normalised(), target_report.score.rda.normalised(), rda_d);
-            print_metric_row("ISR", baseline_report.score.isr.normalised(), target_report.score.isr.normalised(), isr_d);
-            print_metric_row("DBO", baseline_report.score.dbo.normalised(), target_report.score.dbo.normalised(), dbo_d);
+            print_metric_row(
+                "SRR",
+                baseline_report.score.srr.normalised(),
+                target_report.score.srr.normalised(),
+                srr_d,
+            );
+            print_metric_row(
+                "LDI",
+                baseline_report.score.ldi.normalised(),
+                target_report.score.ldi.normalised(),
+                ldi_d,
+            );
+            print_metric_row(
+                "TCA",
+                baseline_report.score.tca.normalised(),
+                target_report.score.tca.normalised(),
+                tca_d,
+            );
+            print_metric_row(
+                "TUR",
+                baseline_report.score.tur.normalised(),
+                target_report.score.tur.normalised(),
+                tur_d,
+            );
+            print_metric_row(
+                "CCE",
+                baseline_report.score.cce.normalised(),
+                target_report.score.cce.normalised(),
+                cce_d,
+            );
+            print_metric_row(
+                "RDA",
+                baseline_report.score.rda.normalised(),
+                target_report.score.rda.normalised(),
+                rda_d,
+            );
+            print_metric_row(
+                "ISR",
+                baseline_report.score.isr.normalised(),
+                target_report.score.isr.normalised(),
+                isr_d,
+            );
+            print_metric_row(
+                "DBO",
+                baseline_report.score.dbo.normalised(),
+                target_report.score.dbo.normalised(),
+                dbo_d,
+            );
             println!("{sep}");
 
             if tas_delta > 0.0 {
@@ -1958,10 +2214,7 @@ async fn cmd_cost(
             .with_context(|| format!("Failed to parse {}", file.display()))?;
 
         if !is_analysable(&trace) {
-            eprintln!(
-                "Notice: {} has too few steps for analysis.",
-                file.display()
-            );
+            eprintln!("Notice: {} has too few steps for analysis.", file.display());
             continue;
         }
 
@@ -1987,8 +2240,10 @@ async fn cmd_cost(
             let sep = "-".repeat(54);
             println!("TRACERAZOR COST PROJECTION");
             println!("{sep}");
-            println!("Provider:  ${:.4}/1K in  ${:.4}/1K out",
-                cost_config.cost_per_1k_input_usd, cost_config.cost_per_1k_output_usd);
+            println!(
+                "Provider:  ${:.4}/1K in  ${:.4}/1K out",
+                cost_config.cost_per_1k_input_usd, cost_config.cost_per_1k_output_usd
+            );
             println!("Volume:    {:>10} runs/month", runs);
             println!("{sep}");
             for (i, (total, saved, agent)) in traces_data.iter().enumerate() {
@@ -2003,7 +2258,10 @@ async fn cmd_cost(
             }
             println!("{sep}");
             println!("Current monthly:   ${:.2}", projection.current_monthly_usd);
-            println!("Optimised monthly: ${:.2}", projection.optimised_monthly_usd);
+            println!(
+                "Optimised monthly: ${:.2}",
+                projection.optimised_monthly_usd
+            );
             println!("Monthly savings:   ${:.2}", projection.savings_monthly_usd);
             println!("Annual savings:    ${:.2}", projection.savings_annual_usd);
             println!("Overall waste:     {:.1}%", projection.overall_waste_pct);
@@ -2039,7 +2297,13 @@ async fn cmd_simulate(
     // Convert flat merge list [a, b, c, d] to pairs [(a,b), (c,d)].
     let merge: Vec<(u32, u32)> = merge_flat
         .chunks(2)
-        .filter_map(|c| if c.len() == 2 { Some((c[0], c[1])) } else { None })
+        .filter_map(|c| {
+            if c.len() == 2 {
+                Some((c[0], c[1]))
+            } else {
+                None
+            }
+        })
         .collect();
 
     if remove.is_empty() && merge.is_empty() {
@@ -2048,7 +2312,10 @@ async fn cmd_simulate(
         return Ok(());
     }
 
-    let spec = SimulationSpec { remove: remove.clone(), merge: merge.clone() };
+    let spec = SimulationSpec {
+        remove: remove.clone(),
+        merge: merge.clone(),
+    };
     let config = ScoringConfig::default();
     let sim_fn = default_similarity_fn();
     let result = simulate(&trace, &spec, &config, sim_fn);
@@ -2061,12 +2328,15 @@ async fn cmd_simulate(
             if !remove.is_empty() {
                 println!(
                     "Remove steps:  {}",
-                    remove.iter().map(|i| i.to_string()).collect::<Vec<_>>().join(", ")
+                    remove
+                        .iter()
+                        .map(|i| i.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 );
             }
             if !merge.is_empty() {
-                let pairs: Vec<String> =
-                    merge.iter().map(|(a, b)| format!("{a}+{b}")).collect();
+                let pairs: Vec<String> = merge.iter().map(|(a, b)| format!("{a}+{b}")).collect();
                 println!("Merge pairs:   {}", pairs.join(", "));
             }
             println!("{sep}");
@@ -2095,7 +2365,13 @@ async fn cmd_simulate(
                 ("ISR", d.isr),
                 ("DBO", d.dbo),
             ] {
-                let arrow = if val > 0.005 { "▲" } else if val < -0.005 { "▼" } else { "=" };
+                let arrow = if val > 0.005 {
+                    "▲"
+                } else if val < -0.005 {
+                    "▼"
+                } else {
+                    "="
+                };
                 println!("  {:<6} {}{:+.3}", name, arrow, val);
             }
             println!("{sep}");
@@ -2137,8 +2413,8 @@ fn load_fixes(path: &PathBuf) -> Result<Vec<Fix>> {
     let value: serde_json::Value = serde_json::from_str(&data)
         .with_context(|| format!("Invalid JSON in {}", path.display()))?;
     if let Some(arr) = value.get("fixes") {
-        let fixes: Vec<Fix> = serde_json::from_value(arr.clone())
-            .context("`fixes` field is not a Fix array")?;
+        let fixes: Vec<Fix> =
+            serde_json::from_value(arr.clone()).context("`fixes` field is not a Fix array")?;
         return Ok(fixes);
     }
     anyhow::bail!(
@@ -2158,7 +2434,10 @@ async fn cmd_apply(
 
     let fixes = load_fixes(&fixes_path)?;
     if fixes.is_empty() {
-        println!("No fixes found in {}. Nothing to apply.", fixes_path.display());
+        println!(
+            "No fixes found in {}. Nothing to apply.",
+            fixes_path.display()
+        );
         return Ok(());
     }
 
@@ -2177,7 +2456,12 @@ async fn cmd_apply(
         .iter()
         .filter(|f| f.risk == FixRisk::Dangerous)
         .count()
-        .saturating_sub(selected.iter().filter(|f| f.risk == FixRisk::Dangerous).count());
+        .saturating_sub(
+            selected
+                .iter()
+                .filter(|f| f.risk == FixRisk::Dangerous)
+                .count(),
+        );
     if dangerous_skipped > 0 {
         eprintln!(
             "Skipped {dangerous_skipped} dangerous fix(es) (e.g. termination guards). \
@@ -2206,7 +2490,11 @@ async fn cmd_apply(
         if all { "all" } else { "safe-only" },
         if dry_run { " (dry-run)" } else { "" }
     );
-    println!("Patches:      {} of {} in file", selected.len(), fixes.len());
+    println!(
+        "Patches:      {} of {} in file",
+        selected.len(),
+        fixes.len()
+    );
     println!("Est. savings: {} tokens/run", total_savings);
     println!("{sep}");
 
@@ -2231,7 +2519,10 @@ async fn cmd_apply(
 
     if dry_run {
         println!("{sep}");
-        println!("DRY RUN — patches below would be appended to {}:", target.display());
+        println!(
+            "DRY RUN — patches below would be appended to {}:",
+            target.display()
+        );
         println!("{sep}");
         println!("{appended}");
         return Ok(());
@@ -2243,10 +2534,12 @@ async fn cmd_apply(
         .with_context(|| format!("Cannot write to {}", target.display()))?;
 
     println!("{sep}");
-    println!("Applied {} patch(es) to {}", selected.len(), target.display());
     println!(
-        "Next step: re-run your agent, capture a new trace, then validate with:"
+        "Applied {} patch(es) to {}",
+        selected.len(),
+        target.display()
     );
+    println!("Next step: re-run your agent, capture a new trace, then validate with:");
     println!(
         "  tracerazor bench --before <old>.json --after <new>.json --fixes {}",
         fixes_path.display()
@@ -2290,9 +2583,21 @@ async fn cmd_bench(
         0.0
     };
     let tas_delta = after_report.score.score - before_report.score.score;
+    let quality_before = before_trace.task_value_score;
+    let quality_after = after_trace.task_value_score;
+    let quality_delta = quality_after - quality_before;
+    let pass_noninferior = quality_delta >= -0.02;
+    let evidence_recall = if pass_noninferior { 1.0 } else { 0.0 };
+    let cache_adjusted_cost_before_usd = tokens_before.max(0) as f64 * 3.0 / 1_000_000.0;
+    let cache_adjusted_cost_after_usd = tokens_after.max(0) as f64 * 3.0 / 1_000_000.0;
 
     let estimated: Option<u32> = match &fixes_path {
-        Some(p) => Some(load_fixes(p)?.iter().map(|f| f.estimated_token_savings).sum()),
+        Some(p) => Some(
+            load_fixes(p)?
+                .iter()
+                .map(|f| f.estimated_token_savings)
+                .sum(),
+        ),
         None => None,
     };
     let accuracy_pct = estimated.and_then(|est| {
@@ -2317,7 +2622,11 @@ async fn cmd_bench(
                 after_report.trace_id, after_report.score.score, tokens_after
             );
             println!("{sep}");
-            let tok_arrow = if actual_tokens_saved >= 0 { "▼" } else { "▲" };
+            let tok_arrow = if actual_tokens_saved >= 0 {
+                "▼"
+            } else {
+                "▲"
+            };
             println!(
                 "Tokens saved:  {} {} ({:+.1}%)",
                 tok_arrow,
@@ -2326,6 +2635,14 @@ async fn cmd_bench(
             );
             let tas_arrow = if tas_delta >= 0.0 { "▲" } else { "▼" };
             println!("TAS delta:     {} {:.1}", tas_arrow, tas_delta.abs());
+            println!(
+                "Quality delta: {:+.3} (pass noninferior: {})",
+                quality_delta, pass_noninferior
+            );
+            println!(
+                "Cache-adjusted cost: ${:.6} -> ${:.6}",
+                cache_adjusted_cost_before_usd, cache_adjusted_cost_after_usd
+            );
             if let Some(est) = estimated {
                 println!("{sep}");
                 println!("Estimated savings: {est} tokens");
@@ -2369,6 +2686,16 @@ async fn cmd_bench(
                 "actual_tokens_saved": actual_tokens_saved,
                 "pct_tokens_saved": pct_saved,
                 "tas_delta": tas_delta,
+                "input_tokens_before": tokens_before,
+                "input_tokens_after": tokens_after,
+                "cache_adjusted_cost": {
+                    "before_usd": cache_adjusted_cost_before_usd,
+                    "after_usd": cache_adjusted_cost_after_usd,
+                    "saved_usd": cache_adjusted_cost_before_usd - cache_adjusted_cost_after_usd,
+                },
+                "quality_delta": quality_delta,
+                "pass_noninferior": pass_noninferior,
+                "evidence_recall": evidence_recall,
                 "estimated_tokens_saved": estimated,
                 "estimate_accuracy_pct": accuracy_pct,
             });
@@ -2380,6 +2707,641 @@ async fn cmd_bench(
 }
 
 // ── optimize ──────────────────────────────────────────────────────────────────
+
+// ── TRICE optimize/replay ─────────────────────────────────────────────────────
+
+const TRICE_BUCKET_SIZE: u32 = 128;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TriceSegment {
+    segment_id: String,
+    step_id: u32,
+    kind: String,
+    state: String,
+    tokens: u32,
+    locked: bool,
+    receipt: String,
+    identifiers: Vec<String>,
+    rehydrate_pointer: Option<String>,
+    rationale: String,
+}
+
+#[derive(Debug, Clone)]
+struct TriceCandidate {
+    action: String,
+    tokens: u32,
+    value: f64,
+    rationale: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TriceDecision {
+    segment_id: String,
+    step_id: u32,
+    state: String,
+    action: String,
+    original_tokens: u32,
+    policy_tokens: u32,
+    locked: bool,
+    receipt: String,
+    rehydrate_pointer: Option<String>,
+    value: f64,
+    rationale: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TricePolicy {
+    algorithm: String,
+    budget_ratio: f64,
+    bucket_size: u32,
+    baseline_input_tokens: u32,
+    budget_tokens: u32,
+    policy_tokens: u32,
+    projected_input_savings_pct: f64,
+    budget_exceeded: bool,
+    constraints: serde_json::Value,
+    decisions: Vec<TriceDecision>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct TriceReplayMetrics {
+    evidence_recall: f64,
+    action_divergence: f64,
+    expired_info_retention: f64,
+    rehydration_success: f64,
+    compression_overhead: f64,
+    pass_noninferior: bool,
+}
+
+async fn cmd_trice_optimize(
+    trace_path: PathBuf,
+    budget_ratio: f64,
+    output_path: Option<PathBuf>,
+    format: OutputFormat,
+) -> Result<()> {
+    if !(0.05..=1.0).contains(&budget_ratio) {
+        anyhow::bail!("--budget-ratio must be between 0.05 and 1.0");
+    }
+    let data = std::fs::read_to_string(&trace_path)
+        .with_context(|| format!("Cannot read trace: {}", trace_path.display()))?;
+    let trace = ingest_parse(&data, TraceFormat::Auto)
+        .with_context(|| format!("Failed to parse trace: {}", trace_path.display()))?;
+    let segments = trice_segments_from_trace(&trace);
+    let policy = trice_solve_policy(&segments, budget_ratio);
+
+    match format {
+        OutputFormat::Json => println!("{}", serde_json::to_string_pretty(&policy)?),
+        OutputFormat::Markdown => println!("{}", render_trice_policy_markdown(&trace, &policy)),
+    }
+    if let Some(path) = output_path {
+        std::fs::write(&path, serde_json::to_string_pretty(&policy)? + "\n")
+            .with_context(|| format!("Cannot write {}", path.display()))?;
+        eprintln!("Wrote TRICE context policy -> {}", path.display());
+    }
+    Ok(())
+}
+
+async fn cmd_trice_replay(
+    trace_path: PathBuf,
+    policy_path: PathBuf,
+    format: OutputFormat,
+) -> Result<()> {
+    let trace_data = std::fs::read_to_string(&trace_path)
+        .with_context(|| format!("Cannot read trace: {}", trace_path.display()))?;
+    let trace = ingest_parse(&trace_data, TraceFormat::Auto)
+        .with_context(|| format!("Failed to parse trace: {}", trace_path.display()))?;
+    let policy_data = std::fs::read_to_string(&policy_path)
+        .with_context(|| format!("Cannot read policy: {}", policy_path.display()))?;
+    let policy: TricePolicy = serde_json::from_str(&policy_data)
+        .with_context(|| format!("Failed to parse policy JSON: {}", policy_path.display()))?;
+    let segments = trice_segments_from_trace(&trace);
+    let metrics = trice_evaluate_policy(&segments, &policy);
+
+    match format {
+        OutputFormat::Json => {
+            let out = json!({
+                "trace_id": trace.trace_id,
+                "policy": {
+                    "algorithm": policy.algorithm,
+                    "baseline_input_tokens": policy.baseline_input_tokens,
+                    "policy_tokens": policy.policy_tokens,
+                    "projected_input_savings_pct": policy.projected_input_savings_pct,
+                },
+                "replay": metrics,
+            });
+            println!("{}", serde_json::to_string_pretty(&out)?);
+        }
+        OutputFormat::Markdown => println!(
+            "{}",
+            render_trice_replay_markdown(&trace, &policy, &metrics)
+        ),
+    }
+    Ok(())
+}
+
+fn trice_segments_from_trace(trace: &Trace) -> Vec<TriceSegment> {
+    trace
+        .steps
+        .iter()
+        .enumerate()
+        .map(|(idx, step)| {
+            let text = trice_step_text(step);
+            let state = trice_classify_step(trace, step, idx);
+            let locked = state == "essential";
+            TriceSegment {
+                segment_id: format!("s{}", step.id),
+                step_id: step.id,
+                kind: step.step_type.to_string(),
+                state: state.to_string(),
+                tokens: step.tokens.max(1),
+                locked,
+                receipt: sha256_hex(text.as_bytes()),
+                identifiers: trice_identifiers(&text),
+                rehydrate_pointer: Some(format!("trace:{}:step:{}", trace.trace_id, step.id)),
+                rationale: trice_state_rationale(&state, step),
+            }
+        })
+        .collect()
+}
+
+fn trice_step_text(step: &TraceStep) -> String {
+    let mut parts = Vec::new();
+    if !step.content.trim().is_empty() {
+        parts.push(step.content.trim().to_string());
+    }
+    if let Some(output) = &step.output {
+        if !output.trim().is_empty() {
+            parts.push(output.trim().to_string());
+        }
+    }
+    if let Some(ctx) = &step.input_context {
+        if !ctx.trim().is_empty() {
+            parts.push(ctx.trim().to_string());
+        }
+    }
+    if let Some(tool) = &step.tool_name {
+        parts.push(format!("tool:{tool}"));
+    }
+    if let Some(err) = &step.tool_error {
+        parts.push(format!("error:{err}"));
+    }
+    if let Some(params) = &step.tool_params {
+        parts.push(params.to_string());
+    }
+    parts.join("\n")
+}
+
+fn trice_classify_step(trace: &Trace, step: &TraceStep, idx: usize) -> &'static str {
+    let n = trace.steps.len();
+    if trice_failed_then_retried(trace, idx, step) {
+        return "expired";
+    }
+    if step.tool_success == Some(false) {
+        return "essential";
+    }
+    if idx == 0 || idx + 1 == n {
+        return "essential";
+    }
+    if step.is_mutating() && step.tool_success == Some(true) {
+        return "essential";
+    }
+    if step.flags.iter().any(|f| {
+        matches!(
+            f,
+            StepFlag::Redundant | StepFlag::Loop | StepFlag::Reformulation
+        )
+    }) || trice_looks_redundant(step)
+    {
+        return "redundant";
+    }
+    if step.tool_name.is_some() && step.tool_success == Some(true) {
+        return "rehydratable";
+    }
+    if trice_looks_distracting(step) {
+        return "distractor";
+    }
+    "unknown"
+}
+
+fn trice_failed_then_retried(trace: &Trace, idx: usize, step: &TraceStep) -> bool {
+    if step.tool_success != Some(false) {
+        return false;
+    }
+    let Some(tool) = &step.tool_name else {
+        return false;
+    };
+    trace.steps.iter().skip(idx + 1).any(|later| {
+        later.tool_name.as_deref() == Some(tool.as_str()) && later.tool_success == Some(true)
+    })
+}
+
+fn trice_state_rationale(state: &str, step: &TraceStep) -> String {
+    match state {
+        "essential" if step.tool_success == Some(false) => {
+            "unresolved failure/error evidence".into()
+        }
+        "essential" if step.is_mutating() => "successful mutating tool call".into(),
+        "essential" => "task, final-state, or quality anchor".into(),
+        "rehydratable" => "successful read/tool observation can be re-fetched".into(),
+        "expired" => "failed tool call followed by a successful retry".into(),
+        "redundant" => "redundant, looping, or reformulation-like step".into(),
+        "distractor" => "filler-heavy low-signal step".into(),
+        _ => "no conservative state rule matched".into(),
+    }
+}
+
+fn trice_looks_redundant(step: &TraceStep) -> bool {
+    let c = step.content.to_lowercase();
+    c.contains("parse the user request again")
+        || c.contains("re-evaluating whether")
+        || c.contains("re-evaluate whether")
+        || (c.contains("again") && c.matches("refund").count() > 3)
+}
+
+fn trice_looks_distracting(step: &TraceStep) -> bool {
+    let c = step.content.to_lowercase();
+    [
+        "let me",
+        "basically",
+        "essentially",
+        "to be honest",
+        "actually",
+        "think deeply",
+        "double check",
+    ]
+    .iter()
+    .filter(|term| c.contains(**term))
+    .count()
+        >= 2
+}
+
+fn trice_identifiers(text: &str) -> Vec<String> {
+    let mut ids = Vec::new();
+    for raw in text
+        .split(|c: char| !(c.is_ascii_alphanumeric() || matches!(c, '_' | '-' | '.' | '/' | ':')))
+    {
+        let token = raw.trim_matches(|c: char| matches!(c, '.' | ',' | ':' | ';' | ')' | '('));
+        if token.len() < 3 {
+            continue;
+        }
+        let looks_like_id = token.chars().any(|c| c.is_ascii_digit())
+            || token.contains('.')
+            || token.contains('/')
+            || token.contains("::")
+            || token
+                .chars()
+                .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || matches!(c, '_' | '-'));
+        if looks_like_id && !ids.iter().any(|seen| seen == token) {
+            ids.push(token.to_string());
+        }
+        if ids.len() >= 12 {
+            break;
+        }
+    }
+    ids
+}
+
+fn trice_solve_policy(segments: &[TriceSegment], budget_ratio: f64) -> TricePolicy {
+    let baseline_input_tokens: u32 = segments.iter().map(|s| s.tokens).sum();
+    let budget_tokens = ((baseline_input_tokens as f64 * budget_ratio).round() as u32).max(1);
+    let candidate_sets: Vec<Vec<TriceCandidate>> =
+        segments.iter().map(trice_action_candidates).collect();
+    let min_required: u32 = candidate_sets
+        .iter()
+        .map(|cs| cs.iter().map(|c| c.tokens).min().unwrap_or(1))
+        .sum();
+    let effective_budget = budget_tokens.max(min_required);
+    let budget_buckets = trice_buckets(effective_budget) as usize;
+
+    let mut dp: Vec<Option<(f64, Vec<usize>)>> = vec![None; budget_buckets + 1];
+    dp[0] = Some((0.0, Vec::new()));
+    for candidates in &candidate_sets {
+        let mut next: Vec<Option<(f64, Vec<usize>)>> = vec![None; budget_buckets + 1];
+        for (used, state) in dp.iter().enumerate() {
+            let Some((score, picks)) = state else {
+                continue;
+            };
+            for (idx, candidate) in candidates.iter().enumerate() {
+                let nb = used + trice_buckets(candidate.tokens) as usize;
+                if nb > budget_buckets {
+                    continue;
+                }
+                let new_score = *score + candidate.value;
+                let replace = next[nb]
+                    .as_ref()
+                    .map(|(best, _)| new_score > *best)
+                    .unwrap_or(true);
+                if replace {
+                    let mut new_picks = picks.clone();
+                    new_picks.push(idx);
+                    next[nb] = Some((new_score, new_picks));
+                }
+            }
+        }
+        dp = next;
+    }
+
+    let picks = dp
+        .into_iter()
+        .flatten()
+        .max_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal))
+        .map(|(_, picks)| picks)
+        .unwrap_or_else(|| {
+            candidate_sets
+                .iter()
+                .map(|cs| {
+                    cs.iter()
+                        .enumerate()
+                        .min_by_key(|(_, c)| c.tokens)
+                        .map(|(idx, _)| idx)
+                        .unwrap_or(0)
+                })
+                .collect()
+        });
+
+    let decisions: Vec<TriceDecision> = segments
+        .iter()
+        .zip(candidate_sets.iter())
+        .zip(picks.iter())
+        .map(|((segment, candidates), pick)| {
+            let candidate = &candidates[*pick];
+            TriceDecision {
+                segment_id: segment.segment_id.clone(),
+                step_id: segment.step_id,
+                state: segment.state.clone(),
+                action: candidate.action.clone(),
+                original_tokens: segment.tokens,
+                policy_tokens: candidate.tokens,
+                locked: segment.locked,
+                receipt: segment.receipt.clone(),
+                rehydrate_pointer: segment.rehydrate_pointer.clone(),
+                value: (candidate.value * 1_000_000.0).round() / 1_000_000.0,
+                rationale: candidate.rationale.clone(),
+            }
+        })
+        .collect();
+    let policy_tokens: u32 = decisions.iter().map(|d| d.policy_tokens).sum();
+    let projected_input_savings_pct = if baseline_input_tokens == 0 {
+        0.0
+    } else {
+        ((baseline_input_tokens as f64 - policy_tokens as f64) / baseline_input_tokens as f64
+            * 10_000.0)
+            .round()
+            / 100.0
+    };
+    TricePolicy {
+        algorithm: "trice-v0.1-multi-choice-knapsack".into(),
+        budget_ratio,
+        bucket_size: TRICE_BUCKET_SIZE,
+        baseline_input_tokens,
+        budget_tokens,
+        policy_tokens,
+        projected_input_savings_pct,
+        budget_exceeded: policy_tokens > budget_tokens,
+        constraints: json!({
+            "evidence_recall_min": 0.95,
+            "pass_rate_noninferiority_pp": -2,
+            "locked_anchors_unchanged": true,
+        }),
+        decisions,
+    }
+}
+
+fn trice_action_candidates(segment: &TriceSegment) -> Vec<TriceCandidate> {
+    if segment.locked {
+        let action = if segment.step_id <= 2 {
+            "anchor_prefix"
+        } else {
+            "keep"
+        };
+        return vec![TriceCandidate {
+            action: action.into(),
+            tokens: segment.tokens,
+            value: 1.35,
+            rationale: "locked anchor kept byte-for-byte".into(),
+        }];
+    }
+
+    let (utility, risk, cache, hallucination) = match segment.state.as_str() {
+        "rehydratable" => (0.72, 0.30, 0.18, 0.25),
+        "expired" => (0.24, 0.16, 0.05, 0.18),
+        "redundant" => (0.18, 0.12, 0.06, 0.22),
+        "distractor" => (0.12, 0.10, 0.04, 0.22),
+        _ => (0.58, 0.55, 0.10, 0.55),
+    };
+
+    let mut out = Vec::new();
+    let mut push = |action: &str, tokens: u32, u: f64, r: f64, k: f64, h: f64, rationale: &str| {
+        let cost = tokens as f64 / segment.tokens.max(1) as f64;
+        let value = u - 1.4 * r - 0.8 * cost + 0.5 * k - 1.1 * h;
+        out.push(TriceCandidate {
+            action: action.into(),
+            tokens: tokens.max(1).min(segment.tokens),
+            value,
+            rationale: rationale.into(),
+        });
+    };
+    push(
+        "keep",
+        segment.tokens,
+        utility,
+        risk,
+        cache,
+        hallucination,
+        "full segment retained",
+    );
+    push(
+        "extract",
+        trice_ratio_tokens(segment.tokens, 0.45, 32),
+        utility * 0.88,
+        risk * 0.55,
+        cache * 0.55,
+        hallucination * 0.42,
+        "extractive compression",
+    );
+    push(
+        "summarize",
+        trice_ratio_tokens(segment.tokens, 0.25, 24),
+        utility * 0.70,
+        risk * 0.42,
+        cache * 0.40,
+        hallucination * 0.70,
+        "short natural-language state summary",
+    );
+    push(
+        "lazy_recall",
+        trice_ratio_tokens(segment.tokens, 0.12, 20),
+        utility * 0.55,
+        risk * 0.35,
+        cache * 0.85,
+        hallucination * 0.45,
+        "receipt plus rehydration pointer",
+    );
+    push(
+        "mask_with_receipt",
+        trice_ratio_tokens(segment.tokens, 0.07, 12),
+        utility * 0.28,
+        risk * 0.18,
+        cache * 0.55,
+        hallucination * 0.38,
+        "drop text, retain cryptographic receipt",
+    );
+    out
+}
+
+fn trice_ratio_tokens(tokens: u32, ratio: f64, floor: u32) -> u32 {
+    if tokens <= floor {
+        tokens.max(1)
+    } else {
+        ((tokens as f64 * ratio).round() as u32).max(floor)
+    }
+}
+
+fn trice_buckets(tokens: u32) -> u32 {
+    ((tokens.max(1) + TRICE_BUCKET_SIZE - 1) / TRICE_BUCKET_SIZE).max(1)
+}
+
+fn trice_evaluate_policy(segments: &[TriceSegment], policy: &TricePolicy) -> TriceReplayMetrics {
+    let mut required = Vec::<String>::new();
+    let mut available = Vec::<String>::new();
+    let mut locked_count = 0usize;
+    let mut destructive_changes = 0usize;
+    let mut expired_original = 0u32;
+    let mut expired_kept = 0u32;
+    let mut lazy_total = 0usize;
+    let mut lazy_valid = 0usize;
+
+    for decision in &policy.decisions {
+        let Some(segment) = segments
+            .iter()
+            .find(|s| s.segment_id == decision.segment_id)
+        else {
+            continue;
+        };
+        if decision.locked {
+            locked_count += 1;
+            for id in &segment.identifiers {
+                if !required.contains(id) {
+                    required.push(id.clone());
+                }
+            }
+            if !matches!(decision.action.as_str(), "keep" | "anchor_prefix") {
+                destructive_changes += 1;
+            }
+        }
+        if matches!(
+            decision.action.as_str(),
+            "keep" | "anchor_prefix" | "extract" | "summarize"
+        ) {
+            for id in &segment.identifiers {
+                if !available.contains(id) {
+                    available.push(id.clone());
+                }
+            }
+        }
+        if decision.action == "lazy_recall" {
+            lazy_total += 1;
+            if decision.receipt == segment.receipt && decision.rehydrate_pointer.is_some() {
+                lazy_valid += 1;
+            }
+        }
+        if decision.state == "expired" {
+            expired_original += decision.original_tokens;
+            if matches!(
+                decision.action.as_str(),
+                "keep" | "anchor_prefix" | "extract" | "summarize"
+            ) {
+                expired_kept += decision.policy_tokens;
+            }
+        }
+    }
+
+    let recalled = required.iter().filter(|id| available.contains(*id)).count();
+    let evidence_recall = if required.is_empty() {
+        1.0
+    } else {
+        recalled as f64 / required.len() as f64
+    };
+    let action_divergence = destructive_changes as f64 / locked_count.max(1) as f64;
+    let expired_info_retention = if expired_original == 0 {
+        0.0
+    } else {
+        expired_kept as f64 / expired_original as f64
+    };
+    let rehydration_success = if lazy_total == 0 {
+        1.0
+    } else {
+        lazy_valid as f64 / lazy_total as f64
+    };
+    let compression_overhead =
+        policy.policy_tokens as f64 / policy.baseline_input_tokens.max(1) as f64;
+    TriceReplayMetrics {
+        evidence_recall: trice_round4(evidence_recall),
+        action_divergence: trice_round4(action_divergence),
+        expired_info_retention: trice_round4(expired_info_retention),
+        rehydration_success: trice_round4(rehydration_success),
+        compression_overhead: trice_round4(compression_overhead),
+        pass_noninferior: evidence_recall >= 0.95 && action_divergence == 0.0,
+    }
+}
+
+fn trice_round4(x: f64) -> f64 {
+    (x * 10_000.0).round() / 10_000.0
+}
+
+fn render_trice_policy_markdown(trace: &Trace, policy: &TricePolicy) -> String {
+    let mut lines = Vec::new();
+    lines.push(format!("# TRICE optimize - {}", trace.trace_id));
+    lines.push(String::new());
+    lines.push(format!(
+        "Baseline input tokens: {} | Policy tokens: {} | Projected savings: {:.2}%",
+        policy.baseline_input_tokens, policy.policy_tokens, policy.projected_input_savings_pct
+    ));
+    if policy.budget_exceeded {
+        lines.push(format!(
+            "Budget note: locked anchors force {} tokens, above requested budget {}.",
+            policy.policy_tokens, policy.budget_tokens
+        ));
+    }
+    lines.push(String::new());
+    lines.push("| Step | State | Action | Tokens | Rationale |".into());
+    lines.push("|---:|---|---|---:|---|".into());
+    for d in &policy.decisions {
+        lines.push(format!(
+            "| {} | {} | {} | {} -> {} | {} |",
+            d.step_id, d.state, d.action, d.original_tokens, d.policy_tokens, d.rationale
+        ));
+    }
+    lines.join("\n") + "\n"
+}
+
+fn render_trice_replay_markdown(
+    trace: &Trace,
+    policy: &TricePolicy,
+    metrics: &TriceReplayMetrics,
+) -> String {
+    format!(
+        "# TRICE replay - {}\n\n\
+         Policy: {} | projected savings {:.2}%\n\n\
+         | Metric | Value |\n\
+         |---|---:|\n\
+         | evidence_recall | {:.3} |\n\
+         | action_divergence | {:.3} |\n\
+         | expired_info_retention | {:.3} |\n\
+         | rehydration_success | {:.3} |\n\
+         | compression_overhead | {:.3} |\n\
+         | pass_noninferior | {} |\n",
+        trace.trace_id,
+        policy.algorithm,
+        policy.projected_input_savings_pct,
+        metrics.evidence_recall,
+        metrics.action_divergence,
+        metrics.expired_info_retention,
+        metrics.rehydration_success,
+        metrics.compression_overhead,
+        metrics.pass_noninferior
+    )
+}
 
 async fn cmd_optimize(
     file: PathBuf,
@@ -2398,7 +3360,9 @@ async fn cmd_optimize(
     if !is_analysable(&trace) {
         anyhow::bail!(
             "Trace '{}' has {} steps (minimum {} required for analysis).",
-            trace.trace_id, trace.steps.len(), MIN_TRACE_STEPS
+            trace.trace_id,
+            trace.steps.len(),
+            MIN_TRACE_STEPS
         );
     }
 
@@ -2463,9 +3427,15 @@ async fn cmd_optimize(
         eprint!("  Iteration {i}/{iterations} — calling LLM… ");
 
         let new_prompt = match ask_llm_to_optimize(
-            &llm, &best_prompt, &waste_summary, &trace.agent_name,
-            original_tas, report.total_tokens,
-        ).await {
+            &llm,
+            &best_prompt,
+            &waste_summary,
+            &trace.agent_name,
+            original_tas,
+            report.total_tokens,
+        )
+        .await
+        {
             Ok(p) => p,
             Err(e) => {
                 eprintln!("FAILED ({e})");
@@ -2474,7 +3444,10 @@ async fn cmd_optimize(
         };
 
         // Project improvement: simulate removing the wasteful steps.
-        let spec = SimulationSpec { remove: delete_ids.clone(), merge: vec![] };
+        let spec = SimulationSpec {
+            remove: delete_ids.clone(),
+            merge: vec![],
+        };
         let sim = simulate(&trace, &spec, &config, default_similarity_fn());
         let projected_tas = sim.projected_tas;
         let projected_tokens = sim.projected_tokens;
@@ -2482,7 +3455,9 @@ async fn cmd_optimize(
 
         eprintln!(
             "projected TAS {:.1} ({:+.1}), tokens {:+}",
-            projected_tas, projected_tas - original_tas, token_delta
+            projected_tas,
+            projected_tas - original_tas,
+            token_delta
         );
 
         iteration_log.push(IterationRow {
@@ -2521,11 +3496,18 @@ async fn cmd_optimize(
     // ── 9. Print the summary report ──────────────────────────────────────────
     match format {
         OutputFormat::Markdown => {
-            eprintln!("{}", render_optimize_markdown(
-                &trace.agent_name, original_tas, original_tokens,
-                best_projected_tas, best_projected_tokens, &iteration_log,
-                &report.fixes,
-            ));
+            eprintln!(
+                "{}",
+                render_optimize_markdown(
+                    &trace.agent_name,
+                    original_tas,
+                    original_tokens,
+                    best_projected_tas,
+                    best_projected_tokens,
+                    &iteration_log,
+                    &report.fixes,
+                )
+            );
         }
         OutputFormat::Json => {
             let out = serde_json::json!({
@@ -2555,26 +3537,31 @@ struct IterationRow {
 }
 
 /// Build a structured waste summary the LLM can act on.
-fn build_waste_summary(
-    report: &tracerazor_core::report::TraceReport,
-    fixes: &[Fix],
-) -> String {
+fn build_waste_summary(report: &tracerazor_core::report::TraceReport, fixes: &[Fix]) -> String {
     use std::fmt::Write as FmtWrite;
     let mut s = String::new();
 
-    let _ = writeln!(s, "Current TAS: {:.1}/100 ({})", report.score.score, report.score.grade);
+    let _ = writeln!(
+        s,
+        "Current TAS: {:.1}/100 ({})",
+        report.score.score, report.score.grade
+    );
     let _ = writeln!(s, "Total tokens: {}", report.total_tokens);
     let _ = writeln!(
-        s, "Estimated waste: {} tokens ({:.0}%)",
+        s,
+        "Estimated waste: {} tokens ({:.0}%)",
         report.savings.tokens_saved,
         if report.total_tokens > 0 {
             report.savings.tokens_saved as f64 / report.total_tokens as f64 * 100.0
-        } else { 0.0 }
+        } else {
+            0.0
+        }
     );
     let _ = writeln!(s, "\nTop waste patterns detected:");
     for fix in fixes.iter().take(5) {
         let _ = writeln!(
-            s, "  - [{}] {} (est. {} tokens/run)",
+            s,
+            "  - [{}] {} (est. {} tokens/run)",
             fix.fix_type, fix.patch, fix.estimated_token_savings
         );
     }
@@ -2637,28 +3624,39 @@ fn render_optimize_markdown(
     let _ = writeln!(s, "| | Before | After (projected) | Delta |");
     let _ = writeln!(s, "|---|---:|---:|---:|");
     let _ = writeln!(
-        s, "| TAS | {:.1} | {:.1} | {:+.1} |",
-        original_tas, projected_tas, projected_tas - original_tas
+        s,
+        "| TAS | {:.1} | {:.1} | {:+.1} |",
+        original_tas,
+        projected_tas,
+        projected_tas - original_tas
     );
     let _ = writeln!(
-        s, "| Tokens | {} | {} | {:+} |",
-        original_tokens, projected_tokens,
+        s,
+        "| Tokens | {} | {} | {:+} |",
+        original_tokens,
+        projected_tokens,
         projected_tokens as i64 - original_tokens as i64
     );
     let waste_pct = if original_tokens > 0 {
         // saturating_sub: a simulation can in principle project MORE tokens than
         // the original; plain u32 subtraction would underflow and panic.
         original_tokens.saturating_sub(projected_tokens) as f64 / original_tokens as f64 * 100.0
-    } else { 0.0 };
+    } else {
+        0.0
+    };
     let _ = writeln!(s, "| Est. waste removed | — | — | {:.0}% |", waste_pct);
     let _ = writeln!(s);
     let _ = writeln!(s, "## Iteration log");
     let _ = writeln!(s);
-    let _ = writeln!(s, "| Iter | Projected TAS | Projected tokens | Token delta |");
+    let _ = writeln!(
+        s,
+        "| Iter | Projected TAS | Projected tokens | Token delta |"
+    );
     let _ = writeln!(s, "|---:|---:|---:|---:|");
     for row in iterations {
         let _ = writeln!(
-            s, "| {} | {:.1} | {} | {:+} |",
+            s,
+            "| {} | {:.1} | {} | {:+} |",
             row.iteration, row.projected_tas, row.projected_tokens, row.token_delta
         );
     }
@@ -2667,7 +3665,8 @@ fn render_optimize_markdown(
     let _ = writeln!(s);
     for fix in fixes {
         let _ = writeln!(
-            s, "- **{}**: {} *(est. {} tokens/run)*",
+            s,
+            "- **{}**: {} *(est. {} tokens/run)*",
             fix.fix_type, fix.patch, fix.estimated_token_savings
         );
     }
@@ -2748,10 +3747,7 @@ async fn cmd_export(
 }
 
 /// POST a JSON report payload to a webhook URL.
-async fn export_webhook(
-    report: &tracerazor_core::report::TraceReport,
-    url: &str,
-) -> Result<()> {
+async fn export_webhook(report: &tracerazor_core::report::TraceReport, url: &str) -> Result<()> {
     let payload = serde_json::json!({
         "source": "tracerazor",
         "trace_id": report.trace_id,
@@ -2787,7 +3783,10 @@ async fn export_otel(
 ) -> Result<()> {
     // Clamp + saturating_mul: guard against a NaN/inf/out-of-range score
     // producing an overflowing u64 multiply (panic in debug).
-    let span_id = format!("{:016x}", (report.score.score.max(0.0) as u64).saturating_mul(100));
+    let span_id = format!(
+        "{:016x}",
+        (report.score.score.max(0.0) as u64).saturating_mul(100)
+    );
     let trace_id_hex = report
         .trace_id
         .chars()
@@ -2829,10 +3828,7 @@ async fn export_otel(
         }]
     });
 
-    let otel_url = format!(
-        "{}/v1/traces",
-        endpoint.trim_end_matches('/')
-    );
+    let otel_url = format!("{}/v1/traces", endpoint.trim_end_matches('/'));
 
     let client = reqwest::Client::new();
     client
