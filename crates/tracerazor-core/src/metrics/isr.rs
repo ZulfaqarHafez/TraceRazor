@@ -42,13 +42,18 @@ impl IsrResult {
 const TARGET: f64 = 80.0;
 /// Steps with less than this information gain are flagged.
 const NOVELTY_THRESHOLD: f64 = 0.10;
+/// Default size of the recent-step window novelty is measured against.
+///
 /// Novelty is measured against the most recent `NOVELTY_LOOKBACK` steps rather
 /// than the entire prefix. Information sufficiency is about whether a step
 /// restates *recent* context, and an unbounded prefix scan makes `analyse`
 /// quadratic (the dominant cost on long traces). A 64-step window keeps the
 /// metric near-linear while leaving results identical for any trace up to that
 /// length; longer traces compare against a sliding recent window.
-const NOVELTY_LOOKBACK: usize = 64;
+///
+/// The window is configurable via [`compute_from_similarities_windowed`]; this
+/// constant is the default used by [`compute_from_similarities`].
+pub const NOVELTY_LOOKBACK: usize = 64;
 
 /// Compute ISR using pre-computed embeddings.
 ///
@@ -62,6 +67,22 @@ pub fn compute_from_similarities(
     trace: &Trace,
     similarity_fn: impl Fn(&str, &str) -> f64,
 ) -> IsrResult {
+    compute_from_similarities_windowed(trace, similarity_fn, NOVELTY_LOOKBACK)
+}
+
+/// Compute ISR with an explicit recent-step `lookback` window.
+///
+/// Each step's novelty is measured against the most recent `lookback` prior
+/// steps. A `lookback` of `0` is treated as `1` (every step is still compared
+/// against its immediate predecessor) so the window can never silently disable
+/// novelty detection. See [`compute_from_similarities`] for the default-window
+/// entry point and [`NOVELTY_LOOKBACK`] for the default value.
+pub fn compute_from_similarities_windowed(
+    trace: &Trace,
+    similarity_fn: impl Fn(&str, &str) -> f64,
+    lookback: usize,
+) -> IsrResult {
+    let lookback = lookback.max(1);
     let steps = &trace.steps;
     let total = steps.len();
 
@@ -81,7 +102,7 @@ pub fn compute_from_similarities(
         // Early-exit once a prior step already exceeds the novelty cut-off,
         // since the only decision that depends on `max_sim` is whether it
         // crosses `1 - NOVELTY_THRESHOLD`.
-        let window_start = i.saturating_sub(NOVELTY_LOOKBACK);
+        let window_start = i.saturating_sub(lookback);
         let novelty_cutoff = 1.0 - NOVELTY_THRESHOLD;
         let mut max_sim = 0.0_f64;
         for prev in &steps[window_start..i] {
