@@ -1,12 +1,29 @@
 # TraceRazor native trace format
 
-TraceRazor ingests three formats (auto-detected, or forced with `-F`):
+TraceRazor ingests these formats (auto-detected, or forced with `-F`):
 
 | Format | Flag | How to get it |
 |---|---|---|
 | **Native JSON** (this document) | `-F raw` | Write it directly, use the Python `Tracer`, or convert a chat log with [`tools/convert_openai.py`](../tools/convert_openai.py) |
 | **LangSmith** run export | `-F langsmith` | `tools/fetch_langsmith.py`, or `client.list_runs()` dumped to JSON (flat arrays are re-treed via `parent_run_id`) |
 | **OpenTelemetry GenAI** spans | `-F otel` | OTLP-JSON with `gen_ai.*` semconv attributes (OpenLLMetry et al.) |
+| **Claude Code transcript** | `-F claude-code` | Local Claude Code session JSONL, or `tracerazor claude convert <session.jsonl>` |
+| **Langfuse** trace export | `-F langfuse` | JSON with `observations`, `traces[].observations`, or a bare observation array |
+| **Arize Phoenix** export | `-F phoenix` | Phoenix/OTel-shaped JSON; parsed through the OTel path |
+
+The universal importer normalizes these formats and can immediately audit them:
+
+```bash
+tracerazor import run.json --from langfuse --out trace.json --audit
+tracerazor import ./exports --from auto --out ./normalized --audit
+```
+
+Claude Code can be wired automatically with a local hook:
+
+```bash
+tracerazor claude install --scope local --mode coach
+tracerazor claude convert ~/.claude/projects/.../session.jsonl --out trace.json
+```
 
 Plain OpenAI/Anthropic `messages` arrays are **not** a trace format — convert
 them first: `python tools/convert_openai.py conversation.json -o trace.json`.

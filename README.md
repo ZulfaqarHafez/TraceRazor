@@ -19,9 +19,22 @@ tracerazor audit my-trace.json --threshold 75           # CI gate: exit 1 below 
 
 **Exit codes:** `0` pass · `1` threshold gate failed (only with `--threshold`) · `2` error (unreadable/invalid input).
 
-**Your own traces:** LangSmith and OTel GenAI exports parse directly (`-F langsmith` / `-F otel`);
+**Your own traces:** LangSmith, OTel/Phoenix, Langfuse, and Claude Code exports parse directly
+(`-F langsmith` / `-F otel` / `-F phoenix` / `-F langfuse` / `-F claude-code`);
 plain OpenAI/Anthropic chat logs convert with `python tools/convert_openai.py chat.json -o trace.json`.
 Native schema: [docs/trace-format.md](docs/trace-format.md) ([JSON Schema](schemas/trace.schema.json)).
+
+**Claude Code coach:** install a local SessionEnd hook and TraceRazor will convert
+each Claude Code transcript, audit it hermetically, and write `trace.json`,
+`report.json`, `fixes.json`, `coach.md`, and `summary.json` under
+`.tracerazor/claude-code/<session-id>/`:
+
+```bash
+tracerazor claude install --scope local --mode coach
+tracerazor claude convert ~/.claude/projects/.../session.jsonl --out trace.json
+```
+
+Coach mode is advisory: it never edits `CLAUDE.md`, prompts, settings, or tools.
 
 ---
 
@@ -996,6 +1009,8 @@ tracerazor <COMMAND>
 
 Commands:
   audit      Score a trace file; gate CI on --threshold <N>
+  import     Normalize raw/LangSmith/OTel/Phoenix/Langfuse/Claude Code exports
+  claude     Install/run Claude Code coach hooks and convert transcripts
   verify     Verify a report (or evidence bundle .zip) — signature, hash, re-score
   keygen     Generate an Ed25519 keypair for report signing
   optimize   Rewrite the system prompt with an LLM to eliminate detected waste
@@ -1018,6 +1033,10 @@ tracerazor compare before.json after.json
 tracerazor simulate trace.json --remove 3,8 --merge 6,7
 tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs 50000
 tracerazor optimize trace.json --system-prompt agent.txt --output agent_v2.txt --target-tas 85
+
+# Universal import + coach artifacts:
+tracerazor import exports/langfuse.json --from langfuse --out trace.json --audit
+tracerazor import exports/ --from auto --out normalized/ --audit
 
 # Signed evidence bundle (trace + signed report + weights + SHA256SUMS),
 # verifiable as a single file:
@@ -1231,3 +1250,4 @@ For a fuller, paper-style treatment of the methodology and its limitations, see
 ## License
 
 MIT. Copyright (c) 2025-2026 Zulfaqar Hafez. See [LICENSE](LICENSE).
+

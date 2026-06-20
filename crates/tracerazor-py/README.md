@@ -46,4 +46,4 @@ print(report["score"]["score"])      # TAS
 
 - `audit_json(trace_json: str) -> str` — audit auto-detected JSON, return report JSON.
 - `audit_json_with_format(trace_json: str, fmt: str) -> str` — `fmt` ∈
-  `{"auto","raw","langsmith","otel"}`.
+  `{"auto","raw","langsmith","otel","phoenix","langfuse","claude-code"}`.

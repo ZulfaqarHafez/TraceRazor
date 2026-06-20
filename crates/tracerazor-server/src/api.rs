@@ -17,6 +17,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::path::PathBuf;
 use tracerazor_core::{analyse, scoring::ScoringConfig};
 use tracerazor_ingest::{parse, TraceFormat};
 use tracerazor_semantic::{default_similarity_fn, BowSimilarity, Similarity};
@@ -30,6 +31,8 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(index))
         .route("/audit", post(audit))
+        .route("/import", post(import_trace))
+        .route("/claude-sessions", get(claude_sessions))
         .route("/traces", get(list_traces))
         .route("/traces/:id", get(get_trace).delete(delete_trace))
         .route("/dashboard", get(dashboard))
@@ -51,6 +54,8 @@ async fn index() -> impl IntoResponse {
         "version": env!("CARGO_PKG_VERSION"),
         "endpoints": [
             "POST /api/audit",
+            "POST /api/import",
+            "GET  /api/claude-sessions",
             "GET  /api/traces",
             "GET  /api/traces/:id",
             "DELETE /api/traces/:id",
@@ -59,6 +64,89 @@ async fn index() -> impl IntoResponse {
             "GET  /api/agents/:name"
         ]
     }))
+}
+
+#[derive(Deserialize)]
+pub struct ImportRequest {
+    /// Raw export text (JSON or JSONL).
+    pub data: String,
+    /// auto | raw | langsmith | otel | claude-code | langfuse | phoenix.
+    #[serde(default = "default_import_format")]
+    pub format: String,
+    /// When true, also run a hermetic audit over the normalized trace.
+    #[serde(default)]
+    pub audit: bool,
+}
+
+fn default_import_format() -> String {
+    "auto".into()
+}
+
+#[derive(Serialize)]
+pub struct ImportResponse {
+    pub trace: tracerazor_core::types::Trace,
+    pub ingest_quality: tracerazor_core::report::IngestQuality,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub report: Option<tracerazor_core::report::TraceReport>,
+}
+
+/// POST /api/import — normalize external exports and optionally audit them.
+async fn import_trace(Json(req): Json<ImportRequest>) -> Result<impl IntoResponse, AppError> {
+    let format = parse_format_label(&req.format)
+        .map_err(|e| AppError::bad_request(format!("Unsupported import format: {e}")))?;
+    let mut trace = parse(&req.data, format)
+        .map_err(|e| AppError::bad_request(format!("Ingest error: {e}")))?;
+    let quality = tracerazor_core::report::IngestQuality::assess_with_format(&trace, &req.format);
+    let report = if req.audit {
+        let config = ScoringConfig::default();
+        let mut report = analyse(&mut trace, default_similarity_fn(), &config)
+            .map_err(AppError::internal)?;
+        report.manifest = Some(
+            tracerazor_core::report::RunManifest::build(
+                tracerazor_core::provenance::sha256_hex(req.data.as_bytes()),
+                env!("CARGO_PKG_VERSION"),
+                tracerazor_semantic::BOW_BACKEND_ID.to_string(),
+                &config,
+                2,
+                true,
+                Some(quality.clone()),
+            )
+            .map_err(|e| AppError::internal(anyhow::anyhow!(e)))?,
+        );
+        Some(report)
+    } else {
+        None
+    };
+    Ok(Json(ImportResponse {
+        trace,
+        ingest_quality: quality,
+        report,
+    }))
+}
+
+/// GET /api/claude-sessions — local index emitted by `tracerazor claude hook`.
+async fn claude_sessions() -> impl IntoResponse {
+    let path = PathBuf::from(".tracerazor")
+        .join("claude-code")
+        .join("index.json");
+    let sessions = std::fs::read_to_string(path)
+        .ok()
+        .and_then(|raw| serde_json::from_str::<serde_json::Value>(&raw).ok())
+        .unwrap_or_else(|| json!([]));
+    Json(sessions)
+}
+
+fn parse_format_label(label: &str) -> Result<TraceFormat, String> {
+    match label {
+        "auto" => Ok(TraceFormat::Auto),
+        "raw" => Ok(TraceFormat::RawJson),
+        "langsmith" => Ok(TraceFormat::LangSmith),
+        "otel" => Ok(TraceFormat::Otel),
+        "claude-code" => Ok(TraceFormat::ClaudeCode),
+        "langfuse" => Ok(TraceFormat::Langfuse),
+        "phoenix" => Ok(TraceFormat::Phoenix),
+        other => Err(other.to_string()),
+    }
 }
 
 #[derive(Deserialize)]

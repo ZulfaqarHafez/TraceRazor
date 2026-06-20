@@ -1,4 +1,6 @@
 pub mod langsmith;
+pub mod claude_code;
+pub mod langfuse;
 pub mod raw_json;
 pub mod otel;
 
@@ -14,6 +16,12 @@ pub enum TraceFormat {
     LangSmith,
     /// OpenTelemetry JSON spans.
     Otel,
+    /// Claude Code local transcript JSONL.
+    ClaudeCode,
+    /// Langfuse trace/observation JSON export.
+    Langfuse,
+    /// Arize Phoenix trace export (OTel-shaped JSON).
+    Phoenix,
     /// Auto-detect from content.
     Auto,
 }
@@ -24,17 +32,32 @@ pub fn parse(data: &str, format: TraceFormat) -> Result<Trace> {
         TraceFormat::RawJson => raw_json::parse(data),
         TraceFormat::LangSmith => langsmith::parse(data),
         TraceFormat::Otel => otel::parse(data),
+        TraceFormat::ClaudeCode => claude_code::parse(data),
+        TraceFormat::Langfuse => langfuse::parse(data),
+        TraceFormat::Phoenix => otel::parse(data),
         TraceFormat::Auto => detect_and_parse(data),
     }
 }
 
 /// Detect the format from JSON content and parse accordingly.
 fn detect_and_parse(data: &str) -> Result<Trace> {
+    if looks_like_claude_code_jsonl(data) {
+        return claude_code::parse(data);
+    }
+
     let v: serde_json::Value = serde_json::from_str(data)?;
+
+    if looks_like_claude_code_json(&v) {
+        return claude_code::parse(data);
+    }
 
     // LangSmith: has a "run_type" field or "child_runs" at the top level.
     if v.get("run_type").is_some() || v.get("child_runs").is_some() {
         return langsmith::parse(data);
+    }
+
+    if looks_like_langfuse(&v) {
+        return langfuse::parse(data);
     }
 
     // OTEL: has a "resourceSpans" or "scopeSpans" field.
@@ -70,6 +93,44 @@ fn looks_like_chat_log(v: &serde_json::Value) -> bool {
         .as_array()
         .and_then(|a| a.first())
         .is_some_and(|m| m.get("role").is_some() && m.get("run_type").is_none())
+}
+
+fn looks_like_claude_code_jsonl(data: &str) -> bool {
+    let mut saw = false;
+    for line in data.lines().map(str::trim).filter(|l| !l.is_empty()).take(8) {
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(line) else {
+            return false;
+        };
+        if looks_like_claude_code_entry(&v) {
+            saw = true;
+        }
+    }
+    saw
+}
+
+fn looks_like_claude_code_json(v: &serde_json::Value) -> bool {
+    v.as_array()
+        .and_then(|a| a.first())
+        .is_some_and(looks_like_claude_code_entry)
+}
+
+fn looks_like_claude_code_entry(v: &serde_json::Value) -> bool {
+    matches!(
+        v.get("type").and_then(|t| t.as_str()),
+        Some("assistant" | "user")
+    ) && v.get("message").is_some()
+}
+
+fn looks_like_langfuse(v: &serde_json::Value) -> bool {
+    v.get("observations").is_some()
+        || v.get("traces").is_some()
+        || v.as_array()
+            .and_then(|a| a.first())
+            .is_some_and(|first| {
+                first.get("observations").is_some()
+                    || first.get("traceId").is_some()
+                    || first.get("usageDetails").is_some()
+            })
 }
 
 #[cfg(test)]

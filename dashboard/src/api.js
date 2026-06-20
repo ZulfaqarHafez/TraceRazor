@@ -36,6 +36,25 @@ export async function auditTrace(traceJson) {
   return r.json()
 }
 
+export async function importTrace(data, format = 'auto', audit = true) {
+  const r = await fetch(`${BASE}/import`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ data, format, audit }),
+  })
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({ error: r.statusText }))
+    throw new Error(err.error || 'Import failed')
+  }
+  return r.json()
+}
+
+export async function fetchClaudeSessions() {
+  const r = await fetch(`${BASE}/claude-sessions`)
+  if (!r.ok) throw new Error(`Claude sessions fetch failed: ${r.status}`)
+  return r.json()
+}
+
 /** Connect to the WebSocket and call onEvent(event) for each message. */
 export function connectWs(onEvent) {
   const proto = location.protocol === 'https:' ? 'wss' : 'ws'

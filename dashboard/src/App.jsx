@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback } from 'react'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
-import { fetchDashboard, fetchTraces, fetchTrace, deleteTrace, auditTrace, connectWs } from './api'
+import {
+  fetchDashboard, fetchTraces, fetchTrace, deleteTrace, auditTrace, importTrace,
+  fetchClaudeSessions, connectWs,
+} from './api'
 
 const GRADE_COLOR = { Excellent: '#22c55e', Good: '#3b82f6', Fair: '#f59e0b', Poor: '#ef4444' }
 
@@ -33,13 +36,21 @@ export default function App() {
   const [auditInput, setAuditInput] = useState('')
   const [auditResult, setAuditResult] = useState(null)
   const [auditError, setAuditError] = useState(null)
+  const [importInput, setImportInput] = useState('')
+  const [importFormat, setImportFormat] = useState('auto')
+  const [importResult, setImportResult] = useState(null)
+  const [importError, setImportError] = useState(null)
+  const [claudeSessions, setClaudeSessions] = useState([])
   const [loading, setLoading] = useState(false)
 
   const reload = useCallback(async () => {
     try {
-      const [d, t] = await Promise.all([fetchDashboard(), fetchTraces()])
+      const [d, t, c] = await Promise.all([
+        fetchDashboard(), fetchTraces(), fetchClaudeSessions().catch(() => []),
+      ])
       setDashboard(d)
       setTraces(t)
+      setClaudeSessions(Array.isArray(c) ? c : [])
     } catch (e) {
       console.error(e)
     }
@@ -91,12 +102,26 @@ export default function App() {
     }
   }
 
+  async function handleImport() {
+    setImportResult(null)
+    setImportError(null)
+    setLoading(true)
+    try {
+      const result = await importTrace(importInput, importFormat, true)
+      setImportResult(result)
+    } catch (e) {
+      setImportError(e.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div style={styles.root}>
       <header style={styles.header}>
         <span style={styles.logo}>⚡ TraceRazor</span>
         <nav style={styles.nav}>
-          {['dashboard', 'traces', 'audit', 'live'].map((t) => (
+          {['dashboard', 'traces', 'audit', 'import', 'claude', 'live'].map((t) => (
             <button key={t} style={tab === t ? styles.tabActive : styles.tab}
               onClick={() => setTab(t)}>
               {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -122,6 +147,15 @@ export default function App() {
             result={auditResult} error={auditError}
           />
         )}
+        {tab === 'import' && (
+          <ImportTab
+            input={importInput} onInput={setImportInput}
+            format={importFormat} onFormat={setImportFormat}
+            onImport={handleImport} loading={loading}
+            result={importResult} error={importError}
+          />
+        )}
+        {tab === 'claude' && <ClaudeTab sessions={claudeSessions} />}
         {tab === 'live' && <LiveTab events={liveEvents} />}
         {tab === 'detail' && selectedTrace && (
           <DetailTab stored={selectedTrace} onBack={() => setTab('traces')} onDelete={handleDelete} />
@@ -275,6 +309,98 @@ function AuditTab({ input, onInput, onAudit, loading, result, error }) {
 }
 
 // ── Live Events Tab ───────────────────────────────────────────────────────────
+function ImportTab({ input, onInput, format, onFormat, onImport, loading, result, error }) {
+  const quality = result?.ingest_quality
+  const report = result?.report
+  return (
+    <div style={{ maxWidth: 900 }}>
+      <h2 style={styles.sectionTitle}>Import Trace</h2>
+      <p style={{ color: '#94a3b8', marginTop: 0 }}>
+        Paste LangSmith, OTel/Phoenix, Langfuse, Claude Code JSONL, or raw TraceRazor JSON.
+      </p>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+        <select style={styles.select} value={format} onChange={(e) => onFormat(e.target.value)}>
+          {['auto', 'raw', 'langsmith', 'otel', 'phoenix', 'langfuse', 'claude-code'].map((f) => (
+            <option key={f} value={f}>{f}</option>
+          ))}
+        </select>
+        <button style={styles.button} onClick={onImport} disabled={loading || !input.trim()}>
+          {loading ? 'Importing…' : 'Import + Audit'}
+        </button>
+      </div>
+      <textarea
+        style={styles.textarea}
+        value={input}
+        onChange={(e) => onInput(e.target.value)}
+        placeholder='Paste export JSON or Claude Code transcript JSONL'
+        rows={14}
+      />
+      {error && <div style={styles.errorBox}>{error}</div>}
+      {result && (
+        <div style={styles.resultBox}>
+          <h3 style={{ marginTop: 0 }}>
+            {result.trace?.agent_name} — {report ? <GradeBadge grade={report.score?.grade} /> : 'normalized'}
+          </h3>
+          <div style={styles.statRow}>
+            <StatCard label="Steps" value={quality?.step_count ?? result.trace?.steps?.length} />
+            <StatCard label="Token Coverage" value={`${Math.round((quality?.token_coverage ?? 0) * 100)}%`} />
+            <StatCard label="Content Coverage" value={`${Math.round((quality?.content_coverage ?? 0) * 100)}%`} />
+            {report && <StatCard label="TAS" value={`${report.score?.score?.toFixed(1)} / 100`} />}
+          </div>
+          {quality?.warnings?.length > 0 && (
+            <div style={styles.errorBox}>{quality.warnings.join('; ')}</div>
+          )}
+          {report?.fixes?.length > 0 && (
+            <>
+              <h3>Fix Preview</h3>
+              <pre style={styles.pre}>{JSON.stringify(report.fixes, null, 2)}</pre>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ClaudeTab({ sessions }) {
+  return (
+    <div>
+      <h2 style={styles.sectionTitle}>Claude Code Sessions</h2>
+      <p style={{ color: '#94a3b8', marginTop: 0 }}>
+        Install with <code>tracerazor claude install --scope local --mode coach</code>. Reports are emitted after each Claude Code session.
+      </p>
+      {!sessions?.length && (
+        <div style={styles.empty}>No local Claude Code coach reports found yet.</div>
+      )}
+      {sessions?.length > 0 && (
+        <table style={styles.table}>
+          <thead>
+            <tr>
+              {['Trace', 'Agent', 'TAS', 'Grade', 'Tokens', 'Fixes', 'Validation', 'Coach'].map((h) => (
+                <th key={h} style={styles.th}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sessions.map((s) => (
+              <tr key={s.trace_id}>
+                <td style={{ ...styles.td, fontFamily: 'monospace', fontSize: 12 }}>{s.trace_id}</td>
+                <td style={styles.td}>{s.agent_name}</td>
+                <td style={styles.td}>{s.tas_score?.toFixed?.(1) ?? '—'}</td>
+                <td style={styles.td}>{s.grade ? <GradeBadge grade={s.grade} /> : '—'}</td>
+                <td style={styles.td}>{Number(s.total_tokens ?? 0).toLocaleString()}</td>
+                <td style={styles.td}>{s.fix_count ?? 0}</td>
+                <td style={styles.td}>{s.validation_status ?? 'projected_only'}</td>
+                <td style={styles.td}><code>{String(s.coach ?? '').split(/[\\/]/).slice(-2).join('/')}</code></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
 function LiveTab({ events }) {
   if (!events.length) return (
     <div style={styles.empty}>
@@ -385,6 +511,10 @@ const styles = {
     width: '100%', background: '#1e293b', border: '1px solid #334155',
     borderRadius: 8, color: '#e2e8f0', padding: 12, fontSize: 13, fontFamily: 'monospace',
     resize: 'vertical',
+  },
+  select: {
+    background: '#1e293b', border: '1px solid #334155',
+    borderRadius: 8, color: '#e2e8f0', padding: '8px 10px', fontSize: 14,
   },
   button: {
     background: '#3b82f6', border: 'none', color: '#fff',

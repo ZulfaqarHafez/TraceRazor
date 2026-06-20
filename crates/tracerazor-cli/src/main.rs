@@ -1,6 +1,9 @@
 use anyhow::{Context, Result};
 use clap::{Parser, Subcommand, ValueEnum};
-use std::path::PathBuf;
+use serde::{Deserialize, Serialize};
+use serde_json::json;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 use tracerazor_core::{
     cost::{CostConfig, ProviderPreset, project_cost},
     fixes::{Fix, FixType},
@@ -112,6 +115,29 @@ enum Commands {
         /// short traces — interpret scores accordingly.
         #[arg(long, value_name = "N", default_value_t = MIN_TRACE_STEPS)]
         min_steps: usize,
+    },
+
+    /// Install and run the Claude Code TraceRazor coach hooks.
+    Claude {
+        #[command(subcommand)]
+        command: ClaudeCommand,
+    },
+
+    /// Normalize external trace exports into TraceRazor traces, optionally auditing them.
+    #[command(name = "import")]
+    ImportTrace {
+        /// Trace export file(s) or directories.
+        #[arg(value_name = "INPUT", num_args = 1..)]
+        inputs: Vec<PathBuf>,
+        /// Source format. Auto-detects if not specified.
+        #[arg(long = "from", default_value = "auto")]
+        source_format: InputFormat,
+        /// Output file for a single input, or output directory for multiple inputs.
+        #[arg(long, value_name = "PATH")]
+        out: Option<PathBuf>,
+        /// Run a hermetic audit and emit report/fixes/coach artifacts next to the trace.
+        #[arg(long, default_value = "false")]
+        audit: bool,
     },
 
     /// Verify a historical report against its trace and run manifest.
@@ -330,6 +356,65 @@ enum Commands {
     },
 }
 
+#[derive(Subcommand)]
+enum ClaudeCommand {
+    /// Install the Claude Code SessionEnd hook.
+    Install {
+        /// Settings scope to modify. Defaults to per-project local settings.
+        #[arg(long, default_value = "local")]
+        scope: ClaudeScope,
+        /// Hook behavior. Coach mode still never auto-edits prompts/settings.
+        #[arg(long, default_value = "coach")]
+        mode: ClaudeMode,
+    },
+    /// Remove the TraceRazor Claude Code hook from settings.
+    Uninstall {
+        /// Settings scope to modify. Defaults to per-project local settings.
+        #[arg(long, default_value = "local")]
+        scope: ClaudeScope,
+    },
+    /// Convert a Claude Code transcript JSONL into a TraceRazor trace.
+    Convert {
+        /// Claude Code transcript JSONL path.
+        #[arg(value_name = "TRANSCRIPT")]
+        transcript: PathBuf,
+        /// Output trace JSON path. Prints to stdout if omitted.
+        #[arg(long, value_name = "FILE")]
+        out: Option<PathBuf>,
+    },
+    /// Hook entrypoints called by Claude Code.
+    Hook {
+        #[command(subcommand)]
+        command: ClaudeHookCommand,
+    },
+}
+
+#[derive(Subcommand)]
+enum ClaudeHookCommand {
+    /// Handle a Claude Code SessionEnd hook event from stdin.
+    #[command(name = "session-end")]
+    SessionEnd {
+        /// Hook behavior. Coach mode emits richer guidance but still applies nothing.
+        #[arg(long, default_value = "coach")]
+        mode: ClaudeMode,
+    },
+}
+
+#[derive(ValueEnum, Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ClaudeScope {
+    Local,
+    Project,
+    User,
+}
+
+#[derive(ValueEnum, Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum ClaudeMode {
+    Passive,
+    Coach,
+}
+
 #[derive(ValueEnum, Clone, Debug)]
 enum OutputFormat {
     Markdown,
@@ -342,6 +427,10 @@ enum InputFormat {
     Raw,
     Langsmith,
     Otel,
+    #[value(name = "claude-code")]
+    ClaudeCode,
+    Langfuse,
+    Phoenix,
 }
 
 #[derive(ValueEnum, Clone, Debug)]
@@ -377,6 +466,9 @@ impl From<InputFormat> for TraceFormat {
             InputFormat::Raw => TraceFormat::RawJson,
             InputFormat::Langsmith => TraceFormat::LangSmith,
             InputFormat::Otel => TraceFormat::Otel,
+            InputFormat::ClaudeCode => TraceFormat::ClaudeCode,
+            InputFormat::Langfuse => TraceFormat::Langfuse,
+            InputFormat::Phoenix => TraceFormat::Phoenix,
         }
     }
 }
@@ -404,6 +496,12 @@ async fn run() -> Result<()> {
             } else {
                 cmd_audit_batch(expanded, format, threshold, trace_format, cost_per_million, weights, min_steps)?;
             }
+        }
+        Commands::Claude { command } => {
+            cmd_claude(command).await?;
+        }
+        Commands::ImportTrace { inputs, source_format, out, audit } => {
+            cmd_import(inputs, source_format, out, audit).await?;
         }
         Commands::Verify { report, trace } => {
             cmd_verify(report, trace)?;
@@ -641,6 +739,592 @@ fn expand_trace_paths(inputs: &[PathBuf]) -> Result<Vec<PathBuf>> {
         anyhow::bail!("no trace files found in the given paths");
     }
     Ok(out)
+}
+
+async fn cmd_claude(command: ClaudeCommand) -> Result<()> {
+    match command {
+        ClaudeCommand::Install { scope, mode } => cmd_claude_install(scope, mode),
+        ClaudeCommand::Uninstall { scope } => cmd_claude_uninstall(scope),
+        ClaudeCommand::Convert { transcript, out } => cmd_claude_convert(transcript, out),
+        ClaudeCommand::Hook { command: ClaudeHookCommand::SessionEnd { mode } } => {
+            cmd_claude_hook_session_end(mode).await
+        }
+    }
+}
+
+fn cmd_claude_convert(transcript: PathBuf, out: Option<PathBuf>) -> Result<()> {
+    let data = std::fs::read_to_string(&transcript)
+        .with_context(|| format!("Cannot read Claude Code transcript: {}", transcript.display()))?;
+    let mut trace = ingest_parse(&data, TraceFormat::ClaudeCode)
+        .with_context(|| format!("Failed to parse Claude Code transcript: {}", transcript.display()))?;
+    if trace.trace_id == "claude-code-transcript" {
+        if let Some(stem) = transcript.file_stem().and_then(|s| s.to_str()) {
+            trace.trace_id = stem.to_string();
+        }
+    }
+    let rendered = serde_json::to_string_pretty(&trace)?;
+    if let Some(path) = out {
+        if let Some(parent) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(&path, rendered)?;
+        println!("Wrote {}", path.display());
+    } else {
+        println!("{rendered}");
+    }
+    Ok(())
+}
+
+fn cmd_claude_install(scope: ClaudeScope, mode: ClaudeMode) -> Result<()> {
+    let path = claude_settings_path(&scope)?;
+    let mut settings = read_settings_recovering(&path)?;
+    remove_tracerazor_hook(&mut settings);
+    install_tracerazor_hook(&mut settings, &mode);
+    write_settings_with_backup(&path, &settings)?;
+    println!(
+        "Installed TraceRazor Claude Code hook in {} ({:?} mode).",
+        path.display(),
+        mode
+    );
+    println!("Reports will be written under .tracerazor/claude-code/<session-id>/");
+    Ok(())
+}
+
+fn cmd_claude_uninstall(scope: ClaudeScope) -> Result<()> {
+    let path = claude_settings_path(&scope)?;
+    let mut settings = read_settings_recovering(&path)?;
+    let removed = remove_tracerazor_hook(&mut settings);
+    write_settings_with_backup(&path, &settings)?;
+    println!(
+        "{} TraceRazor Claude Code hook in {}.",
+        if removed { "Removed" } else { "No" },
+        path.display()
+    );
+    Ok(())
+}
+
+async fn cmd_claude_hook_session_end(mode: ClaudeMode) -> Result<()> {
+    if let Err(e) = run_claude_hook_session_end(mode).await {
+        eprintln!("TraceRazor Claude hook warning: {e:#}");
+    }
+    Ok(())
+}
+
+async fn run_claude_hook_session_end(mode: ClaudeMode) -> Result<()> {
+    let mut input = String::new();
+    std::io::stdin().read_to_string(&mut input)?;
+    let event: ClaudeSessionEndInput = serde_json::from_str(&input)
+        .context("Claude Code hook input was not valid JSON")?;
+    let transcript = event
+        .transcript_path
+        .as_ref()
+        .map(PathBuf::from)
+        .context("Claude Code SessionEnd input did not include transcript_path")?;
+    let cwd = event.cwd.as_ref().map(PathBuf::from).unwrap_or(std::env::current_dir()?);
+    let session_id = event
+        .session_id
+        .or(event.session_id_camel)
+        .unwrap_or_else(|| transcript.file_stem().and_then(|s| s.to_str()).unwrap_or("session").to_string());
+    let out_dir = cwd
+        .join(".tracerazor")
+        .join("claude-code")
+        .join(sanitize_path_segment(&session_id));
+    std::fs::create_dir_all(&out_dir)?;
+
+    let transcript_data = std::fs::read_to_string(&transcript)
+        .with_context(|| format!("Cannot read transcript: {}", transcript.display()))?;
+    let mut trace = ingest_parse(&transcript_data, TraceFormat::ClaudeCode)
+        .context("Failed to convert Claude Code transcript")?;
+    trace.trace_id = session_id.clone();
+    trace
+        .metadata
+        .insert("claude_transcript_path".into(), json!(transcript.display().to_string()));
+
+    let trace_path = out_dir.join("trace.json");
+    let trace_json = serde_json::to_string_pretty(&trace)?;
+    std::fs::write(&trace_path, &trace_json)?;
+
+    let report = audit_trace_hermetic(trace, trace_json.as_bytes(), "claude-code")?;
+    let report_path = out_dir.join("report.json");
+    let fixes_path = out_dir.join("fixes.json");
+    let coach_path = out_dir.join("coach.md");
+    let summary_path = out_dir.join("summary.json");
+    std::fs::write(&report_path, serde_json::to_string_pretty(&report)?)?;
+    std::fs::write(&fixes_path, serde_json::to_string_pretty(&report.fixes)?)?;
+    std::fs::write(
+        &coach_path,
+        render_coach_markdown(&report, &trace_path, &fixes_path, mode),
+    )?;
+    let summary = coach_summary_json(&report, &trace_path, &report_path, &fixes_path, &coach_path);
+    std::fs::write(&summary_path, serde_json::to_string_pretty(&summary)?)?;
+    update_claude_session_index(&cwd, summary)?;
+    eprintln!(
+        "TraceRazor audited Claude Code session {}: TAS {:.0}/100, {} fixes -> {}",
+        session_id,
+        report.score.score,
+        report.fixes.len(),
+        coach_path.display()
+    );
+    Ok(())
+}
+
+async fn cmd_import(
+    inputs: Vec<PathBuf>,
+    source_format: InputFormat,
+    out: Option<PathBuf>,
+    audit: bool,
+) -> Result<()> {
+    let files = expand_import_paths(&inputs)?;
+    let multiple = files.len() > 1 || inputs.iter().any(|p| p.is_dir());
+    if multiple && out.is_none() {
+        anyhow::bail!("--out <DIR> is required when importing multiple files or a directory");
+    }
+    let out_is_dir = multiple || out.as_ref().is_some_and(|p| p.extension().is_none());
+    let mut summaries = Vec::new();
+
+    for file in files {
+        let data = std::fs::read_to_string(&file)
+            .with_context(|| format!("Cannot read import input: {}", file.display()))?;
+        let mut trace = ingest_parse(&data, source_format.clone().into())
+            .with_context(|| format!("Failed to import {}", file.display()))?;
+        if trace.trace_id == "claude-code-transcript" || trace.trace_id.is_empty() {
+            trace.trace_id = file.file_stem().and_then(|s| s.to_str()).unwrap_or("trace").to_string();
+        }
+
+        let trace_json = serde_json::to_string_pretty(&trace)?;
+        let trace_path = match (&out, out_is_dir) {
+            (Some(base), true) => {
+                std::fs::create_dir_all(base)?;
+                base.join(format!(
+                    "{}.trace.json",
+                    file.file_stem().and_then(|s| s.to_str()).unwrap_or("trace")
+                ))
+            }
+            (Some(path), false) => path.clone(),
+            (None, false) => {
+                if audit {
+                    anyhow::bail!("--out <PATH> is required when --audit is set");
+                }
+                println!("{trace_json}");
+                return Ok(());
+            }
+            (None, true) => unreachable!(),
+        };
+        if let Some(parent) = trace_path.parent().filter(|p| !p.as_os_str().is_empty()) {
+            std::fs::create_dir_all(parent)?;
+        }
+        std::fs::write(&trace_path, &trace_json)?;
+
+        let mut item = json!({
+            "input": file,
+            "trace": trace_path,
+            "trace_id": trace.trace_id,
+            "steps": trace.steps.len(),
+            "tokens": trace.effective_total_tokens(),
+        });
+        if audit {
+            let report = audit_trace_hermetic(trace, trace_json.as_bytes(), input_format_label(&source_format))?;
+            let report_path = replace_suffix(&trace_path, ".report.json");
+            let fixes_path = replace_suffix(&trace_path, ".fixes.json");
+            let coach_path = replace_suffix(&trace_path, ".coach.md");
+            let summary_path = replace_suffix(&trace_path, ".summary.json");
+            std::fs::write(&report_path, serde_json::to_string_pretty(&report)?)?;
+            std::fs::write(&fixes_path, serde_json::to_string_pretty(&report.fixes)?)?;
+            std::fs::write(
+                &coach_path,
+                render_coach_markdown(&report, &trace_path, &fixes_path, ClaudeMode::Coach),
+            )?;
+            let summary = coach_summary_json(&report, &trace_path, &report_path, &fixes_path, &coach_path);
+            std::fs::write(&summary_path, serde_json::to_string_pretty(&summary)?)?;
+            item["report"] = json!(report_path);
+            item["fixes"] = json!(fixes_path);
+            item["coach"] = json!(coach_path);
+            item["summary"] = json!(summary_path);
+        }
+        summaries.push(item);
+    }
+
+    println!("{}", serde_json::to_string_pretty(&summaries)?);
+    Ok(())
+}
+
+fn audit_trace_hermetic(
+    mut trace: tracerazor_core::types::Trace,
+    trace_bytes: &[u8],
+    format_label: &str,
+) -> Result<tracerazor_core::report::TraceReport> {
+    if trace.steps.len() < 2 {
+        anyhow::bail!(
+            "trace '{}' has {} step(s); at least 2 are required for audit",
+            trace.trace_id,
+            trace.steps.len()
+        );
+    }
+    let config = ScoringConfig::default();
+    let mut report = tracerazor_core::analyse(&mut trace, default_similarity_fn(), &config)?;
+    let ingest_quality =
+        tracerazor_core::report::IngestQuality::assess_with_format(&trace, format_label);
+    report.manifest = Some(tracerazor_core::report::RunManifest::build(
+        sha256_hex(trace_bytes),
+        env!("CARGO_PKG_VERSION"),
+        tracerazor_semantic::BOW_BACKEND_ID.to_string(),
+        &config,
+        2,
+        true,
+        Some(ingest_quality),
+    )?);
+    if let Ok(key_hex) = std::env::var("TRACERAZOR_SIGNING_KEY") {
+        if let Err(e) = sign_with_env_key(&mut report, &key_hex) {
+            eprintln!("Warning: could not sign report ({e}); report will be unsigned");
+        }
+    }
+    Ok(report)
+}
+
+#[derive(Debug, Deserialize)]
+struct ClaudeSessionEndInput {
+    #[serde(default)]
+    transcript_path: Option<String>,
+    #[serde(default)]
+    cwd: Option<String>,
+    #[serde(default)]
+    session_id: Option<String>,
+    #[serde(default, rename = "sessionId")]
+    session_id_camel: Option<String>,
+}
+
+fn claude_settings_path(scope: &ClaudeScope) -> Result<PathBuf> {
+    match scope {
+        ClaudeScope::Local => Ok(PathBuf::from(".claude").join("settings.local.json")),
+        ClaudeScope::Project => Ok(PathBuf::from(".claude").join("settings.json")),
+        ClaudeScope::User => {
+            let home = std::env::var("HOME")
+                .or_else(|_| std::env::var("USERPROFILE"))
+                .context("HOME/USERPROFILE is not set")?;
+            Ok(PathBuf::from(home).join(".claude").join("settings.json"))
+        }
+    }
+}
+
+fn read_settings_recovering(path: &Path) -> Result<serde_json::Value> {
+    if !path.exists() {
+        return Ok(json!({}));
+    }
+    let raw = std::fs::read_to_string(path)
+        .with_context(|| format!("Cannot read settings: {}", path.display()))?;
+    match serde_json::from_str(&raw) {
+        Ok(v) => Ok(v),
+        Err(_) => {
+            let backup = backup_path(path, "invalid");
+            if let Some(parent) = backup.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            std::fs::copy(path, &backup)?;
+            eprintln!(
+                "Warning: malformed Claude settings backed up to {}; starting with empty settings",
+                backup.display()
+            );
+            Ok(json!({}))
+        }
+    }
+}
+
+fn write_settings_with_backup(path: &Path, settings: &serde_json::Value) -> Result<()> {
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    if path.exists() {
+        let backup = backup_path(path, "bak");
+        std::fs::copy(path, backup)?;
+    }
+    std::fs::write(path, serde_json::to_string_pretty(settings)?)?;
+    Ok(())
+}
+
+fn backup_path(path: &Path, kind: &str) -> PathBuf {
+    let stamp = chrono::Utc::now().format("%Y%m%d%H%M%S");
+    let name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("settings.json");
+    path.with_file_name(format!("{name}.{kind}.{stamp}"))
+}
+
+fn install_tracerazor_hook(settings: &mut serde_json::Value, mode: &ClaudeMode) {
+    ensure_object(settings);
+    let hooks = ensure_child_object(settings, "hooks");
+    let session_end = ensure_child_array(hooks, "SessionEnd");
+    session_end.push(json!({
+        "hooks": [{
+            "type": "command",
+            "command": "tracerazor",
+            "args": ["claude", "hook", "session-end", "--mode", mode_arg(mode)],
+            "timeout": 60,
+            "statusMessage": "TraceRazor auditing Claude Code session"
+        }]
+    }));
+}
+
+fn remove_tracerazor_hook(settings: &mut serde_json::Value) -> bool {
+    let mut removed = false;
+    let Some(groups) = settings
+        .get_mut("hooks")
+        .and_then(|h| h.get_mut("SessionEnd"))
+        .and_then(serde_json::Value::as_array_mut)
+    else {
+        return false;
+    };
+    for group in groups.iter_mut() {
+        if let Some(hooks) = group.get_mut("hooks").and_then(serde_json::Value::as_array_mut) {
+            let before = hooks.len();
+            hooks.retain(|hook| !is_tracerazor_hook_handler(hook));
+            removed |= hooks.len() != before;
+        }
+    }
+    groups.retain(|group| {
+        group
+            .get("hooks")
+            .and_then(serde_json::Value::as_array)
+            .is_some_and(|hooks| !hooks.is_empty())
+    });
+    removed
+}
+
+fn is_tracerazor_hook_handler(hook: &serde_json::Value) -> bool {
+    hook.get("command").and_then(serde_json::Value::as_str) == Some("tracerazor")
+        && hook
+            .get("args")
+            .and_then(serde_json::Value::as_array)
+            .is_some_and(|args| {
+                let args = args
+                    .iter()
+                    .filter_map(serde_json::Value::as_str)
+                    .collect::<Vec<_>>();
+                args.starts_with(&["claude", "hook", "session-end"])
+                    || args
+                        .windows(3)
+                        .any(|w| w == ["claude", "hook", "session-end"])
+            })
+}
+
+fn ensure_object(v: &mut serde_json::Value) {
+    if !v.is_object() {
+        *v = json!({});
+    }
+}
+
+fn ensure_child_object<'a>(
+    v: &'a mut serde_json::Value,
+    key: &str,
+) -> &'a mut serde_json::Map<String, serde_json::Value> {
+    ensure_object(v);
+    let child = v
+        .as_object_mut()
+        .expect("object ensured")
+        .entry(key.to_string())
+        .or_insert_with(|| json!({}));
+    if !child.is_object() {
+        *child = json!({});
+    }
+    child.as_object_mut().expect("child object ensured")
+}
+
+fn ensure_child_array<'a>(
+    obj: &'a mut serde_json::Map<String, serde_json::Value>,
+    key: &str,
+) -> &'a mut Vec<serde_json::Value> {
+    let child = obj.entry(key.to_string()).or_insert_with(|| json!([]));
+    if !child.is_array() {
+        *child = json!([]);
+    }
+    child.as_array_mut().expect("child array ensured")
+}
+
+fn render_coach_markdown(
+    report: &tracerazor_core::report::TraceReport,
+    trace_path: &Path,
+    fixes_path: &Path,
+    mode: ClaudeMode,
+) -> String {
+    let mut out = String::new();
+    out.push_str("# TraceRazor Coach\n\n");
+    out.push_str(&format!(
+        "- Trace: `{}`\n- TAS: {:.0}/100 ({})\n- Tokens: {}\n- Estimated recoverable tokens/run: {}\n- Mode: `{:?}` — no prompts, settings, tools, or files were auto-edited.\n\n",
+        trace_path.display(),
+        report.score.score,
+        report.score.grade,
+        report.total_tokens,
+        report.savings.tokens_saved,
+        mode,
+    ));
+    if let Some(manifest) = &report.manifest {
+        if let Some(q) = &manifest.ingest_quality {
+            out.push_str("## Ingest Quality\n\n");
+            out.push_str(&format!(
+                "- Format: `{}`\n- Token coverage: {:.0}%\n- Content coverage: {:.0}%\n- Steps: {}\n- Degraded ingest: `{}`\n",
+                q.format,
+                q.token_coverage * 100.0,
+                q.content_coverage * 100.0,
+                q.step_count,
+                q.degraded_ingest,
+            ));
+            for warning in &q.warnings {
+                out.push_str(&format!("- Warning: {warning}\n"));
+            }
+            out.push('\n');
+        }
+    }
+    out.push_str("## Top Waste Signals\n\n");
+    for (code, waste) in top_waste_signals(report).into_iter().take(5) {
+        out.push_str(&format!("- `{}` waste score: {:.1}%\n", code.to_uppercase(), waste * 100.0));
+    }
+    out.push('\n');
+    out.push_str("## Recommended Fixes\n\n");
+    if report.fixes.is_empty() {
+        out.push_str("- No safe prompt patches were generated for this trace.\n\n");
+    } else {
+        for (idx, fix) in report.fixes.iter().enumerate() {
+            out.push_str(&format!(
+                "{}. `{}` → `{}` ({:?}, est. {} tokens/run)\n\n   {}\n\n",
+                idx + 1,
+                fix.fix_type,
+                fix.target,
+                fix.risk,
+                fix.estimated_token_savings,
+                fix.prompt_directive()
+            ));
+        }
+        out.push_str("Preview patch application:\n\n");
+        out.push_str(&format!(
+            "```sh\ntracerazor apply {} --to CLAUDE.md --dry-run\n```\n\n",
+            fixes_path.display()
+        ));
+        out.push_str("Apply only after review:\n\n");
+        out.push_str(&format!(
+            "```sh\ntracerazor apply {} --to CLAUDE.md\n```\n\n",
+            fixes_path.display()
+        ));
+    }
+    out.push_str("## Validation\n\n");
+    out.push_str(
+        "Savings above are projected. Treat them as verified only after a before/after rerun with task success held constant, then run `tracerazor bench --before before.json --after after.json --fixes fixes.json`.\n",
+    );
+    out
+}
+
+fn top_waste_signals(report: &tracerazor_core::report::TraceReport) -> Vec<(String, f64)> {
+    let mut pairs: Vec<(String, f64)> = report
+        .score
+        .metric_normalised
+        .iter()
+        .map(|(code, normalised)| (code.clone(), (1.0 - normalised).clamp(0.0, 1.0)))
+        .collect();
+    pairs.sort_by(|a, b| b.1.total_cmp(&a.1));
+    pairs
+}
+
+fn coach_summary_json(
+    report: &tracerazor_core::report::TraceReport,
+    trace_path: &Path,
+    report_path: &Path,
+    fixes_path: &Path,
+    coach_path: &Path,
+) -> serde_json::Value {
+    json!({
+        "trace_id": report.trace_id,
+        "agent_name": report.agent_name,
+        "framework": report.framework,
+        "tas_score": report.score.score,
+        "grade": report.score.grade.to_string(),
+        "total_tokens": report.total_tokens,
+        "estimated_tokens_saved": report.savings.tokens_saved,
+        "fix_count": report.fixes.len(),
+        "trace": trace_path,
+        "report": report_path,
+        "fixes": fixes_path,
+        "coach": coach_path,
+        "validated": false,
+        "validation_status": "projected_only"
+    })
+}
+
+fn update_claude_session_index(cwd: &Path, summary: serde_json::Value) -> Result<()> {
+    let index_path = cwd.join(".tracerazor").join("claude-code").join("index.json");
+    if let Some(parent) = index_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    let mut index: Vec<serde_json::Value> = if index_path.exists() {
+        serde_json::from_str(&std::fs::read_to_string(&index_path)?).unwrap_or_default()
+    } else {
+        Vec::new()
+    };
+    let trace_id = summary.get("trace_id").cloned();
+    index.retain(|entry| entry.get("trace_id").cloned() != trace_id);
+    index.insert(0, summary);
+    index.truncate(100);
+    std::fs::write(index_path, serde_json::to_string_pretty(&index)?)?;
+    Ok(())
+}
+
+fn expand_import_paths(inputs: &[PathBuf]) -> Result<Vec<PathBuf>> {
+    let mut out = Vec::new();
+    for p in inputs {
+        if p.is_dir() {
+            let mut stack = vec![p.clone()];
+            while let Some(dir) = stack.pop() {
+                for entry in std::fs::read_dir(&dir)
+                    .with_context(|| format!("Cannot read directory: {}", dir.display()))?
+                {
+                    let path = entry?.path();
+                    if path.is_dir() {
+                        stack.push(path);
+                    } else if path.extension().is_some_and(|e| e == "json" || e == "jsonl") {
+                        out.push(path);
+                    }
+                }
+            }
+        } else {
+            out.push(p.clone());
+        }
+    }
+    out.sort();
+    out.dedup();
+    if out.is_empty() {
+        anyhow::bail!("no import files found");
+    }
+    Ok(out)
+}
+
+fn replace_suffix(path: &Path, suffix: &str) -> PathBuf {
+    let stem = path.file_stem().and_then(|s| s.to_str()).unwrap_or("trace");
+    path.with_file_name(format!("{stem}{suffix}"))
+}
+
+fn sanitize_path_segment(segment: &str) -> String {
+    let clean: String = segment
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.') { c } else { '-' })
+        .collect();
+    if clean.is_empty() { "session".into() } else { clean }
+}
+
+fn input_format_label(format: &InputFormat) -> &'static str {
+    match format {
+        InputFormat::Auto => "auto",
+        InputFormat::Raw => "raw",
+        InputFormat::Langsmith => "langsmith",
+        InputFormat::Otel => "otel",
+        InputFormat::ClaudeCode => "claude-code",
+        InputFormat::Langfuse => "langfuse",
+        InputFormat::Phoenix => "phoenix",
+    }
+}
+
+fn mode_arg(mode: &ClaudeMode) -> &'static str {
+    match mode {
+        ClaudeMode::Passive => "passive",
+        ClaudeMode::Coach => "coach",
+    }
 }
 
 /// Batch/fleet audit: hermetic per-file scoring and one aggregate report.

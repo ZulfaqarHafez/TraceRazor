@@ -1,6 +1,6 @@
 [package]
 name = "tracerazor-ingest"
-description = "Trace format parsers for TraceRazor (raw JSON, LangSmith, OTEL)"
+description = "Trace format parsers for TraceRazor (raw JSON, LangSmith, OTEL, Claude Code, Langfuse)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

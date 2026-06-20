@@ -17,7 +17,7 @@ use tracerazor_core::scoring::ScoringConfig;
 use tracerazor_ingest::{parse as ingest_parse, TraceFormat};
 use tracerazor_semantic::default_similarity_fn;
 
-/// Audit a trace (raw / LangSmith / OTEL JSON, auto-detected) and return the
+/// Audit a trace (raw / LangSmith / OTEL / Claude Code / Langfuse JSON, auto-detected) and return the
 /// full report as a JSON string -- the exact shape the subprocess backend and
 /// the `teacher.Diagnoser` already consume.
 #[pyfunction]
@@ -35,7 +35,8 @@ fn audit_json(trace_json: &str) -> PyResult<String> {
         .map_err(|e| PyValueError::new_err(format!("serialise failed: {e}")))
 }
 
-/// Audit with an explicit input format: "auto" | "raw" | "langsmith" | "otel".
+/// Audit with an explicit input format:
+/// "auto" | "raw" | "langsmith" | "otel" | "claude-code" | "langfuse" | "phoenix".
 #[pyfunction]
 fn audit_json_with_format(trace_json: &str, fmt: &str) -> PyResult<String> {
     let format = match fmt.to_ascii_lowercase().as_str() {
@@ -43,6 +44,9 @@ fn audit_json_with_format(trace_json: &str, fmt: &str) -> PyResult<String> {
         "raw" | "rawjson" => TraceFormat::RawJson,
         "langsmith" => TraceFormat::LangSmith,
         "otel" => TraceFormat::Otel,
+        "claude-code" | "claude_code" | "claudecode" => TraceFormat::ClaudeCode,
+        "langfuse" => TraceFormat::Langfuse,
+        "phoenix" => TraceFormat::Phoenix,
         other => {
             return Err(PyValueError::new_err(format!("unknown format: {other}")));
         }

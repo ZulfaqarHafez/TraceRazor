@@ -242,6 +242,18 @@ impl RunManifest {
 /// surfaces this loudly and records it next to the score.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct IngestQuality {
+    /// Source format requested or auto-detected by the caller.
+    #[serde(default)]
+    pub format: String,
+    /// Share of steps with nonzero token counts (0.0–1.0).
+    #[serde(default)]
+    pub token_coverage: f64,
+    /// Share of steps with substantive content (0.0–1.0).
+    #[serde(default)]
+    pub content_coverage: f64,
+    /// Parsed step count.
+    #[serde(default)]
+    pub step_count: usize,
     /// Share of steps with a zero token count (0.0–1.0).
     pub zero_token_pct: f64,
     /// Share of steps whose content is a placeholder: empty, a bare tool /
@@ -250,10 +262,20 @@ pub struct IngestQuality {
     /// True when either share exceeds 50% — token- and content-derived
     /// metrics are then unreliable for this trace.
     pub degraded: bool,
+    /// Alias used by import/coach clients.
+    #[serde(default)]
+    pub degraded_ingest: bool,
+    /// Human-readable parse quality warnings.
+    #[serde(default)]
+    pub warnings: Vec<String>,
 }
 
 impl IngestQuality {
     pub fn assess(trace: &crate::types::Trace) -> IngestQuality {
+        Self::assess_with_format(trace, trace.framework.as_str())
+    }
+
+    pub fn assess_with_format(trace: &crate::types::Trace, format: &str) -> IngestQuality {
         let n = trace.steps.len().max(1) as f64;
         let zero_tokens = trace.steps.iter().filter(|s| s.tokens == 0).count() as f64;
         let placeholder = trace
@@ -268,10 +290,30 @@ impl IngestQuality {
             .count() as f64;
         let zero_token_pct = zero_tokens / n;
         let placeholder_content_pct = placeholder / n;
+        let degraded = zero_token_pct > 0.5 || placeholder_content_pct > 0.5;
+        let mut warnings = Vec::new();
+        if zero_token_pct > 0.5 {
+            warnings.push(format!(
+                "{:.0}% of parsed steps have zero token counts",
+                zero_token_pct * 100.0
+            ));
+        }
+        if placeholder_content_pct > 0.5 {
+            warnings.push(format!(
+                "{:.0}% of parsed steps have placeholder or very short content",
+                placeholder_content_pct * 100.0
+            ));
+        }
         IngestQuality {
+            format: format.to_string(),
+            token_coverage: ((1.0 - zero_token_pct) * 1000.0).round() / 1000.0,
+            content_coverage: ((1.0 - placeholder_content_pct) * 1000.0).round() / 1000.0,
+            step_count: trace.steps.len(),
             zero_token_pct: (zero_token_pct * 1000.0).round() / 1000.0,
             placeholder_content_pct: (placeholder_content_pct * 1000.0).round() / 1000.0,
-            degraded: zero_token_pct > 0.5 || placeholder_content_pct > 0.5,
+            degraded,
+            degraded_ingest: degraded,
+            warnings,
         }
     }
 }
