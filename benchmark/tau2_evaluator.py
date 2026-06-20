@@ -93,7 +93,7 @@ class Tau2BenchEvaluator:
         try:
             from tau_bench.envs import get_env  # type: ignore
             self._env = get_env(self.domain)
-        except ImportError as e:
+        except Exception as e:
             self._load_error = str(e)
 
     @property
