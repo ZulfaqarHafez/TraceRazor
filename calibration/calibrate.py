@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Calibrate TAS weights to predict *recoverable token waste*.
 
-TraceRazor's composite efficiency is a convex combination of 13 sub-metrics:
+TraceRazor's composite efficiency is a convex combination of 14 sub-metrics:
 
     raw_efficiency = sum_k (w_k * m_k) / sum_k w_k          (m_k in [0,1])
     TAS            = 100 * raw_efficiency * (0.7 + 0.3 * task_value)
@@ -79,6 +79,31 @@ class Sample:
     features: Optional[np.ndarray] = None  # 13 normalised metric values
     extra: Optional[dict] = None           # experimental report.features map
     before_tokens: Optional[int] = None
+
+
+def bootstrap_ci(data, stat_fn=np.mean, n_boot=1000, ci=0.95, random_state=42):
+    """Bootstrap confidence interval for stat_fn applied to data."""
+    rng = np.random.default_rng(random_state)
+    data = np.asarray(data)
+    if len(data) == 0:
+        return (float('nan'), float('nan'))
+    boot_stats = [stat_fn(rng.choice(data, size=len(data), replace=True)) for _ in range(n_boot)]
+    lo = float(np.percentile(boot_stats, (1 - ci) / 2 * 100))
+    hi = float(np.percentile(boot_stats, (1 + ci) / 2 * 100))
+    return (lo, hi)
+
+
+def cardinal_composite(scores, weights, n_boot=1000):
+    """
+    Given per-metric scores (array of shape [n_traces, n_metrics]) and NNLS weights,
+    compute the cardinal removable_token_fraction with bootstrap 95% CI.
+    Returns (mean_fraction, ci_lower, ci_upper).
+    """
+    weighted = np.dot(scores, weights)
+    fracs = 1 - weighted / 100  # convert TAS to removable fraction
+    mean_frac = float(np.mean(fracs))
+    ci_lo, ci_hi = bootstrap_ci(fracs, n_boot=n_boot)
+    return mean_frac, ci_lo, ci_hi
 
 
 def recoverable_fraction(before_tokens: int, after_tokens: int) -> float:
@@ -346,6 +371,8 @@ def main(argv=None) -> int:
     ap.add_argument("--feature-keys", default=None,
                     help="comma-separated subset of feature keys to evaluate (default: all)")
     ap.add_argument("--seed", type=int, default=0)
+    ap.add_argument("--bootstrap", type=int, default=0,
+                    help="number of bootstrap draws for CV R² CI (0 = disabled)")
     args = ap.parse_args(argv)
 
     base_vec = np.array([DEFAULT_WEIGHTS[k] for k in METRICS])
@@ -370,13 +397,36 @@ def main(argv=None) -> int:
     cv_r2, cv_r = kfold_r2(X, y, args.l2, args.cv, args.seed, prior=prior)
     cv = {"r2": cv_r2, "r": cv_r, "folds": min(args.cv, len(y))}
 
+    # Bootstrap CI over CV fold R² values (predicted with already-fitted weights)
+    cv_ci: Optional[Tuple[float, float]] = None
+    if args.bootstrap > 0:
+        n_folds = min(args.cv, len(y))
+        rng = np.random.default_rng(args.seed)
+        idx = rng.permutation(len(y))
+        parts = np.array_split(idx, n_folds)
+        fold_r2s = []
+        for f in range(n_folds):
+            test = parts[f]
+            train_idx = np.concatenate([parts[j] for j in range(n_folds) if j != f])
+            w_fold = fit_weights(X[train_idx], y[train_idx], l2=args.l2, prior=prior)
+            fold_preds = predict(X[test], w_fold)
+            fold_r2s.append(r2(y[test], fold_preds))
+        cv_ci = bootstrap_ci(fold_r2s, n_boot=args.bootstrap, random_state=args.seed)
+
     args.out.parent.mkdir(parents=True, exist_ok=True)
     payload = dict(weights)
-    payload["_meta"] = {
+    meta: dict = {
         "dataset": name, "samples": len(samples), "target": "recoverable_token_waste",
         "train_r2": round(fit["r2"], 4), "cv_r2": round(cv_r2, 4),
         "baseline_r2": round(baseline["r2"], 4), "l2": args.l2, "prior": args.prior,
     }
+    if cv_ci is not None:
+        meta["bootstrap"] = {
+            "n_boot": args.bootstrap,
+            "cv_r2_ci_lo": round(cv_ci[0], 4),
+            "cv_r2_ci_hi": round(cv_ci[1], 4),
+        }
+    payload["_meta"] = meta
 
     # ── Experimental features: do the context-accumulation signals predict better?
     if args.features:
@@ -427,7 +477,10 @@ def main(argv=None) -> int:
     args.out.write_text(json.dumps(payload, indent=2) + "\n")
     write_report(args.report, name, len(samples), weights, fit, baseline, cv, args.l2)
 
-    print(f"\nTrain R²={fit['r2']:.3f}  CV R²={cv_r2:.3f}  (default baseline R²={baseline['r2']:.3f})")
+    if cv_ci is not None:
+        print(f"\nCross-validated R²: {cv_r2:.3f} (95% CI: [{cv_ci[0]:.3f}, {cv_ci[1]:.3f}])")
+    else:
+        print(f"\nTrain R²={fit['r2']:.3f}  CV R²={cv_r2:.3f}  (default baseline R²={baseline['r2']:.3f})")
     print(f"Wrote weights → {args.out}")
     print(f"Wrote report  → {args.report}")
     print("\nUse them:  tracerazor audit <trace> --weights", args.out)
