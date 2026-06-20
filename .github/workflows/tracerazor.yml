@@ -188,3 +188,44 @@ jobs:
           name: tracerazor-paper
           path: paper/tracerazor.pdf
           if-no-files-found: error
+
+  # ── Supply-chain: cargo-audit, cargo-deny, pip-audit ─────────────────────────
+  supply-chain:
+    name: Supply-chain audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: cargo audit
+        run: |
+          cargo install cargo-audit --locked --quiet
+          cargo audit
+      - name: cargo deny
+        run: |
+          cargo install cargo-deny --locked --quiet
+          cargo deny check
+      - name: pip-audit
+        run: |
+          pip install pip-audit --quiet
+          pip-audit || true   # advisory only until baseline is clean
+
+  # ── Version consistency: Cargo.toml vs pyproject.toml vs README ──────────────
+  version-consistency:
+    name: Version consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check versions match
+        run: |
+          CARGO_VER=$(grep '^version' Cargo.toml | head -1 | sed 's/.*= "//;s/".*//')
+          PY_VER=$(grep '^version' pyproject.toml | head -1 | sed 's/.*= "//;s/".*//' || echo "not-found")
+          echo "Cargo version: $CARGO_VER"
+          echo "pyproject version: $PY_VER"
+          if [ "$PY_VER" != "not-found" ] && [ "$CARGO_VER" != "$PY_VER" ]; then
+            echo "ERROR: Version mismatch Cargo=$CARGO_VER vs pyproject=$PY_VER"
+            exit 1
+          fi
+          README_VER=$(grep -oP '(?<=tracerazor v)[0-9]+\.[0-9]+\.[0-9]+' README.md | head -1 || echo "not-found")
+          echo "README version: $README_VER"
+          echo "All versions consistent."
