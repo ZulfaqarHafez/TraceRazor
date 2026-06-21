@@ -13,6 +13,7 @@ and the task is accepted only if the verifier command passes.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 import shlex
@@ -23,7 +24,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .adapters import JsonPatchAdapter, RepairAdapter
+from .adapters import CommandRepairAdapter, JsonPatchAdapter, RepairAdapter
 from .evidence import build_manifest, verify_manifest, write_manifest
 from .learn import LearningWeights, update_weights
 from .policy import ContextPolicy, solve_policy
@@ -78,6 +79,14 @@ class LiveTask:
         )
 
 
+@dataclass(frozen=True)
+class AdapterTaskContext:
+    task_id: str
+    prompt: str
+    verify_cmd: tuple[str, ...]
+    trice_context: dict[str, Any] = field(default_factory=dict)
+
+
 @dataclass
 class ConditionRun:
     task_id: str
@@ -89,6 +98,10 @@ class ConditionRun:
     verify_output_excerpt: str
     modified_files: list[str]
     trace_path: str
+    receipt_path: str | None = None
+    receipt_sha256: str | None = None
+    adapter_type: str | None = None
+    adapter_reported_input_tokens: int | None = None
     policy_path: str | None = None
     context_path: str | None = None
     policy: dict[str, Any] | None = None
@@ -306,6 +319,10 @@ def run_live_learning_loop(
             artifact_paths.append(Path(live_round.optimized.policy_path))
         if live_round.optimized.context_path:
             artifact_paths.append(Path(live_round.optimized.context_path))
+        if live_round.baseline.receipt_path:
+            artifact_paths.append(Path(live_round.baseline.receipt_path))
+        if live_round.optimized.receipt_path:
+            artifact_paths.append(Path(live_round.optimized.receipt_path))
     manifest = build_manifest(
         result.to_dict(),
         result_path=result_path,
@@ -317,6 +334,7 @@ def run_live_learning_loop(
             "User-conditioned profile captured in result JSON",
             "Verifier durations normalized before hashing",
             "Wall-clock metadata excluded from traces",
+            "Run receipts capture adapter envelopes and changed workspace fingerprints",
             "Replay is not accepted as final proof",
         ],
     )
@@ -399,7 +417,7 @@ def _run_condition(
     condition: str,
     round_dir: Path,
     policy: ContextPolicy | None,
-    adapter: ManagedPythonRepairAdapter,
+    adapter: RepairAdapter,
 ) -> ConditionRun:
     workspace = round_dir / condition / "workspace"
     if workspace.exists():
@@ -409,7 +427,8 @@ def _run_condition(
 
     trace = _decision_trace(task, workspace)
     segments = segments_from_trace(trace)
-    input_tokens = sum(s.tokens for s in segments)
+    baseline_input_tokens = sum(s.tokens for s in segments)
+    input_tokens = baseline_input_tokens
     policy_path = None
     context_path = None
     if policy is not None:
@@ -420,13 +439,35 @@ def _run_condition(
         Path(policy_path).write_text(render_policy_json(policy), encoding="utf-8")
         Path(context_path).write_text(render_context(policy, segments), encoding="utf-8")
 
-    modified = adapter.apply_fix(task, workspace)
+    trice_context = _trice_context_for_condition(
+        condition=condition,
+        input_tokens=input_tokens,
+        baseline_input_tokens=baseline_input_tokens,
+        policy=policy,
+        policy_path=policy_path,
+        context_path=context_path,
+    )
+    adapter_task = AdapterTaskContext(
+        task_id=task.task_id,
+        prompt=task.prompt,
+        verify_cmd=task.verify_cmd,
+        trice_context=trice_context,
+    )
+
+    modified = adapter.apply_fix(adapter_task, workspace)
+    receipt = _receipt_for_condition(adapter, adapter_task, workspace, modified)
+    receipt_path = round_dir / condition / "run_receipt.json"
+    receipt_path.parent.mkdir(parents=True, exist_ok=True)
+    receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    receipt_sha = _sha256_file(receipt_path)
     verify = _run_verify(task.verify_cmd, workspace)
     trace["trace_id"] = f"{task.task_id}.{condition}"
     trace["agent_name"] = adapter.name
     trace["task_value_score"] = 1.0 if verify["passed"] else 0.0
     trace["total_tokens"] = input_tokens
     trace["metadata"]["condition"] = condition
+    trace["metadata"]["run_receipt"] = receipt_path.name
+    trace["metadata"]["run_receipt_sha256"] = receipt_sha
     trace["steps"].append(
         {
             "id": len(trace["steps"]) + 1,
@@ -452,10 +493,47 @@ def _run_condition(
         verify_output_excerpt=verify["output"][:1200],
         modified_files=modified,
         trace_path=str(trace_path),
+        receipt_path=str(receipt_path),
+        receipt_sha256=receipt_sha,
+        adapter_type=str(receipt.get("adapter_type") or type(adapter).__name__),
+        adapter_reported_input_tokens=_adapter_reported_input_tokens(receipt),
         policy_path=policy_path,
         context_path=context_path,
         policy=policy.to_dict() if policy is not None else None,
     )
+
+
+def _trice_context_for_condition(
+    *,
+    condition: str,
+    input_tokens: int,
+    baseline_input_tokens: int,
+    policy: ContextPolicy | None,
+    policy_path: str | None,
+    context_path: str | None,
+) -> dict[str, Any]:
+    action_counts: dict[str, int] = {}
+    if policy is not None:
+        for decision in policy.decisions:
+            action_counts[decision.action] = action_counts.get(decision.action, 0) + 1
+    return {
+        "schema_version": "trice-context-envelope/v1",
+        "condition": condition,
+        "context_mode": "trice_policy" if policy is not None else "full_context",
+        "input_tokens": int(input_tokens),
+        "baseline_input_tokens": int(baseline_input_tokens),
+        "policy_tokens": int(policy.policy_tokens) if policy is not None else None,
+        "budget_tokens": int(policy.budget_tokens) if policy is not None else None,
+        "budget_ratio": float(policy.budget_ratio) if policy is not None else 1.0,
+        "realized_budget_ratio": round(input_tokens / max(1, baseline_input_tokens), 6),
+        "projected_input_savings_pct": float(policy.projected_input_savings_pct) if policy is not None else 0.0,
+        "budget_exceeded": bool(policy.budget_exceeded) if policy is not None else False,
+        "policy_path": policy_path,
+        "policy_sha256": _sha256_file(Path(policy_path)) if policy_path else None,
+        "compressed_context_path": context_path,
+        "compressed_context_sha256": _sha256_file(Path(context_path)) if context_path else None,
+        "policy_action_counts": action_counts,
+    }
 
 
 def _policy_for_task(task: LiveTask, round_dir: Path, budget_ratio: float) -> ContextPolicy:
@@ -560,6 +638,74 @@ def _run_verify(cmd: tuple[str, ...], cwd: Path) -> dict[str, Any]:
     return {"passed": proc.returncode == 0, "exit_code": proc.returncode, "output": output}
 
 
+def _receipt_for_condition(adapter: RepairAdapter, task: LiveTask, workspace: Path, modified: list[str]) -> dict[str, Any]:
+    trice_context = getattr(task, "trice_context", None)
+    if not isinstance(trice_context, dict):
+        trice_context = {}
+    receipt = getattr(adapter, "last_receipt", None)
+    if isinstance(receipt, dict):
+        out = dict(receipt)
+        out.setdefault("schema_version", "trice-run-receipt/v1")
+        out.setdefault("changed_files", modified)
+        out.setdefault("changed_file_count", len(modified))
+        out.setdefault("trice_context", trice_context)
+        return out
+    if isinstance(adapter, JsonPatchAdapter):
+        return {
+            "schema_version": "trice-run-receipt/v1",
+            "adapter_type": "json_patch",
+            "adapter_name": adapter.name,
+            "task_id": task.task_id,
+            "prompt_sha256": _sha256_text(task.prompt),
+            "changed_files": modified,
+            "changed_file_count": len(modified),
+            "edit_count": len(adapter.edits),
+            "allow_test_edits": adapter.allow_test_edits,
+            "metadata": adapter.metadata,
+            "agent_reported": None,
+            "trice_context": trice_context,
+        }
+    return {
+        "schema_version": "trice-run-receipt/v1",
+        "adapter_type": "managed_python",
+        "adapter_name": adapter.name,
+        "task_id": task.task_id,
+        "prompt_sha256": _sha256_text(task.prompt),
+        "workspace": workspace.name,
+        "changed_files": modified,
+        "changed_file_count": len(modified),
+        "agent_reported": None,
+        "trice_context": trice_context,
+    }
+
+
+def _adapter_reported_input_tokens(receipt: dict[str, Any]) -> int | None:
+    reported = receipt.get("agent_reported")
+    if not isinstance(reported, dict):
+        return None
+    token_accounting = reported.get("token_accounting")
+    if isinstance(token_accounting, dict):
+        value = token_accounting.get("input_tokens")
+        if isinstance(value, int):
+            return value
+    value = reported.get("input_tokens")
+    if isinstance(value, int):
+        return value
+    return None
+
+
+def _sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
 def _normalize_verify_output(output: str) -> str:
     """Remove verifier clock noise while preserving the pass/fail evidence text."""
 
@@ -604,6 +750,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--prompt", default=None, help="Task prompt for --repo runs; defaults to TASK.md or a generic prompt.")
     ap.add_argument("--verify-cmd", default=None, help="Verifier command for --repo runs, e.g. 'python -m pytest -q'.")
     ap.add_argument("--patch-spec", type=Path, default=None, help="Deterministic JSON patch spec for --repo runs.")
+    ap.add_argument("--repair-cmd", default=None, help="Deterministic repair command for --repo runs.")
+    ap.add_argument("--adapter-profile", type=Path, default=None, help="Reusable TRICE command adapter profile JSON.")
+    ap.add_argument("--repair-timeout-s", type=int, default=600, help="Timeout for --repair-cmd.")
+    ap.add_argument("--allow-test-edits", action="store_true", help="Allow a repair command to modify tests.")
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--profile", type=Path, default=None, help="Persistent user profile JSON.")
     ap.add_argument("--rounds", type=int, default=None)
@@ -618,8 +768,9 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if verdict["ok"] else 1
 
     if args.repo:
-        if not args.patch_spec:
-            print("error: --repo requires --patch-spec for deterministic evaluation", file=sys.stderr)
+        intervention_count = sum(1 for value in (args.patch_spec, args.repair_cmd, args.adapter_profile) if value)
+        if intervention_count != 1:
+            print("error: --repo requires exactly one of --patch-spec, --repair-cmd, or --adapter-profile", file=sys.stderr)
             return 2
         tasks = [
             LiveTask.from_repo(
@@ -629,7 +780,18 @@ def main(argv: list[str] | None = None) -> int:
                 verify_cmd=_parse_verify_cmd(args.verify_cmd),
             )
         ]
-        adapter: RepairAdapter = JsonPatchAdapter.from_file(args.patch_spec)
+        if args.patch_spec:
+            adapter: RepairAdapter = JsonPatchAdapter.from_file(args.patch_spec)
+        elif args.adapter_profile:
+            adapter = CommandRepairAdapter.from_file(args.adapter_profile)
+        else:
+            adapter = CommandRepairAdapter.from_dict(
+                {
+                    "repair_cmd": args.repair_cmd,
+                    "repair_timeout_s": args.repair_timeout_s,
+                    "allow_test_edits": args.allow_test_edits,
+                }
+            )
     else:
         tasks = _load_tasks(args.tasks_dir, args.task)
         adapter = ManagedPythonRepairAdapter()

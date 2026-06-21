@@ -85,6 +85,15 @@ prompt compression: a policy is accepted only when a fresh workspace run keeps
 the task passing, emits a deterministic evidence manifest, and meets the
 user-conditioned input-token target.
 
+```mermaid
+flowchart LR
+    P["Task prompt + repo"] --> C["TRICE context policy"]
+    C --> A["Adapter profile or repair command"]
+    A --> R["run_receipt.json<br/>command hash + changed files + token receipt"]
+    R --> V["Verifier command"]
+    V --> E["Evidence manifest + .trice.zip"]
+```
+
 ```python
 from tracerazor.trice import LiveTask, run_live_learning_loop, verify_manifest
 
@@ -98,8 +107,8 @@ result = run_live_learning_loop(
 assert verify_manifest(result.manifest_path)["ok"]
 ```
 
-Run the same deterministic contract against any local repo with a JSON patch
-adapter:
+Run the same deterministic contract against any local repo with either a JSON
+patch adapter or a deterministic repair command:
 
 ```bash
 tracerazor-trice run -- \
@@ -109,6 +118,22 @@ tracerazor-trice run -- \
   --verify-cmd "python -m pytest -q --tb=short" \
   --patch-spec examples/trice_patch_fix_offbyone.json \
   --out-dir benchmark/trice/results/generic-example
+
+tracerazor-trice run -- \
+  --repo benchmark/live/tasks/fix-offby-one/seed \
+  --task-id fix-offby-one-command \
+  --prompt "Fix chunker.py without editing tests." \
+  --verify-cmd "python -m pytest -q --tb=short" \
+  --repair-cmd "python scripts/repair_agent.py" \
+  --out-dir benchmark/trice/results/command-example
+
+tracerazor-trice run -- \
+  --repo benchmark/live/tasks/fix-offby-one/seed \
+  --task-id fix-offby-one-profile \
+  --prompt "Fix chunker.py without editing tests." \
+  --verify-cmd "python -m pytest -q --tb=short" \
+  --adapter-profile adapters/my-agent.json \
+  --out-dir benchmark/trice/results/profile-example
 ```
 
 For multi-repo evaluation, define a suite manifest and deep-verify the
@@ -120,6 +145,20 @@ tracerazor-trice suite examples/trice_suite_fix_offbyone.json \
   --rounds 1 \
   --replicates 3
 tracerazor-trice verify-suite benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json
+tracerazor-trice bundle benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json \
+  --out benchmark/trice/results/v2-suite/trice_suite_evidence.trice.zip
+tracerazor-trice verify-bundle benchmark/trice/results/v2-suite/trice_suite_evidence.trice.zip
+```
+
+The broader bundled smoke uses all six local live tasks through a reusable
+command adapter profile:
+
+```bash
+tracerazor-trice suite examples/trice_suite_bundled_live.json \
+  --out-dir benchmark/trice/results/v2-broad-smoke \
+  --rounds 1 \
+  --replicates 1
+tracerazor-trice verify-suite benchmark/trice/results/v2-broad-smoke/trice_suite_evidence_manifest.json
 ```
 
 ![TRICE live input-token savings](docs/trice_v3_live_savings.svg)
@@ -129,14 +168,42 @@ fresh copied workspaces, real source edits, `pytest` verification, and a
 machine-verifiable manifest. TRICE normalizes verifier duration text and
 excludes wall-clock fields from the evidence hash, so identical real-run smoke
 executions are expected to reproduce the same manifest hashes. Mean measured
-input-token reduction is **78.6%** with a deterministic 95% bootstrap CI of
-**76.8%-80.3%** and zero pass regressions on all six tasks. This clears the
-local smoke gate, but it is not yet a broad S-tier claim; held-out external
-repos and provider adapters are the next proof gate.
+input-token reduction is **81.5%** with a deterministic 95% bootstrap CI of
+**79.0%-83.5%** and zero pass regressions on all six tasks. This clears the
+local smoke gate, but it is not yet a broad S-tier claim. Suite results now
+include a formal `s_tier_gate` verdict that requires 50 task clusters, 3
+replicates per task, locked remote Git sources, adapter profiles, receipt
+validation, target-clearing clustered confidence intervals, zero pass
+regressions, and no unaccepted runs.
 
 The public suite smoke currently uses three fresh live replicates of the
 example repo task and reports clustered-by-task confidence intervals; repeated
-runs of one repo are not counted as independent held-out repositories.
+runs of one repo are not counted as independent held-out repositories. The
+suite records repo tree fingerprints and intervention provenance before
+execution: JSON patch tasks record patch-spec SHA-256 hashes, while command
+adapter tasks record command argv, timeout, and test-edit policy. Adapter
+profile tasks record profile SHA-256 and profile name. Every condition writes a
+`run_receipt.json` with command hashes, before/after workspace fingerprints,
+changed files, a TRICE context envelope, and optional agent-reported token
+accounting from `TRICE_AGENT_RECEIPT`. Command adapters receive
+`TRICE_INPUT_TOKENS`, `TRICE_BASELINE_INPUT_TOKENS`, `TRICE_CONTEXT_MODE`, and
+policy hashes in their environment, so wrapped agents can report the exact
+assembled-context token count they acted on. Run receipts have a shipped JSON
+Schema and are validated
+during manifest and bundle verification, so malformed receipts can fail even if
+their hashes match. Suite reports now include adapter and failure-mode
+breakdowns. Suite tasks can also clone a locked Git source (`url` + `rev`) into
+a detached, `.git`-stripped checkout before running. The portable `.trice.zip`
+bundle contains 35 hashed entries and deep-verifies the aggregate suite manifest
+plus all child live manifests. The current public suite smoke correctly reports
+`s_tier_gate.passed = false`; held-out external repos and provider adapters are
+the next proof gate.
+
+The bundled broad smoke uses six task clusters through an adapter profile and
+reports **81.5%** mean input-token reduction, zero pass regressions, and a
+65-entry verified `.trice.zip` bundle. It still reports
+`s_tier_gate.passed = false` because it is local, single-replicate, and not 50
+held-out locked remote Git task clusters.
 
 Research artifacts:
 
@@ -145,6 +212,8 @@ Research artifacts:
 - Library contract: [`docs/trice_library.md`](docs/trice_library.md)
 - Evidence manifest: [`benchmark/trice/results/v2-smoke/trice_v2_evidence_manifest.json`](benchmark/trice/results/v2-smoke/trice_v2_evidence_manifest.json)
 - Suite manifest: [`benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json`](benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json)
+- Evidence bundle: [`benchmark/trice/results/v2-suite/trice_suite_evidence.trice.zip`](benchmark/trice/results/v2-suite/trice_suite_evidence.trice.zip)
+- Broad smoke bundle: [`benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip`](benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip)
 
 ---
 

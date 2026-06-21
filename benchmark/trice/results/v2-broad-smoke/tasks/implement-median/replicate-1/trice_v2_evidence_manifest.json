@@ -1,0 +1,60 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "artifacts": [
+    {
+      "bytes": 1789,
+      "path": "trice_v2_live_report.md",
+      "sha256": "36b774707f04d4e1e26b89ace0830a35d6cb14b42021a91d7ff5ed7fff4d45ed"
+    },
+    {
+      "bytes": 717,
+      "path": "user_profile.json",
+      "sha256": "4c66660fee982d611f933dc8e6f88eaa11372330afc2f8e16f7b9365a36aee33"
+    },
+    {
+      "bytes": 11936,
+      "path": "implement-median/round-1/baseline-full-context/trace.json",
+      "sha256": "706a86058f2a4da6b82d174cb298b70f5777ea3a63253a35d4e7a7e6e2b44a6e"
+    },
+    {
+      "bytes": 11909,
+      "path": "implement-median/round-1/trice-v2/trace.json",
+      "sha256": "baad34fdc579a396709fdda7b97519e6e988720c9abb2c355348d527f64e6d26"
+    },
+    {
+      "bytes": 3578,
+      "path": "implement-median/round-1/trice-v2/context_policy.json",
+      "sha256": "a4bd3231cf83090d6f1ecf1f93a7b08008c0d5ab954d88f64b12b5bd10cc1440"
+    },
+    {
+      "bytes": 3178,
+      "path": "implement-median/round-1/trice-v2/compressed_context.txt",
+      "sha256": "6b5231daf96b4e78d3a81e1bdb02d5425f12e4530a025096e7fe64156b14c51e"
+    },
+    {
+      "bytes": 2718,
+      "path": "implement-median/round-1/baseline-full-context/run_receipt.json",
+      "sha256": "1b7926116fa737216779af5f0fca0209625fe467b1e938dbff733303cfb10d18"
+    },
+    {
+      "bytes": 3302,
+      "path": "implement-median/round-1/trice-v2/run_receipt.json",
+      "sha256": "f65148a4cf2eb755280ee98d2621769de0f33dddc1d715bb4dfc756ccf3c015a"
+    }
+  ],
+  "canonical_result_sha256": "7a03085f58fa90c944851ef5d6bf6a9829a1427b1f719ebfbfe162a5ddbf9f20",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "Fresh workspace per condition",
+    "Objective verifier command per run",
+    "User-conditioned profile captured in result JSON",
+    "Verifier durations normalized before hashing",
+    "Wall-clock metadata excluded from traces",
+    "Run receipts capture adapter envelopes and changed workspace fingerprints",
+    "Replay is not accepted as final proof"
+  ],
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
+  "result_sha256": "485582a4933215783418e628818e118b719f61023ec01bc9ee309694eb9124c0",
+  "schema_version": "trice-evidence-manifest/v1"
+}

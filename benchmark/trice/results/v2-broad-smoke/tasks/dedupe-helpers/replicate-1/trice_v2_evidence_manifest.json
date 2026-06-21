@@ -1,0 +1,60 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "artifacts": [
+    {
+      "bytes": 1787,
+      "path": "trice_v2_live_report.md",
+      "sha256": "e6f63ace13a6b566ad11a1a9d9135d88e3508ca49e3e742a321baea73de05824"
+    },
+    {
+      "bytes": 717,
+      "path": "user_profile.json",
+      "sha256": "cb135983b2715bda3ae4cdd6d23a84b199d8a5a3ae4d3dd756b367872e22ba6f"
+    },
+    {
+      "bytes": 8015,
+      "path": "dedupe-helpers/round-1/baseline-full-context/trace.json",
+      "sha256": "b28dd21f900886776614782fdca24e3bec6f97c573b53cf8a1df5a7b97efaea6"
+    },
+    {
+      "bytes": 7884,
+      "path": "dedupe-helpers/round-1/trice-v2/trace.json",
+      "sha256": "3ffae96ebfc5b8c1e3a681aaddca50097ece0b23cb00cd177997045163d11dcd"
+    },
+    {
+      "bytes": 3561,
+      "path": "dedupe-helpers/round-1/trice-v2/context_policy.json",
+      "sha256": "429fac590ebd020fe721cc2a85f5bb1f792bd672c653b223697a23920dccd076"
+    },
+    {
+      "bytes": 2083,
+      "path": "dedupe-helpers/round-1/trice-v2/compressed_context.txt",
+      "sha256": "de900c8b1f052af3c216155fffe9d3c985eb3ee1bdbd688fda77873a5f2e4e59"
+    },
+    {
+      "bytes": 2802,
+      "path": "dedupe-helpers/round-1/baseline-full-context/run_receipt.json",
+      "sha256": "5419d17d32b1db1647c8742bb8a5865449485b7db5b25c64bf66e4f48577084c"
+    },
+    {
+      "bytes": 3377,
+      "path": "dedupe-helpers/round-1/trice-v2/run_receipt.json",
+      "sha256": "2b4a68feef2836896070eb2792c738eac59edfda5db04eb70c2509b5e5a25f7e"
+    }
+  ],
+  "canonical_result_sha256": "ba02a39f900cfd47eb27d4829635fef9f8ebad94943ab286837ece826f7ef2ec",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "Fresh workspace per condition",
+    "Objective verifier command per run",
+    "User-conditioned profile captured in result JSON",
+    "Verifier durations normalized before hashing",
+    "Wall-clock metadata excluded from traces",
+    "Run receipts capture adapter envelopes and changed workspace fingerprints",
+    "Replay is not accepted as final proof"
+  ],
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
+  "result_sha256": "7ef57b2ebf702cc96350be29f4ff63a16fafd75ae0f98501f84658528e78e9e7",
+  "schema_version": "trice-evidence-manifest/v1"
+}

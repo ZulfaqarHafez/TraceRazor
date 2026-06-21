@@ -23,9 +23,33 @@ Evidence manifest: `trice_suite_evidence_manifest.json`
 - Local smoke gate passed: yes
 - Broad claim allowed: no
 - Rationale: local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals
+- S-tier gate passed: no
+
+## Adapter Breakdown
+
+| Adapter | Runs | Mean savings | Pass regressions |
+|---|---:|---:|---:|
+| json_patch | 3 | 76.6% | 0 |
+
+## Failure Modes
+
+- Pass regression runs: 0
+- Unaccepted runs: 0
+- Failed smoke-gate runs: 0
+
+## S-Tier Gate
+
+- Claim level: `not_s_tier`
+- Passed: no
+- Missing requirements: task_clusters, locked_git_sources, remote_git_sources, adapter_profiles
+- Rationale: suite evidence is useful but not broad enough for an S-tier claim
 
 ## Interpretation
 
 A suite report is aggregate evidence. Each child task manifest must also
 verify, because the suite manifest intentionally hashes child manifests
 rather than duplicating every trace and context artifact.
+Repo tree fingerprints and intervention provenance are recorded in
+`trice_suite_sources.json` before live execution. JSON patch tasks
+record patch-spec SHA-256 hashes; command tasks record argv, timeout,
+and test-edit policy; adapter-profile tasks record profile SHA-256.

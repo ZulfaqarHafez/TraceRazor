@@ -1,0 +1,52 @@
+{
+  "schema_version": "trice-suite/v1",
+  "name": "bundled-live-six-task-suite",
+  "user_feedback": "real runs, not replay; target 60% token savings",
+  "target_savings": 0.6,
+  "rounds": 1,
+  "replicates": 1,
+  "tasks": [
+    {
+      "task_id": "csv-filter",
+      "repo": "../benchmark/live/tasks/csv-filter/seed",
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "prompt": "Implement CSV filtering without editing tests.",
+      "verify_cmd": ["python", "-m", "pytest", "-q", "--tb=short"]
+    },
+    {
+      "task_id": "dedupe-helpers",
+      "repo": "../benchmark/live/tasks/dedupe-helpers/seed",
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "prompt": "Deduplicate helper logic without editing tests.",
+      "verify_cmd": ["python", "-m", "pytest", "-q", "--tb=short"]
+    },
+    {
+      "task_id": "fix-imports",
+      "repo": "../benchmark/live/tasks/fix-imports/seed",
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "prompt": "Fix package imports without editing tests.",
+      "verify_cmd": ["python", "-m", "pytest", "-q", "--tb=short"]
+    },
+    {
+      "task_id": "fix-offby-one",
+      "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "prompt": "Fix chunker.py without editing tests.",
+      "verify_cmd": ["python", "-m", "pytest", "-q", "--tb=short"]
+    },
+    {
+      "task_id": "implement-median",
+      "repo": "../benchmark/live/tasks/implement-median/seed",
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "prompt": "Implement median without editing tests.",
+      "verify_cmd": ["python", "-m", "pytest", "-q", "--tb=short"]
+    },
+    {
+      "task_id": "rename-api",
+      "repo": "../benchmark/live/tasks/rename-api/seed",
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "prompt": "Rename the public API consistently without editing tests.",
+      "verify_cmd": ["python", "-m", "pytest", "-q", "--tb=short"]
+    }
+  ]
+}

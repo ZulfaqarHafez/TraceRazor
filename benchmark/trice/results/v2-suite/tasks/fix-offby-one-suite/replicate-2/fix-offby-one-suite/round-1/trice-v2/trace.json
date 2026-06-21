@@ -3,6 +3,8 @@
   "framework": "trice-live",
   "metadata": {
     "condition": "trice-v2",
+    "run_receipt": "run_receipt.json",
+    "run_receipt_sha256": "7c0d566b74dd24ece18da4a1bafe2f39a45a1ba07a3dde961212f1ebf11eab7d",
     "task": "Fix chunker.py without editing tests.",
     "task_id": "fix-offby-one-suite"
   },

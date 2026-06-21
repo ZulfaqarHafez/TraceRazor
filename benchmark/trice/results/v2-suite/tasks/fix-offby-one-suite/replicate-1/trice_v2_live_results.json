@@ -34,13 +34,19 @@
       "user requires live rollout evidence, not replay-only acceptance",
       "replay is allowed only as a preflight, not as final proof",
       "prefer aggressive compression when live pass preservation holds",
-      "round 1: accepted 77% savings with pass preservation"
+      "round 1: accepted 77% savings with pass preservation",
+      "round 2: accepted 77% savings with pass preservation",
+      "round 3: accepted 77% savings with pass preservation",
+      "round 4: accepted 77% savings with pass preservation",
+      "round 5: accepted 77% savings with pass preservation",
+      "round 6: accepted 77% savings with pass preservation",
+      "round 7: accepted 77% savings with pass preservation"
     ],
     "max_rounds": 3,
     "pass_noninferiority_margin_pp": -2.0,
     "prefer_receipts": true,
     "require_live_rollout": true,
-    "rounds_seen": 1,
+    "rounds_seen": 7,
     "target_savings": 0.6,
     "user_id": "local"
   },
@@ -50,6 +56,8 @@
     {
       "accepted": true,
       "baseline": {
+        "adapter_reported_input_tokens": null,
+        "adapter_type": "json_patch",
         "condition": "baseline-full-context",
         "context_path": null,
         "input_tokens": 2470,
@@ -59,6 +67,8 @@
         "passed": true,
         "policy": null,
         "policy_path": null,
+        "receipt_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\baseline-full-context\\run_receipt.json",
+        "receipt_sha256": "44a01fd534410183691353d820b7b3c7462d99270883a77118e9d3b41f7b2302",
         "task_id": "fix-offby-one-suite",
         "trace_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\baseline-full-context\\trace.json",
         "verify_exit_code": 0,
@@ -79,6 +89,8 @@
       },
       "measured_input_savings": 0.766397,
       "optimized": {
+        "adapter_reported_input_tokens": null,
+        "adapter_type": "json_patch",
         "condition": "trice-v2",
         "context_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\trice-v2\\compressed_context.txt",
         "input_tokens": 577,
@@ -195,6 +207,8 @@
           "projected_input_savings_pct": 76.64
         },
         "policy_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\trice-v2\\context_policy.json",
+        "receipt_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\trice-v2\\run_receipt.json",
+        "receipt_sha256": "d2e257b85c486c4c5a13b8bed0372ce6c608be4443f1c29a94936bfa383ded51",
         "task_id": "fix-offby-one-suite",
         "trace_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\trice-v2\\trace.json",
         "verify_exit_code": 0,
@@ -210,13 +224,19 @@
           "user requires live rollout evidence, not replay-only acceptance",
           "replay is allowed only as a preflight, not as final proof",
           "prefer aggressive compression when live pass preservation holds",
-          "round 1: accepted 77% savings with pass preservation"
+          "round 1: accepted 77% savings with pass preservation",
+          "round 2: accepted 77% savings with pass preservation",
+          "round 3: accepted 77% savings with pass preservation",
+          "round 4: accepted 77% savings with pass preservation",
+          "round 5: accepted 77% savings with pass preservation",
+          "round 6: accepted 77% savings with pass preservation",
+          "round 7: accepted 77% savings with pass preservation"
         ],
         "max_rounds": 3,
         "pass_noninferiority_margin_pp": -2.0,
         "prefer_receipts": true,
         "require_live_rollout": true,
-        "rounds_seen": 1,
+        "rounds_seen": 7,
         "target_savings": 0.6,
         "user_id": "local"
       },

@@ -2,6 +2,14 @@
   "algorithm": "trice-v2-suite-live-user-conditioned-rollout",
   "claim_gate": {
     "accepted_rounds": 3,
+    "adapter_breakdown": {
+      "json_patch": {
+        "accepted_runs": 3,
+        "mean_savings": 0.766397,
+        "pass_regressions": 0,
+        "runs": 3
+      }
+    },
     "baseline_pass_rate": 1.0,
     "broad_claim_allowed": false,
     "clustered_by": "task_id",
@@ -11,10 +19,98 @@
       "low": 0.766397,
       "mean": 0.766397
     },
+    "failure_breakdown": {
+      "failed_smoke_gate_runs": 0,
+      "pass_regression_runs": 0,
+      "unaccepted_runs": 0
+    },
     "mean_savings": 0.766397,
     "pass_regressions": 0,
     "rationale": "local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals",
     "replicate_count": 3,
+    "s_tier_gate": {
+      "claim_level": "not_s_tier",
+      "config": {
+        "max_pass_regressions": 0,
+        "min_clustered_savings_ci_low": 0.6,
+        "min_mean_savings": 0.6,
+        "min_replicates_per_task": 3,
+        "min_task_clusters": 50,
+        "require_adapter_profiles": true,
+        "require_locked_git_sources": true,
+        "require_receipt_validation": true,
+        "require_remote_git_sources": true
+      },
+      "missing_requirements": [
+        "task_clusters",
+        "locked_git_sources",
+        "remote_git_sources",
+        "adapter_profiles"
+      ],
+      "passed": false,
+      "rationale": "suite evidence is useful but not broad enough for an S-tier claim",
+      "requirements": {
+        "accepted_runs": {
+          "observed": 0,
+          "passed": true,
+          "required": "0 unaccepted runs"
+        },
+        "adapter_profiles": {
+          "observed": [
+            null
+          ],
+          "passed": false,
+          "required": "all tasks use adapter_profile"
+        },
+        "clustered_savings_ci_low": {
+          "observed": 0.766397,
+          "passed": true,
+          "required": ">= 0.600"
+        },
+        "locked_git_sources": {
+          "observed": [
+            "local"
+          ],
+          "passed": false,
+          "required": "all tasks use locked git sources"
+        },
+        "mean_savings": {
+          "observed": 0.766397,
+          "passed": true,
+          "required": ">= 0.600"
+        },
+        "pass_regressions": {
+          "observed": 0,
+          "passed": true,
+          "required": "<= 0"
+        },
+        "receipt_validation": {
+          "observed": "enabled",
+          "passed": true,
+          "required": "enabled"
+        },
+        "remote_git_sources": {
+          "observed": [
+            "local"
+          ],
+          "passed": false,
+          "required": "all tasks use remote Git URLs"
+        },
+        "replicates_per_task": {
+          "observed": {
+            "fix-offby-one-suite": 3
+          },
+          "passed": true,
+          "required": "each task >= 3"
+        },
+        "task_clusters": {
+          "observed": 1,
+          "passed": false,
+          "required": ">= 50"
+        }
+      },
+      "schema_version": "trice-s-tier-gate/v1"
+    },
     "savings_ci": {
       "high": 0.766397,
       "level": 0.95,
@@ -43,50 +139,150 @@
     "manifest_snapshot": "trice_suite_manifest.snapshot.json",
     "name": "fix-offby-one-suite",
     "replicate_count": 3,
+    "source_manifest": "trice_suite_sources.json",
     "task_count": 1,
     "user_feedback": "real runs, not replay; target 60% token savings"
   },
   "tasks": [
     {
       "accepted_rounds": 1,
+      "adapter_profile": null,
       "manifest_path": "tasks/fix-offby-one-suite/replicate-1/trice_v2_evidence_manifest.json",
       "mean_savings": 0.766397,
       "pass_regressions": 0,
       "patch_spec": "trice_patch_fix_offbyone.json",
+      "repair_cmd": null,
       "replicate_index": 1,
       "repo": "../benchmark/live/tasks/fix-offby-one/seed",
       "report_path": "tasks/fix-offby-one-suite/replicate-1/trice_v2_live_report.md",
       "result_path": "tasks/fix-offby-one-suite/replicate-1/trice_v2_live_results.json",
       "rounds": 1,
       "smoke_gate_passed": true,
+      "source": {
+        "adapter_type": "json_patch",
+        "git": null,
+        "patch_sha256": "de5bd5e413ec3ac9651a11dbd6a6fb1a158442bede9804d5a1e94592d7aa72f1",
+        "patch_spec": "trice_patch_fix_offbyone.json",
+        "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 794,
+          "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+          "file_count": 3,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "local",
+        "task_id": "fix-offby-one-suite",
+        "verify_cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short"
+        ]
+      },
       "task_id": "fix-offby-one-suite"
     },
     {
       "accepted_rounds": 1,
+      "adapter_profile": null,
       "manifest_path": "tasks/fix-offby-one-suite/replicate-2/trice_v2_evidence_manifest.json",
       "mean_savings": 0.766397,
       "pass_regressions": 0,
       "patch_spec": "trice_patch_fix_offbyone.json",
+      "repair_cmd": null,
       "replicate_index": 2,
       "repo": "../benchmark/live/tasks/fix-offby-one/seed",
       "report_path": "tasks/fix-offby-one-suite/replicate-2/trice_v2_live_report.md",
       "result_path": "tasks/fix-offby-one-suite/replicate-2/trice_v2_live_results.json",
       "rounds": 1,
       "smoke_gate_passed": true,
+      "source": {
+        "adapter_type": "json_patch",
+        "git": null,
+        "patch_sha256": "de5bd5e413ec3ac9651a11dbd6a6fb1a158442bede9804d5a1e94592d7aa72f1",
+        "patch_spec": "trice_patch_fix_offbyone.json",
+        "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 794,
+          "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+          "file_count": 3,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "local",
+        "task_id": "fix-offby-one-suite",
+        "verify_cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short"
+        ]
+      },
       "task_id": "fix-offby-one-suite"
     },
     {
       "accepted_rounds": 1,
+      "adapter_profile": null,
       "manifest_path": "tasks/fix-offby-one-suite/replicate-3/trice_v2_evidence_manifest.json",
       "mean_savings": 0.766397,
       "pass_regressions": 0,
       "patch_spec": "trice_patch_fix_offbyone.json",
+      "repair_cmd": null,
       "replicate_index": 3,
       "repo": "../benchmark/live/tasks/fix-offby-one/seed",
       "report_path": "tasks/fix-offby-one-suite/replicate-3/trice_v2_live_report.md",
       "result_path": "tasks/fix-offby-one-suite/replicate-3/trice_v2_live_results.json",
       "rounds": 1,
       "smoke_gate_passed": true,
+      "source": {
+        "adapter_type": "json_patch",
+        "git": null,
+        "patch_sha256": "de5bd5e413ec3ac9651a11dbd6a6fb1a158442bede9804d5a1e94592d7aa72f1",
+        "patch_spec": "trice_patch_fix_offbyone.json",
+        "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 794,
+          "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+          "file_count": 3,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "local",
+        "task_id": "fix-offby-one-suite",
+        "verify_cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short"
+        ]
+      },
       "task_id": "fix-offby-one-suite"
     }
   ]

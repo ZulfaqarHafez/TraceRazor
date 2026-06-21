@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
+import zipfile
 from pathlib import Path
 from statistics import mean
 from textwrap import dedent
@@ -27,6 +29,9 @@ from .stats import claim_gate_from_rounds
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_RESULTS = REPO / "benchmark" / "trice" / "results" / "v2-smoke" / "trice_v2_live_results.json"
 DEFAULT_SUITE_RESULTS = REPO / "benchmark" / "trice" / "results" / "v2-suite" / "trice_suite_results.json"
+DEFAULT_SUITE_BUNDLE = REPO / "benchmark" / "trice" / "results" / "v2-suite" / "trice_suite_evidence.trice.zip"
+DEFAULT_BROAD_SUITE_RESULTS = REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_suite_results.json"
+DEFAULT_BROAD_SUITE_BUNDLE = REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_broad_smoke_evidence.trice.zip"
 DEFAULT_OUT_DIR = REPO / "paper"
 DEFAULT_DOCS_DIR = REPO / "docs"
 
@@ -94,6 +99,11 @@ def load_suite_summary(path: Path | None) -> dict | None:
     data = json.loads(path.read_text(encoding="utf-8"))
     gate = data["claim_gate"]
     clustered = gate.get("clustered_savings_ci") or gate["savings_ci"]
+    source_path = path.parent / data["suite"].get("source_manifest", "")
+    source = None
+    if source_path.is_file():
+        sources = json.loads(source_path.read_text(encoding="utf-8")).get("sources", [])
+        source = sources[0] if sources else None
     return {
         "name": data["suite"]["name"],
         "run_count": gate.get("replicate_count", len(data.get("tasks", []))),
@@ -102,12 +112,53 @@ def load_suite_summary(path: Path | None) -> dict | None:
         "cluster_low": clustered["low"],
         "cluster_high": clustered["high"],
         "pass_regressions": gate["pass_regressions"],
+        "s_tier_gate": gate.get("s_tier_gate"),
+        "source": source,
     }
 
 
-def render_tex(rows: list[dict], gate: dict, suite: dict | None = None) -> str:
+def load_bundle_summary(path: Path | None) -> dict | None:
+    if path is None or not path.is_file():
+        return None
+    with zipfile.ZipFile(path, "r") as zf:
+        manifest = json.loads(zf.read("trice_bundle_manifest.json").decode("utf-8"))
+    return {
+        "name": path.name,
+        "entry_count": len(manifest.get("entries", [])),
+        "root_manifest": manifest.get("root_manifest"),
+        "root_result": manifest.get("root_result"),
+    }
+
+
+def _suite_tex_summary(suite: dict | None, missing_text: str) -> str:
+    if suite is None:
+        return missing_text
+    s_tier = suite.get("s_tier_gate") or {}
+    missing = [str(item).replace("_", "\\_") for item in s_tier.get("missing_requirements") or []]
+    return (
+        f"The suite \\texttt{{{suite['name']}}} contains {suite['run_count']} live run(s) "
+        f"across {suite['task_clusters']} task cluster(s). Mean input-token savings is "
+        f"{100*suite['mean_savings']:.1f}\\% with clustered-by-task 95\\% CI "
+        f"{100*suite['cluster_low']:.1f}\\%--{100*suite['cluster_high']:.1f}\\%; "
+        f"pass regressions {suite['pass_regressions']}. S-tier gate: "
+        f"{'passed' if s_tier.get('passed') else 'not passed'}; missing requirements: "
+        f"{', '.join(missing or ['none'])}."
+    )
+
+
+def render_tex(
+    rows: list[dict],
+    gate: dict,
+    suite: dict | None = None,
+    bundle: dict | None = None,
+    broad_suite: dict | None = None,
+    broad_bundle: dict | None = None,
+) -> str:
     avg = mean(r["savings"] for r in rows)
     ci = gate["savings_ci"]
+    missing_s_tier = []
+    if suite and suite.get("s_tier_gate"):
+        missing_s_tier = [str(item).replace("_", "\\_") for item in suite["s_tier_gate"].get("missing_requirements") or []]
     suite_text = (
         "No suite artifact was available during paper generation."
         if suite is None
@@ -116,7 +167,54 @@ def render_tex(rows: list[dict], gate: dict, suite: dict | None = None) -> str:
             f"{suite['run_count']} live replicate runs across {suite['task_clusters']} task cluster(s). "
             f"Mean input-token savings is {100*suite['mean_savings']:.1f}\\% with clustered-by-task "
             f"95\\% CI {100*suite['cluster_low']:.1f}\\%--{100*suite['cluster_high']:.1f}\\%; "
-            f"pass regressions {suite['pass_regressions']}."
+            f"pass regressions {suite['pass_regressions']}. "
+            f"S-tier gate: {'passed' if (suite.get('s_tier_gate') or {}).get('passed') else 'not passed'}; "
+            f"missing requirements: {', '.join(missing_s_tier or ['none'])}."
+        )
+    )
+    bundle_text = (
+        "No portable bundle artifact was available during paper generation."
+        if bundle is None
+        else (
+            f"The public bundle \\texttt{{{bundle['name']}}} contains {bundle['entry_count']} hashed entries, "
+            f"root manifest \\texttt{{{bundle['root_manifest']}}}, and root result \\texttt{{{bundle['root_result']}}}. "
+            "Verification replays aggregate and child-manifest checks after safe extraction."
+        )
+    )
+    broad_suite_text = _suite_tex_summary(broad_suite, "No broad-smoke suite artifact was available during paper generation.")
+    broad_bundle_text = (
+        "No broad-smoke bundle artifact was available during paper generation."
+        if broad_bundle is None
+        else (
+            f"The broad-smoke bundle \\texttt{{{broad_bundle['name']}}} contains "
+            f"{broad_bundle['entry_count']} hashed entries."
+        )
+    )
+    source = suite.get("source") if suite else None
+    source_intervention = ""
+    if source is not None:
+        if source.get("adapter_type") == "command_profile":
+            source_intervention = (
+                f"command adapter profile \\texttt{{{str(source.get('adapter_profile_name') or source.get('adapter_profile'))[:48]}...}} "
+                f"with profile SHA-256 \\texttt{{{source.get('adapter_profile_sha256', '')[:12]}...}}"
+            )
+        elif source.get("adapter_type") == "command":
+            source_intervention = (
+                f"command adapter \\texttt{{{str(source.get('repair_cmd'))[:48]}...}} "
+                f"with timeout {source.get('repair_timeout_s')}s"
+            )
+        else:
+            source_intervention = (
+                f"patch SHA-256 \\texttt{{{source['patch_sha256'][:12]}...}}"
+            )
+    source_text = (
+        "No source fingerprint artifact was available during paper generation."
+        if source is None
+        else (
+            f"The suite source manifest records repo tree digest \\texttt{{{source['repo_tree']['digest'][:12]}...}} "
+            f"over {source['repo_tree']['file_count']} files and {source_intervention} "
+            "before execution. Suite tasks may use either local "
+            "paths or locked Git sources with URL, revision, optional subdirectory, and resolved commit recorded."
         )
     )
     table = "\n".join(
@@ -178,6 +276,9 @@ def render_tex(rows: list[dict], gate: dict, suite: dict | None = None) -> str:
         Suite manifests extend this contract to multi-repository evaluation:
         the aggregate manifest hashes the suite snapshot and each child live
         task manifest, then deep verification checks every child bundle.
+        The S-tier gate is a deterministic non-claim unless the suite clears
+        savings, pass preservation, replication, held-out source, adapter
+        profile, and receipt-validation requirements.
 
         \section{{Metrics}}
         Primary metric: measured input-token savings. Guardrail metrics:
@@ -209,19 +310,36 @@ def render_tex(rows: list[dict], gate: dict, suite: dict | None = None) -> str:
         \section{{Replicated Suite Evidence}}
         {suite_text}
 
+        \section{{Broad Smoke Evidence}}
+        {broad_suite_text} {broad_bundle_text}
+
+        \section{{Portable Artifact Bundle}}
+        {bundle_text}
+
+        \section{{Source Provenance}}
+        {source_text}
+
         \section{{Product Definition}}
         TRICE is ship-worthy only when the library produces stable manifests,
         verifier-backed measurements, and user-conditioned policies through a
         public API: \texttt{{tracerazor.trice}}. Generic users provide
         \texttt{{LiveTask}} plus a deterministic \texttt{{RepairAdapter}};
-        the bundled JSON patch adapter is schema-bound and refuses test edits
-        by default. Identical real-run smoke executions are regression-tested
-        to reproduce result and artifact hashes. The public CLI is
+        the bundled JSON patch and command repair adapters refuse test edits
+        by default. Command adapters may be packaged as
+        \texttt{{trice-adapter-profile/v1}} files and every live condition emits
+        a \texttt{{trice-run-receipt/v1}} artifact with adapter envelope,
+        command hash, before/after workspace fingerprints, changed files,
+        output hashes, and optional agent-reported token accounting. Receipt
+        artifacts have a shipped JSON Schema and are validated during manifest
+        and bundle verification, so malformed receipts can fail even when their
+        bytes are faithfully hashed. Identical real-run smoke executions are
+        regression-tested to reproduce result and artifact hashes. The public CLI is
         \texttt{{tracerazor-trice}} and mirrors the module form
         \texttt{{python -m tracerazor.trice}}. Multi-repository evaluation uses
-        \texttt{{trice-suite/v1}} manifests and \texttt{{verify-suite}} for
-        aggregate plus child-manifest verification. A replay-only result cannot
-        certify savings.
+        \texttt{{trice-suite/v1}} manifests, \texttt{{verify-suite}} for
+        aggregate plus child-manifest verification, and deterministic
+        \texttt{{.trice.zip}} evidence bundles for handoff. A replay-only
+        result cannot certify savings.
 
         \section{{Limitations}}
         The current smoke uses deterministic managed repair recipes. The next
@@ -280,7 +398,15 @@ def render_svg(rows: list[dict], gate: dict) -> str:
     return "\n".join(parts) + "\n"
 
 
-def build_pdf(rows: list[dict], gate: dict, pdf_path: Path, suite: dict | None = None) -> None:
+def build_pdf(
+    rows: list[dict],
+    gate: dict,
+    pdf_path: Path,
+    suite: dict | None = None,
+    bundle: dict | None = None,
+    broad_suite: dict | None = None,
+    broad_bundle: dict | None = None,
+) -> None:
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="Small", parent=styles["BodyText"], fontSize=8.5, leading=11))
     doc = SimpleDocTemplate(str(pdf_path), pagesize=letter, rightMargin=0.65 * inch, leftMargin=0.65 * inch, topMargin=0.55 * inch, bottomMargin=0.55 * inch)
@@ -328,13 +454,57 @@ def build_pdf(rows: list[dict], gate: dict, pdf_path: Path, suite: dict | None =
                 f"across {suite['task_clusters']} task cluster(s). Mean input-token savings is "
                 f"{100*suite['mean_savings']:.1f}% with clustered-by-task 95% CI "
                 f"{100*suite['cluster_low']:.1f}% to {100*suite['cluster_high']:.1f}%; "
-                f"pass regressions {suite['pass_regressions']}."
+                f"pass regressions {suite['pass_regressions']}. "
+                f"S-tier gate: {'passed' if (suite.get('s_tier_gate') or {}).get('passed') else 'not passed'}."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph("Portable Artifact Bundle", styles["Heading2"]),
+        Paragraph(
+            "No portable bundle artifact was available during paper generation."
+            if bundle is None
+            else (
+                f"The public bundle {bundle['name']} contains {bundle['entry_count']} hashed entries, "
+                f"root manifest {bundle['root_manifest']}, and root result {bundle['root_result']}. "
+                "Verification replays aggregate and child-manifest checks after safe extraction."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph("Broad Smoke Evidence", styles["Heading2"]),
+        Paragraph(
+            "No broad-smoke suite artifact was available during paper generation."
+            if broad_suite is None
+            else (
+                f"The broad-smoke suite {broad_suite['name']} contains {broad_suite['run_count']} live run(s) "
+                f"across {broad_suite['task_clusters']} task cluster(s). Mean input-token savings is "
+                f"{100*broad_suite['mean_savings']:.1f}% with clustered-by-task 95% CI "
+                f"{100*broad_suite['cluster_low']:.1f}% to {100*broad_suite['cluster_high']:.1f}%; "
+                f"pass regressions {broad_suite['pass_regressions']}. "
+                f"S-tier gate: {'passed' if (broad_suite.get('s_tier_gate') or {}).get('passed') else 'not passed'}."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph(
+            "No broad-smoke bundle artifact was available during paper generation."
+            if broad_bundle is None
+            else f"The broad-smoke bundle {broad_bundle['name']} contains {broad_bundle['entry_count']} hashed entries.",
+            styles["BodyText"],
+        ),
+        Paragraph("Source Provenance", styles["Heading2"]),
+        Paragraph(
+            "No source fingerprint artifact was available during paper generation."
+            if suite is None or suite.get("source") is None
+            else (
+                f"The suite source manifest records repo tree digest {suite['source']['repo_tree']['digest'][:12]}... "
+                f"over {suite['source']['repo_tree']['file_count']} files and intervention provenance before execution. "
+                "JSON patch tasks record patch SHA-256; command adapter tasks record command argv and timeout; adapter-profile tasks record profile SHA-256. Suite tasks may use either local "
+                "paths or locked Git sources with URL, revision, optional subdirectory, and resolved commit recorded."
             ),
             styles["BodyText"],
         ),
         Paragraph("Product Contract", styles["Heading2"]),
         Paragraph(
-            "A TRICE result is accepted only when the public library emits a stable manifest, the live verifier passes, and replay is used only as preflight evidence. Generic users provide LiveTask plus a deterministic RepairAdapter; the bundled JSON patch adapter is schema-bound and refuses test edits by default. Identical real-run smoke executions must reproduce result and artifact hashes. Multi-repository evaluation uses trice-suite/v1 manifests and verify-suite for aggregate plus child-manifest verification. The public CLI is tracerazor-trice and mirrors python -m tracerazor.trice.",
+            "A TRICE result is accepted only when the public library emits a stable manifest, the live verifier passes, and replay is used only as preflight evidence. Generic users provide LiveTask plus a deterministic RepairAdapter; the bundled JSON patch and command repair adapters refuse test edits by default. Command adapters may be packaged as trice-adapter-profile/v1 files, and every live condition emits a trice-run-receipt/v1 artifact with adapter envelope, command hash, before/after workspace fingerprints, changed files, output hashes, and optional agent-reported token accounting. Receipts have a shipped JSON Schema and are validated during manifest and bundle verification. Identical real-run smoke executions must reproduce result and artifact hashes. Multi-repository evaluation uses trice-suite/v1 manifests, local or locked Git sources, verify-suite for aggregate plus child-manifest verification, and deterministic .trice.zip evidence bundles for handoff. The public CLI is tracerazor-trice and mirrors python -m tracerazor.trice.",
             styles["BodyText"],
         ),
         Paragraph("Deterministic Claim Gate", styles["Heading2"]),
@@ -356,6 +526,9 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Generate TRICE LaTeX, PDF, SVG, and paper manifest.")
     ap.add_argument("--results", type=Path, default=DEFAULT_RESULTS)
     ap.add_argument("--suite-results", type=Path, default=DEFAULT_SUITE_RESULTS)
+    ap.add_argument("--suite-bundle", type=Path, default=DEFAULT_SUITE_BUNDLE)
+    ap.add_argument("--broad-suite-results", type=Path, default=DEFAULT_BROAD_SUITE_RESULTS)
+    ap.add_argument("--broad-suite-bundle", type=Path, default=DEFAULT_BROAD_SUITE_BUNDLE)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--docs-dir", type=Path, default=DEFAULT_DOCS_DIR)
     args = ap.parse_args(argv)
@@ -363,6 +536,9 @@ def main(argv: list[str] | None = None) -> int:
     rows = load_rows(args.results)
     gate = load_gate(args.results)
     suite = load_suite_summary(args.suite_results)
+    bundle = load_bundle_summary(args.suite_bundle)
+    broad_suite = load_suite_summary(args.broad_suite_results)
+    broad_bundle = load_bundle_summary(args.broad_suite_bundle)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     args.docs_dir.mkdir(parents=True, exist_ok=True)
     tex_path = args.out_dir / "trice_v3_research_paper.tex"
@@ -370,19 +546,28 @@ def main(argv: list[str] | None = None) -> int:
     pdf_path = args.out_dir / "trice_v3_research_paper.pdf"
     docs_svg_path = args.docs_dir / "trice_v3_live_savings.svg"
     paper_svg_path = args.out_dir / "trice_v3_live_savings.svg"
+    paper_bundle_path = args.out_dir / "trice_suite_evidence.trice.zip"
+    paper_broad_bundle_path = args.out_dir / "trice_broad_smoke_evidence.trice.zip"
     manifest_path = args.out_dir / "trice_v3_research_manifest.json"
 
-    tex_path.write_text(render_tex(rows, gate, suite), encoding="utf-8")
+    tex_path.write_text(render_tex(rows, gate, suite, bundle, broad_suite, broad_bundle), encoding="utf-8")
     bib_path.write_text(render_bib(), encoding="utf-8")
     svg = render_svg(rows, gate)
     docs_svg_path.write_text(svg, encoding="utf-8")
     paper_svg_path.write_text(svg, encoding="utf-8")
-    build_pdf(rows, gate, pdf_path, suite)
+    build_pdf(rows, gate, pdf_path, suite, bundle, broad_suite, broad_bundle)
+    artifact_paths = [tex_path, bib_path, pdf_path, paper_svg_path]
+    if args.suite_bundle.is_file():
+        shutil.copy2(args.suite_bundle, paper_bundle_path)
+        artifact_paths.append(paper_bundle_path)
+    if args.broad_suite_bundle.is_file():
+        shutil.copy2(args.broad_suite_bundle, paper_broad_bundle_path)
+        artifact_paths.append(paper_broad_bundle_path)
 
     manifest = build_manifest(
         json.loads(args.results.read_text(encoding="utf-8")),
         result_path=args.results,
-        artifact_paths=[tex_path, bib_path, pdf_path, paper_svg_path],
+        artifact_paths=artifact_paths,
         algorithm="trice-v3-paper-generator",
         notes=["LaTeX source and PDF generated from deterministic live evidence."],
         base_dir=args.out_dir,

@@ -1,0 +1,70 @@
+TRICE_CONTEXT_POLICY
+algorithm=trice-v0.1-multi-choice-knapsack
+projected_input_savings_pct=80.14
+
+[s1 step=1 action=anchor_prefix state=essential]
+Implement CSV filtering without editing tests.
+Implement CSV filtering without editing tests.
+
+[s2 step=2 action=anchor_prefix state=essential]
+Run failing verifier before edit
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+______________________________ test_basic_filter ______________________________
+tests\test_filt.py:11: in test_basic_filter
+    assert filter_rows(p, 7) == [
+           ^^^^^^^^^^^^^^^^^
+filt.py:6: in filter_rows
+    raise NotImplementedError
+E   NotImplementedError
+____________________________ test_scores_are_ints _____________________________
+tests\test_filt.py:18: in test_scores_are_ints
+    [row] = filter_rows(p, 0)
+            ^^^^^^^^^^^^^^^^^
+filt.py:6: in filter_rows
+    raise NotImplementedError
+E   NotImplementedError
+______________________________ test_header_only _______________________________
+tests\test_filt.py:22: in test_header_only
+    assert filter_rows(_write(tmp_path, "name,score\n"), 0) == []
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+filt.py:6: in filter_rows
+    raise NotImplementedError
+E   NotImplementedError
+______________________________ test_none_qualify ______________________________
+tests\test_filt.py:25: in test_none_qualify
+    assert filter_rows(_write(tmp_path, "name,score\nann,1\n"), 5) == []
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+filt.py:6: in filter_rows
+    raise NotImplementedError
+E   NotImplementedError
+____________________________ test_order_preserved _____________________________
+tests\test_filt.py:29: in test_order_preserved
+    assert [r["name"] for r in filter_rows(p, 8)] == ["z", "a", "m"]
+                               ^^^^^^^^^^^^^^^^^
+filt.py:6: in filter_rows
+    raise NotImplementedError
+E   NotImplementedError
+=========================== short test summary info ===========================
+FAILED tests\test_filt.py::test_basic_filter - NotImplementedError
+FAILED tests\test_filt.py::test_scores_are_ints - NotImplementedError
+FAILED tests\test_filt.py::test_header_only - NotImplementedError
+FAILED tests\test_filt.py::test_none_qualify - NotImplementedError
+FAILED tests\test_filt.py::test_order_preserved - NotImplementedError
+5 failed in <duration>
+tool:pytest
+
+[s3 step=3 action=mask_with_receipt state=rehydratable]
+masked receipt=c8f8912f82d1d0ad pointer=trace:csv-filter.decision:step:3
+
+[s4 step=4 action=mask_with_receipt state=rehydratable]
+masked receipt=7cdd9054c0a675fd pointer=trace:csv-filter.decision:step:4
+
+[s5 step=5 action=mask_with_receipt state=redundant]
+masked receipt=33f4d4f12da4867e pointer=trace:csv-filter.decision:step:5
+
+[s6 step=6 action=mask_with_receipt state=redundant]
+masked receipt=c68671d9315a7139 pointer=trace:csv-filter.decision:step:6
+
+[s7 step=7 action=keep state=essential]
+Ready to edit only source files and re-run the verifier.

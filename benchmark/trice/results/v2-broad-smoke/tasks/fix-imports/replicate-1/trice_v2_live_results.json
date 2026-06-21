@@ -1,0 +1,242 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "claim_gate": {
+    "accepted_rounds": 1,
+    "baseline_pass_rate": 1.0,
+    "broad_claim_allowed": false,
+    "mean_savings": 0.841954,
+    "pass_regressions": 0,
+    "rationale": "local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals",
+    "savings_ci": {
+      "high": 0.841954,
+      "level": 0.95,
+      "low": 0.841954,
+      "mean": 0.841954
+    },
+    "scope": "local_deterministic_smoke",
+    "smoke_gate_passed": true,
+    "target_savings": 0.6,
+    "total_rounds": 1,
+    "trice_pass_ci": {
+      "high": 1.0,
+      "level": 0.95,
+      "low": 0.206549,
+      "mean": 1.0
+    },
+    "trice_pass_rate": 1.0
+  },
+  "manifest_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\trice_v2_evidence_manifest.json",
+  "profile": {
+    "allow_test_edits": false,
+    "budget_ratio": 0.4,
+    "lessons": [
+      "user target set to 60% input-token savings",
+      "user requires live rollout evidence, not replay-only acceptance",
+      "replay is allowed only as a preflight, not as final proof",
+      "prefer aggressive compression when live pass preservation holds",
+      "round 1: accepted 84% savings with pass preservation",
+      "round 2: accepted 84% savings with pass preservation",
+      "round 3: accepted 84% savings with pass preservation"
+    ],
+    "max_rounds": 3,
+    "pass_noninferiority_margin_pp": -2.0,
+    "prefer_receipts": true,
+    "require_live_rollout": true,
+    "rounds_seen": 3,
+    "target_savings": 0.6,
+    "user_id": "local"
+  },
+  "report_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\trice_v2_live_report.md",
+  "result_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\trice_v2_live_results.json",
+  "rounds": [
+    {
+      "accepted": true,
+      "baseline": {
+        "adapter_reported_input_tokens": 1740,
+        "adapter_type": "command",
+        "condition": "baseline-full-context",
+        "context_path": null,
+        "input_tokens": 1740,
+        "modified_files": [
+          "mypkg/__init__.py",
+          "mypkg/api.py"
+        ],
+        "passed": true,
+        "policy": null,
+        "policy_path": null,
+        "receipt_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\baseline-full-context\\run_receipt.json",
+        "receipt_sha256": "64200dd822c69c2528d59f1dad664ae826e99f7d40899ebbd4726f952bb69da3",
+        "task_id": "fix-imports",
+        "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\baseline-full-context\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "...                                                                      [100%]\n3 passed in <duration>",
+        "workspace": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\baseline-full-context\\workspace"
+      },
+      "learning_update": {
+        "error": -1.395316,
+        "prediction": 2.181954,
+        "reward": 0.786638,
+        "weights": {
+          "cache": 0.3883747126436782,
+          "cost": 0.8,
+          "hallucination": 1.1,
+          "risk": 1.3330248275862069,
+          "utility": 0.9060166402430969
+        }
+      },
+      "measured_input_savings": 0.841954,
+      "optimized": {
+        "adapter_reported_input_tokens": 275,
+        "adapter_type": "command",
+        "condition": "trice-v2",
+        "context_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\trice-v2\\compressed_context.txt",
+        "input_tokens": 275,
+        "modified_files": [
+          "mypkg/__init__.py",
+          "mypkg/api.py"
+        ],
+        "passed": true,
+        "policy": {
+          "algorithm": "trice-v0.1-multi-choice-knapsack",
+          "baseline_input_tokens": 1740,
+          "bucket_size": 128,
+          "budget_exceeded": false,
+          "budget_ratio": 0.4,
+          "budget_tokens": 696,
+          "constraints": {
+            "evidence_recall_min": 0.95,
+            "locked_anchors_unchanged": true,
+            "pass_rate_noninferiority_pp": -2
+          },
+          "decisions": [
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 8,
+              "policy_tokens": 8,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "6a8d17075cfb90c2f6dad381355aaab929c87da3585e7e26b51a138d8b5699cf",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:1",
+              "segment_id": "s1",
+              "state": "essential",
+              "step_id": 1,
+              "value": 1.349962
+            },
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 96,
+              "policy_tokens": 96,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "64c87d87202b9cbfd0f776e44d355e23ee851007771a1cf5beebebcdce06e775",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:2",
+              "segment_id": "s2",
+              "state": "essential",
+              "step_id": 2,
+              "value": 1.469539
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "5e6b664ab601a44b707143e47f7038bd35839809603e0ac98dcd3a0323c3e71b",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:3",
+              "segment_id": "s3",
+              "state": "rehydratable",
+              "step_id": 3,
+              "value": 0.084271
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "57b7fbca058196e0ac679219bb6c74d2bdae6b8c5c66bd3660d2124cdb78f5f5",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:4",
+              "segment_id": "s4",
+              "state": "rehydratable",
+              "step_id": 4,
+              "value": 0.050671
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 640,
+              "policy_tokens": 44,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "a834c49a9ced7ffb3d0911c62602bd8afc710ab4ae33b497c836c090b8d3bd85",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:5",
+              "segment_id": "s5",
+              "state": "redundant",
+              "step_id": 5,
+              "value": -0.031812
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 420,
+              "policy_tokens": 29,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:6",
+              "segment_id": "s6",
+              "state": "redundant",
+              "step_id": 6,
+              "value": -0.064356
+            },
+            {
+              "action": "keep",
+              "locked": true,
+              "original_tokens": 64,
+              "policy_tokens": 64,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+              "rehydrate_pointer": "trace:fix-imports.decision:step:7",
+              "segment_id": "s7",
+              "state": "essential",
+              "step_id": 7,
+              "value": 1.349693
+            }
+          ],
+          "policy_tokens": 275,
+          "projected_input_savings_pct": 84.2
+        },
+        "policy_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\trice-v2\\context_policy.json",
+        "receipt_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\trice-v2\\run_receipt.json",
+        "receipt_sha256": "9e47b253637d9af37ba6ee1e837c435d23d030e1d58d5c16bb6e110e816d1448",
+        "task_id": "fix-imports",
+        "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\trice-v2\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "...                                                                      [100%]\n3 passed in <duration>",
+        "workspace": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\trice-v2\\workspace"
+      },
+      "pass_noninferior": true,
+      "profile_after": {
+        "allow_test_edits": false,
+        "budget_ratio": 0.4,
+        "lessons": [
+          "user target set to 60% input-token savings",
+          "user requires live rollout evidence, not replay-only acceptance",
+          "replay is allowed only as a preflight, not as final proof",
+          "prefer aggressive compression when live pass preservation holds",
+          "round 1: accepted 84% savings with pass preservation",
+          "round 2: accepted 84% savings with pass preservation",
+          "round 3: accepted 84% savings with pass preservation"
+        ],
+        "max_rounds": 3,
+        "pass_noninferiority_margin_pp": -2.0,
+        "prefer_receipts": true,
+        "require_live_rollout": true,
+        "rounds_seen": 3,
+        "target_savings": 0.6,
+        "user_id": "local"
+      },
+      "quality_delta": 0.0,
+      "round_index": 1,
+      "task_id": "fix-imports"
+    }
+  ]
+}

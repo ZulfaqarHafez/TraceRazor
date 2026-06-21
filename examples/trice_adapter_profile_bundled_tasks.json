@@ -1,0 +1,13 @@
+{
+  "schema_version": "trice-adapter-profile/v1",
+  "name": "bundled-live-task-command-adapter",
+  "type": "command",
+  "command": ["python", "{{profile_dir}}/trice_repair_bundled_tasks.py"],
+  "timeout_s": 120,
+  "allow_test_edits": false,
+  "agent_receipt_path": ".trice/agent_receipt.json",
+  "expected_exit_codes": [0],
+  "metadata": {
+    "purpose": "Deterministic command adapter for TraceRazor bundled live tasks"
+  }
+}

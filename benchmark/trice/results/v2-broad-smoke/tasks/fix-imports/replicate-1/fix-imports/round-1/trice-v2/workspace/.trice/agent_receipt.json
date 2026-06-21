@@ -1,0 +1,19 @@
+{
+  "changed_files": [
+    "mypkg/__init__.py",
+    "mypkg/api.py"
+  ],
+  "model": "deterministic-bundled-repair",
+  "schema_version": "trice-agent-receipt/v1",
+  "token_accounting": {
+    "baseline_input_tokens": 1740,
+    "input_tokens": 275,
+    "output_tokens": 0
+  },
+  "trice_context": {
+    "budget_ratio": "0.4",
+    "condition": "trice-v2",
+    "context_mode": "trice_policy",
+    "realized_budget_ratio": "0.158046"
+  }
+}

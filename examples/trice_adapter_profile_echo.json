@@ -1,0 +1,13 @@
+{
+  "schema_version": "trice-adapter-profile/v1",
+  "name": "example-command-adapter",
+  "type": "command",
+  "command": ["python", "scripts/repair_agent.py"],
+  "timeout_s": 600,
+  "allow_test_edits": false,
+  "agent_receipt_path": ".trice/agent_receipt.json",
+  "expected_exit_codes": [0],
+  "metadata": {
+    "purpose": "Template profile for deterministic command-based TRICE runs"
+  }
+}

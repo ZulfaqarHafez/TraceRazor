@@ -29,6 +29,12 @@ Evidence manifest: `trice_v2_evidence_manifest.json`
 - replay is allowed only as a preflight, not as final proof
 - prefer aggressive compression when live pass preservation holds
 - round 1: accepted 77% savings with pass preservation
+- round 2: accepted 77% savings with pass preservation
+- round 3: accepted 77% savings with pass preservation
+- round 4: accepted 77% savings with pass preservation
+- round 5: accepted 77% savings with pass preservation
+- round 6: accepted 77% savings with pass preservation
+- round 7: accepted 77% savings with pass preservation
 
 ## Interpretation
 

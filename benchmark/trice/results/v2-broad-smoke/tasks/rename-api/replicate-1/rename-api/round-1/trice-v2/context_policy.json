@@ -1,0 +1,108 @@
+{
+  "algorithm": "trice-v0.1-multi-choice-knapsack",
+  "baseline_input_tokens": 1742,
+  "bucket_size": 128,
+  "budget_exceeded": false,
+  "budget_ratio": 0.4,
+  "budget_tokens": 697,
+  "constraints": {
+    "evidence_recall_min": 0.95,
+    "locked_anchors_unchanged": true,
+    "pass_rate_noninferiority_pp": -2
+  },
+  "decisions": [
+    {
+      "action": "anchor_prefix",
+      "locked": true,
+      "original_tokens": 10,
+      "policy_tokens": 10,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "1937edb25ee7d485f0076f6a1406e8ab0b966bcfa4c336430d457ff259ed3860",
+      "rehydrate_pointer": "trace:rename-api.decision:step:1",
+      "segment_id": "s1",
+      "state": "essential",
+      "step_id": 1,
+      "value": 1.379952
+    },
+    {
+      "action": "anchor_prefix",
+      "locked": true,
+      "original_tokens": 96,
+      "policy_tokens": 96,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "6219c2af9ee2a23be8258060071bb22b381e724127cc816fa58dcf5e11cfdbe5",
+      "rehydrate_pointer": "trace:rename-api.decision:step:2",
+      "segment_id": "s2",
+      "state": "essential",
+      "step_id": 2,
+      "value": 1.439539
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 256,
+      "policy_tokens": 17,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "8c96635ca51a6d945785626d0ec60d3df4435191b44ce9d494cb04789cf7fac6",
+      "rehydrate_pointer": "trace:rename-api.decision:step:3",
+      "segment_id": "s3",
+      "state": "rehydratable",
+      "step_id": 3,
+      "value": 0.084271
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 256,
+      "policy_tokens": 17,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "fa36b06a6695d8a6b5ed4c725b00e7385f11dfbac9d4df95b4c0aeecf6f6bb67",
+      "rehydrate_pointer": "trace:rename-api.decision:step:4",
+      "segment_id": "s4",
+      "state": "rehydratable",
+      "step_id": 4,
+      "value": 0.059071
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 640,
+      "policy_tokens": 44,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "28504f50d5a43abcae1cb310dd88b66721286068fbf8e83255869e8568ad68a3",
+      "rehydrate_pointer": "trace:rename-api.decision:step:5",
+      "segment_id": "s5",
+      "state": "redundant",
+      "step_id": 5,
+      "value": -0.040212
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 420,
+      "policy_tokens": 29,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+      "rehydrate_pointer": "trace:rename-api.decision:step:6",
+      "segment_id": "s6",
+      "state": "redundant",
+      "step_id": 6,
+      "value": -0.064356
+    },
+    {
+      "action": "keep",
+      "locked": true,
+      "original_tokens": 64,
+      "policy_tokens": 64,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+      "rehydrate_pointer": "trace:rename-api.decision:step:7",
+      "segment_id": "s7",
+      "state": "essential",
+      "step_id": 7,
+      "value": 1.349693
+    }
+  ],
+  "policy_tokens": 277,
+  "projected_input_savings_pct": 84.1
+}

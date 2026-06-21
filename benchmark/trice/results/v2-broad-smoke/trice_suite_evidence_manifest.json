@@ -1,0 +1,63 @@
+{
+  "algorithm": "trice-v2-suite-live-user-conditioned-rollout",
+  "artifacts": [
+    {
+      "bytes": 2442,
+      "path": "trice_suite_manifest.snapshot.json",
+      "sha256": "03a15626f123d86756dba495de7eae77323b0c16d46989ef387d9a61212d0879"
+    },
+    {
+      "bytes": 6986,
+      "path": "trice_suite_sources.json",
+      "sha256": "0bbfb3132ae0e7bf799b2478ee889f3211c60c907a4c133c9c79622f0429f122"
+    },
+    {
+      "bytes": 2412,
+      "path": "trice_suite_report.md",
+      "sha256": "33d2f7cc5b51bf35654ad18970d6fe5247edda9f4bf655d32e289f3aaa62acc6"
+    },
+    {
+      "bytes": 2270,
+      "path": "tasks/csv-filter/replicate-1/trice_v2_evidence_manifest.json",
+      "sha256": "acd15c23a9d9f3240f1cfe4f105f14a2d8a25d25b3f1845f9c80b0cb316f49e7"
+    },
+    {
+      "bytes": 2292,
+      "path": "tasks/dedupe-helpers/replicate-1/trice_v2_evidence_manifest.json",
+      "sha256": "1489690b51f2ca74f2aff4741946015b9ee2b501db4ce672e77e05cfbfa47ab0"
+    },
+    {
+      "bytes": 2274,
+      "path": "tasks/fix-imports/replicate-1/trice_v2_evidence_manifest.json",
+      "sha256": "1c44cdcfb171188472bc15d15f9e5098f9eee4e7591e6e8c8bdf2d53257bc271"
+    },
+    {
+      "bytes": 2288,
+      "path": "tasks/fix-offby-one/replicate-1/trice_v2_evidence_manifest.json",
+      "sha256": "dbee2045b99deb8d4e8e3a59e95cb0366aba392804d426d0b59923d9fc3dc897"
+    },
+    {
+      "bytes": 2306,
+      "path": "tasks/implement-median/replicate-1/trice_v2_evidence_manifest.json",
+      "sha256": "eed6bf9c7a2419456a527caea0990346c3824c5e4bc4159ed2bfd56261222058"
+    },
+    {
+      "bytes": 2268,
+      "path": "tasks/rename-api/replicate-1/trice_v2_evidence_manifest.json",
+      "sha256": "9d86f7ebfd751373e100c3c242f795e0fbaac2f9ef5cb5617bc0c544829b6782"
+    }
+  ],
+  "canonical_result_sha256": "1e65a61133ea2cef196ae7a8fed9f86819ac5e581d33b2b6f16493208823ba8d",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "Manifest-driven TRICE suite",
+    "Each child task is a real live rollout with its own evidence manifest",
+    "Replicates use fresh child output bundles",
+    "Repo tree fingerprints and intervention provenance captured before execution",
+    "Aggregate manifest hashes suite snapshot and child manifests"
+  ],
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
+  "result_sha256": "db2b55255c76f4cdf8216a1eb7cb996fd7b569e3ae17940e2105e924080b6eec",
+  "schema_version": "trice-evidence-manifest/v1"
+}

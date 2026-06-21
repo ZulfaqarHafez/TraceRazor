@@ -1,0 +1,215 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tracerazor.dev/schemas/trice_run_receipt.schema.json",
+  "title": "TRICE run receipt",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "adapter_type",
+    "adapter_name",
+    "task_id",
+    "prompt_sha256",
+    "changed_files",
+    "changed_file_count"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "trice-run-receipt/v1"
+    },
+    "adapter_type": {
+      "type": "string",
+      "enum": ["json_patch", "command", "command_profile", "managed_python"]
+    },
+    "adapter_name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prompt_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "command": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "command_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "workspace_before_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "workspace_after_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "timeout_s": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "expected_exit_codes": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      }
+    },
+    "exit_code": {
+      "type": "integer"
+    },
+    "changed_files": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "changed_file_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "forbidden_changed_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allow_test_edits": {
+      "type": "boolean"
+    },
+    "agent_reported": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "schema_version": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "token_accounting": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "input_tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "output_tokens": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    },
+    "trice_context": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "const": "trice-context-envelope/v1"
+        },
+        "condition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "context_mode": {
+          "type": "string",
+          "enum": ["full_context", "trice_policy"]
+        },
+        "input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "baseline_input_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "policy_tokens": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "budget_tokens": {
+          "type": ["integer", "null"],
+          "minimum": 0
+        },
+        "budget_ratio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "realized_budget_ratio": {
+          "type": "number",
+          "minimum": 0
+        },
+        "projected_input_savings_pct": {
+          "type": "number"
+        },
+        "budget_exceeded": {
+          "type": "boolean"
+        },
+        "policy_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "compressed_context_sha256": {
+          "type": ["string", "null"],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "policy_action_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "stdout_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "stderr_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "adapter_type": {
+            "enum": ["command", "command_profile"]
+          }
+        },
+        "required": ["adapter_type"]
+      },
+      "then": {
+        "required": [
+          "command",
+          "command_sha256",
+          "workspace_before_sha256",
+          "workspace_after_sha256",
+          "timeout_s",
+          "exit_code",
+          "allow_test_edits"
+        ]
+      }
+    }
+  ]
+}

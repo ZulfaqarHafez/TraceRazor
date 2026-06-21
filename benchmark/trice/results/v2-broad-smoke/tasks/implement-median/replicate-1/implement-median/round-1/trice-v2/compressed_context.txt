@@ -1,0 +1,76 @@
+TRICE_CONTEXT_POLICY
+algorithm=trice-v0.1-multi-choice-knapsack
+projected_input_savings_pct=79.66
+
+[s1 step=1 action=anchor_prefix state=essential]
+Implement median without editing tests.
+Implement median without editing tests.
+
+[s2 step=2 action=anchor_prefix state=essential]
+Run failing verifier before edit
+FFFFFF                                                                   [100%]
+================================== FAILURES ===================================
+__________________________________ test_odd ___________________________________
+tests\test_stats.py:5: in test_odd
+    assert median([3, 1, 2]) == 2
+           ^^^^^^^^^^^^^^^^^
+stats.py:10: in median
+    raise NotImplementedError
+E   NotImplementedError
+__________________________________ test_even __________________________________
+tests\test_stats.py:8: in test_even
+    assert median([4, 1, 3, 2]) == 2.5
+           ^^^^^^^^^^^^^^^^^^^^
+stats.py:10: in median
+    raise NotImplementedError
+E   NotImplementedError
+_________________________________ test_single _________________________________
+tests\test_stats.py:11: in test_single
+    assert median([7]) == 7
+           ^^^^^^^^^^^
+stats.py:10: in median
+    raise NotImplementedError
+E   NotImplementedError
+____________________________ test_unsorted_floats _____________________________
+tests\test_stats.py:14: in test_unsorted_floats
+    assert median([2.5, 0.5, 1.5]) == 1.5
+           ^^^^^^^^^^^^^^^^^^^^^^^
+stats.py:10: in median
+    raise NotImplementedError
+E   NotImplementedError
+______________________________ test_empty_raises ______________________________
+tests\test_stats.py:18: in test_empty_raises
+    median([])
+stats.py:10: in median
+    raise NotImplementedError
+E   NotImplementedError
+___________________________ test_input_not_mutated ____________________________
+tests\test_stats.py:22: in test_input_not_mutated
+    median(xs)
+stats.py:10: in median
+    raise NotImplementedError
+E   NotImplementedError
+=========================== short test summary info ===========================
+FAILED tests\test_stats.py::test_odd - NotImplementedError
+FAILED tests\test_stats.py::test_even - NotImplementedError
+FAILED tests\test_stats.py::test_single - NotImplementedError
+FAILED tests\test_stats.py::test_unsorted_floats - NotImplementedError
+FAILED tests\test_stats.py::test_empty_raises - NotImplementedError
+FAILED tests\test_stats.py::test_input_not_mutated - NotImplementedError
+6 failed in <duration>
+tool:pytest
+
+[s3 step=3 action=mask_with_receipt state=rehydratable]
+masked receipt=b12a84e2962aa9d7 pointer=trace:implement-median.decision:step:3
+
+[s4 step=4 action=mask_with_receipt state=rehydratable]
+masked receipt=fb1dee4f454b4573 pointer=trace:implement-median.decision:step:4
+
+[s5 step=5 action=mask_with_receipt state=redundant]
+masked receipt=e77f5cd744548324 pointer=trace:implement-median.decision:step:5
+
+[s6 step=6 action=mask_with_receipt state=redundant]
+masked receipt=c68671d9315a7139 pointer=trace:implement-median.decision:step:6
+
+[s7 step=7 action=keep state=essential]
+Ready to edit only source files and re-run the verifier.

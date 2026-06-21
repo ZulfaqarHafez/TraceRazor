@@ -33,13 +33,75 @@
       "minimum": 1,
       "default": 1
     },
+    "s_tier_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "min_task_clusters": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 50
+        },
+        "min_replicates_per_task": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 3
+        },
+        "min_mean_savings": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "min_clustered_savings_ci_low": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_pass_regressions": {
+          "type": "integer",
+          "minimum": 0,
+          "default": 0
+        },
+        "require_locked_git_sources": {
+          "type": "boolean",
+          "default": true
+        },
+        "require_remote_git_sources": {
+          "type": "boolean",
+          "default": true
+        },
+        "require_adapter_profiles": {
+          "type": "boolean",
+          "default": true
+        },
+        "require_receipt_validation": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
     "tasks": {
       "type": "array",
       "minItems": 1,
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["task_id", "repo", "patch_spec"],
+        "required": ["task_id"],
+        "allOf": [
+          {
+            "oneOf": [
+              { "required": ["repo"], "not": { "required": ["git"] } },
+              { "required": ["git"], "not": { "required": ["repo"] } }
+            ]
+          },
+          {
+            "oneOf": [
+              { "required": ["patch_spec"], "not": { "anyOf": [{ "required": ["repair_cmd"] }, { "required": ["adapter_profile"] }] } },
+              { "required": ["repair_cmd"], "not": { "anyOf": [{ "required": ["patch_spec"] }, { "required": ["adapter_profile"] }] } },
+              { "required": ["adapter_profile"], "not": { "anyOf": [{ "required": ["patch_spec"] }, { "required": ["repair_cmd"] }] } }
+            ]
+          }
+        ],
         "properties": {
           "task_id": {
             "type": "string",
@@ -50,9 +112,56 @@
             "type": "string",
             "minLength": 1
           },
+          "git": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["url", "rev"],
+            "properties": {
+              "url": {
+                "type": "string",
+                "minLength": 1
+              },
+              "rev": {
+                "type": "string",
+                "minLength": 1
+              },
+              "subdir": {
+                "type": "string"
+              }
+            }
+          },
           "patch_spec": {
             "type": "string",
             "minLength": 1
+          },
+          "repair_cmd": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            ]
+          },
+          "adapter_profile": {
+            "type": "string",
+            "minLength": 1
+          },
+          "repair_timeout_s": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 600
+          },
+          "allow_test_edits": {
+            "type": "boolean",
+            "default": false
           },
           "prompt": {
             "type": "string",

@@ -16,6 +16,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .receipt import validate_run_receipt_file
+
 DEFAULT_RESULT_FILENAMES = ("trice_v2_live_results.json", "trice_suite_results.json")
 
 
@@ -134,6 +136,11 @@ def verify_manifest(manifest_path: str | Path, result_path: str | Path | None = 
             errors.append(f"byte-size mismatch: {artifact.path}")
         if sha256_file(p) != artifact.sha256:
             errors.append(f"sha256 mismatch: {artifact.path}")
+        if p.name == "run_receipt.json":
+            try:
+                validate_run_receipt_file(p)
+            except (ValueError, json.JSONDecodeError) as exc:
+                errors.append(f"invalid run receipt {artifact.path}: {exc}")
 
     return {
         "ok": not errors,

@@ -1,0 +1,60 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "artifacts": [
+    {
+      "bytes": 1783,
+      "path": "trice_v2_live_report.md",
+      "sha256": "4edb9c4bc4be2dfd10909806bd87ce0aa8834c9cc27fae66446eff80e10f76c4"
+    },
+    {
+      "bytes": 717,
+      "path": "user_profile.json",
+      "sha256": "4c66660fee982d611f933dc8e6f88eaa11372330afc2f8e16f7b9365a36aee33"
+    },
+    {
+      "bytes": 12372,
+      "path": "csv-filter/round-1/baseline-full-context/trace.json",
+      "sha256": "7626385fc65d3c42ee82c797023078399bb2d1d48697157c216622f04e7a87ca"
+    },
+    {
+      "bytes": 12345,
+      "path": "csv-filter/round-1/trice-v2/trace.json",
+      "sha256": "a8cbee9e7da2a324487625942907ed7ba764c2a61fbedc08286a2dc0a1c97dd6"
+    },
+    {
+      "bytes": 3536,
+      "path": "csv-filter/round-1/trice-v2/context_policy.json",
+      "sha256": "9618455d14192512e5ef74be64ea542f42669a6f0cd0eefcfab89f635b6fa175"
+    },
+    {
+      "bytes": 3154,
+      "path": "csv-filter/round-1/trice-v2/compressed_context.txt",
+      "sha256": "37d0247aeba98db3b22d7bc0a2bf63521afb27fb06eb5a79e2972e2464cdc5e8"
+    },
+    {
+      "bytes": 2710,
+      "path": "csv-filter/round-1/baseline-full-context/run_receipt.json",
+      "sha256": "e52a8172f769914a55402a1f5e6a1fa3d55183a7d3afbfb5fc9a3ca4efe629eb"
+    },
+    {
+      "bytes": 3270,
+      "path": "csv-filter/round-1/trice-v2/run_receipt.json",
+      "sha256": "93fbb7a9fc4d9c03699f338d54f12cfcbad61e3783a1b9de07ca38527c679aee"
+    }
+  ],
+  "canonical_result_sha256": "12be79b6126d9b045a83d6b9f01a0f536f6e44da1744024f5fc7abeeb812c20d",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "Fresh workspace per condition",
+    "Objective verifier command per run",
+    "User-conditioned profile captured in result JSON",
+    "Verifier durations normalized before hashing",
+    "Wall-clock metadata excluded from traces",
+    "Run receipts capture adapter envelopes and changed workspace fingerprints",
+    "Replay is not accepted as final proof"
+  ],
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
+  "result_sha256": "84fc4e5c5ef767b8c310aba77e8887a70bfb2dfe1e84df09299fc8c944b80e8e",
+  "schema_version": "trice-evidence-manifest/v1"
+}

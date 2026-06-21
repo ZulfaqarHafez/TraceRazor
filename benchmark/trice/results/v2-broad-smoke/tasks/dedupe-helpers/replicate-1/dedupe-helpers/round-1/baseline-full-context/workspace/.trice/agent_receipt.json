@@ -1,0 +1,20 @@
+{
+  "changed_files": [
+    "textutil.py",
+    "utils_a.py",
+    "utils_b.py"
+  ],
+  "model": "deterministic-bundled-repair",
+  "schema_version": "trice-agent-receipt/v1",
+  "token_accounting": {
+    "baseline_input_tokens": 1740,
+    "input_tokens": 1740,
+    "output_tokens": 0
+  },
+  "trice_context": {
+    "budget_ratio": "1.0",
+    "condition": "baseline-full-context",
+    "context_mode": "full_context",
+    "realized_budget_ratio": "1.0"
+  }
+}

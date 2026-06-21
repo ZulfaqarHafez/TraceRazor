@@ -1,0 +1,60 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "artifacts": [
+    {
+      "bytes": 1784,
+      "path": "trice_v2_live_report.md",
+      "sha256": "a73e8fc766d88e6f41c452fe6a52fdc0b2dd6942d3544a0a566a7b1f5dcababc"
+    },
+    {
+      "bytes": 717,
+      "path": "user_profile.json",
+      "sha256": "cb135983b2715bda3ae4cdd6d23a84b199d8a5a3ae4d3dd756b367872e22ba6f"
+    },
+    {
+      "bytes": 8212,
+      "path": "fix-imports/round-1/baseline-full-context/trace.json",
+      "sha256": "9e42817bd0a751d726159ccc1dc269aff4a4218c484f3f33a26a7d00f28bdbb6"
+    },
+    {
+      "bytes": 8081,
+      "path": "fix-imports/round-1/trice-v2/trace.json",
+      "sha256": "a250efe1ed09bb30b5d1fc9e6414e395db8883d01ec6cd61834d85873211cead"
+    },
+    {
+      "bytes": 3540,
+      "path": "fix-imports/round-1/trice-v2/context_policy.json",
+      "sha256": "1e7b6c3da46a60de0177a4a7796c0af5d7561400020b577ca6257889e6b28bbf"
+    },
+    {
+      "bytes": 2188,
+      "path": "fix-imports/round-1/trice-v2/compressed_context.txt",
+      "sha256": "6158daa64e0759e491987533e738a93fd1f3f008ffd75e2f206bcbd287ce0f65"
+    },
+    {
+      "bytes": 2775,
+      "path": "fix-imports/round-1/baseline-full-context/run_receipt.json",
+      "sha256": "64200dd822c69c2528d59f1dad664ae826e99f7d40899ebbd4726f952bb69da3"
+    },
+    {
+      "bytes": 3338,
+      "path": "fix-imports/round-1/trice-v2/run_receipt.json",
+      "sha256": "9e47b253637d9af37ba6ee1e837c435d23d030e1d58d5c16bb6e110e816d1448"
+    }
+  ],
+  "canonical_result_sha256": "d617343fa6a4521e741b7b353bcfaa9cd604332d71c7e8cbea59c20c3ec48baf",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "Fresh workspace per condition",
+    "Objective verifier command per run",
+    "User-conditioned profile captured in result JSON",
+    "Verifier durations normalized before hashing",
+    "Wall-clock metadata excluded from traces",
+    "Run receipts capture adapter envelopes and changed workspace fingerprints",
+    "Replay is not accepted as final proof"
+  ],
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
+  "result_sha256": "b8a4f2d47c600375e00a4f043e0f84af0ea7775f190f976dccd3c61ef919b42a",
+  "schema_version": "trice-evidence-manifest/v1"
+}

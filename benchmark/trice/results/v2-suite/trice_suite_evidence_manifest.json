@@ -7,36 +7,42 @@
       "sha256": "19081e123976565e1aeff55b5803f861727c550cfcb06c37708f56c63415a78e"
     },
     {
-      "bytes": 1331,
+      "bytes": 958,
+      "path": "trice_suite_sources.json",
+      "sha256": "3924110c6a28e4dc725d7a4d89df7c1afd8594f8b5016623ac60cf3e461661e1"
+    },
+    {
+      "bytes": 2107,
       "path": "trice_suite_report.md",
-      "sha256": "18dbb1de7ae5e58aebad2d96ef2178eb27c7307d2f16ba9c1507d4496b1214b1"
+      "sha256": "431600115fd6fdddd2e21776b810b65016285e8ec1087419c61429ffad9d9281"
     },
     {
-      "bytes": 1843,
+      "bytes": 2323,
       "path": "tasks/fix-offby-one-suite/replicate-1/trice_v2_evidence_manifest.json",
-      "sha256": "237ee83e6a4bdbf3cd77d64041e3ab078aae3b81987a5abc9db0548073577a34"
+      "sha256": "0677cd5c3c32c4a5e8e84080b36eff20439c5db4a43601432906971853354ad0"
     },
     {
-      "bytes": 1843,
+      "bytes": 2323,
       "path": "tasks/fix-offby-one-suite/replicate-2/trice_v2_evidence_manifest.json",
-      "sha256": "815749f2f51e47a35aa498d8255b89497d19702a34a33e53e1f5fdab8fc48d74"
+      "sha256": "58a32a6db4f8722a4c8f2e06cbdf1993ada116b4416b820aa41ee4f766feac98"
     },
     {
-      "bytes": 1843,
+      "bytes": 2323,
       "path": "tasks/fix-offby-one-suite/replicate-3/trice_v2_evidence_manifest.json",
-      "sha256": "f3a1e5357677301ea7d3430e3bcb7a3d58b6cf0a2cc11c8ff8cb8a765d83033d"
+      "sha256": "7d1e66e4b8dc9e380f4697d2ac5bb5f47a4f3a8a0a1ca8d4ce549a427d0ed7ca"
     }
   ],
-  "canonical_result_sha256": "7c41fcf85b276a67c9baeafa64809df72a9f83afe0f3d98d28385ac40b024ebe",
+  "canonical_result_sha256": "d23200ac154507ee1f8f17946d2aa9853d652172cd3661ac4bfbcc6193c023d8",
   "created_by": "TraceRazor TRICE",
   "notes": [
     "Manifest-driven TRICE suite",
     "Each child task is a real live rollout with its own evidence manifest",
     "Replicates use fresh child output bundles",
+    "Repo tree fingerprints and intervention provenance captured before execution",
     "Aggregate manifest hashes suite snapshot and child manifests"
   ],
   "platform": "Windows-10-10.0.26200-SP0",
   "python_version": "3.11.6",
-  "result_sha256": "1513f28e55238dc0fab4b4370718f5f08915564b868859d882af9bd8081da9b7",
+  "result_sha256": "e6c17a57cf15f08905bb6554d1a7f5226dfda865704382095023d2f9164ae6cd",
   "schema_version": "trice-evidence-manifest/v1"
 }

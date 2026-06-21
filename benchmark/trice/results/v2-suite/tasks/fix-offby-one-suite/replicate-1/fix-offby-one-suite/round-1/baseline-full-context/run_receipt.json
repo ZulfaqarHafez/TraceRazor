@@ -1,0 +1,33 @@
+{
+  "adapter_name": "fix-offby-one-demo",
+  "adapter_type": "json_patch",
+  "agent_reported": null,
+  "allow_test_edits": false,
+  "changed_file_count": 1,
+  "changed_files": [
+    "chunker.py"
+  ],
+  "edit_count": 1,
+  "metadata": {},
+  "prompt_sha256": "e971cabff20b9d7a984c26428fb9b13a1d494a2382491d014d5f8a9ce4ed72da",
+  "schema_version": "trice-run-receipt/v1",
+  "task_id": "fix-offby-one-suite",
+  "trice_context": {
+    "baseline_input_tokens": 2470,
+    "budget_exceeded": false,
+    "budget_ratio": 1.0,
+    "budget_tokens": null,
+    "compressed_context_path": null,
+    "compressed_context_sha256": null,
+    "condition": "baseline-full-context",
+    "context_mode": "full_context",
+    "input_tokens": 2470,
+    "policy_action_counts": {},
+    "policy_path": null,
+    "policy_sha256": null,
+    "policy_tokens": null,
+    "projected_input_savings_pct": 0.0,
+    "realized_budget_ratio": 1.0,
+    "schema_version": "trice-context-envelope/v1"
+  }
+}

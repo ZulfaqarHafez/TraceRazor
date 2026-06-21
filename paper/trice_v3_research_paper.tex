@@ -50,6 +50,9 @@
         Suite manifests extend this contract to multi-repository evaluation:
         the aggregate manifest hashes the suite snapshot and each child live
         task manifest, then deep verification checks every child bundle.
+        The S-tier gate is a deterministic non-claim unless the suite clears
+        savings, pass preservation, replication, held-out source, adapter
+        profile, and receipt-validation requirements.
 
         \section{Metrics}
         Primary metric: measured input-token savings. Guardrail metrics:
@@ -84,21 +87,38 @@ rename-api & 1814 & 349 & 80.8\% & yes & yes \\
         allowed: no.
 
         \section{Replicated Suite Evidence}
-        The public suite artifact \texttt{fix-offby-one-suite} contains 3 live replicate runs across 1 task cluster(s). Mean input-token savings is 76.6\% with clustered-by-task 95\% CI 76.6\%--76.6\%; pass regressions 0.
+        The public suite artifact \texttt{fix-offby-one-suite} contains 3 live replicate runs across 1 task cluster(s). Mean input-token savings is 76.6\% with clustered-by-task 95\% CI 76.6\%--76.6\%; pass regressions 0. S-tier gate: not passed; missing requirements: task\_clusters, locked\_git\_sources, remote\_git\_sources, adapter\_profiles.
+
+        \section{Broad Smoke Evidence}
+        The suite \texttt{bundled-live-six-task-suite} contains 6 live run(s) across 6 task cluster(s). Mean input-token savings is 81.5\% with clustered-by-task 95\% CI 79.0\%--83.5\%; pass regressions 0. S-tier gate: not passed; missing requirements: task\_clusters, replicates\_per\_task, locked\_git\_sources, remote\_git\_sources. The broad-smoke bundle \texttt{trice_broad_smoke_evidence.trice.zip} contains 65 hashed entries.
+
+        \section{Portable Artifact Bundle}
+        The public bundle \texttt{trice_suite_evidence.trice.zip} contains 35 hashed entries, root manifest \texttt{trice_suite_evidence_manifest.json}, and root result \texttt{trice_suite_results.json}. Verification replays aggregate and child-manifest checks after safe extraction.
+
+        \section{Source Provenance}
+        The suite source manifest records repo tree digest \texttt{604addf4070c...} over 3 files and patch SHA-256 \texttt{de5bd5e413ec...} before execution. Suite tasks may use either local paths or locked Git sources with URL, revision, optional subdirectory, and resolved commit recorded.
 
         \section{Product Definition}
         TRICE is ship-worthy only when the library produces stable manifests,
         verifier-backed measurements, and user-conditioned policies through a
         public API: \texttt{tracerazor.trice}. Generic users provide
         \texttt{LiveTask} plus a deterministic \texttt{RepairAdapter};
-        the bundled JSON patch adapter is schema-bound and refuses test edits
-        by default. Identical real-run smoke executions are regression-tested
-        to reproduce result and artifact hashes. The public CLI is
+        the bundled JSON patch and command repair adapters refuse test edits
+        by default. Command adapters may be packaged as
+        \texttt{trice-adapter-profile/v1} files and every live condition emits
+        a \texttt{trice-run-receipt/v1} artifact with adapter envelope,
+        command hash, before/after workspace fingerprints, changed files,
+        output hashes, and optional agent-reported token accounting. Receipt
+        artifacts have a shipped JSON Schema and are validated during manifest
+        and bundle verification, so malformed receipts can fail even when their
+        bytes are faithfully hashed. Identical real-run smoke executions are
+        regression-tested to reproduce result and artifact hashes. The public CLI is
         \texttt{tracerazor-trice} and mirrors the module form
         \texttt{python -m tracerazor.trice}. Multi-repository evaluation uses
-        \texttt{trice-suite/v1} manifests and \texttt{verify-suite} for
-        aggregate plus child-manifest verification. A replay-only result cannot
-        certify savings.
+        \texttt{trice-suite/v1} manifests, \texttt{verify-suite} for
+        aggregate plus child-manifest verification, and deterministic
+        \texttt{.trice.zip} evidence bundles for handoff. A replay-only
+        result cannot certify savings.
 
         \section{Limitations}
         The current smoke uses deterministic managed repair recipes. The next

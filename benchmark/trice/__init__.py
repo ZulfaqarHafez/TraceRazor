@@ -8,24 +8,29 @@ V2 adds live rollout: fresh workspaces, real edits, verifier commands, and a
 small user preference profile that adapts budgets from feedback and outcomes.
 """
 
-from .adapters import JsonPatchAdapter, PatchEdit, RepairAdapter
+from .adapters import CommandRepairAdapter, JsonPatchAdapter, PatchEdit, RepairAdapter
+from .bundle import BundleManifest, export_evidence_bundle, verify_evidence_bundle
 from .evidence import EvidenceManifest, build_manifest, canonical_json, verify_manifest
 from .learn import LearningWeights, PolicyUpdate, update_weights
 from .policy import ContextPolicy, PolicyDecision, solve_policy
+from .provenance import TreeFingerprint, fingerprint_tree, hash_file
 from .replay import ReplayMetrics, evaluate_policy
 from .render import render_context, render_policy_json
 from .score import ActionCandidate, SegmentScore, ScoreWeights, score_segment
 from .segment import Segment, SegmentState, segments_from_trace
-from .schemas import load_schema, schema_path, validate_patch_spec, validate_patch_spec_file
+from .receipt import validate_run_receipt, validate_run_receipt_file
+from .schemas import load_schema, schema_path, validate_adapter_profile, validate_adapter_profile_file, validate_patch_spec, validate_patch_spec_file
 from .stats import ClaimGate, ConfidenceInterval, bootstrap_mean_ci, claim_gate_from_rounds, clustered_bootstrap_mean_ci, wilson_ci
 from .suite import SuiteRunResult, SuiteTaskRun, SuiteTaskSpec, run_suite_manifest, validate_suite_manifest_file, verify_suite_evidence
 from .user import UserPreferenceProfile
 
 __all__ = [
     "ActionCandidate",
+    "BundleManifest",
     "ContextPolicy",
     "ClaimGate",
     "ConfidenceInterval",
+    "CommandRepairAdapter",
     "EvidenceManifest",
     "JsonPatchAdapter",
     "LearningWeights",
@@ -41,6 +46,7 @@ __all__ = [
     "SuiteRunResult",
     "SuiteTaskRun",
     "SuiteTaskSpec",
+    "TreeFingerprint",
     "UserPreferenceProfile",
     "bootstrap_mean_ci",
     "build_manifest",
@@ -48,6 +54,9 @@ __all__ = [
     "claim_gate_from_rounds",
     "clustered_bootstrap_mean_ci",
     "evaluate_policy",
+    "export_evidence_bundle",
+    "fingerprint_tree",
+    "hash_file",
     "load_schema",
     "render_context",
     "render_policy_json",
@@ -57,10 +66,15 @@ __all__ = [
     "segments_from_trace",
     "solve_policy",
     "update_weights",
+    "validate_adapter_profile",
+    "validate_adapter_profile_file",
     "validate_patch_spec",
     "validate_patch_spec_file",
+    "validate_run_receipt",
+    "validate_run_receipt_file",
     "validate_suite_manifest_file",
     "verify_manifest",
+    "verify_evidence_bundle",
     "verify_suite_evidence",
     "wilson_ci",
 ]

@@ -6,13 +6,19 @@
     "user requires live rollout evidence, not replay-only acceptance",
     "replay is allowed only as a preflight, not as final proof",
     "prefer aggressive compression when live pass preservation holds",
-    "round 1: accepted 77% savings with pass preservation"
+    "round 1: accepted 77% savings with pass preservation",
+    "round 2: accepted 77% savings with pass preservation",
+    "round 3: accepted 77% savings with pass preservation",
+    "round 4: accepted 77% savings with pass preservation",
+    "round 5: accepted 77% savings with pass preservation",
+    "round 6: accepted 77% savings with pass preservation",
+    "round 7: accepted 77% savings with pass preservation"
   ],
   "max_rounds": 3,
   "pass_noninferiority_margin_pp": -2.0,
   "prefer_receipts": true,
   "require_live_rollout": true,
-  "rounds_seen": 1,
+  "rounds_seen": 7,
   "target_savings": 0.6,
   "user_id": "local"
 }

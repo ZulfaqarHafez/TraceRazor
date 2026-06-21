@@ -94,6 +94,15 @@ artifacts = ["tracerazor/bin/*"]
 "schemas/trice_patch_spec.schema.json" = "schemas/trice_patch_spec.schema.json"
 "schemas/trice_evidence_manifest.schema.json" = "schemas/trice_evidence_manifest.schema.json"
 "schemas/trice_suite_manifest.schema.json" = "schemas/trice_suite_manifest.schema.json"
+"schemas/trice_bundle_manifest.schema.json" = "schemas/trice_bundle_manifest.schema.json"
+"schemas/trice_adapter_profile.schema.json" = "schemas/trice_adapter_profile.schema.json"
+"schemas/trice_run_receipt.schema.json" = "schemas/trice_run_receipt.schema.json"
+"examples/trice_patch_fix_offbyone.json" = "examples/trice_patch_fix_offbyone.json"
+"examples/trice_suite_fix_offbyone.json" = "examples/trice_suite_fix_offbyone.json"
+"examples/trice_adapter_profile_echo.json" = "examples/trice_adapter_profile_echo.json"
+"examples/trice_adapter_profile_bundled_tasks.json" = "examples/trice_adapter_profile_bundled_tasks.json"
+"examples/trice_repair_bundled_tasks.py" = "examples/trice_repair_bundled_tasks.py"
+"examples/trice_suite_bundled_live.json" = "examples/trice_suite_bundled_live.json"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

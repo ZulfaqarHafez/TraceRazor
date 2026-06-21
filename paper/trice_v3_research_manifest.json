@@ -2,9 +2,9 @@
   "algorithm": "trice-v3-paper-generator",
   "artifacts": [
     {
-      "bytes": 5313,
+      "bytes": 7400,
       "path": "trice_v3_research_paper.tex",
-      "sha256": "be772131ce0672ada06633100fbb520859e6e9766d56b0ddf42238a0a10ab2c3"
+      "sha256": "1d24ac0fcd29994cc69f87ea1eaf8f032b705a4737457d36f0a39e112c87b4fe"
     },
     {
       "bytes": 6575,
@@ -12,14 +12,24 @@
       "sha256": "1c03f834f66c2ce20a84281bcf7cd53e3d688033584becde80499eea546470e0"
     },
     {
-      "bytes": 6171,
+      "bytes": 7603,
       "path": "trice_v3_research_paper.pdf",
-      "sha256": "3816bf7e4c794cb9feb3afac64e85fe544493fc23819eac0d20ff0cd30c2aece"
+      "sha256": "8bc1f16d5f5f98eb818642063e96f705c7762d3c5708f29e141baa8d4be9f578"
     },
     {
       "bytes": 2974,
       "path": "trice_v3_live_savings.svg",
       "sha256": "c8ff057df31ea5c4b98911076732715395042bb2cad9ab392ac896a731721661"
+    },
+    {
+      "bytes": 45815,
+      "path": "trice_suite_evidence.trice.zip",
+      "sha256": "e00ea3e896b60b26bc9c8323cad7bf879d71452d5b8af54a0d17c2a6308e8709"
+    },
+    {
+      "bytes": 93847,
+      "path": "trice_broad_smoke_evidence.trice.zip",
+      "sha256": "d3a643b766a4075fc7f4a48627eb46aeb2314bdc8f38953e7bdb5b5ae5098e68"
     }
   ],
   "canonical_result_sha256": "327f68bf8d59a2ddd941cbcc85214cac67d57006305bc7d815626c78149fefcc",

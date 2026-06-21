@@ -1,0 +1,244 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "claim_gate": {
+    "accepted_rounds": 1,
+    "baseline_pass_rate": 1.0,
+    "broad_claim_allowed": false,
+    "mean_savings": 0.840987,
+    "pass_regressions": 0,
+    "rationale": "local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals",
+    "savings_ci": {
+      "high": 0.840987,
+      "level": 0.95,
+      "low": 0.840987,
+      "mean": 0.840987
+    },
+    "scope": "local_deterministic_smoke",
+    "smoke_gate_passed": true,
+    "target_savings": 0.6,
+    "total_rounds": 1,
+    "trice_pass_ci": {
+      "high": 1.0,
+      "level": 0.95,
+      "low": 0.206549,
+      "mean": 1.0
+    },
+    "trice_pass_rate": 1.0
+  },
+  "manifest_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\trice_v2_evidence_manifest.json",
+  "profile": {
+    "allow_test_edits": false,
+    "budget_ratio": 0.4,
+    "lessons": [
+      "user target set to 60% input-token savings",
+      "user requires live rollout evidence, not replay-only acceptance",
+      "replay is allowed only as a preflight, not as final proof",
+      "prefer aggressive compression when live pass preservation holds",
+      "round 1: accepted 84% savings with pass preservation",
+      "round 2: accepted 84% savings with pass preservation",
+      "round 3: accepted 84% savings with pass preservation"
+    ],
+    "max_rounds": 3,
+    "pass_noninferiority_margin_pp": -2.0,
+    "prefer_receipts": true,
+    "require_live_rollout": true,
+    "rounds_seen": 3,
+    "target_savings": 0.6,
+    "user_id": "local"
+  },
+  "report_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\trice_v2_live_report.md",
+  "result_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\trice_v2_live_results.json",
+  "rounds": [
+    {
+      "accepted": true,
+      "baseline": {
+        "adapter_reported_input_tokens": 1742,
+        "adapter_type": "command",
+        "condition": "baseline-full-context",
+        "context_path": null,
+        "input_tokens": 1742,
+        "modified_files": [
+          "cli.py",
+          "core.py",
+          "report.py"
+        ],
+        "passed": true,
+        "policy": null,
+        "policy_path": null,
+        "receipt_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\baseline-full-context\\run_receipt.json",
+        "receipt_sha256": "55290d0867296de62004e2efe86c0ef8c81dca6d7b437e741d2fb002cc0924d5",
+        "task_id": "rename-api",
+        "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\baseline-full-context\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "...                                                                      [100%]\n3 passed in <duration>",
+        "workspace": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\baseline-full-context\\workspace"
+      },
+      "learning_update": {
+        "error": -1.395654,
+        "prediction": 2.180987,
+        "reward": 0.785333,
+        "weights": {
+          "cache": 0.3883476463834673,
+          "cost": 0.8,
+          "hallucination": 1.1,
+          "risk": 1.3330085878300804,
+          "utility": 0.9061017806841444
+        }
+      },
+      "measured_input_savings": 0.840987,
+      "optimized": {
+        "adapter_reported_input_tokens": 277,
+        "adapter_type": "command",
+        "condition": "trice-v2",
+        "context_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\compressed_context.txt",
+        "input_tokens": 277,
+        "modified_files": [
+          "cli.py",
+          "core.py",
+          "report.py"
+        ],
+        "passed": true,
+        "policy": {
+          "algorithm": "trice-v0.1-multi-choice-knapsack",
+          "baseline_input_tokens": 1742,
+          "bucket_size": 128,
+          "budget_exceeded": false,
+          "budget_ratio": 0.4,
+          "budget_tokens": 697,
+          "constraints": {
+            "evidence_recall_min": 0.95,
+            "locked_anchors_unchanged": true,
+            "pass_rate_noninferiority_pp": -2
+          },
+          "decisions": [
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 10,
+              "policy_tokens": 10,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "1937edb25ee7d485f0076f6a1406e8ab0b966bcfa4c336430d457ff259ed3860",
+              "rehydrate_pointer": "trace:rename-api.decision:step:1",
+              "segment_id": "s1",
+              "state": "essential",
+              "step_id": 1,
+              "value": 1.379952
+            },
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 96,
+              "policy_tokens": 96,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "6219c2af9ee2a23be8258060071bb22b381e724127cc816fa58dcf5e11cfdbe5",
+              "rehydrate_pointer": "trace:rename-api.decision:step:2",
+              "segment_id": "s2",
+              "state": "essential",
+              "step_id": 2,
+              "value": 1.439539
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "8c96635ca51a6d945785626d0ec60d3df4435191b44ce9d494cb04789cf7fac6",
+              "rehydrate_pointer": "trace:rename-api.decision:step:3",
+              "segment_id": "s3",
+              "state": "rehydratable",
+              "step_id": 3,
+              "value": 0.084271
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "fa36b06a6695d8a6b5ed4c725b00e7385f11dfbac9d4df95b4c0aeecf6f6bb67",
+              "rehydrate_pointer": "trace:rename-api.decision:step:4",
+              "segment_id": "s4",
+              "state": "rehydratable",
+              "step_id": 4,
+              "value": 0.059071
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 640,
+              "policy_tokens": 44,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "28504f50d5a43abcae1cb310dd88b66721286068fbf8e83255869e8568ad68a3",
+              "rehydrate_pointer": "trace:rename-api.decision:step:5",
+              "segment_id": "s5",
+              "state": "redundant",
+              "step_id": 5,
+              "value": -0.040212
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 420,
+              "policy_tokens": 29,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+              "rehydrate_pointer": "trace:rename-api.decision:step:6",
+              "segment_id": "s6",
+              "state": "redundant",
+              "step_id": 6,
+              "value": -0.064356
+            },
+            {
+              "action": "keep",
+              "locked": true,
+              "original_tokens": 64,
+              "policy_tokens": 64,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+              "rehydrate_pointer": "trace:rename-api.decision:step:7",
+              "segment_id": "s7",
+              "state": "essential",
+              "step_id": 7,
+              "value": 1.349693
+            }
+          ],
+          "policy_tokens": 277,
+          "projected_input_savings_pct": 84.1
+        },
+        "policy_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\context_policy.json",
+        "receipt_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\run_receipt.json",
+        "receipt_sha256": "f311758493e835dd7f7f3c856b35013a9305f1a5a9cf34b0acae6b45eda5c525",
+        "task_id": "rename-api",
+        "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "...                                                                      [100%]\n3 passed in <duration>",
+        "workspace": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\workspace"
+      },
+      "pass_noninferior": true,
+      "profile_after": {
+        "allow_test_edits": false,
+        "budget_ratio": 0.4,
+        "lessons": [
+          "user target set to 60% input-token savings",
+          "user requires live rollout evidence, not replay-only acceptance",
+          "replay is allowed only as a preflight, not as final proof",
+          "prefer aggressive compression when live pass preservation holds",
+          "round 1: accepted 84% savings with pass preservation",
+          "round 2: accepted 84% savings with pass preservation",
+          "round 3: accepted 84% savings with pass preservation"
+        ],
+        "max_rounds": 3,
+        "pass_noninferiority_margin_pp": -2.0,
+        "prefer_receipts": true,
+        "require_live_rollout": true,
+        "rounds_seen": 3,
+        "target_savings": 0.6,
+        "user_id": "local"
+      },
+      "quality_delta": 0.0,
+      "round_index": 1,
+      "task_id": "rename-api"
+    }
+  ]
+}

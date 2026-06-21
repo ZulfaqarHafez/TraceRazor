@@ -1,0 +1,84 @@
+{
+  "adapter_name": "bundled-live-task-command-adapter",
+  "adapter_type": "command",
+  "agent_receipt_path": ".trice/agent_receipt.json",
+  "agent_reported": {
+    "changed_files": [
+      "filt.py"
+    ],
+    "model": "deterministic-bundled-repair",
+    "schema_version": "trice-agent-receipt/v1",
+    "token_accounting": {
+      "baseline_input_tokens": 1828,
+      "input_tokens": 1828,
+      "output_tokens": 0
+    },
+    "trice_context": {
+      "budget_ratio": "1.0",
+      "condition": "baseline-full-context",
+      "context_mode": "full_context",
+      "realized_budget_ratio": "1.0"
+    }
+  },
+  "allow_test_edits": false,
+  "changed_file_count": 1,
+  "changed_files": [
+    "filt.py"
+  ],
+  "command": [
+    "python",
+    "C:/Users/zulfa/TraceRazor/examples/trice_repair_bundled_tasks.py"
+  ],
+  "command_sha256": "139b9d4c62e2b06b3a9c93798eebd2c4f9496e1c26a6bf86dd9c8074e257bc9f",
+  "env_keys": [],
+  "exit_code": 0,
+  "expected_exit_codes": [
+    0
+  ],
+  "forbidden_changed_files": [],
+  "metadata": {
+    "purpose": "Deterministic command adapter for TraceRazor bundled live tasks"
+  },
+  "prompt_sha256": "9db4ac600e838cebfea13cbc3525e7a6b8a757eed03b9845c0681d6efd219418",
+  "reserved_env_keys": [
+    "TRICE_AGENT_RECEIPT",
+    "TRICE_BASELINE_INPUT_TOKENS",
+    "TRICE_BUDGET_RATIO",
+    "TRICE_CONDITION",
+    "TRICE_CONTEXT_MODE",
+    "TRICE_INPUT_TOKENS",
+    "TRICE_POLICY_ACTION_COUNTS_JSON",
+    "TRICE_PROJECTED_INPUT_SAVINGS_PCT",
+    "TRICE_PROMPT",
+    "TRICE_REALIZED_BUDGET_RATIO",
+    "TRICE_TASK_ID",
+    "TRICE_WORKSPACE"
+  ],
+  "schema_version": "trice-run-receipt/v1",
+  "stderr_excerpt": "",
+  "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "stdout_excerpt": "",
+  "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "task_id": "csv-filter",
+  "timeout_s": 120,
+  "trice_context": {
+    "baseline_input_tokens": 1828,
+    "budget_exceeded": false,
+    "budget_ratio": 1.0,
+    "budget_tokens": null,
+    "compressed_context_path": null,
+    "compressed_context_sha256": null,
+    "condition": "baseline-full-context",
+    "context_mode": "full_context",
+    "input_tokens": 1828,
+    "policy_action_counts": {},
+    "policy_path": null,
+    "policy_sha256": null,
+    "policy_tokens": null,
+    "projected_input_savings_pct": 0.0,
+    "realized_budget_ratio": 1.0,
+    "schema_version": "trice-context-envelope/v1"
+  },
+  "workspace_after_sha256": "03777fc3ea82eac7ba5c03a834a12535ab4d498902094d340a4d32a20b3fa60e",
+  "workspace_before_sha256": "6f5dfb669d81d426453ba8c1892c8c9e2130bb9413c52057b82c10d8bd0f2b2d"
+}

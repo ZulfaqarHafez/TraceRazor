@@ -1,0 +1,233 @@
+{
+  "schema_version": "trice-suite-sources/v1",
+  "sources": [
+    {
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "adapter_profile_name": "bundled-live-task-command-adapter",
+      "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+      "adapter_type": "command_profile",
+      "allow_test_edits": false,
+      "git": null,
+      "repair_cmd": [
+        "python",
+        "{{profile_dir}}/trice_repair_bundled_tasks.py"
+      ],
+      "repair_timeout_s": 120,
+      "repo": "../benchmark/live/tasks/csv-filter/seed",
+      "repo_tree": {
+        "algorithm": "trice-tree-sha256/v1",
+        "bytes": 1150,
+        "digest": "ee31859ce46e8aef7baecf1e8f72c318e4b21d7347094afb1cd1e252c5713c6f",
+        "file_count": 3,
+        "ignored_dirs": [
+          ".git",
+          ".hg",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          ".svn",
+          "__pycache__"
+        ]
+      },
+      "source_type": "local",
+      "task_id": "csv-filter",
+      "verify_cmd": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short"
+      ]
+    },
+    {
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "adapter_profile_name": "bundled-live-task-command-adapter",
+      "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+      "adapter_type": "command_profile",
+      "allow_test_edits": false,
+      "git": null,
+      "repair_cmd": [
+        "python",
+        "{{profile_dir}}/trice_repair_bundled_tasks.py"
+      ],
+      "repair_timeout_s": 120,
+      "repo": "../benchmark/live/tasks/dedupe-helpers/seed",
+      "repo_tree": {
+        "algorithm": "trice-tree-sha256/v1",
+        "bytes": 1028,
+        "digest": "84c85f0a2d255c7a80327f337d7977c62a9ae8c95e6e17a9f2f19836508a08e2",
+        "file_count": 4,
+        "ignored_dirs": [
+          ".git",
+          ".hg",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          ".svn",
+          "__pycache__"
+        ]
+      },
+      "source_type": "local",
+      "task_id": "dedupe-helpers",
+      "verify_cmd": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short"
+      ]
+    },
+    {
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "adapter_profile_name": "bundled-live-task-command-adapter",
+      "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+      "adapter_type": "command_profile",
+      "allow_test_edits": false,
+      "git": null,
+      "repair_cmd": [
+        "python",
+        "{{profile_dir}}/trice_repair_bundled_tasks.py"
+      ],
+      "repair_timeout_s": 120,
+      "repo": "../benchmark/live/tasks/fix-imports/seed",
+      "repo_tree": {
+        "algorithm": "trice-tree-sha256/v1",
+        "bytes": 665,
+        "digest": "1fcab5d06e93462d49bda98265df67fa935513ce0c1b91ea3257678e93ebf714",
+        "file_count": 5,
+        "ignored_dirs": [
+          ".git",
+          ".hg",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          ".svn",
+          "__pycache__"
+        ]
+      },
+      "source_type": "local",
+      "task_id": "fix-imports",
+      "verify_cmd": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short"
+      ]
+    },
+    {
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "adapter_profile_name": "bundled-live-task-command-adapter",
+      "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+      "adapter_type": "command_profile",
+      "allow_test_edits": false,
+      "git": null,
+      "repair_cmd": [
+        "python",
+        "{{profile_dir}}/trice_repair_bundled_tasks.py"
+      ],
+      "repair_timeout_s": 120,
+      "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+      "repo_tree": {
+        "algorithm": "trice-tree-sha256/v1",
+        "bytes": 794,
+        "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+        "file_count": 3,
+        "ignored_dirs": [
+          ".git",
+          ".hg",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          ".svn",
+          "__pycache__"
+        ]
+      },
+      "source_type": "local",
+      "task_id": "fix-offby-one",
+      "verify_cmd": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short"
+      ]
+    },
+    {
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "adapter_profile_name": "bundled-live-task-command-adapter",
+      "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+      "adapter_type": "command_profile",
+      "allow_test_edits": false,
+      "git": null,
+      "repair_cmd": [
+        "python",
+        "{{profile_dir}}/trice_repair_bundled_tasks.py"
+      ],
+      "repair_timeout_s": 120,
+      "repo": "../benchmark/live/tasks/implement-median/seed",
+      "repo_tree": {
+        "algorithm": "trice-tree-sha256/v1",
+        "bytes": 762,
+        "digest": "520f516628a2fce319e4cb9ec7c1a205a6a47c25b2fb7dbc82735d1b8523f5f4",
+        "file_count": 3,
+        "ignored_dirs": [
+          ".git",
+          ".hg",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          ".svn",
+          "__pycache__"
+        ]
+      },
+      "source_type": "local",
+      "task_id": "implement-median",
+      "verify_cmd": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short"
+      ]
+    },
+    {
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "adapter_profile_name": "bundled-live-task-command-adapter",
+      "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+      "adapter_type": "command_profile",
+      "allow_test_edits": false,
+      "git": null,
+      "repair_cmd": [
+        "python",
+        "{{profile_dir}}/trice_repair_bundled_tasks.py"
+      ],
+      "repair_timeout_s": 120,
+      "repo": "../benchmark/live/tasks/rename-api/seed",
+      "repo_tree": {
+        "algorithm": "trice-tree-sha256/v1",
+        "bytes": 1257,
+        "digest": "0789284970001b7bd10751bc6d0ec529fd6fdc5a648669867e364aed493c960e",
+        "file_count": 5,
+        "ignored_dirs": [
+          ".git",
+          ".hg",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          ".svn",
+          "__pycache__"
+        ]
+      },
+      "source_type": "local",
+      "task_id": "rename-api",
+      "verify_cmd": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short"
+      ]
+    }
+  ]
+}

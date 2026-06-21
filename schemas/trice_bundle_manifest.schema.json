@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tracerazor.dev/schemas/trice_bundle_manifest.schema.json",
+  "title": "TRICE evidence bundle manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "root_manifest", "root_result", "verifier", "entries"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "trice-evidence-bundle/v1"
+    },
+    "root_manifest": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "(^/|^[A-Za-z]:|\\.\\.)" }
+    },
+    "root_result": {
+      "type": "string",
+      "minLength": 1,
+      "not": { "pattern": "(^/|^[A-Za-z]:|\\.\\.)" }
+    },
+    "verifier": {
+      "type": "string",
+      "minLength": 1
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "bytes"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "not": { "pattern": "(^/|^[A-Za-z]:|\\.\\.)" }
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": "trice-suite-sources/v1",
+  "sources": [
+    {
+      "adapter_type": "json_patch",
+      "git": null,
+      "patch_sha256": "de5bd5e413ec3ac9651a11dbd6a6fb1a158442bede9804d5a1e94592d7aa72f1",
+      "patch_spec": "trice_patch_fix_offbyone.json",
+      "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+      "repo_tree": {
+        "algorithm": "trice-tree-sha256/v1",
+        "bytes": 794,
+        "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+        "file_count": 3,
+        "ignored_dirs": [
+          ".git",
+          ".hg",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          ".svn",
+          "__pycache__"
+        ]
+      },
+      "source_type": "local",
+      "task_id": "fix-offby-one-suite",
+      "verify_cmd": [
+        "python",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short"
+      ]
+    }
+  ]
+}

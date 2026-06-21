@@ -1,0 +1,492 @@
+{
+  "algorithm": "trice-v2-suite-live-user-conditioned-rollout",
+  "claim_gate": {
+    "accepted_rounds": 6,
+    "adapter_breakdown": {
+      "command_profile": {
+        "accepted_runs": 6,
+        "mean_savings": 0.814891,
+        "pass_regressions": 0,
+        "runs": 6
+      }
+    },
+    "baseline_pass_rate": 1.0,
+    "broad_claim_allowed": false,
+    "clustered_by": "task_id",
+    "clustered_savings_ci": {
+      "high": 0.835037,
+      "level": 0.95,
+      "low": 0.789866,
+      "mean": 0.81489
+    },
+    "failure_breakdown": {
+      "failed_smoke_gate_runs": 0,
+      "pass_regression_runs": 0,
+      "unaccepted_runs": 0
+    },
+    "mean_savings": 0.81489,
+    "pass_regressions": 0,
+    "rationale": "local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals",
+    "replicate_count": 6,
+    "s_tier_gate": {
+      "claim_level": "not_s_tier",
+      "config": {
+        "max_pass_regressions": 0,
+        "min_clustered_savings_ci_low": 0.6,
+        "min_mean_savings": 0.6,
+        "min_replicates_per_task": 3,
+        "min_task_clusters": 50,
+        "require_adapter_profiles": true,
+        "require_locked_git_sources": true,
+        "require_receipt_validation": true,
+        "require_remote_git_sources": true
+      },
+      "missing_requirements": [
+        "task_clusters",
+        "replicates_per_task",
+        "locked_git_sources",
+        "remote_git_sources"
+      ],
+      "passed": false,
+      "rationale": "suite evidence is useful but not broad enough for an S-tier claim",
+      "requirements": {
+        "accepted_runs": {
+          "observed": 0,
+          "passed": true,
+          "required": "0 unaccepted runs"
+        },
+        "adapter_profiles": {
+          "observed": [
+            "trice_adapter_profile_bundled_tasks.json",
+            "trice_adapter_profile_bundled_tasks.json",
+            "trice_adapter_profile_bundled_tasks.json",
+            "trice_adapter_profile_bundled_tasks.json",
+            "trice_adapter_profile_bundled_tasks.json",
+            "trice_adapter_profile_bundled_tasks.json"
+          ],
+          "passed": true,
+          "required": "all tasks use adapter_profile"
+        },
+        "clustered_savings_ci_low": {
+          "observed": 0.789866,
+          "passed": true,
+          "required": ">= 0.600"
+        },
+        "locked_git_sources": {
+          "observed": [
+            "local",
+            "local",
+            "local",
+            "local",
+            "local",
+            "local"
+          ],
+          "passed": false,
+          "required": "all tasks use locked git sources"
+        },
+        "mean_savings": {
+          "observed": 0.81489,
+          "passed": true,
+          "required": ">= 0.600"
+        },
+        "pass_regressions": {
+          "observed": 0,
+          "passed": true,
+          "required": "<= 0"
+        },
+        "receipt_validation": {
+          "observed": "enabled",
+          "passed": true,
+          "required": "enabled"
+        },
+        "remote_git_sources": {
+          "observed": [
+            "local",
+            "local",
+            "local",
+            "local",
+            "local",
+            "local"
+          ],
+          "passed": false,
+          "required": "all tasks use remote Git URLs"
+        },
+        "replicates_per_task": {
+          "observed": {
+            "csv-filter": 1,
+            "dedupe-helpers": 1,
+            "fix-imports": 1,
+            "fix-offby-one": 1,
+            "implement-median": 1,
+            "rename-api": 1
+          },
+          "passed": false,
+          "required": "each task >= 3"
+        },
+        "task_clusters": {
+          "observed": 6,
+          "passed": false,
+          "required": ">= 50"
+        }
+      },
+      "schema_version": "trice-s-tier-gate/v1"
+    },
+    "savings_ci": {
+      "high": 0.835037,
+      "level": 0.95,
+      "low": 0.789866,
+      "mean": 0.81489
+    },
+    "scope": "local_deterministic_smoke",
+    "smoke_gate_passed": true,
+    "target_savings": 0.6,
+    "task_cluster_count": 6,
+    "total_rounds": 6,
+    "trice_pass_ci": {
+      "high": 1.0,
+      "level": 0.95,
+      "low": 0.609666,
+      "mean": 1.0
+    },
+    "trice_pass_rate": 1.0
+  },
+  "manifest_path": "trice_suite_evidence_manifest.json",
+  "report_path": "trice_suite_report.md",
+  "result_path": "trice_suite_results.json",
+  "schema_version": "trice-suite-result/v1",
+  "suite": {
+    "clustered_by": "task_id",
+    "manifest_snapshot": "trice_suite_manifest.snapshot.json",
+    "name": "bundled-live-six-task-suite",
+    "replicate_count": 6,
+    "source_manifest": "trice_suite_sources.json",
+    "task_count": 6,
+    "user_feedback": "real runs, not replay; target 60% token savings"
+  },
+  "tasks": [
+    {
+      "accepted_rounds": 1,
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "manifest_path": "tasks/csv-filter/replicate-1/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.801422,
+      "pass_regressions": 0,
+      "patch_spec": null,
+      "repair_cmd": null,
+      "replicate_index": 1,
+      "repo": "../benchmark/live/tasks/csv-filter/seed",
+      "report_path": "tasks/csv-filter/replicate-1/trice_v2_live_report.md",
+      "result_path": "tasks/csv-filter/replicate-1/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "source": {
+        "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+        "adapter_profile_name": "bundled-live-task-command-adapter",
+        "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+        "adapter_type": "command_profile",
+        "allow_test_edits": false,
+        "git": null,
+        "repair_cmd": [
+          "python",
+          "{{profile_dir}}/trice_repair_bundled_tasks.py"
+        ],
+        "repair_timeout_s": 120,
+        "repo": "../benchmark/live/tasks/csv-filter/seed",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 1150,
+          "digest": "ee31859ce46e8aef7baecf1e8f72c318e4b21d7347094afb1cd1e252c5713c6f",
+          "file_count": 3,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "local",
+        "task_id": "csv-filter",
+        "verify_cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short"
+        ]
+      },
+      "task_id": "csv-filter"
+    },
+    {
+      "accepted_rounds": 1,
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "manifest_path": "tasks/dedupe-helpers/replicate-1/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.841954,
+      "pass_regressions": 0,
+      "patch_spec": null,
+      "repair_cmd": null,
+      "replicate_index": 1,
+      "repo": "../benchmark/live/tasks/dedupe-helpers/seed",
+      "report_path": "tasks/dedupe-helpers/replicate-1/trice_v2_live_report.md",
+      "result_path": "tasks/dedupe-helpers/replicate-1/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "source": {
+        "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+        "adapter_profile_name": "bundled-live-task-command-adapter",
+        "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+        "adapter_type": "command_profile",
+        "allow_test_edits": false,
+        "git": null,
+        "repair_cmd": [
+          "python",
+          "{{profile_dir}}/trice_repair_bundled_tasks.py"
+        ],
+        "repair_timeout_s": 120,
+        "repo": "../benchmark/live/tasks/dedupe-helpers/seed",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 1028,
+          "digest": "84c85f0a2d255c7a80327f337d7977c62a9ae8c95e6e17a9f2f19836508a08e2",
+          "file_count": 4,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "local",
+        "task_id": "dedupe-helpers",
+        "verify_cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short"
+        ]
+      },
+      "task_id": "dedupe-helpers"
+    },
+    {
+      "accepted_rounds": 1,
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "manifest_path": "tasks/fix-imports/replicate-1/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.841954,
+      "pass_regressions": 0,
+      "patch_spec": null,
+      "repair_cmd": null,
+      "replicate_index": 1,
+      "repo": "../benchmark/live/tasks/fix-imports/seed",
+      "report_path": "tasks/fix-imports/replicate-1/trice_v2_live_report.md",
+      "result_path": "tasks/fix-imports/replicate-1/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "source": {
+        "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+        "adapter_profile_name": "bundled-live-task-command-adapter",
+        "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+        "adapter_type": "command_profile",
+        "allow_test_edits": false,
+        "git": null,
+        "repair_cmd": [
+          "python",
+          "{{profile_dir}}/trice_repair_bundled_tasks.py"
+        ],
+        "repair_timeout_s": 120,
+        "repo": "../benchmark/live/tasks/fix-imports/seed",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 665,
+          "digest": "1fcab5d06e93462d49bda98265df67fa935513ce0c1b91ea3257678e93ebf714",
+          "file_count": 5,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "local",
+        "task_id": "fix-imports",
+        "verify_cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short"
+        ]
+      },
+      "task_id": "fix-imports"
+    },
+    {
+      "accepted_rounds": 1,
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "manifest_path": "tasks/fix-offby-one/replicate-1/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.766397,
+      "pass_regressions": 0,
+      "patch_spec": null,
+      "repair_cmd": null,
+      "replicate_index": 1,
+      "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+      "report_path": "tasks/fix-offby-one/replicate-1/trice_v2_live_report.md",
+      "result_path": "tasks/fix-offby-one/replicate-1/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "source": {
+        "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+        "adapter_profile_name": "bundled-live-task-command-adapter",
+        "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+        "adapter_type": "command_profile",
+        "allow_test_edits": false,
+        "git": null,
+        "repair_cmd": [
+          "python",
+          "{{profile_dir}}/trice_repair_bundled_tasks.py"
+        ],
+        "repair_timeout_s": 120,
+        "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 794,
+          "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+          "file_count": 3,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "local",
+        "task_id": "fix-offby-one",
+        "verify_cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short"
+        ]
+      },
+      "task_id": "fix-offby-one"
+    },
+    {
+      "accepted_rounds": 1,
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "manifest_path": "tasks/implement-median/replicate-1/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.796629,
+      "pass_regressions": 0,
+      "patch_spec": null,
+      "repair_cmd": null,
+      "replicate_index": 1,
+      "repo": "../benchmark/live/tasks/implement-median/seed",
+      "report_path": "tasks/implement-median/replicate-1/trice_v2_live_report.md",
+      "result_path": "tasks/implement-median/replicate-1/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "source": {
+        "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+        "adapter_profile_name": "bundled-live-task-command-adapter",
+        "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+        "adapter_type": "command_profile",
+        "allow_test_edits": false,
+        "git": null,
+        "repair_cmd": [
+          "python",
+          "{{profile_dir}}/trice_repair_bundled_tasks.py"
+        ],
+        "repair_timeout_s": 120,
+        "repo": "../benchmark/live/tasks/implement-median/seed",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 762,
+          "digest": "520f516628a2fce319e4cb9ec7c1a205a6a47c25b2fb7dbc82735d1b8523f5f4",
+          "file_count": 3,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "local",
+        "task_id": "implement-median",
+        "verify_cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short"
+        ]
+      },
+      "task_id": "implement-median"
+    },
+    {
+      "accepted_rounds": 1,
+      "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "manifest_path": "tasks/rename-api/replicate-1/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.840987,
+      "pass_regressions": 0,
+      "patch_spec": null,
+      "repair_cmd": null,
+      "replicate_index": 1,
+      "repo": "../benchmark/live/tasks/rename-api/seed",
+      "report_path": "tasks/rename-api/replicate-1/trice_v2_live_report.md",
+      "result_path": "tasks/rename-api/replicate-1/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "source": {
+        "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+        "adapter_profile_name": "bundled-live-task-command-adapter",
+        "adapter_profile_sha256": "675ca98c9304ba17bde93e450759eab6a9b00926dd5dc8b2bab2e46f76fb7611",
+        "adapter_type": "command_profile",
+        "allow_test_edits": false,
+        "git": null,
+        "repair_cmd": [
+          "python",
+          "{{profile_dir}}/trice_repair_bundled_tasks.py"
+        ],
+        "repair_timeout_s": 120,
+        "repo": "../benchmark/live/tasks/rename-api/seed",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 1257,
+          "digest": "0789284970001b7bd10751bc6d0ec529fd6fdc5a648669867e364aed493c960e",
+          "file_count": 5,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "local",
+        "task_id": "rename-api",
+        "verify_cmd": [
+          "python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short"
+        ]
+      },
+      "task_id": "rename-api"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+TRICE_CONTEXT_POLICY
+algorithm=trice-v0.1-multi-choice-knapsack
+projected_input_savings_pct=84.20
+
+[s1 step=1 action=anchor_prefix state=essential]
+Fix package imports without editing tests.
+Fix package imports without editing tests.
+
+[s2 step=2 action=anchor_prefix state=essential]
+Run failing verifier before edit
+FF.                                                                      [100%]
+================================== FAILURES ===================================
+________________________ test_import_from_package_root ________________________
+tests\test_pipeline.py:2: in test_import_from_package_root
+    from mypkg import run_pipeline
+E   ImportError: cannot import name 'run_pipeline' from 'mypkg' (C:\Users\zulfa\TraceRazor\benchmark\trice\results\v2-broad-smoke\tasks\fix-imports\replicate-1\fix-imports\round-1\trice-v2\workspace\mypkg\__init__.py)
+________________________________ test_pipeline ________________________________
+tests\test_pipeline.py:6: in test_pipeline
+    from mypkg import run_pipeline
+E   ImportError: cannot import name 'run_pipeline' from 'mypkg' (C:\Users\zulfa\TraceRazor\benchmark\trice\results\v2-broad-smoke\tasks\fix-imports\replicate-1\fix-imports\round-1\trice-v2\workspace\mypkg\__init__.py)
+=========================== short test summary info ===========================
+FAILED tests\test_pipeline.py::test_import_from_package_root - ImportError: c...
+FAILED tests\test_pipeline.py::test_pipeline - ImportError: cannot import nam...
+2 failed, 1 passed in <duration>
+tool:pytest
+
+[s3 step=3 action=mask_with_receipt state=rehydratable]
+masked receipt=5e6b664ab601a44b pointer=trace:fix-imports.decision:step:3
+
+[s4 step=4 action=mask_with_receipt state=rehydratable]
+masked receipt=57b7fbca058196e0 pointer=trace:fix-imports.decision:step:4
+
+[s5 step=5 action=mask_with_receipt state=redundant]
+masked receipt=595d40f45223a085 pointer=trace:fix-imports.decision:step:5
+
+[s6 step=6 action=mask_with_receipt state=redundant]
+masked receipt=c68671d9315a7139 pointer=trace:fix-imports.decision:step:6
+
+[s7 step=7 action=keep state=essential]
+Ready to edit only source files and re-run the verifier.

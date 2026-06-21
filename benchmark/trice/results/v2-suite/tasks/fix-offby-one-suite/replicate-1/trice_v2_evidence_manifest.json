@@ -2,24 +2,24 @@
   "algorithm": "trice-v2-live-user-conditioned-rollout",
   "artifacts": [
     {
-      "bytes": 1680,
+      "bytes": 2016,
       "path": "trice_v2_live_report.md",
-      "sha256": "768d499d67e70637180f537ee429d9fae913425144f97c0a1dca1e52c9c08a31"
+      "sha256": "757eb03212ebdd8f97d1953ac93f74dfe4e46d4913620f4c2d085fe39106e2a2"
     },
     {
-      "bytes": 595,
+      "bytes": 961,
       "path": "user_profile.json",
-      "sha256": "1bf701149b1e165044eb4837a50a4f65614dc7e8db0b5424de73461ef19ba56e"
+      "sha256": "fdc6682ba8ae0ccdb24d46fc9a65e442d1aac5e0d22216a2ab4dc2e31fc32d5d"
     },
     {
-      "bytes": 11181,
+      "bytes": 11316,
       "path": "fix-offby-one-suite/round-1/baseline-full-context/trace.json",
-      "sha256": "29af559dc0fa20f9bf520c1adfa885035de90fadf8696054727918f7435de9c3"
+      "sha256": "64e43ee86e0049d2c51ea8e2727b62fc4afefd049c9247487e0b7cd8051cda5a"
     },
     {
-      "bytes": 11154,
+      "bytes": 11289,
       "path": "fix-offby-one-suite/round-1/trice-v2/trace.json",
-      "sha256": "5dc75b183d84af14eea16bf4a9e9823daa3ecd8c09a452aff8cc54b6fb3795d3"
+      "sha256": "4343ce2151f2c6c1cdc49ec76759236f63ea3630c43dda026d0db303e8ccd957"
     },
     {
       "bytes": 3600,
@@ -30,9 +30,19 @@
       "bytes": 3031,
       "path": "fix-offby-one-suite/round-1/trice-v2/compressed_context.txt",
       "sha256": "4b06dce7279842c6f3a901fc257f2f90e104bc9fb6be91324bb34659f5be952a"
+    },
+    {
+      "bytes": 995,
+      "path": "fix-offby-one-suite/round-1/baseline-full-context/run_receipt.json",
+      "sha256": "44a01fd534410183691353d820b7b3c7462d99270883a77118e9d3b41f7b2302"
+    },
+    {
+      "bytes": 1464,
+      "path": "fix-offby-one-suite/round-1/trice-v2/run_receipt.json",
+      "sha256": "d2e257b85c486c4c5a13b8bed0372ce6c608be4443f1c29a94936bfa383ded51"
     }
   ],
-  "canonical_result_sha256": "d5fc58ad61afc497f6bd15c13199b58b6edbaefe615b9bc2be45cb7819a4b009",
+  "canonical_result_sha256": "ee6a2ee71dd2752a7d73b88c6074ba039d5e89fdcd3874208e28fad4e31df90d",
   "created_by": "TraceRazor TRICE",
   "notes": [
     "Fresh workspace per condition",
@@ -40,10 +50,11 @@
     "User-conditioned profile captured in result JSON",
     "Verifier durations normalized before hashing",
     "Wall-clock metadata excluded from traces",
+    "Run receipts capture adapter envelopes and changed workspace fingerprints",
     "Replay is not accepted as final proof"
   ],
   "platform": "Windows-10-10.0.26200-SP0",
   "python_version": "3.11.6",
-  "result_sha256": "3f5e35e53ff9f53f8a7feb4b86c7e029655281f385caf7eb3fd050d808039a13",
+  "result_sha256": "0a80f6a367d74c9d9bc34ff0ef6f6fd903b8bb70a94e7f9ef4f501487e02eb31",
   "schema_version": "trice-evidence-manifest/v1"
 }
