@@ -1,0 +1,108 @@
+{
+  "algorithm": "trice-v0.1-multi-choice-knapsack",
+  "baseline_input_tokens": 1806,
+  "bucket_size": 128,
+  "budget_exceeded": false,
+  "budget_ratio": 0.4,
+  "budget_tokens": 722,
+  "constraints": {
+    "evidence_recall_min": 0.95,
+    "locked_anchors_unchanged": true,
+    "pass_rate_noninferiority_pp": -2
+  },
+  "decisions": [
+    {
+      "action": "anchor_prefix",
+      "locked": true,
+      "original_tokens": 74,
+      "policy_tokens": 74,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "954230d48dfecdda811eadcb105b4ea49a91ba2f08b941b867d3714aa8d36d35",
+      "rehydrate_pointer": "trace:fix-imports.decision:step:1",
+      "segment_id": "s1",
+      "state": "essential",
+      "step_id": 1,
+      "value": 1.349645
+    },
+    {
+      "action": "anchor_prefix",
+      "locked": true,
+      "original_tokens": 96,
+      "policy_tokens": 96,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "adda271258f95e5f19f701b658ee9ce8e6a7542eb331b1922173e9533026e337",
+      "rehydrate_pointer": "trace:fix-imports.decision:step:2",
+      "segment_id": "s2",
+      "state": "essential",
+      "step_id": 2,
+      "value": 1.469539
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 256,
+      "policy_tokens": 17,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "5e6b664ab601a44b707143e47f7038bd35839809603e0ac98dcd3a0323c3e71b",
+      "rehydrate_pointer": "trace:fix-imports.decision:step:3",
+      "segment_id": "s3",
+      "state": "rehydratable",
+      "step_id": 3,
+      "value": 0.084271
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 256,
+      "policy_tokens": 17,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "57b7fbca058196e0ac679219bb6c74d2bdae6b8c5c66bd3660d2124cdb78f5f5",
+      "rehydrate_pointer": "trace:fix-imports.decision:step:4",
+      "segment_id": "s4",
+      "state": "rehydratable",
+      "step_id": 4,
+      "value": 0.050671
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 640,
+      "policy_tokens": 44,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "92a129b79a5e2385ec7c96eff068137c301b73207ef7d3c91ed51074173f7cc4",
+      "rehydrate_pointer": "trace:fix-imports.decision:step:5",
+      "segment_id": "s5",
+      "state": "redundant",
+      "step_id": 5,
+      "value": -0.031812
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 420,
+      "policy_tokens": 29,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+      "rehydrate_pointer": "trace:fix-imports.decision:step:6",
+      "segment_id": "s6",
+      "state": "redundant",
+      "step_id": 6,
+      "value": -0.064356
+    },
+    {
+      "action": "keep",
+      "locked": true,
+      "original_tokens": 64,
+      "policy_tokens": 64,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+      "rehydrate_pointer": "trace:fix-imports.decision:step:7",
+      "segment_id": "s7",
+      "state": "essential",
+      "step_id": 7,
+      "value": 1.349693
+    }
+  ],
+  "policy_tokens": 341,
+  "projected_input_savings_pct": 81.12
+}

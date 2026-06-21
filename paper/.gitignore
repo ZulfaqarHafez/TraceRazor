@@ -2,6 +2,7 @@
 # .github/workflows/tracerazor.yml) and uploaded as the `tracerazor-paper`
 # artifact, so it is not committed.
 *.pdf
+!trice_v3_research_paper.pdf
 *.aux
 *.log
 *.out

@@ -1,0 +1,41 @@
+TRICE_CONTEXT_POLICY
+algorithm=trice-v0.1-multi-choice-knapsack
+projected_input_savings_pct=80.23
+
+[s1 step=1 action=anchor_prefix state=essential]
+You are in a small Python project. `utils_a.py` and `utils_b.py` each contain their own copy of a `normalize_name` helper, and the copies have drifted apart. Consolidate: create a single canonical implementation in a new module `textutil.py` and make both `utils_a` and `utils_b` re-export that exact function object. Run `python3 -m pytest -q` to see the expected behaviour and re-run until all tests pass. Do not modify any files under `tests/`.
+You are in a small Python project. `utils_a.py` and `utils_b.py` each contain their own copy of a `normalize_name` helper, and the copies have drifted apart. Consolidate: create a single canonical implementation in a new module `textutil.py` and make both `utils_a` and `utils_b` re-export that exact function object. Run `python3 -m pytest -q` to see the expected behaviour and re-run until all tests pass. Do not modify any files under `tests/`.
+
+[s2 step=2 action=anchor_prefix state=essential]
+Run failing verifier before edit
+=================================== ERRORS ====================================
+_ ERROR collecting benchmark/trice/results/v2-smoke/dedupe-helpers/round-1/trice-v2/workspace/tests/test_textutil.py _
+ImportError while importing test module 'C:\Users\zulfa\TraceRazor\benchmark\trice\results\v2-smoke\dedupe-helpers\round-1\trice-v2\workspace\tests\test_textutil.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\zulfa\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests\test_textutil.py:1: in <module>
+    import textutil
+E   ModuleNotFoundError: No module named 'textutil'
+=========================== short test summary info ===========================
+ERROR tests\test_textutil.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in <duration>
+tool:pytest
+
+[s3 step=3 action=mask_with_receipt state=rehydratable]
+masked receipt=9cac7219c178e8be pointer=trace:dedupe-helpers.decision:step:3
+
+[s4 step=4 action=mask_with_receipt state=rehydratable]
+masked receipt=0e8349fe3a5204a1 pointer=trace:dedupe-helpers.decision:step:4
+
+[s5 step=5 action=mask_with_receipt state=redundant]
+masked receipt=09f5c592c90098f4 pointer=trace:dedupe-helpers.decision:step:5
+
+[s6 step=6 action=mask_with_receipt state=redundant]
+masked receipt=c68671d9315a7139 pointer=trace:dedupe-helpers.decision:step:6
+
+[s7 step=7 action=keep state=essential]
+Ready to edit only source files and re-run the verifier.

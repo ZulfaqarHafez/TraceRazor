@@ -77,6 +77,77 @@ Experimental sampling and substitutability work is demoted to
 
 ---
 
+## TRICE: deterministic live context control
+
+TRICE is the emerging TraceRazor library for **decision-preserving context
+control under a live verifier**. It is deliberately stricter than replay-only
+prompt compression: a policy is accepted only when a fresh workspace run keeps
+the task passing, emits a deterministic evidence manifest, and meets the
+user-conditioned input-token target.
+
+```python
+from tracerazor.trice import LiveTask, run_live_learning_loop, verify_manifest
+
+task = LiveTask.from_dir("benchmark/live/tasks/fix-offby-one")
+result = run_live_learning_loop(
+    [task],
+    out_dir="benchmark/trice/results/example",
+    user_feedback="real runs, not replay; target 60% token savings",
+    rounds=1,
+)
+assert verify_manifest(result.manifest_path)["ok"]
+```
+
+Run the same deterministic contract against any local repo with a JSON patch
+adapter:
+
+```bash
+tracerazor-trice run -- \
+  --repo benchmark/live/tasks/fix-offby-one/seed \
+  --task-id fix-offby-one-generic \
+  --prompt "Fix chunker.py without editing tests." \
+  --verify-cmd "python -m pytest -q --tb=short" \
+  --patch-spec examples/trice_patch_fix_offbyone.json \
+  --out-dir benchmark/trice/results/generic-example
+```
+
+For multi-repo evaluation, define a suite manifest and deep-verify the
+aggregate plus child manifests:
+
+```bash
+tracerazor-trice suite examples/trice_suite_fix_offbyone.json \
+  --out-dir benchmark/trice/results/v2-suite \
+  --rounds 1 \
+  --replicates 3
+tracerazor-trice verify-suite benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json
+```
+
+![TRICE live input-token savings](docs/trice_v3_live_savings.svg)
+
+Current deterministic smoke evidence: six bundled live repository tasks,
+fresh copied workspaces, real source edits, `pytest` verification, and a
+machine-verifiable manifest. TRICE normalizes verifier duration text and
+excludes wall-clock fields from the evidence hash, so identical real-run smoke
+executions are expected to reproduce the same manifest hashes. Mean measured
+input-token reduction is **78.6%** with a deterministic 95% bootstrap CI of
+**76.8%-80.3%** and zero pass regressions on all six tasks. This clears the
+local smoke gate, but it is not yet a broad S-tier claim; held-out external
+repos and provider adapters are the next proof gate.
+
+The public suite smoke currently uses three fresh live replicates of the
+example repo task and reports clustered-by-task confidence intervals; repeated
+runs of one repo are not counted as independent held-out repositories.
+
+Research artifacts:
+
+- LaTeX source: [`paper/trice_v3_research_paper.tex`](paper/trice_v3_research_paper.tex)
+- PDF paper: [`paper/trice_v3_research_paper.pdf`](paper/trice_v3_research_paper.pdf)
+- Library contract: [`docs/trice_library.md`](docs/trice_library.md)
+- Evidence manifest: [`benchmark/trice/results/v2-smoke/trice_v2_evidence_manifest.json`](benchmark/trice/results/v2-smoke/trice_v2_evidence_manifest.json)
+- Suite manifest: [`benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json`](benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json)
+
+---
+
 ## The Problem
 
 A substantial fraction of agent tokens is structurally redundant: repeated steps, sycophantic preamble, reformulated context, and unnecessary reasoning loops. The exact share is workload-dependent and we do not claim a universal figure. The most concrete number we can stand behind is our own measurement: across 24 public τ-bench / SWE-agent traces, **mean step redundancy is 13% — ~20% on the messy airline subset, 5% on retail, 17% on SWE-agent** (after the responsiveness rules: a step answering a new user turn, a successful retry of a failure, or a verification re-run after an edit is never counted as redundant) (see [`docs/external_agent_audits.md`](docs/external_agent_audits.md)). Treat any broader "30–60%" rule of thumb as an unvalidated heuristic, not a measured constant.

@@ -1,0 +1,12 @@
+{
+  "name": "fix-offby-one-demo",
+  "allow_test_edits": false,
+  "edits": [
+    {
+      "op": "replace",
+      "path": "chunker.py",
+      "old": "size - 1",
+      "new": "size"
+    }
+  ]
+}

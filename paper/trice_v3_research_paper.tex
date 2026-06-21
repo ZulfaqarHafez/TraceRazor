@@ -1,0 +1,110 @@
+\documentclass[10pt]{article}
+        \usepackage[margin=0.85in]{geometry}
+        \usepackage{booktabs}
+        \usepackage{hyperref}
+        \usepackage{amsmath}
+        \title{TRICE: Deterministic Context Control for Live Software Agents}
+        \author{TraceRazor Research}
+        \date{2026-06-21}
+
+        \begin{document}
+        \maketitle
+
+        \begin{abstract}
+        We present TRICE, a deterministic harness-level context controller for
+        software agents. TRICE does not claim to make stochastic models
+        deterministic. Instead, it makes context assembly, evidence manifests,
+        live verification, and acceptance gates deterministic. On six bundled
+        live repository tasks, TRICE reduces measured input context by
+        78.6\% (95\% bootstrap CI:
+        76.8\%--80.3\%) while preserving
+        executable task success.
+        \end{abstract}
+
+        \section{Motivation}
+        Agent evaluation research emphasizes task completion, tool use,
+        reliability, dynamic interaction, and cost as first-class metrics
+        \cite{agentsmatter2024}, \cite{acmartifact}, \cite{mohammadi2025agentsurvey}, \cite{complexmcp2026}, \cite{reasonbench2025}, \cite{dfah2026}, \cite{terminalagents2026}, \cite{uncertainty2024}. Prompt compression work shows that shorter context can help,
+        but product evidence must be live, outcome-gated, and repeatable under
+        the same artifact contract.
+
+        \section{Method}
+        For each segment $s_i$, TRICE chooses an action $a_i$ from
+        \{keep, extract, summarize, mask, anchor, lazy\_recall\}:
+        \[
+        \max_a \sum_i U_i(a_i) - \lambda R_i(a_i) - \mu C_i(a_i)
+        + \rho K_i(a_i) - \gamma H_i(a_i)
+        \]
+        subject to a token budget, locked-anchor preservation, and live
+        noninferiority:
+        \[
+        pass(policy) \ge pass(baseline) - 0.02.
+        \]
+        V3 adds a deterministic evidence manifest:
+        \[
+        E = SHA256(canonical\_json(result)) \Vert SHA256(report).
+        \]
+        Verifier output is normalized before hashing: duration strings are
+        replaced with \texttt{<duration>}, and wall-clock fields are excluded
+        because they are not decision evidence.
+        Suite manifests extend this contract to multi-repository evaluation:
+        the aggregate manifest hashes the suite snapshot and each child live
+        task manifest, then deep verification checks every child bundle.
+
+        \section{Metrics}
+        Primary metric: measured input-token savings. Guardrail metrics:
+        verifier pass preservation, evidence-manifest validity, accepted policy
+        count, confidence intervals, and user-profile consistency. Replay
+        metrics remain preflight diagnostics only.
+
+        \section{Live Results}
+        \begin{table}[h]
+        \centering
+        \begin{tabular}{lrrrrr}
+        \toprule
+        Task & Baseline & TRICE & Savings & Base Pass & TRICE Pass \\
+        \midrule
+        csv-filter & 1895 & 430 & 77.3\% & yes & yes \\
+dedupe-helpers & 1826 & 361 & 80.2\% & yes & yes \\
+fix-imports & 1806 & 341 & 81.1\% & yes & yes \\
+fix-offby-one & 2527 & 634 & 74.9\% & yes & yes \\
+implement-median & 1889 & 424 & 77.6\% & yes & yes \\
+rename-api & 1814 & 349 & 80.8\% & yes & yes \\
+        \midrule
+        Mean & -- & -- & 78.6\% & yes & yes \\
+        \bottomrule
+        \end{tabular}
+        \caption{Live workspace smoke: fresh copied repos, real source edits, and pytest verification.}
+        \end{table}
+
+        Deterministic claim gate: savings lower bound
+        76.8\% versus target 60.0\%;
+        pass regressions 0; local smoke gate
+        passed. Broad claim
+        allowed: no.
+
+        \section{Replicated Suite Evidence}
+        The public suite artifact \texttt{fix-offby-one-suite} contains 3 live replicate runs across 1 task cluster(s). Mean input-token savings is 76.6\% with clustered-by-task 95\% CI 76.6\%--76.6\%; pass regressions 0.
+
+        \section{Product Definition}
+        TRICE is ship-worthy only when the library produces stable manifests,
+        verifier-backed measurements, and user-conditioned policies through a
+        public API: \texttt{tracerazor.trice}. Generic users provide
+        \texttt{LiveTask} plus a deterministic \texttt{RepairAdapter};
+        the bundled JSON patch adapter is schema-bound and refuses test edits
+        by default. Identical real-run smoke executions are regression-tested
+        to reproduce result and artifact hashes. The public CLI is
+        \texttt{tracerazor-trice} and mirrors the module form
+        \texttt{python -m tracerazor.trice}. Multi-repository evaluation uses
+        \texttt{trice-suite/v1} manifests and \texttt{verify-suite} for
+        aggregate plus child-manifest verification. A replay-only result cannot
+        certify savings.
+
+        \section{Limitations}
+        The current smoke uses deterministic managed repair recipes. The next
+        paper-grade claim requires provider adapters, held-out repositories,
+        clustered bootstrap confidence intervals, and repeated trials.
+
+        \bibliographystyle{plain}
+        \bibliography{trice_v3_references}
+        \end{document}

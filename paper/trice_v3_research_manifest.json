@@ -1,0 +1,34 @@
+{
+  "algorithm": "trice-v3-paper-generator",
+  "artifacts": [
+    {
+      "bytes": 5313,
+      "path": "trice_v3_research_paper.tex",
+      "sha256": "be772131ce0672ada06633100fbb520859e6e9766d56b0ddf42238a0a10ab2c3"
+    },
+    {
+      "bytes": 6575,
+      "path": "trice_v3_references.bib",
+      "sha256": "1c03f834f66c2ce20a84281bcf7cd53e3d688033584becde80499eea546470e0"
+    },
+    {
+      "bytes": 6171,
+      "path": "trice_v3_research_paper.pdf",
+      "sha256": "3816bf7e4c794cb9feb3afac64e85fe544493fc23819eac0d20ff0cd30c2aece"
+    },
+    {
+      "bytes": 2974,
+      "path": "trice_v3_live_savings.svg",
+      "sha256": "c8ff057df31ea5c4b98911076732715395042bb2cad9ab392ac896a731721661"
+    }
+  ],
+  "canonical_result_sha256": "327f68bf8d59a2ddd941cbcc85214cac67d57006305bc7d815626c78149fefcc",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "LaTeX source and PDF generated from deterministic live evidence."
+  ],
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python_version": "3.12.13",
+  "result_sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8",
+  "schema_version": "trice-evidence-manifest/v1"
+}

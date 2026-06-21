@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="390" viewBox="0 0 940 390">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24" y="28" font-family="Inter,Segoe UI,Arial" font-size="20" font-weight="700" fill="#111827">TRICE deterministic live input-token savings</text>
+<text x="24" y="52" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Fresh workspaces, real source edits, pytest pass preserved</text>
+<text x="24" y="97" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">csv-filter</text>
+<rect x="150" y="78" width="650" height="28" rx="5" fill="#eef2ff"/>
+<rect x="150" y="78" width="502" height="28" rx="5" fill="#2563eb"/>
+<text x="662" y="97" font-family="Inter,Segoe UI,Arial" font-size="13" font-weight="700" fill="#111827">77.3%</text>
+<text x="24" y="143" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">dedupe-helpers</text>
+<rect x="150" y="124" width="650" height="28" rx="5" fill="#eef2ff"/>
+<rect x="150" y="124" width="521" height="28" rx="5" fill="#2563eb"/>
+<text x="681" y="143" font-family="Inter,Segoe UI,Arial" font-size="13" font-weight="700" fill="#111827">80.2%</text>
+<text x="24" y="189" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">fix-imports</text>
+<rect x="150" y="170" width="650" height="28" rx="5" fill="#eef2ff"/>
+<rect x="150" y="170" width="527" height="28" rx="5" fill="#2563eb"/>
+<text x="687" y="189" font-family="Inter,Segoe UI,Arial" font-size="13" font-weight="700" fill="#111827">81.1%</text>
+<text x="24" y="235" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">fix-offby-one</text>
+<rect x="150" y="216" width="650" height="28" rx="5" fill="#eef2ff"/>
+<rect x="150" y="216" width="486" height="28" rx="5" fill="#2563eb"/>
+<text x="646" y="235" font-family="Inter,Segoe UI,Arial" font-size="13" font-weight="700" fill="#111827">74.9%</text>
+<text x="24" y="281" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">implement-median</text>
+<rect x="150" y="262" width="650" height="28" rx="5" fill="#eef2ff"/>
+<rect x="150" y="262" width="504" height="28" rx="5" fill="#2563eb"/>
+<text x="664" y="281" font-family="Inter,Segoe UI,Arial" font-size="13" font-weight="700" fill="#111827">77.6%</text>
+<text x="24" y="327" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">rename-api</text>
+<rect x="150" y="308" width="650" height="28" rx="5" fill="#eef2ff"/>
+<rect x="150" y="308" width="524" height="28" rx="5" fill="#2563eb"/>
+<text x="684" y="327" font-family="Inter,Segoe UI,Arial" font-size="13" font-weight="700" fill="#111827">80.8%</text>
+<text x="24" y="348" font-family="Inter,Segoe UI,Arial" font-size="14" font-weight="700" fill="#047857">Mean savings: 78.6% | 95% bootstrap CI: 76.8% to 80.3%</text>
+<text x="24" y="370" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#4b5563">Local smoke gate: passed | broad claim allowed: no</text>
+</svg>

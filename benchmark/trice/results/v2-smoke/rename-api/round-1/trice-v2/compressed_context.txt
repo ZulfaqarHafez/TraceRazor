@@ -1,0 +1,36 @@
+TRICE_CONTEXT_POLICY
+algorithm=trice-v0.1-multi-choice-knapsack
+projected_input_savings_pct=80.76
+
+[s1 step=1 action=anchor_prefix state=essential]
+You are in a small Python project. The public function `fetch_data` in `core.py` must be renamed to `load_records` everywhere it appears — the definition and every call site. The tests expect the old name to be gone entirely. Run `python3 -m pytest -q`, make the rename, and re-run the tests until they all pass. Do not modify any files under `tests/`.
+You are in a small Python project. The public function `fetch_data` in `core.py` must be renamed to `load_records` everywhere it appears — the definition and every call site. The tests expect the old name to be gone entirely. Run `python3 -m pytest -q`, make the rename, and re-run the tests until they all pass. Do not modify any files under `tests/`.
+
+[s2 step=2 action=anchor_prefix state=essential]
+Run failing verifier before edit
+F..                                                                      [100%]
+================================== FAILURES ===================================
+________________________ test_new_name_exists_old_gone ________________________
+tests\test_rename.py:14: in test_new_name_exists_old_gone
+    assert hasattr(core, "load_records")
+E   AssertionError: assert False
+E    +  where False = hasattr(core, 'load_records')
+=========================== short test summary info ===========================
+FAILED tests\test_rename.py::test_new_name_exists_old_gone - AssertionError: ...
+1 failed, 2 passed in <duration>
+tool:pytest
+
+[s3 step=3 action=mask_with_receipt state=rehydratable]
+masked receipt=8c96635ca51a6d94 pointer=trace:rename-api.decision:step:3
+
+[s4 step=4 action=mask_with_receipt state=rehydratable]
+masked receipt=fa36b06a6695d8a6 pointer=trace:rename-api.decision:step:4
+
+[s5 step=5 action=mask_with_receipt state=redundant]
+masked receipt=28504f50d5a43abc pointer=trace:rename-api.decision:step:5
+
+[s6 step=6 action=mask_with_receipt state=redundant]
+masked receipt=c68671d9315a7139 pointer=trace:rename-api.decision:step:6
+
+[s7 step=7 action=keep state=essential]
+Ready to edit only source files and re-run the verifier.

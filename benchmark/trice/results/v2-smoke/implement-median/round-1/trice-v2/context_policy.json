@@ -1,0 +1,108 @@
+{
+  "algorithm": "trice-v0.1-multi-choice-knapsack",
+  "baseline_input_tokens": 1889,
+  "bucket_size": 128,
+  "budget_exceeded": false,
+  "budget_ratio": 0.4,
+  "budget_tokens": 756,
+  "constraints": {
+    "evidence_recall_min": 0.95,
+    "locked_anchors_unchanged": true,
+    "pass_rate_noninferiority_pp": -2
+  },
+  "decisions": [
+    {
+      "action": "anchor_prefix",
+      "locked": true,
+      "original_tokens": 56,
+      "policy_tokens": 56,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "a3667876c0565f9e2649304e5e13d062cfcaf953123eefc22fca28ad1686f6fa",
+      "rehydrate_pointer": "trace:implement-median.decision:step:1",
+      "segment_id": "s1",
+      "state": "essential",
+      "step_id": 1,
+      "value": 1.379731
+    },
+    {
+      "action": "anchor_prefix",
+      "locked": true,
+      "original_tokens": 197,
+      "policy_tokens": 197,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "884a0607ce1cbb304c99ba908694d32a1804cf69867e9eb58a604b7c54411c68",
+      "rehydrate_pointer": "trace:implement-median.decision:step:2",
+      "segment_id": "s2",
+      "state": "essential",
+      "step_id": 2,
+      "value": 1.499054
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 256,
+      "policy_tokens": 17,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "b12a84e2962aa9d7935984b475283185275da4de1d1e3e93b20f27da681980d0",
+      "rehydrate_pointer": "trace:implement-median.decision:step:3",
+      "segment_id": "s3",
+      "state": "rehydratable",
+      "step_id": 3,
+      "value": 0.059071
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 256,
+      "policy_tokens": 17,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "fb1dee4f454b457383a5b20e31b2240f1e2f461436e734bf72ed96caf33e7717",
+      "rehydrate_pointer": "trace:implement-median.decision:step:4",
+      "segment_id": "s4",
+      "state": "rehydratable",
+      "step_id": 4,
+      "value": 0.050671
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 640,
+      "policy_tokens": 44,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "e77f5cd744548324e33cd0baa697ddcf64c22a73a5d5ceecbe981817e92bc0ec",
+      "rehydrate_pointer": "trace:implement-median.decision:step:5",
+      "segment_id": "s5",
+      "state": "redundant",
+      "step_id": 5,
+      "value": -0.023412
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 420,
+      "policy_tokens": 29,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+      "rehydrate_pointer": "trace:implement-median.decision:step:6",
+      "segment_id": "s6",
+      "state": "redundant",
+      "step_id": 6,
+      "value": -0.064356
+    },
+    {
+      "action": "keep",
+      "locked": true,
+      "original_tokens": 64,
+      "policy_tokens": 64,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+      "rehydrate_pointer": "trace:implement-median.decision:step:7",
+      "segment_id": "s7",
+      "state": "essential",
+      "step_id": 7,
+      "value": 1.349693
+    }
+  ],
+  "policy_tokens": 424,
+  "projected_input_savings_pct": 77.55
+}

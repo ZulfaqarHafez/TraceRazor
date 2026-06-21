@@ -1,0 +1,93 @@
+{
+  "algorithm": "trice-v2-suite-live-user-conditioned-rollout",
+  "claim_gate": {
+    "accepted_rounds": 3,
+    "baseline_pass_rate": 1.0,
+    "broad_claim_allowed": false,
+    "clustered_by": "task_id",
+    "clustered_savings_ci": {
+      "high": 0.766397,
+      "level": 0.95,
+      "low": 0.766397,
+      "mean": 0.766397
+    },
+    "mean_savings": 0.766397,
+    "pass_regressions": 0,
+    "rationale": "local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals",
+    "replicate_count": 3,
+    "savings_ci": {
+      "high": 0.766397,
+      "level": 0.95,
+      "low": 0.766397,
+      "mean": 0.766397
+    },
+    "scope": "local_deterministic_smoke",
+    "smoke_gate_passed": true,
+    "target_savings": 0.6,
+    "task_cluster_count": 1,
+    "total_rounds": 3,
+    "trice_pass_ci": {
+      "high": 1.0,
+      "level": 0.95,
+      "low": 0.438503,
+      "mean": 1.0
+    },
+    "trice_pass_rate": 1.0
+  },
+  "manifest_path": "trice_suite_evidence_manifest.json",
+  "report_path": "trice_suite_report.md",
+  "result_path": "trice_suite_results.json",
+  "schema_version": "trice-suite-result/v1",
+  "suite": {
+    "clustered_by": "task_id",
+    "manifest_snapshot": "trice_suite_manifest.snapshot.json",
+    "name": "fix-offby-one-suite",
+    "replicate_count": 3,
+    "task_count": 1,
+    "user_feedback": "real runs, not replay; target 60% token savings"
+  },
+  "tasks": [
+    {
+      "accepted_rounds": 1,
+      "manifest_path": "tasks/fix-offby-one-suite/replicate-1/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.766397,
+      "pass_regressions": 0,
+      "patch_spec": "trice_patch_fix_offbyone.json",
+      "replicate_index": 1,
+      "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+      "report_path": "tasks/fix-offby-one-suite/replicate-1/trice_v2_live_report.md",
+      "result_path": "tasks/fix-offby-one-suite/replicate-1/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "task_id": "fix-offby-one-suite"
+    },
+    {
+      "accepted_rounds": 1,
+      "manifest_path": "tasks/fix-offby-one-suite/replicate-2/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.766397,
+      "pass_regressions": 0,
+      "patch_spec": "trice_patch_fix_offbyone.json",
+      "replicate_index": 2,
+      "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+      "report_path": "tasks/fix-offby-one-suite/replicate-2/trice_v2_live_report.md",
+      "result_path": "tasks/fix-offby-one-suite/replicate-2/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "task_id": "fix-offby-one-suite"
+    },
+    {
+      "accepted_rounds": 1,
+      "manifest_path": "tasks/fix-offby-one-suite/replicate-3/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.766397,
+      "pass_regressions": 0,
+      "patch_spec": "trice_patch_fix_offbyone.json",
+      "replicate_index": 3,
+      "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+      "report_path": "tasks/fix-offby-one-suite/replicate-3/trice_v2_live_report.md",
+      "result_path": "tasks/fix-offby-one-suite/replicate-3/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "task_id": "fix-offby-one-suite"
+    }
+  ]
+}

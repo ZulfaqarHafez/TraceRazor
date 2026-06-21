@@ -1,0 +1,42 @@
+{
+  "algorithm": "trice-v2-suite-live-user-conditioned-rollout",
+  "artifacts": [
+    {
+      "bytes": 581,
+      "path": "trice_suite_manifest.snapshot.json",
+      "sha256": "19081e123976565e1aeff55b5803f861727c550cfcb06c37708f56c63415a78e"
+    },
+    {
+      "bytes": 1331,
+      "path": "trice_suite_report.md",
+      "sha256": "18dbb1de7ae5e58aebad2d96ef2178eb27c7307d2f16ba9c1507d4496b1214b1"
+    },
+    {
+      "bytes": 1843,
+      "path": "tasks/fix-offby-one-suite/replicate-1/trice_v2_evidence_manifest.json",
+      "sha256": "237ee83e6a4bdbf3cd77d64041e3ab078aae3b81987a5abc9db0548073577a34"
+    },
+    {
+      "bytes": 1843,
+      "path": "tasks/fix-offby-one-suite/replicate-2/trice_v2_evidence_manifest.json",
+      "sha256": "815749f2f51e47a35aa498d8255b89497d19702a34a33e53e1f5fdab8fc48d74"
+    },
+    {
+      "bytes": 1843,
+      "path": "tasks/fix-offby-one-suite/replicate-3/trice_v2_evidence_manifest.json",
+      "sha256": "f3a1e5357677301ea7d3430e3bcb7a3d58b6cf0a2cc11c8ff8cb8a765d83033d"
+    }
+  ],
+  "canonical_result_sha256": "7c41fcf85b276a67c9baeafa64809df72a9f83afe0f3d98d28385ac40b024ebe",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "Manifest-driven TRICE suite",
+    "Each child task is a real live rollout with its own evidence manifest",
+    "Replicates use fresh child output bundles",
+    "Aggregate manifest hashes suite snapshot and child manifests"
+  ],
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
+  "result_sha256": "1513f28e55238dc0fab4b4370718f5f08915564b868859d882af9bd8081da9b7",
+  "schema_version": "trice-evidence-manifest/v1"
+}

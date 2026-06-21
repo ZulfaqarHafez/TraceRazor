@@ -1,0 +1,17 @@
+{
+  "schema_version": "trice-suite/v1",
+  "name": "fix-offby-one-suite",
+  "user_feedback": "real runs, not replay; target 60% token savings",
+  "target_savings": 0.6,
+  "rounds": 1,
+  "replicates": 3,
+  "tasks": [
+    {
+      "task_id": "fix-offby-one-suite",
+      "repo": "../benchmark/live/tasks/fix-offby-one/seed",
+      "patch_spec": "trice_patch_fix_offbyone.json",
+      "prompt": "Fix chunker.py without editing tests.",
+      "verify_cmd": ["python", "-m", "pytest", "-q", "--tb=short"]
+    }
+  ]
+}

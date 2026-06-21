@@ -30,6 +30,7 @@ dependencies = []
 
 [project.scripts]
 tracerazor = "tracerazor._launcher:main"
+tracerazor-trice = "tracerazor.trice.cli:main"
 
 [project.urls]
 Homepage      = "https://github.com/ZulfaqarHafez/tracerazor"
@@ -84,10 +85,15 @@ all = [
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "anyio[trio]"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["tracerazor"]
+packages = ["tracerazor", "benchmark"]
 # Platform wheels bundle the Rust CLI at tracerazor/bin/ (see
 # scripts/build_platform_wheel.sh); hatchling excludes binaries by default.
 artifacts = ["tracerazor/bin/*"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"schemas/trice_patch_spec.schema.json" = "schemas/trice_patch_spec.schema.json"
+"schemas/trice_evidence_manifest.schema.json" = "schemas/trice_evidence_manifest.schema.json"
+"schemas/trice_suite_manifest.schema.json" = "schemas/trice_suite_manifest.schema.json"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -1,0 +1,149 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "artifacts": [
+    {
+      "bytes": 2260,
+      "path": "trice_v2_live_report.md",
+      "sha256": "ca4c8f997c92ad87a7ef943a71c9a815a0ac426391f024f25df0ac3dd334af78"
+    },
+    {
+      "bytes": 900,
+      "path": "user_profile.json",
+      "sha256": "75bd38c022c4c9ebf91cee6194fdbbc90f218886e751fd2b0985eccc27256586"
+    },
+    {
+      "bytes": 13096,
+      "path": "csv-filter/round-1/baseline-full-context/trace.json",
+      "sha256": "196ef0f5ddfbd7f75691938cf187033771e65666105c590ef606599d44ad8db9"
+    },
+    {
+      "bytes": 13069,
+      "path": "csv-filter/round-1/trice-v2/trace.json",
+      "sha256": "08dbb201c48735e62e7cfeeeba0b8343eea84e2949e5f3487704930dbcdb7c31"
+    },
+    {
+      "bytes": 3537,
+      "path": "csv-filter/round-1/trice-v2/context_policy.json",
+      "sha256": "4ef4150f40fc5aa4842e988091fb8c9a05e889ea76b59cc7942cc8e1c5d32281"
+    },
+    {
+      "bytes": 3732,
+      "path": "csv-filter/round-1/trice-v2/compressed_context.txt",
+      "sha256": "95aeff0870108084ce0c93f4424230923b993bc7751d220604b94a3c5ad79d1d"
+    },
+    {
+      "bytes": 8748,
+      "path": "dedupe-helpers/round-1/baseline-full-context/trace.json",
+      "sha256": "756d2c7bfd12ec1c85b01e7fd87b6973c10be5d094a05c819f467f6d2fecf1c7"
+    },
+    {
+      "bytes": 8617,
+      "path": "dedupe-helpers/round-1/trice-v2/trace.json",
+      "sha256": "5c9eaa58d71ce74f858f59a34f44ef90a492271b8270e5eb4b7ca2872645b1ca"
+    },
+    {
+      "bytes": 3564,
+      "path": "dedupe-helpers/round-1/trice-v2/context_policy.json",
+      "sha256": "5bfd0b7d14b77e82a2ebbabb9c348abdfbb1f1adc2304f805aad77e67307b3e4"
+    },
+    {
+      "bytes": 2805,
+      "path": "dedupe-helpers/round-1/trice-v2/compressed_context.txt",
+      "sha256": "2cbb467c178f570f2157aa7a708840bf45512898fb5dc87638b81d1083dbae7c"
+    },
+    {
+      "bytes": 8615,
+      "path": "fix-imports/round-1/baseline-full-context/trace.json",
+      "sha256": "003ab202121f8c43f8e92cab69b32b426135f31240cbbcf1f9691b1b670cec82"
+    },
+    {
+      "bytes": 8484,
+      "path": "fix-imports/round-1/trice-v2/trace.json",
+      "sha256": "fb819282b5318b2a3ce433a53112714143deaed378c8d467eed6e368c2442bdc"
+    },
+    {
+      "bytes": 3543,
+      "path": "fix-imports/round-1/trice-v2/context_policy.json",
+      "sha256": "7c840265c5e35fef8d18cae5f26342584249b8d8330e85d7bb20badb923d2baa"
+    },
+    {
+      "bytes": 2688,
+      "path": "fix-imports/round-1/trice-v2/compressed_context.txt",
+      "sha256": "0d638b6f9ac872b5645de1cd4a6c7397e1d7a3513a678892b54da3fdf91e9c6e"
+    },
+    {
+      "bytes": 11806,
+      "path": "fix-offby-one/round-1/baseline-full-context/trace.json",
+      "sha256": "f469bf826dbdf02cba1044fd227e4ea842ae893c3540d21666e91690a816795b"
+    },
+    {
+      "bytes": 11779,
+      "path": "fix-offby-one/round-1/trice-v2/trace.json",
+      "sha256": "cef7c1bbbcdbf45e2908af5bd9697302258a2389b5ec4ad360b160828001dab3"
+    },
+    {
+      "bytes": 3561,
+      "path": "fix-offby-one/round-1/trice-v2/context_policy.json",
+      "sha256": "9bb084454cd114e7febb17bc0dabc223d3032ff58587668e02fbe27e104ae69d"
+    },
+    {
+      "bytes": 3427,
+      "path": "fix-offby-one/round-1/trice-v2/compressed_context.txt",
+      "sha256": "64509bb0768ff4935445975c971badbb435678a0622c24959c11fc30893c6b91"
+    },
+    {
+      "bytes": 12438,
+      "path": "implement-median/round-1/baseline-full-context/trace.json",
+      "sha256": "d36cc1104c78e87d28b12627853194d2aca87a1061f4872f2ccd6d2c1e9fd2d9"
+    },
+    {
+      "bytes": 12411,
+      "path": "implement-median/round-1/trice-v2/trace.json",
+      "sha256": "93cda427039b00b3635ea664c8ee4e12f2a650957680f4ca4ffe5406c8ebed2e"
+    },
+    {
+      "bytes": 3580,
+      "path": "implement-median/round-1/trice-v2/context_policy.json",
+      "sha256": "01f1c20b0ad68f0d683fea32cb8565da731f82d792eacdab272e24da5139effd"
+    },
+    {
+      "bytes": 3608,
+      "path": "implement-median/round-1/trice-v2/compressed_context.txt",
+      "sha256": "00ecfafce6ae30f8e4b8ef15ad2a9aae43b2163119e48b8105edc6beb04bcf16"
+    },
+    {
+      "bytes": 7000,
+      "path": "rename-api/round-1/baseline-full-context/trace.json",
+      "sha256": "4fa25d2ce646035a14c71bf53e01ac1ce4cfa4849ff95013a1a6110d50e4474b"
+    },
+    {
+      "bytes": 6973,
+      "path": "rename-api/round-1/trice-v2/trace.json",
+      "sha256": "458bc68f8dfd201b0276e7d6520a6ee04c109f58f545718039d093b56ec74663"
+    },
+    {
+      "bytes": 3536,
+      "path": "rename-api/round-1/trice-v2/context_policy.json",
+      "sha256": "d691c997e579ec0af25415d1ab9ca96414dd564f0c57f892fa88cecad36407bb"
+    },
+    {
+      "bytes": 2219,
+      "path": "rename-api/round-1/trice-v2/compressed_context.txt",
+      "sha256": "d66fba45a0dc8787d8ebac4cd42b86b168482c1d5d2e249bad8c711c0f0a6be3"
+    }
+  ],
+  "canonical_result_sha256": "327f68bf8d59a2ddd941cbcc85214cac67d57006305bc7d815626c78149fefcc",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "Fresh workspace per condition",
+    "Objective verifier command per run",
+    "User-conditioned profile captured in result JSON",
+    "Verifier durations normalized before hashing",
+    "Wall-clock metadata excluded from traces",
+    "Replay is not accepted as final proof"
+  ],
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
+  "result_sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8",
+  "schema_version": "trice-evidence-manifest/v1"
+}

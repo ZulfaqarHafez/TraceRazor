@@ -3,6 +3,7 @@
 Algorithm: `trice-v2-live-user-conditioned-rollout`
 Target savings: 60%
 Final budget ratio: 40%
+Evidence manifest: `trice_v2_evidence_manifest.json`
 
 ## Evidence
 
@@ -15,14 +16,23 @@ Final budget ratio: 40%
 | implement-median | 1 | 1889 | 424 | 77.6% | yes | yes | yes |
 | rename-api | 1 | 1814 | 349 | 80.8% | yes | yes | yes |
 
+## Deterministic Claim Gate
+
+- Scope: `local_deterministic_smoke`
+- Mean savings: 78.6%
+- Savings 95% bootstrap CI: [76.8%, 80.3%]
+- TRICE pass rate: 100.0% (Wilson 95% CI [61.0%, 100.0%])
+- Pass regressions: 0
+- Local smoke gate passed: yes
+- Broad claim allowed: no
+- Rationale: local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals
+
 ## User-Learned Policy
 
 - user target set to 60% input-token savings
 - user requires live rollout evidence, not replay-only acceptance
 - replay is allowed only as a preflight, not as final proof
-- adapt budget and safety from user feedback before acting
 - prefer aggressive compression when live pass preservation holds
-- never edit tests during managed rollouts
 - round 1: accepted 77% savings with pass preservation
 - round 2: accepted 80% savings with pass preservation
 - round 3: accepted 81% savings with pass preservation
@@ -37,3 +47,5 @@ made real source edits, and passed or failed on the verifier command. It is
 not replay evidence. The managed adapter is deterministic for CI; provider
 adapters can reuse the same gate as long as they report assembled input
 tokens and objective verifier results.
+Verifier duration text is normalized and wall-clock metadata is excluded
+from evidence hashes because timing noise is not decision evidence.

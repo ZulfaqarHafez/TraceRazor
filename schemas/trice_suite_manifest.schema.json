@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tracerazor.dev/schemas/trice_suite_manifest.schema.json",
+  "title": "TRICE live suite manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tasks"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "trice-suite/v1"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "user_feedback": {
+      "type": "string",
+      "minLength": 1
+    },
+    "target_savings": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "default": 0.6
+    },
+    "rounds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "replicates": {
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["task_id", "repo", "patch_spec"],
+        "properties": {
+          "task_id": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9_.-]+$"
+          },
+          "repo": {
+            "type": "string",
+            "minLength": 1
+          },
+          "patch_spec": {
+            "type": "string",
+            "minLength": 1
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verify_cmd": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            ]
+          },
+          "user_feedback": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rounds": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "replicates": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      }
+    }
+  }
+}

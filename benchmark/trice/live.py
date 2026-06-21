@@ -14,24 +14,30 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
+import shlex
 import shutil
 import subprocess
 import sys
-import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .adapters import JsonPatchAdapter, RepairAdapter
+from .evidence import build_manifest, verify_manifest, write_manifest
 from .learn import LearningWeights, update_weights
 from .policy import ContextPolicy, solve_policy
 from .render import render_context, render_policy_json
 from .segment import segments_from_trace
+from .stats import claim_gate_from_rounds
 from .user import UserPreferenceProfile
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_TASKS_DIR = REPO / "benchmark" / "live" / "tasks"
 DEFAULT_OUT_DIR = REPO / "benchmark" / "trice" / "results" / "v2-live"
 VERIFY_CMD = [sys.executable, "-m", "pytest", "-q", "--tb=short"]
+_DURATION_RE = re.compile(r"\bin \d+(?:\.\d+)?s\b")
+_SECONDS_RE = re.compile(r"\bin \d+(?:\.\d+)? seconds?\b")
 
 
 @dataclass(frozen=True)
@@ -48,6 +54,27 @@ class LiveTask:
             task_id=d.name,
             prompt=(d / "prompt.md").read_text(encoding="utf-8").strip(),
             seed_dir=d / "seed",
+        )
+
+    @classmethod
+    def from_repo(
+        cls,
+        repo_dir: str | Path,
+        *,
+        task_id: str | None = None,
+        prompt: str | None = None,
+        verify_cmd: list[str] | tuple[str, ...] | None = None,
+    ) -> "LiveTask":
+        repo = Path(repo_dir)
+        resolved_prompt = prompt
+        if resolved_prompt is None:
+            prompt_file = repo / "TASK.md"
+            resolved_prompt = prompt_file.read_text(encoding="utf-8").strip() if prompt_file.is_file() else f"Run deterministic task in {repo.name}."
+        return cls(
+            task_id=task_id or repo.name,
+            prompt=resolved_prompt,
+            seed_dir=repo,
+            verify_cmd=tuple(verify_cmd or VERIFY_CMD),
         )
 
 
@@ -86,16 +113,20 @@ class LiveRolloutResult:
     algorithm: str
     profile: dict[str, Any]
     rounds: list[LiveRound] = field(default_factory=list)
+    claim_gate: dict[str, Any] | None = None
     report_path: str | None = None
     result_path: str | None = None
+    manifest_path: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "algorithm": self.algorithm,
             "profile": self.profile,
             "rounds": [asdict(r) for r in self.rounds],
+            "claim_gate": self.claim_gate,
             "report_path": self.report_path,
             "result_path": self.result_path,
+            "manifest_path": self.manifest_path,
         }
 
 
@@ -189,7 +220,7 @@ def run_live_learning_loop(
     user_feedback: str | None = None,
     profile_path: str | Path | None = None,
     rounds: int | None = None,
-    adapter: ManagedPythonRepairAdapter | None = None,
+    adapter: RepairAdapter | None = None,
 ) -> LiveRolloutResult:
     if not tasks:
         raise ValueError("run_live_learning_loop needs at least one task")
@@ -252,13 +283,44 @@ def run_live_learning_loop(
                 break
 
     result.profile = profile.to_dict()
+    result.claim_gate = claim_gate_from_rounds(result.rounds, profile.target_savings).to_dict()
     result_path = out / "trice_v2_live_results.json"
     result.result_path = str(result_path)
-    result_path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
     report_path = out / "trice_v2_live_report.md"
     result.report_path = str(report_path)
+    manifest_path = out / "trice_v2_evidence_manifest.json"
+    result.manifest_path = str(manifest_path)
     report_path.write_text(render_live_report(result), encoding="utf-8")
     result_path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    artifact_paths: list[Path] = [report_path]
+    try:
+        profile_file.resolve().relative_to(out.resolve())
+    except ValueError:
+        pass
+    else:
+        artifact_paths.append(profile_file)
+    for live_round in result.rounds:
+        artifact_paths.append(Path(live_round.baseline.trace_path))
+        artifact_paths.append(Path(live_round.optimized.trace_path))
+        if live_round.optimized.policy_path:
+            artifact_paths.append(Path(live_round.optimized.policy_path))
+        if live_round.optimized.context_path:
+            artifact_paths.append(Path(live_round.optimized.context_path))
+    manifest = build_manifest(
+        result.to_dict(),
+        result_path=result_path,
+        artifact_paths=artifact_paths,
+        algorithm=result.algorithm,
+        notes=[
+            "Fresh workspace per condition",
+            "Objective verifier command per run",
+            "User-conditioned profile captured in result JSON",
+            "Verifier durations normalized before hashing",
+            "Wall-clock metadata excluded from traces",
+            "Replay is not accepted as final proof",
+        ],
+    )
+    write_manifest(manifest, manifest_path)
     return result
 
 
@@ -270,6 +332,7 @@ def render_live_report(result: LiveRolloutResult) -> str:
         f"Algorithm: `{result.algorithm}`",
         f"Target savings: {profile['target_savings']:.0%}",
         f"Final budget ratio: {profile['budget_ratio']:.0%}",
+        f"Evidence manifest: `{Path(result.manifest_path).name if result.manifest_path else 'pending'}`",
         "",
         "## Evidence",
         "",
@@ -289,8 +352,23 @@ def render_live_report(result: LiveRolloutResult) -> str:
                 accepted="yes" if r.accepted else "no",
             )
         )
+    gate = result.claim_gate or {}
+    ci = gate.get("savings_ci") or {}
+    pass_ci = gate.get("trice_pass_ci") or {}
     lines.extend(
         [
+            "",
+            "## Deterministic Claim Gate",
+            "",
+            f"- Scope: `{gate.get('scope', 'unknown')}`",
+            f"- Mean savings: {gate.get('mean_savings', 0.0):.1%}",
+            f"- Savings 95% bootstrap CI: [{ci.get('low', 0.0):.1%}, {ci.get('high', 0.0):.1%}]",
+            f"- TRICE pass rate: {gate.get('trice_pass_rate', 0.0):.1%} "
+            f"(Wilson 95% CI [{pass_ci.get('low', 0.0):.1%}, {pass_ci.get('high', 0.0):.1%}])",
+            f"- Pass regressions: {gate.get('pass_regressions', 0)}",
+            f"- Local smoke gate passed: {'yes' if gate.get('smoke_gate_passed') else 'no'}",
+            f"- Broad claim allowed: {'yes' if gate.get('broad_claim_allowed') else 'no'}",
+            f"- Rationale: {gate.get('rationale', 'not computed')}",
             "",
             "## User-Learned Policy",
             "",
@@ -308,6 +386,8 @@ def render_live_report(result: LiveRolloutResult) -> str:
             "not replay evidence. The managed adapter is deterministic for CI; provider",
             "adapters can reuse the same gate as long as they report assembled input",
             "tokens and objective verifier results.",
+            "Verifier duration text is normalized and wall-clock metadata is excluded",
+            "from evidence hashes because timing noise is not decision evidence.",
             "",
         ]
     )
@@ -340,7 +420,6 @@ def _run_condition(
         Path(policy_path).write_text(render_policy_json(policy), encoding="utf-8")
         Path(context_path).write_text(render_context(policy, segments), encoding="utf-8")
 
-    started = time.time()
     modified = adapter.apply_fix(task, workspace)
     verify = _run_verify(task.verify_cmd, workspace)
     trace["trace_id"] = f"{task.task_id}.{condition}"
@@ -348,7 +427,6 @@ def _run_condition(
     trace["task_value_score"] = 1.0 if verify["passed"] else 0.0
     trace["total_tokens"] = input_tokens
     trace["metadata"]["condition"] = condition
-    trace["metadata"]["wall_s"] = round(time.time() - started, 3)
     trace["steps"].append(
         {
             "id": len(trace["steps"]) + 1,
@@ -478,8 +556,16 @@ def _read_project_files(workspace: Path) -> dict[str, str]:
 
 def _run_verify(cmd: tuple[str, ...], cwd: Path) -> dict[str, Any]:
     proc = subprocess.run(list(cmd), cwd=cwd, capture_output=True, text=True, timeout=120)
-    output = (proc.stdout + "\n" + proc.stderr).strip()
+    output = _normalize_verify_output((proc.stdout + "\n" + proc.stderr).strip())
     return {"passed": proc.returncode == 0, "exit_code": proc.returncode, "output": output}
+
+
+def _normalize_verify_output(output: str) -> str:
+    """Remove verifier clock noise while preserving the pass/fail evidence text."""
+
+    output = output.replace("\r\n", "\n")
+    output = _DURATION_RE.sub("in <duration>", output)
+    return _SECONDS_RE.sub("in <duration>", output)
 
 
 def _estimate_tokens(text: str) -> int:
@@ -503,24 +589,57 @@ def _load_tasks(tasks_dir: Path, selected: list[str] | None) -> list[LiveTask]:
     return [LiveTask.from_dir(d) for d in dirs]
 
 
+def _parse_verify_cmd(value: str | None) -> tuple[str, ...]:
+    if not value:
+        return tuple(VERIFY_CMD)
+    return tuple(shlex.split(value, posix=False))
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Run TRICE V2 on live managed repo tasks.")
     ap.add_argument("--tasks-dir", type=Path, default=DEFAULT_TASKS_DIR)
     ap.add_argument("--task", action="append", default=None, help="Task id to run; repeatable.")
+    ap.add_argument("--repo", type=Path, default=None, help="Run one arbitrary repo/seed directory instead of --tasks-dir.")
+    ap.add_argument("--task-id", default=None, help="Task id for --repo runs.")
+    ap.add_argument("--prompt", default=None, help="Task prompt for --repo runs; defaults to TASK.md or a generic prompt.")
+    ap.add_argument("--verify-cmd", default=None, help="Verifier command for --repo runs, e.g. 'python -m pytest -q'.")
+    ap.add_argument("--patch-spec", type=Path, default=None, help="Deterministic JSON patch spec for --repo runs.")
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--profile", type=Path, default=None, help="Persistent user profile JSON.")
     ap.add_argument("--rounds", type=int, default=None)
     ap.add_argument("--user-feedback", default=None)
     ap.add_argument("--json", action="store_true", help="Print JSON result instead of a short summary.")
+    ap.add_argument("--verify-manifest", type=Path, default=None, help="Verify a TRICE evidence manifest and exit.")
     args = ap.parse_args(argv)
 
-    tasks = _load_tasks(args.tasks_dir, args.task)
+    if args.verify_manifest:
+        verdict = verify_manifest(args.verify_manifest)
+        print(json.dumps(verdict, indent=2, sort_keys=True))
+        return 0 if verdict["ok"] else 1
+
+    if args.repo:
+        if not args.patch_spec:
+            print("error: --repo requires --patch-spec for deterministic evaluation", file=sys.stderr)
+            return 2
+        tasks = [
+            LiveTask.from_repo(
+                args.repo,
+                task_id=args.task_id,
+                prompt=args.prompt,
+                verify_cmd=_parse_verify_cmd(args.verify_cmd),
+            )
+        ]
+        adapter: RepairAdapter = JsonPatchAdapter.from_file(args.patch_spec)
+    else:
+        tasks = _load_tasks(args.tasks_dir, args.task)
+        adapter = ManagedPythonRepairAdapter()
     result = run_live_learning_loop(
         tasks,
         out_dir=args.out_dir,
         user_feedback=args.user_feedback,
         profile_path=args.profile,
         rounds=args.rounds,
+        adapter=adapter,
     )
     if args.json:
         print(json.dumps(result.to_dict(), indent=2, sort_keys=True))
@@ -533,6 +652,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         print(f"report: {result.report_path}")
         print(f"json  : {result.result_path}")
+        print(f"manifest: {result.manifest_path}")
     return 0
 
 

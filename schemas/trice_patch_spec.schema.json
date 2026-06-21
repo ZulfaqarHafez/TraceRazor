@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tracerazor.dev/schemas/trice_patch_spec.schema.json",
+  "title": "TRICE deterministic patch spec",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["edits"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "default": "json-patch-adapter"
+    },
+    "allow_test_edits": {
+      "type": "boolean",
+      "default": false
+    },
+    "applied_empty_ok": {
+      "type": "boolean",
+      "default": false
+    },
+    "forbidden_prefixes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "default": ["tests/", "test/"]
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "edits": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["op", "path"],
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": ["replace", "write"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["replace", "write"]
+          },
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "not": {
+              "pattern": "(^/|^[A-Za-z]:|\\.\\.)"
+            }
+          },
+          "old": { "type": "string" },
+          "new": { "type": "string" },
+          "content": { "type": "string" }
+        },
+        "allOf": [
+          {
+            "if": { "properties": { "op": { "const": "replace" } } },
+            "then": { "required": ["old", "new"] }
+          },
+          {
+            "if": { "properties": { "op": { "const": "write" } } },
+            "then": { "required": ["content"] }
+          }
+        ]
+      }
+    }
+  }
+}

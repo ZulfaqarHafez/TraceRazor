@@ -1,0 +1,81 @@
+{
+  "agent_name": "managed-python-repair-v2",
+  "framework": "trice-live",
+  "metadata": {
+    "condition": "trice-v2",
+    "task": "You are in a small Python project. `filt.py` has an unimplemented `filter_rows` function that should read a CSV file and return the qualifying rows. Run `python3 -m pytest -q` to see what behaviour the tests expect, implement it (standard library only), and re-run the tests until they all pass. Do not modify any files under `tests/`.",
+    "task_id": "csv-filter"
+  },
+  "steps": [
+    {
+      "content": "You are in a small Python project. `filt.py` has an unimplemented `filter_rows` function that should read a CSV file and return the qualifying rows. Run `python3 -m pytest -q` to see what behaviour the tests expect, implement it (standard library only), and re-run the tests until they all pass. Do not modify any files under `tests/`.",
+      "id": 1,
+      "input_context": "You are in a small Python project. `filt.py` has an unimplemented `filter_rows` function that should read a CSV file and return the qualifying rows. Run `python3 -m pytest -q` to see what behaviour the tests expect, implement it (standard library only), and re-run the tests until they all pass. Do not modify any files under `tests/`.",
+      "tokens": 75,
+      "type": "reasoning"
+    },
+    {
+      "content": "Run failing verifier before edit",
+      "id": 2,
+      "output": "FFFFF                                                                    [100%]\n================================== FAILURES ===================================\n______________________________ test_basic_filter ______________________________\ntests\\test_filt.py:11: in test_basic_filter\n    assert filter_rows(p, 7) == [\n           ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n____________________________ test_scores_are_ints _____________________________\ntests\\test_filt.py:18: in test_scores_are_ints\n    [row] = filter_rows(p, 0)\n            ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n______________________________ test_header_only _______________________________\ntests\\test_filt.py:22: in test_header_only\n    assert filter_rows(_write(tmp_path, \"name,score\\n\"), 0) == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n______________________________ test_none_qualify ______________________________\ntests\\test_filt.py:25: in test_none_qualify\n    assert filter_rows(_write(tmp_path, \"name,score\\nann,1\\n\"), 5) == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n____________________________ test_order_preserved _____________________________\ntests\\test_filt.py:29: in test_order_preserved\n    assert [r[\"name\"] for r in filter_rows(p, 8)] == [\"z\", \"a\", \"m\"]\n                               ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n=========================== short test summary info ===========================\nFAILED tests\\test_filt.py::test_basic_filter - NotImplementedError\nFAILED tests\\test_filt.py::test_scores_are_ints - NotImplementedError\nFAILED tests\\test_filt.py::test_header_only - NotImplementedError\nFAILED tests\\test_filt.py::test_none_qualify - NotImplementedError\nFAILED tests\\test_filt.py::test_order_preserved - NotImplementedError\n5 failed in <duration>",
+      "tokens": 184,
+      "tool_name": "pytest",
+      "tool_success": false,
+      "type": "tool_call"
+    },
+    {
+      "content": "Read editable project files",
+      "id": 3,
+      "output": "### conftest.py\n\n\n### filt.py\ndef filter_rows(path, min_score):\n    \"\"\"Read a CSV with header `name,score`; return rows with score >= min_score.\n\n    Each returned row is a dict {\"name\": str, \"score\": int}, in file order.\n    \"\"\"\n    raise NotImplementedError\n",
+      "tokens": 256,
+      "tool_name": "read_project",
+      "tool_success": true,
+      "type": "tool_call"
+    },
+    {
+      "content": "Read tests as behavior oracle",
+      "id": 4,
+      "output": "### tests/test_filt.py\nfrom filt import filter_rows\n\n\ndef _write(tmp_path, text):\n    p = tmp_path / \"rows.csv\"\n    p.write_text(text, encoding=\"utf-8\")\n    return str(p)\n\ndef test_basic_filter(tmp_path):\n    p = _write(tmp_path, \"name,score\\nann,10\\nbob,3\\ncid,7\\n\")\n    assert filter_rows(p, 7) == [\n        {\"name\": \"ann\", \"score\": 10},\n        {\"name\": \"cid\", \"score\": 7},\n    ]\n\ndef test_scores_are_ints(tmp_path):\n    p = _write(tmp_path, \"name,score\\nann,10\\n\")\n    [row] = filter_rows(p, 0)\n    assert isinstance(row[\"score\"], int)\n\ndef test_header_only(tmp_path):\n    assert filter_rows(_write(tmp_path, \"name,score\\n\"), 0) == []\n\ndef test_none_qualify(tmp_path):\n    assert filter_rows(_write(tmp_path, \"name,score\\nann,1\\n\"), 5) == []\n\ndef test_order_preserved(tmp_path):\n    p = _write(tmp_path, \"name,score\\nz,9\\na,8\\nm,9\\n\")\n    assert [r[\"name\"] for r in filter_rows(p, 8)] == [\"z\", \"a\", \"m\"]\n",
+      "tokens": 256,
+      "tool_name": "read_tests",
+      "tool_success": true,
+      "type": "tool_call"
+    },
+    {
+      "content": "FFFFF                                                                    [100%]\n================================== FAILURES ===================================\n______________________________ test_basic_filter ______________________________\ntests\\test_filt.py:11: in test_basic_filter\n    assert filter_rows(p, 7) == [\n           ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n____________________________ test_scores_are_ints _____________________________\ntests\\test_filt.py:18: in test_scores_are_ints\n    [row] = filter_rows(p, 0)\n            ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n______________________________ test_header_only _______________________________\ntests\\test_filt.py:22: in test_header_only\n    assert filter_rows(_write(tmp_path, \"name,score\\n\"), 0) == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n______________________________ test_none_qualify ______________________________\ntests\\test_filt.py:25: in test_none_qualify\n    assert filter_rows(_write(tmp_path, \"name,score\\nann,1\\n\"), 5) == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n____________________________ test_order_preserved _____________________________\ntests\\test_filt.py:29: in test_order_preserved\n    assert [r[\"name\"] for r in filter_rows(p, 8)] == [\"z\", \"a\", \"m\"]\n                               ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n=========================== short test summary info ===========================\nFAILED tests\\test_filt.py::test_basic_filter - NotImplementedError\nFAILED tests\\test_filt.py::test_scores_are_ints - NotImplementedError\nFAILED tests\\test_filt.py::test_header_only - NotImplementedError\nFAILED tests\\test_filt.py::test_none_qualify - NotImplementedError\nFAILED tests\\test_filt.py::test_order_preserved - NotImplementedError\n5 failed in <duration>\nFFFFF                                                                    [100%]\n================================== FAILURES ===================================\n______________________________ test_basic_filter ______________________________\ntests\\test_filt.py:11: in test_basic_filter\n    assert filter_rows(p, 7) == [\n           ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n____________________________ test_scores_are_ints _____________________________\ntests\\test_filt.py:18: in test_scores_are_ints\n    [row] = filter_rows(p, 0)\n            ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n______________________________ test_header_only _______________________________\ntests\\test_filt.py:22: in test_header_only\n    assert filter_rows(_write(tmp_path, \"name,score\\n\"), 0) == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n______________________________ test_none_qualify ______________________________\ntests\\test_filt.py:25: in test_none_qualify\n    assert filter_rows(_write(tmp_path, \"name,score\\nann,1\\n\"), 5) == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n____________________________ test_order_preserved _____________________________\ntests\\test_filt.py:29: in test_order_preserved\n    assert [r[\"name\"] for r in filter_rows(p, 8)] == [\"z\", \"a\", \"m\"]\n                               ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n=========================== short test summary info ===========================\nFAILED tests\\test_filt.py::test_basic_filter - NotImplementedError\nFAILED tests\\test_filt.py::test_scores_are_ints - NotImplementedError\nFAILED tests\\test_filt.py::test_header_only - NotImplementedError\nFAILED tests\\test_filt.py::test_none_qualify - NotImplementedError\nFAILED tests\\test_filt.py::test_order_preserved - NotImplementedError\n5 failed in <duration>\nFFFFF                                                                    [100%]\n================================== FAILURES ===================================\n______________________________ test_basic_filter ______________________________\ntests\\test_filt.py:11: in test_basic_filter\n    assert filter_rows(p, 7) == [\n           ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n____________________________ test_scores_are_ints _____________________________\ntests\\test_filt.py:18: in test_scores_are_ints\n    [row] = filter_rows(p, 0)\n            ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n______________________________ test_header_only _______________________________\ntests\\test_filt.py:22: in test_header_only\n    assert filter_rows(_write(tmp_path, \"name,score\\n\"), 0) == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n______________________________ test_none_qualify ______________________________\ntests\\test_filt.py:25: in test_none_qualify\n    assert filter_rows(_write(tmp_path, \"name,score\\nann,1\\n\"), 5) == []\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n____________________________ test_order_preserved _____________________________\ntests\\test_filt.py:29: in test_order_preserved\n    assert [r[\"name\"] for r in filter_rows(p, 8)] == [\"z\", \"a\", \"m\"]\n                               ^^^^^^^^^^^^^^^^^\nfilt.py:6: in filter_rows\n    raise NotImplementedError\nE   NotImplementedError\n=========================== short test summary info ===========================\nFAILED tests\\test_filt.py::test_basic_filter - NotImplementedError\nFAILED tests\\test_filt.py::test_scores_are_ints - NotImplementedError\nFAILED tests\\test_filt.py::test_header_only - NotImplementedError\nFAILED tests\\test_filt.py::test_none_qualify - NotImplementedError\nFAILED tests\\test_filt.py::test_order_preserved - NotImplementedError\n5 failed in <duration>",
+      "flags": [
+        "REDUNDANT"
+      ],
+      "id": 5,
+      "tokens": 640,
+      "type": "reasoning"
+    },
+    {
+      "content": "Stale hypothesis scratchpad: re-read the same failure, consider unrelated renames, then discard this branch. This is intentionally receipt-safe noise.",
+      "flags": [
+        "REDUNDANT"
+      ],
+      "id": 6,
+      "tokens": 420,
+      "type": "reasoning"
+    },
+    {
+      "content": "Ready to edit only source files and re-run the verifier.",
+      "id": 7,
+      "tokens": 64,
+      "type": "reasoning"
+    },
+    {
+      "content": "Run verifier after managed edit",
+      "id": 8,
+      "output": ".....                                                                    [100%]\n5 passed in <duration>",
+      "tokens": 8,
+      "tool_name": "pytest",
+      "tool_success": true,
+      "type": "tool_call"
+    }
+  ],
+  "task_value_score": 1.0,
+  "total_tokens": 430,
+  "trace_id": "csv-filter.trice-v2"
+}

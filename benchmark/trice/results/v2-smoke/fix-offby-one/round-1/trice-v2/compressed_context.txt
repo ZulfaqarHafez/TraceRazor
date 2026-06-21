@@ -1,0 +1,65 @@
+TRICE_CONTEXT_POLICY
+algorithm=trice-v0.1-multi-choice-knapsack
+projected_input_savings_pct=74.91
+
+[s1 step=1 action=anchor_prefix state=essential]
+You are in a small Python project. The test suite is failing because of a bug in `chunker.py`. Run `python3 -m pytest -q` to see the failures, find and fix the bug, then re-run the tests until they all pass. Do not modify any files under `tests/`.
+You are in a small Python project. The test suite is failing because of a bug in `chunker.py`. Run `python3 -m pytest -q` to see the failures, find and fix the bug, then re-run the tests until they all pass. Do not modify any files under `tests/`.
+
+[s2 step=2 action=anchor_prefix state=essential]
+Run failing verifier before edit
+FFF.F.                                                                   [100%]
+================================== FAILURES ===================================
+_______________________________ test_even_split _______________________________
+tests\test_chunker.py:5: in test_even_split
+    assert chunk([1, 2, 3, 4], 2) == [[1, 2], [3, 4]]
+E   assert [[1, 2], [2, 3], [3, 4], [4]] == [[1, 2], [3, 4]]
+E     
+E     At index 1 diff: [2, 3] != [3, 4]
+E     Left contains 2 more items, first extra item: [3, 4]
+E     Use -v to get more diff
+_______________________________ test_remainder ________________________________
+tests\test_chunker.py:8: in test_remainder
+    assert chunk([1, 2, 3, 4, 5], 2) == [[1, 2], [3, 4], [5]]
+E   assert [[1, 2], [2, ..., [4, 5], [5]] == [[1, 2], [3, 4], [5]]
+E     
+E     At index 1 diff: [2, 3] != [3, 4]
+E     Left contains 2 more items, first extra item: [4, 5]
+E     Use -v to get more diff
+____________________________ test_chunk_equals_len ____________________________
+tests\test_chunker.py:11: in test_chunk_equals_len
+    assert chunk([1, 2, 3], 3) == [[1, 2, 3]]
+E   assert [[1, 2, 3], [3]] == [[1, 2, 3]]
+E     
+E     Left contains one more item: [3]
+E     Use -v to get more diff
+_______________________________ test_no_overlap _______________________________
+tests\test_chunker.py:18: in test_no_overlap
+    assert flat == list(range(10))
+E   assert [0, 1, 2, 2, 3, 4, ...] == [0, 1, 2, 3, 4, 5, ...]
+E     
+E     At index 3 diff: 2 != 3
+E     Left contains 4 more items, first extra item: 7
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests\test_chunker.py::test_even_split - assert [[1, 2], [2, 3], [3, 4...
+FAILED tests\test_chunker.py::test_remainder - assert [[1, 2], [2, ..., [4, 5...
+FAILED tests\test_chunker.py::test_chunk_equals_len - assert [[1, 2, 3], [3]]...
+FAILED tests\test_chunker.py::test_no_overlap - assert [0, 1, 2, 2, 3, 4, ......
+4 failed, 2 passed in <duration>
+tool:pytest
+
+[s3 step=3 action=mask_with_receipt state=rehydratable]
+masked receipt=6a79aebb857796de pointer=trace:fix-offby-one.decision:step:3
+
+[s4 step=4 action=mask_with_receipt state=rehydratable]
+masked receipt=67453feea9bfd46e pointer=trace:fix-offby-one.decision:step:4
+
+[s5 step=5 action=mask_with_receipt state=redundant]
+masked receipt=fb11073d4be9cc46 pointer=trace:fix-offby-one.decision:step:5
+
+[s6 step=6 action=mask_with_receipt state=redundant]
+masked receipt=c68671d9315a7139 pointer=trace:fix-offby-one.decision:step:6
+
+[s7 step=7 action=keep state=essential]
+Ready to edit only source files and re-run the verifier.
