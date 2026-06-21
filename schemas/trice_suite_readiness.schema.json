@@ -1,0 +1,97 @@
+{
+  "$id": "https://tracerazor.dev/schemas/trice_suite_readiness.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRICE suite readiness preflight",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "scope",
+    "readiness_level",
+    "claim_execution_ready",
+    "pilot_execution_ready",
+    "readiness_score",
+    "manifest_sha256",
+    "source",
+    "planned_execution",
+    "checks",
+    "missing_for_pilot",
+    "missing_for_claim",
+    "research_contract",
+    "recommendations",
+    "readiness_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trice-suite-readiness/v1"
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "readiness_level": {
+      "enum": ["not_ready", "smoke_ready", "pilot_ready", "claim_ready"]
+    },
+    "claim_execution_ready": {
+      "type": "boolean"
+    },
+    "pilot_execution_ready": {
+      "type": "boolean"
+    },
+    "readiness_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "manifest_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source": {
+      "type": "object",
+      "required": ["suite_manifest_path", "suite_name", "suite_schema_version"]
+    },
+    "planned_execution": {
+      "type": "object",
+      "required": [
+        "task_clusters",
+        "planned_runs",
+        "rounds_per_run",
+        "baseline_plus_trice_conditions",
+        "verify_command_invocations_min",
+        "replicates_per_task"
+      ]
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed", "observed", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "missing_for_pilot": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "missing_for_claim": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "research_contract": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "recommendations": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "readiness_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use TraceRazor or TRICE in research, please cite this software."
+title: "TraceRazor"
+version: "1.0.3"
+date-released: "2026-06-21"
+authors:
+  - family-names: "Hafez"
+    given-names: "Zulfaqar"
+repository-code: "https://github.com/ZulfaqarHafez/tracerazor"
+url: "https://github.com/ZulfaqarHafez/tracerazor"
+license: "MIT"
+keywords:
+  - llm
+  - agents
+  - token-efficiency
+  - context-control
+  - software-repair
+abstract: "TraceRazor audits AI-agent token waste and TRICE evaluates decision-preserving context control on live software-repair tasks."

@@ -17,11 +17,11 @@ name = "tracerazor"
 path = "src/main.rs"
 
 [dependencies]
-tracerazor-core = { path = "../tracerazor-core", version = "1.0.2" }
-tracerazor-ingest = { path = "../tracerazor-ingest", version = "1.0.2" }
-tracerazor-semantic = { path = "../tracerazor-semantic", version = "1.0.2" }
-tracerazor-store = { path = "../tracerazor-store", version = "1.0.2" }
-tracerazor-server = { path = "../tracerazor-server", version = "1.0.2" }
+tracerazor-core = { path = "../tracerazor-core", version = "1.0.3" }
+tracerazor-ingest = { path = "../tracerazor-ingest", version = "1.0.3" }
+tracerazor-semantic = { path = "../tracerazor-semantic", version = "1.0.3" }
+tracerazor-store = { path = "../tracerazor-store", version = "1.0.3" }
+tracerazor-server = { path = "../tracerazor-server", version = "1.0.3" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }

@@ -77,6 +77,7 @@ pub const LOOKBACK_WINDOW: usize = 256;
 /// 3. **Verification after a state change**: two successful tool calls with
 ///    an intervening mutating step (an edit, a write, a booking) — re-running
 ///    a check after changing the world is how agents verify, not waste.
+///
 /// Map a BoW similarity score onto the three documented confidence tiers.
 ///
 /// Restores the `Low` tier: scores at/above [`HIGH_CONFIDENCE`] are `High`,

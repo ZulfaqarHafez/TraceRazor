@@ -23,7 +23,9 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from .claim import build_claim_card, render_claim_card_tex, write_claim_outputs
 from .evidence import build_manifest, write_manifest
+from .readiness import build_suite_readiness, render_readiness_tex, write_readiness_outputs
 from .stats import claim_gate_from_rounds
 
 REPO = Path(__file__).resolve().parents[2]
@@ -31,7 +33,9 @@ DEFAULT_RESULTS = REPO / "benchmark" / "trice" / "results" / "v2-smoke" / "trice
 DEFAULT_SUITE_RESULTS = REPO / "benchmark" / "trice" / "results" / "v2-suite" / "trice_suite_results.json"
 DEFAULT_SUITE_BUNDLE = REPO / "benchmark" / "trice" / "results" / "v2-suite" / "trice_suite_evidence.trice.zip"
 DEFAULT_BROAD_SUITE_RESULTS = REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_suite_results.json"
+DEFAULT_BROAD_SUITE_MANIFEST = REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_suite_evidence_manifest.json"
 DEFAULT_BROAD_SUITE_BUNDLE = REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_broad_smoke_evidence.trice.zip"
+DEFAULT_READINESS_MANIFEST = REPO / "examples" / "trice_suite_bundled_live.json"
 DEFAULT_OUT_DIR = REPO / "paper"
 DEFAULT_DOCS_DIR = REPO / "docs"
 
@@ -68,6 +72,18 @@ REFERENCES = [
     ("react2022", "ReAct: Synergizing Reasoning and Acting in Language Models", "https://arxiv.org/abs/2210.03629"),
     ("reflexion2023", "Reflexion: Language Agents with Verbal Reinforcement Learning", "https://arxiv.org/abs/2303.11366"),
     ("sweevo2025", "SWE-EVO: Benchmarking Coding Agents in Long-Horizon Software Evolution", "https://arxiv.org/html/2512.18470v6"),
+    ("taubench2024", "tau-bench: A Benchmark for Tool-Agent-User Interaction in Real-World Domains", "https://arxiv.org/abs/2406.12045"),
+    ("agentbench2023", "AgentBench: Evaluating LLMs as Agents", "https://arxiv.org/abs/2308.03688"),
+    ("toolllm2023", "ToolLLM: Facilitating Large Language Models to Master 16000+ Real-world APIs", "https://arxiv.org/abs/2307.16789"),
+    ("webarena2023", "WebArena: A Realistic Web Environment for Building Autonomous Agents", "https://arxiv.org/abs/2307.13854"),
+    ("voyager2023", "Voyager: An Open-Ended Embodied Agent with Large Language Models", "https://arxiv.org/abs/2305.16291"),
+    ("longbench2023", "LongBench: A Bilingual, Multitask Benchmark for Long Context Understanding", "https://arxiv.org/abs/2308.14508"),
+    ("lostmiddle2023", "Lost in the Middle: How Language Models Use Long Contexts", "https://arxiv.org/abs/2307.03172"),
+    ("memgpt2023", "MemGPT: Towards LLMs as Operating Systems", "https://arxiv.org/abs/2310.08560"),
+    ("rag2020", "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks", "https://arxiv.org/abs/2005.11401"),
+    ("pagedattention2023", "Efficient Memory Management for Large Language Model Serving with PagedAttention", "https://arxiv.org/abs/2309.06180"),
+    ("streamingllm2023", "Efficient Streaming Language Models with Attention Sinks", "https://arxiv.org/abs/2309.17453"),
+    ("h2o2023", "H2O: Heavy-Hitter Oracle for Efficient Generative Inference of Large Language Models", "https://arxiv.org/abs/2306.14048"),
 ]
 
 
@@ -153,6 +169,8 @@ def render_tex(
     bundle: dict | None = None,
     broad_suite: dict | None = None,
     broad_bundle: dict | None = None,
+    claim_card: dict | None = None,
+    readiness_card: dict | None = None,
 ) -> str:
     avg = mean(r["savings"] for r in rows)
     ci = gate["savings_ci"]
@@ -222,6 +240,21 @@ def render_tex(
         for r in rows
     )
     refs = ", ".join(f"\\cite{{{key}}}" for key, _, _ in REFERENCES[:8])
+    stable_refs = ", ".join(
+        f"\\cite{{{key}}}"
+        for key in (
+            "swebench2023",
+            "sweagent2024",
+            "taubench2024",
+            "agentbench2023",
+            "llmlingua2023",
+            "longllmlingua2023",
+            "promptcache2023",
+            "pagedattention2023",
+        )
+    )
+    claim_tex = render_claim_card_tex(claim_card) if claim_card else "\\section{Deterministic Claim Card}\nNo claim-card artifact was available during paper generation.\n"
+    readiness_tex = render_readiness_tex(readiness_card) if readiness_card else "\\section{Suite Readiness Preflight}\nNo readiness artifact was available during paper generation.\n"
     return dedent(
         rf"""
         \documentclass[10pt]{{article}}
@@ -253,6 +286,18 @@ def render_tex(
         {refs}. Prompt compression work shows that shorter context can help,
         but product evidence must be live, outcome-gated, and repeatable under
         the same artifact contract.
+
+        \section{{Related Work}}
+        TRICE sits at the intersection of real software-agent benchmarks,
+        prompt/context compression, memory systems, and serving efficiency.
+        Real-repo and tool-interaction benchmarks motivate executable,
+        environment-grounded outcomes rather than transcript-only scoring
+        {stable_refs}. Prompt compression and long-context work motivate
+        shrinking carried context, but TRICE treats compression as a
+        harness-verified decision-preservation problem rather than a standalone
+        language modeling objective. Serving work on prompt reuse, KV/cache
+        management, and attention-memory pressure motivates the cost term in
+        the TRICE portfolio controller.
 
         \section{{Method}}
         For each segment $s_i$, TRICE chooses an action $a_i$ from
@@ -306,6 +351,10 @@ def render_tex(
         pass regressions {gate['pass_regressions']}; local smoke gate
         {"passed" if gate["smoke_gate_passed"] else "failed"}. Broad claim
         allowed: {"yes" if gate["broad_claim_allowed"] else "no"}.
+
+        {claim_tex}
+
+        {readiness_tex}
 
         \section{{Replicated Suite Evidence}}
         {suite_text}
@@ -406,6 +455,8 @@ def build_pdf(
     bundle: dict | None = None,
     broad_suite: dict | None = None,
     broad_bundle: dict | None = None,
+    claim_card: dict | None = None,
+    readiness_card: dict | None = None,
 ) -> None:
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="Small", parent=styles["BodyText"], fontSize=8.5, leading=11))
@@ -428,6 +479,11 @@ def build_pdf(
             "Acceptance requires live verifier pass preservation and measured input savings above the user-conditioned target.",
             styles["BodyText"],
         ),
+        Paragraph("Related Work", styles["Heading2"]),
+        Paragraph(
+            "TRICE combines software-agent benchmark lessons from SWE-bench, SWE-agent, tau-bench, AgentBench, and ToolLLM with prompt compression and serving-efficiency work such as LLMLingua, LongLLMLingua, Prompt Cache, PagedAttention, StreamingLLM, and H2O. The paper treats compression as a verifier-backed decision-preservation contract rather than a replay-only token counter.",
+            styles["BodyText"],
+        ),
     ]
     table_data = [["Task", "Baseline", "TRICE", "Savings", "Pass"]]
     for r in rows:
@@ -445,6 +501,31 @@ def build_pdf(
     ]))
     story.extend([Spacer(1, 0.15 * inch), table, Spacer(1, 0.18 * inch)])
     story.extend([
+        Paragraph("Deterministic Claim Card", styles["Heading2"]),
+        Paragraph(
+            "No claim-card artifact was available during paper generation."
+            if claim_card is None
+            else (
+                f"The generated claim card reports claim level {claim_card['claim_level']}, "
+                f"claim allowed {'yes' if claim_card['claim_allowed'] else 'no'}, and determinism contract score "
+                f"{claim_card['determinism_contract_score']}/100. It binds the suite result and evidence manifest hashes "
+                f"and lists the non-claims that prevent over-selling the current smoke evidence."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph("Suite Readiness Preflight", styles["Heading2"]),
+        Paragraph(
+            "No readiness artifact was available during paper generation."
+            if readiness_card is None
+            else (
+                f"The generated readiness card reports level {readiness_card['readiness_level']}, "
+                f"pilot-ready {'yes' if readiness_card['pilot_execution_ready'] else 'no'}, "
+                f"claim-ready {'yes' if readiness_card['claim_execution_ready'] else 'no'}, and "
+                f"readiness score {readiness_card['readiness_score']}/100. It is a no-execution preflight gate: "
+                "outcome claims still require live suite results, verified manifests, bundles, and a claim card."
+            ),
+            styles["BodyText"],
+        ),
         Paragraph("Replicated Suite Evidence", styles["Heading2"]),
         Paragraph(
             "No suite artifact was available during paper generation."
@@ -528,7 +609,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--suite-results", type=Path, default=DEFAULT_SUITE_RESULTS)
     ap.add_argument("--suite-bundle", type=Path, default=DEFAULT_SUITE_BUNDLE)
     ap.add_argument("--broad-suite-results", type=Path, default=DEFAULT_BROAD_SUITE_RESULTS)
+    ap.add_argument("--broad-suite-manifest", type=Path, default=DEFAULT_BROAD_SUITE_MANIFEST)
     ap.add_argument("--broad-suite-bundle", type=Path, default=DEFAULT_BROAD_SUITE_BUNDLE)
+    ap.add_argument("--readiness-manifest", type=Path, default=DEFAULT_READINESS_MANIFEST)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--docs-dir", type=Path, default=DEFAULT_DOCS_DIR)
     args = ap.parse_args(argv)
@@ -539,6 +622,8 @@ def main(argv: list[str] | None = None) -> int:
     bundle = load_bundle_summary(args.suite_bundle)
     broad_suite = load_suite_summary(args.broad_suite_results)
     broad_bundle = load_bundle_summary(args.broad_suite_bundle)
+    claim_card = build_claim_card(args.broad_suite_results, manifest_path=args.broad_suite_manifest)
+    readiness_card = build_suite_readiness(args.readiness_manifest)
     args.out_dir.mkdir(parents=True, exist_ok=True)
     args.docs_dir.mkdir(parents=True, exist_ok=True)
     tex_path = args.out_dir / "trice_v3_research_paper.tex"
@@ -548,15 +633,25 @@ def main(argv: list[str] | None = None) -> int:
     paper_svg_path = args.out_dir / "trice_v3_live_savings.svg"
     paper_bundle_path = args.out_dir / "trice_suite_evidence.trice.zip"
     paper_broad_bundle_path = args.out_dir / "trice_broad_smoke_evidence.trice.zip"
+    paper_claim_path = args.out_dir / "trice_claim_card.json"
+    docs_claim_path = args.docs_dir / "trice_claim_card.json"
+    paper_readiness_path = args.out_dir / "trice_suite_readiness.json"
+    docs_readiness_path = args.docs_dir / "trice_suite_readiness.json"
     manifest_path = args.out_dir / "trice_v3_research_manifest.json"
 
-    tex_path.write_text(render_tex(rows, gate, suite, bundle, broad_suite, broad_bundle), encoding="utf-8")
+    tex_path.write_text(render_tex(rows, gate, suite, bundle, broad_suite, broad_bundle, claim_card, readiness_card), encoding="utf-8")
     bib_path.write_text(render_bib(), encoding="utf-8")
     svg = render_svg(rows, gate)
     docs_svg_path.write_text(svg, encoding="utf-8")
     paper_svg_path.write_text(svg, encoding="utf-8")
-    build_pdf(rows, gate, pdf_path, suite, bundle, broad_suite, broad_bundle)
+    build_pdf(rows, gate, pdf_path, suite, bundle, broad_suite, broad_bundle, claim_card, readiness_card)
     artifact_paths = [tex_path, bib_path, pdf_path, paper_svg_path]
+    paper_claim_outputs = write_claim_outputs(claim_card, paper_claim_path)
+    write_claim_outputs(claim_card, docs_claim_path)
+    artifact_paths.extend([Path(path) for path in paper_claim_outputs.values()])
+    paper_readiness_outputs = write_readiness_outputs(readiness_card, paper_readiness_path)
+    write_readiness_outputs(readiness_card, docs_readiness_path)
+    artifact_paths.extend([Path(path) for path in paper_readiness_outputs.values()])
     if args.suite_bundle.is_file():
         shutil.copy2(args.suite_bundle, paper_bundle_path)
         artifact_paths.append(paper_bundle_path)

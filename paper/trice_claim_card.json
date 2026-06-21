@@ -1,0 +1,130 @@
+{
+  "claim_allowed": false,
+  "claim_card_sha256": "4b8ac48b6d982a500bf0012cf31cc212194f0174c6193215c5534c6a5b754d86",
+  "claim_level": "smoke",
+  "determinism_contract_score": 84,
+  "input_sha256": {
+    "suite_manifest": "b43e7b0e11912909928ced531a3429b778b05674935e97d227fb5ac25766d2a8",
+    "suite_result": "db2b55255c76f4cdf8216a1eb7cb996fd7b569e3ae17940e2105e924080b6eec"
+  },
+  "metrics": {
+    "accepted_rounds": 6,
+    "clustered_savings_ci_high": 0.835037,
+    "clustered_savings_ci_low": 0.789866,
+    "mean_input_token_savings": 0.81489,
+    "pass_regressions": 0,
+    "replicate_count": 6,
+    "target_savings": 0.6,
+    "task_cluster_count": 6,
+    "total_rounds": 6,
+    "trice_pass_rate": 1.0
+  },
+  "non_claims": [
+    "Not an S-tier claim; missing task_clusters, replicates_per_task, locked_git_sources, remote_git_sources.",
+    "Does not claim universal all-language or all-agent performance.",
+    "Does not certify replay-only savings as live savings."
+  ],
+  "requirements": [
+    {
+      "name": "accepted_runs",
+      "observed": 0,
+      "passed": true,
+      "required": "0 unaccepted runs"
+    },
+    {
+      "name": "adapter_profiles",
+      "observed": [
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json"
+      ],
+      "passed": true,
+      "required": "all tasks use adapter_profile"
+    },
+    {
+      "name": "clustered_savings_ci_low",
+      "observed": 0.789866,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "locked_git_sources",
+      "observed": [
+        "local",
+        "local",
+        "local",
+        "local",
+        "local",
+        "local"
+      ],
+      "passed": false,
+      "required": "all tasks use locked git sources"
+    },
+    {
+      "name": "mean_savings",
+      "observed": 0.81489,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "pass_regressions",
+      "observed": 0,
+      "passed": true,
+      "required": "<= 0"
+    },
+    {
+      "name": "receipt_validation",
+      "observed": "enabled",
+      "passed": true,
+      "required": "enabled"
+    },
+    {
+      "name": "remote_git_sources",
+      "observed": [
+        "local",
+        "local",
+        "local",
+        "local",
+        "local",
+        "local"
+      ],
+      "passed": false,
+      "required": "all tasks use remote Git URLs"
+    },
+    {
+      "name": "replicates_per_task",
+      "observed": {
+        "csv-filter": 1,
+        "dedupe-helpers": 1,
+        "fix-imports": 1,
+        "fix-offby-one": 1,
+        "implement-median": 1,
+        "rename-api": 1
+      },
+      "passed": false,
+      "required": "each task >= 3"
+    },
+    {
+      "name": "task_clusters",
+      "observed": 6,
+      "passed": false,
+      "required": ">= 50"
+    }
+  ],
+  "schema_version": "trice-claim-card/v1",
+  "scope": "python software-repair/context-control tasks on held-out Git repositories",
+  "source": {
+    "algorithm": "trice-v2-suite-live-user-conditioned-rollout",
+    "suite_manifest_path": "benchmark/trice/results/v2-broad-smoke/trice_suite_evidence_manifest.json",
+    "suite_name": "bundled-live-six-task-suite",
+    "suite_result_path": "benchmark/trice/results/v2-broad-smoke/trice_suite_results.json"
+  },
+  "verification": {
+    "error_count": 0,
+    "errors": [],
+    "ok": true
+  }
+}

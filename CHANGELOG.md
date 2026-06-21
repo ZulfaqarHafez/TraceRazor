@@ -4,6 +4,28 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.0.3] - 2026-06-21
+
+### Added
+- Add `tracerazor-trice doctor` for local/package/public trust diagnostics.
+- Add `tracerazor-trice suite scaffold` for locked remote-git suite manifests.
+- Add `tracerazor-trice claim` plus `trice-claim-card/v1` schema for
+  deterministic public claim boundaries, non-claims, and S-tier gating.
+- Add `tracerazor-trice verify-claim` to check claim-card self hashes and
+  bound suite/evidence hashes.
+- Add `tracerazor-trice suite readiness` plus `trice-suite-readiness/v1`
+  schema for deterministic no-execution pilot/claim preflight reports.
+- Add `tracerazor-trice suite verify-readiness` to check readiness self hashes
+  and bound suite-manifest hashes.
+- Expose explicit TRICE adapter context path env vars for policy, context,
+  trace, and verifier command pointers.
+
+### Changed
+- Prepare a follow-up release after 1.0.2 with honest public install guidance:
+  PyPI/piwheels remain the Python install path, and the crates.io install claim
+  stays out of README until `tracerazor` is published there.
+- Fix Rust clippy docs lint in SRR so the public CI trust signal can go green.
+
 ## [1.0.2] - 2026-06-21
 
 ### Added

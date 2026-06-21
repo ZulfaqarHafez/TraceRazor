@@ -1,0 +1,37 @@
+\section{Suite Readiness Preflight}
+Suite \texttt{bundled-live-six-task-suite} is \texttt{smoke\_ready} with readiness score 55/100. It plans 6 live run(s) across 6 task cluster(s), requiring at least 12 verifier invocations before retries.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+manifest\_valid & yes & trice-suite/v1 \\
+unique\_task\_ids & yes & all task\_id values unique \\
+prompts & yes & every task has prompt \\
+verify\_commands & yes & every task has verify\_cmd \\
+interventions & yes & exactly one intervention per task \\
+pilot\_task\_clusters & no & >= 10 \\
+pilot\_replicates\_per\_task & no & each task >= 2 \\
+claim\_task\_clusters & no & >= 50 \\
+claim\_replicates\_per\_task & no & each task >= 3 \\
+remote\_git\_sources & no & all tasks use remote Git URLs \\
+commit\_sha\_revisions & no & all git.rev values are 40-hex commit SHA \\
+adapter\_profiles & yes & all tasks use adapter\_profile \\
+target\_savings & yes & >= 0.600 \\
+pass\_regression\_gate & yes & 0 \\
+receipt\_validation\_gate & yes & true \\
+\bottomrule
+\end{tabular}
+\caption{No-execution readiness checks for the held-out TRICE suite protocol.}
+\end{table}
+
+\noindent Recommendations:
+\begin{itemize}
+\item Use locked remote Git sources instead of local paths for pilot and claim suites.
+\item Pin every git.rev to an immutable 40-hex commit SHA before running held-out evidence.
+\item Add held-out task clusters until the pilot has at least 10 distinct task\_id values.
+\item Add held-out task clusters until the claim suite has at least 50 distinct task\_id values.
+\item Set replicates to at least 3 for every claim task.
+\end{itemize}

@@ -1,0 +1,222 @@
+{
+  "checks": [
+    {
+      "name": "manifest_valid",
+      "observed": "trice-suite/v1",
+      "passed": true,
+      "required": "trice-suite/v1"
+    },
+    {
+      "name": "unique_task_ids",
+      "observed": [
+        "csv-filter",
+        "dedupe-helpers",
+        "fix-imports",
+        "fix-offby-one",
+        "implement-median",
+        "rename-api"
+      ],
+      "passed": true,
+      "required": "all task_id values unique"
+    },
+    {
+      "name": "prompts",
+      "observed": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "passed": true,
+      "required": "every task has prompt"
+    },
+    {
+      "name": "verify_commands",
+      "observed": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "passed": true,
+      "required": "every task has verify_cmd"
+    },
+    {
+      "name": "interventions",
+      "observed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "passed": true,
+      "required": "exactly one intervention per task"
+    },
+    {
+      "name": "pilot_task_clusters",
+      "observed": 6,
+      "passed": false,
+      "required": ">= 10"
+    },
+    {
+      "name": "pilot_replicates_per_task",
+      "observed": {
+        "csv-filter": 1,
+        "dedupe-helpers": 1,
+        "fix-imports": 1,
+        "fix-offby-one": 1,
+        "implement-median": 1,
+        "rename-api": 1
+      },
+      "passed": false,
+      "required": "each task >= 2"
+    },
+    {
+      "name": "claim_task_clusters",
+      "observed": 6,
+      "passed": false,
+      "required": ">= 50"
+    },
+    {
+      "name": "claim_replicates_per_task",
+      "observed": {
+        "csv-filter": 1,
+        "dedupe-helpers": 1,
+        "fix-imports": 1,
+        "fix-offby-one": 1,
+        "implement-median": 1,
+        "rename-api": 1
+      },
+      "passed": false,
+      "required": "each task >= 3"
+    },
+    {
+      "name": "remote_git_sources",
+      "observed": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "passed": false,
+      "required": "all tasks use remote Git URLs"
+    },
+    {
+      "name": "commit_sha_revisions",
+      "observed": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "passed": false,
+      "required": "all git.rev values are 40-hex commit SHA"
+    },
+    {
+      "name": "adapter_profiles",
+      "observed": [
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json"
+      ],
+      "passed": true,
+      "required": "all tasks use adapter_profile"
+    },
+    {
+      "name": "target_savings",
+      "observed": 0.6,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "pass_regression_gate",
+      "observed": 0,
+      "passed": true,
+      "required": "0"
+    },
+    {
+      "name": "receipt_validation_gate",
+      "observed": true,
+      "passed": true,
+      "required": "true"
+    }
+  ],
+  "claim_execution_ready": false,
+  "gate_config": {
+    "max_pass_regressions": 0,
+    "min_clustered_savings_ci_low": 0.6,
+    "min_mean_savings": 0.6,
+    "min_replicates_per_task": 3,
+    "min_task_clusters": 50,
+    "require_adapter_profiles": true,
+    "require_locked_git_sources": true,
+    "require_receipt_validation": true,
+    "require_remote_git_sources": true
+  },
+  "manifest_sha256": "fd4335bea5164e4e0dd479ff5154947c54941d9c9704258b018b51c172a7859b",
+  "missing_for_claim": [
+    "claim_task_clusters",
+    "claim_replicates_per_task",
+    "remote_git_sources",
+    "commit_sha_revisions"
+  ],
+  "missing_for_pilot": [
+    "pilot_task_clusters",
+    "pilot_replicates_per_task",
+    "remote_git_sources",
+    "commit_sha_revisions"
+  ],
+  "pilot_execution_ready": false,
+  "planned_execution": {
+    "adapter_profile_count": 6,
+    "baseline_plus_trice_conditions": 12,
+    "planned_runs": 6,
+    "remote_git_task_count": 0,
+    "replicates_per_task": {
+      "csv-filter": 1,
+      "dedupe-helpers": 1,
+      "fix-imports": 1,
+      "fix-offby-one": 1,
+      "implement-median": 1,
+      "rename-api": 1
+    },
+    "rounds_per_run": 1,
+    "task_clusters": 6,
+    "verify_command_invocations_min": 12
+  },
+  "readiness_level": "smoke_ready",
+  "readiness_score": 55,
+  "readiness_sha256": "5df70669cb81a34cc4ea0a10904d93cc44d753992666301423daf300b18532e6",
+  "recommendations": [
+    "Use locked remote Git sources instead of local paths for pilot and claim suites.",
+    "Pin every git.rev to an immutable 40-hex commit SHA before running held-out evidence.",
+    "Add held-out task clusters until the pilot has at least 10 distinct task_id values.",
+    "Add held-out task clusters until the claim suite has at least 50 distinct task_id values.",
+    "Set replicates to at least 3 for every claim task."
+  ],
+  "research_contract": [
+    "Preflight only: no savings, pass-rate, or S-tier result is claimed.",
+    "Claim execution requires held-out remote Git tasks, immutable revisions, fixed adapter profiles, and repeated live runs.",
+    "Outcome evidence must come from suite results, evidence manifests, claim cards, and bundle verification."
+  ],
+  "schema_version": "trice-suite-readiness/v1",
+  "scope": "python software-repair/context-control tasks on held-out Git repositories",
+  "source": {
+    "suite_manifest_path": "examples/trice_suite_bundled_live.json",
+    "suite_name": "bundled-live-six-task-suite",
+    "suite_schema_version": "trice-suite/v1"
+  }
+}

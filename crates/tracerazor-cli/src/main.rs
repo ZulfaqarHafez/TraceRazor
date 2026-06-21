@@ -2858,7 +2858,7 @@ fn trice_segments_from_trace(trace: &Trace) -> Vec<TriceSegment> {
                 receipt: sha256_hex(text.as_bytes()),
                 identifiers: trice_identifiers(&text),
                 rehydrate_pointer: Some(format!("trace:{}:step:{}", trace.trace_id, step.id)),
-                rationale: trice_state_rationale(&state, step),
+                rationale: trice_state_rationale(state, step),
             }
         })
         .collect()
@@ -3198,7 +3198,7 @@ fn trice_ratio_tokens(tokens: u32, ratio: f64, floor: u32) -> u32 {
 }
 
 fn trice_buckets(tokens: u32) -> u32 {
-    ((tokens.max(1) + TRICE_BUCKET_SIZE - 1) / TRICE_BUCKET_SIZE).max(1)
+    tokens.max(1).div_ceil(TRICE_BUCKET_SIZE).max(1)
 }
 
 fn trice_evaluate_policy(segments: &[TriceSegment], policy: &TricePolicy) -> TriceReplayMetrics {

@@ -104,6 +104,77 @@ def load_suite_manifest(path: str | Path) -> dict[str, Any]:
     return data
 
 
+def scaffold_suite_manifest(source_path: str | Path, out_path: str | Path) -> dict[str, Any]:
+    """Build a locked remote-git TRICE suite manifest from a compact source list."""
+
+    source = json.loads(Path(source_path).read_text(encoding="utf-8"))
+    if isinstance(source, list):
+        source = {"tasks": source}
+    if not isinstance(source, dict):
+        raise ValueError("remote git source list must be a JSON object")
+    tasks = source.get("tasks")
+    if not isinstance(tasks, list) or not tasks:
+        raise ValueError("remote git source list requires a non-empty tasks array")
+
+    default_verify = _parse_verify_cmd(source.get("verify_cmd"))
+    manifest: dict[str, Any] = {
+        "schema_version": SUITE_SCHEMA_VERSION,
+        "name": str(source.get("name") or "trice-remote-git-suite"),
+        "user_feedback": str(source.get("user_feedback") or "real runs, not replay; target 60% savings"),
+        "target_savings": float(source.get("target_savings") or 0.60),
+        "rounds": int(source.get("rounds") or 1),
+        "replicates": int(source.get("replicates") or 1),
+        "s_tier_gate": dict(
+            source.get("s_tier_gate")
+            or {
+                "min_task_clusters": 50,
+                "min_replicates_per_task": 3,
+                "require_locked_git_sources": True,
+                "require_remote_git_sources": True,
+                "require_adapter_profiles": True,
+                "min_mean_savings": 0.60,
+                "min_clustered_savings_ci_low": 0.60,
+                "max_pass_regressions": 0,
+            }
+        ),
+        "tasks": [],
+    }
+
+    top_level_intervention = {
+        field: source.get(field)
+        for field in ("adapter_profile", "patch_spec", "repair_cmd")
+        if source.get(field)
+    }
+    for raw in tasks:
+        if not isinstance(raw, dict):
+            raise ValueError("each remote git task must be an object")
+        task_id = str(raw.get("task_id") or "").strip()
+        if not task_id:
+            raise ValueError("remote git task requires task_id")
+        git_info = _scaffold_git_source(raw)
+        intervention = _scaffold_intervention(raw, top_level_intervention)
+        verify_cmd = list(_parse_verify_cmd(raw.get("verify_cmd"))) if raw.get("verify_cmd") is not None else list(default_verify)
+        prompt = str(raw.get("prompt") or "").strip()
+        if not prompt:
+            raise ValueError(f"remote git task {task_id} requires prompt")
+        task: dict[str, Any] = {
+            "task_id": task_id,
+            "git": git_info,
+            "prompt": prompt,
+            "verify_cmd": verify_cmd,
+            **intervention,
+        }
+        for field in ("rounds", "replicates", "user_feedback", "repair_timeout_s", "allow_test_edits"):
+            if raw.get(field) is not None:
+                task[field] = raw[field]
+        manifest["tasks"].append(task)
+
+    out = Path(out_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return manifest
+
+
 def suite_task_specs(manifest_path: str | Path, source_root: str | Path | None = None) -> list[SuiteTaskSpec]:
     manifest = load_suite_manifest(manifest_path)
     base = Path(manifest_path).resolve().parent
@@ -507,6 +578,37 @@ def _is_remote_git_source(spec: SuiteTaskSpec) -> bool:
     return url.startswith(("https://", "http://", "ssh://", "git://")) or url.startswith("git@")
 
 
+def _is_remote_git_url(url: str) -> bool:
+    url_l = url.strip().lower()
+    return url_l.startswith(("https://", "http://", "ssh://", "git://")) or url_l.startswith("git@")
+
+
+def _scaffold_git_source(raw: dict[str, Any]) -> dict[str, Any]:
+    git_info = raw.get("git") if isinstance(raw.get("git"), dict) else {}
+    url = str(git_info.get("url") or raw.get("url") or "").strip()
+    rev = str(git_info.get("rev") or raw.get("rev") or "").strip()
+    subdir = str(git_info.get("subdir") or raw.get("subdir") or "").strip()
+    if not url or not rev:
+        raise ValueError("remote git task requires url and rev")
+    if not _is_remote_git_url(url):
+        raise ValueError(f"remote git task url must be a remote git URL: {url}")
+    git: dict[str, Any] = {"url": url, "rev": rev}
+    if subdir:
+        git["subdir"] = subdir
+    return git
+
+
+def _scaffold_intervention(raw: dict[str, Any], top_level: dict[str, Any]) -> dict[str, Any]:
+    merged = {field: raw.get(field) if raw.get(field) is not None else top_level.get(field) for field in ("adapter_profile", "patch_spec", "repair_cmd")}
+    active = {field: value for field, value in merged.items() if value}
+    if len(active) != 1:
+        raise ValueError("remote git task requires exactly one of adapter_profile, patch_spec, or repair_cmd")
+    field, value = next(iter(active.items()))
+    if field == "repair_cmd":
+        return {field: list(_parse_cmd(value))}
+    return {field: str(value)}
+
+
 def verify_suite_evidence(manifest_path: str | Path, result_path: str | Path | None = None) -> dict[str, Any]:
     aggregate = verify_manifest(manifest_path, result_path)
     base = Path(manifest_path).parent
@@ -717,6 +819,16 @@ def _rel(path: str | Path | None, base: Path) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if argv and argv[0] == "scaffold":
+        return _scaffold_main(argv[1:])
+    if argv and argv[0] == "readiness":
+        from .readiness import main as readiness_main
+
+        return readiness_main(argv[1:])
+    if argv and argv[0] == "verify-readiness":
+        from .readiness import verify_main as readiness_verify_main
+
+        return readiness_verify_main(argv[1:])
     ap = argparse.ArgumentParser(description="Run a manifest-driven TRICE live suite.")
     ap.add_argument("manifest", type=Path)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_SUITE_OUT_DIR)
@@ -751,6 +863,20 @@ def main(argv: list[str] | None = None) -> int:
         print(f"report: {args.out_dir / str(result.report_path)}")
         print(f"json  : {args.out_dir / str(result.result_path)}")
         print(f"manifest: {args.out_dir / str(result.manifest_path)}")
+    return 0
+
+
+def _scaffold_main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="Generate a locked remote-git TRICE suite manifest.")
+    ap.add_argument("--source", type=Path, required=True, help="remote-git-list JSON")
+    ap.add_argument("--out", type=Path, required=True, help="suite manifest JSON to write")
+    ap.add_argument("--json", action="store_true", help="Print the generated manifest.")
+    args = ap.parse_args(argv)
+    manifest = scaffold_suite_manifest(args.source, args.out)
+    if args.json:
+        print(json.dumps(manifest, indent=2, sort_keys=True))
+    else:
+        print(f"wrote {args.out} ({len(manifest['tasks'])} task(s))")
     return 0
 
 

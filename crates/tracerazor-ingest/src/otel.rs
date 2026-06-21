@@ -397,12 +397,7 @@ pub fn parse(data: &str) -> Result<Trace> {
         // Split content into input and output for CCE and downstream metrics.
         let input_context = extract_input_content(span, &attrs);
         let output = extract_output_content(span, &attrs);
-        let content = match (&input_context, &output) {
-            (None, None) => span.name.clone(),
-            (Some(i), None) => i.clone(),
-            (None, Some(o)) => o.clone(),
-            (Some(i), Some(o)) => format!("{i} {o}"),
-        };
+        let content = extract_content(span, &attrs).unwrap_or_else(|| span.name.clone());
 
         // Determine agent_id: prefer gen_ai.agent.name span attribute, then
         // fall back to service.name if it differs from the top-level agent.

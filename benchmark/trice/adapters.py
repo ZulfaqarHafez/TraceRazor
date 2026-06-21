@@ -354,11 +354,19 @@ def _trice_context_env(context: dict[str, Any]) -> dict[str, str]:
         "projected_input_savings_pct": "TRICE_PROJECTED_INPUT_SAVINGS_PCT",
         "policy_sha256": "TRICE_POLICY_SHA256",
         "compressed_context_sha256": "TRICE_COMPRESSED_CONTEXT_SHA256",
+        "policy_path": "TRICE_POLICY_PATH",
+        "compressed_context_path": "TRICE_CONTEXT_PATH",
+        "trace_path": "TRICE_TRACE_PATH",
     }
     for field, env_key in scalar_fields.items():
         value = context.get(field)
         if value is not None:
             env[env_key] = str(value)
+    if "TRICE_TRACE_PATH" not in env and context.get("decision_trace_path") is not None:
+        env["TRICE_TRACE_PATH"] = str(context["decision_trace_path"])
+    verify_cmd = context.get("verify_cmd")
+    if isinstance(verify_cmd, (list, tuple)) and all(isinstance(item, str) for item in verify_cmd):
+        env["TRICE_VERIFY_CMD_JSON"] = json.dumps(list(verify_cmd), sort_keys=True, separators=(",", ":"))
     action_counts = context.get("policy_action_counts")
     if isinstance(action_counts, dict):
         env["TRICE_POLICY_ACTION_COUNTS_JSON"] = json.dumps(action_counts, sort_keys=True, separators=(",", ":"))

@@ -2,24 +2,64 @@
   "algorithm": "trice-v3-paper-generator",
   "artifacts": [
     {
-      "bytes": 7400,
+      "bytes": 11448,
       "path": "trice_v3_research_paper.tex",
-      "sha256": "1d24ac0fcd29994cc69f87ea1eaf8f032b705a4737457d36f0a39e112c87b4fe"
+      "sha256": "cf858ed6ec329e9a47cb13829f728b54bba2fe1b7ffe0d75b303b3a94d1d8804"
     },
     {
-      "bytes": 6575,
+      "bytes": 9165,
       "path": "trice_v3_references.bib",
-      "sha256": "1c03f834f66c2ce20a84281bcf7cd53e3d688033584becde80499eea546470e0"
+      "sha256": "7cd9ed8ec73b615157524e5d85cc8461fe9f775f0049ce1d9bffe268228fc8b4"
     },
     {
-      "bytes": 7603,
+      "bytes": 9542,
       "path": "trice_v3_research_paper.pdf",
-      "sha256": "8bc1f16d5f5f98eb818642063e96f705c7762d3c5708f29e141baa8d4be9f578"
+      "sha256": "a5e69a1d6eb4380a3b866f8d5d4f905ca548f7d823d728529f24fd0f09813f55"
     },
     {
       "bytes": 2974,
       "path": "trice_v3_live_savings.svg",
       "sha256": "c8ff057df31ea5c4b98911076732715395042bb2cad9ab392ac896a731721661"
+    },
+    {
+      "bytes": 3677,
+      "path": "trice_claim_card.json",
+      "sha256": "be44ada6959a38bf0a2dc354beb690467256c06a500797736788e3a6309c40f2"
+    },
+    {
+      "bytes": 1980,
+      "path": "trice_claim_card.md",
+      "sha256": "13796d31b124ffe856cf3ceb258872b9cf91b6aa414d0462549b3c4c19bce7a3"
+    },
+    {
+      "bytes": 1380,
+      "path": "trice_claim_card.tex",
+      "sha256": "e26d72dd54b02ad743251230f70561632225135dd968842848b8cca76f5959e7"
+    },
+    {
+      "bytes": 1582,
+      "path": "trice_claim_card.svg",
+      "sha256": "dc10cef0e36b7ec88d17aeb51311441375b12af5f373faed8b3842751aa426a7"
+    },
+    {
+      "bytes": 5966,
+      "path": "trice_suite_readiness.json",
+      "sha256": "f299868cbdea0db6134876e9b696ea2dbe617a768ecb7b37842d1f2f5853d530"
+    },
+    {
+      "bytes": 2964,
+      "path": "trice_suite_readiness.md",
+      "sha256": "8e16f064240bcef46caa61f61ab78f3bc41a3f209d7966cca69f7957f9ebe655"
+    },
+    {
+      "bytes": 1720,
+      "path": "trice_suite_readiness.tex",
+      "sha256": "2caf3b73d64e74e8b6cc8b855876757e79e6aa35d94d14668c8e68ad82dc7eae"
+    },
+    {
+      "bytes": 1556,
+      "path": "trice_suite_readiness.svg",
+      "sha256": "07ae50a6954cfe07402f84cf667e8f918684dacfd5cab116d929703757b21cd5"
     },
     {
       "bytes": 45815,
@@ -37,8 +77,8 @@
   "notes": [
     "LaTeX source and PDF generated from deterministic live evidence."
   ],
-  "platform": "Windows-11-10.0.26200-SP0",
-  "python_version": "3.12.13",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
   "result_sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8",
   "schema_version": "trice-evidence-manifest/v1"
 }

@@ -24,6 +24,24 @@ minimize input tokens and cache/prefill cost
 while preserving next-action fidelity, evidence recall, and end-to-end pass rate
 ```
 
+## 2026-06-21 Readiness-Gate Refresh
+
+The newest product layer is the no-execution readiness gate. Its purpose is to
+stop TraceRazor from spending tokens on a suite that cannot support the claim it
+is about to make. This came from four recurring research findings:
+
+| Theme | Sources | TRICE product rule |
+|---|---|---|
+| Real tasks beat transcript-only evidence | [SWE-bench](https://arxiv.org/abs/2310.06770), [SWE-agent](https://arxiv.org/abs/2405.15793), [SWT-Bench](https://arxiv.org/abs/2406.12952) | Claim suites must use executable repositories with objective verifier commands. |
+| Agent benchmarks need repeated, cost-aware trials | [AI Agents That Matter](https://arxiv.org/abs/2407.01502), [tau-bench](https://arxiv.org/abs/2406.12045), [AgentBench](https://arxiv.org/abs/2308.03688) | Preflight must estimate planned runs and verifier invocations before execution. |
+| Tool and web agents expose environment drift | [ToolLLM](https://arxiv.org/abs/2307.16789), [WebArena](https://arxiv.org/abs/2307.13854), [Voyager](https://arxiv.org/abs/2305.16291) | Held-out suites must pin remote Git commits and fixed adapter profiles. |
+| Compression is only useful when decisions survive | [LLMLingua](https://arxiv.org/abs/2310.05736), [LongLLMLingua](https://arxiv.org/abs/2310.06839), [Prompt Cache](https://arxiv.org/abs/2311.04934), [PagedAttention](https://arxiv.org/abs/2309.06180) | Readiness is not a savings claim; savings come only from live suite results plus verified claim cards. |
+
+The readiness gate therefore emits `trice-suite-readiness/v1` with
+`smoke_ready`, `pilot_ready`, or `claim_ready`. A result may be claim-ready to
+run, but it is not S-tier evidence until the live suite, evidence bundle, and
+claim card all verify.
+
 ## 120-Paper Working Ledger
 
 | # | Area | Source | TRICE takeaway |

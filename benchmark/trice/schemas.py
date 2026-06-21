@@ -18,6 +18,8 @@ SUITE_MANIFEST_SCHEMA = "trice_suite_manifest.schema.json"
 BUNDLE_MANIFEST_SCHEMA = "trice_bundle_manifest.schema.json"
 ADAPTER_PROFILE_SCHEMA = "trice_adapter_profile.schema.json"
 RUN_RECEIPT_SCHEMA = "trice_run_receipt.schema.json"
+CLAIM_CARD_SCHEMA = "trice_claim_card.schema.json"
+SUITE_READINESS_SCHEMA = "trice_suite_readiness.schema.json"
 
 
 def schema_path(name: str) -> Path:
@@ -49,6 +51,14 @@ def schema_path(name: str) -> Path:
         "run_receipt": RUN_RECEIPT_SCHEMA,
         "trice_run_receipt": RUN_RECEIPT_SCHEMA,
         RUN_RECEIPT_SCHEMA: RUN_RECEIPT_SCHEMA,
+        "claim": CLAIM_CARD_SCHEMA,
+        "claim_card": CLAIM_CARD_SCHEMA,
+        "trice_claim_card": CLAIM_CARD_SCHEMA,
+        CLAIM_CARD_SCHEMA: CLAIM_CARD_SCHEMA,
+        "readiness": SUITE_READINESS_SCHEMA,
+        "suite_readiness": SUITE_READINESS_SCHEMA,
+        "trice_suite_readiness": SUITE_READINESS_SCHEMA,
+        SUITE_READINESS_SCHEMA: SUITE_READINESS_SCHEMA,
     }
     filename = aliases.get(name)
     if not filename:

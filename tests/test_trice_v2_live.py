@@ -9,12 +9,14 @@ import pytest
 
 from benchmark.trice.adapters import CommandRepairAdapter, JsonPatchAdapter
 from benchmark.trice.bundle import export_evidence_bundle, verify_evidence_bundle
+from benchmark.trice.claim import build_claim_card, render_claim_card_markdown, render_claim_ladder_svg
+from benchmark.trice.readiness import build_suite_readiness, render_readiness_markdown, render_readiness_svg, verify_readiness_file
 from benchmark.trice.evidence import canonical_json, verify_manifest
 from benchmark.trice.live import LiveTask, run_live_learning_loop
 from benchmark.trice.receipt import validate_run_receipt_file
 from benchmark.trice.schemas import load_schema, schema_path, validate_adapter_profile_file, validate_patch_spec_file, validate_suite_manifest_file
 from benchmark.trice.stats import bootstrap_mean_ci, claim_gate_from_rounds, clustered_bootstrap_mean_ci, wilson_ci
-from benchmark.trice.suite import run_suite_manifest, verify_suite_evidence
+from benchmark.trice.suite import run_suite_manifest, scaffold_suite_manifest, verify_suite_evidence
 from benchmark.trice.user import UserPreferenceProfile
 
 
@@ -30,6 +32,11 @@ def test_public_tracerazor_trice_import_surface():
 
     assert trice.canonical_json({"b": 1, "a": 2}) == '{"a":2,"b":1}'
     assert callable(trice.run_live_learning_loop)
+    assert callable(trice.scaffold_suite_manifest)
+    assert callable(trice.build_claim_card)
+    assert callable(trice.build_suite_readiness)
+    assert callable(trice.verify_readiness_file)
+    assert callable(trice.verify_claim_card_file)
     assert callable(trice.claim_gate_from_rounds)
     assert callable(trice.CommandRepairAdapter.from_dict)
     assert callable(trice.JsonPatchAdapter.from_dict)
@@ -46,6 +53,8 @@ def test_schema_helpers_validate_example_patch():
     assert load_schema("bundle")["title"] == "TRICE evidence bundle manifest"
     assert load_schema("adapter")["title"] == "TRICE adapter profile"
     assert load_schema("receipt")["title"] == "TRICE run receipt"
+    assert load_schema("claim")["title"] == "TRICE deterministic claim card"
+    assert load_schema("readiness")["title"] == "TRICE suite readiness preflight"
     verdict = validate_patch_spec_file(REPO / "examples" / "trice_patch_fix_offbyone.json")
     assert verdict["ok"] is True
     assert verdict["edit_count"] == 1
@@ -135,6 +144,12 @@ def test_command_repair_adapter_runs_real_command_and_blocks_test_edits(tmp_path
         "    'baseline_input_tokens': int(os.environ['TRICE_BASELINE_INPUT_TOKENS']),\n"
         "  },\n"
         "  'context_mode': os.environ['TRICE_CONTEXT_MODE'],\n"
+        "  'paths': {\n"
+        "    'context': os.environ['TRICE_CONTEXT_PATH'],\n"
+        "    'policy': os.environ['TRICE_POLICY_PATH'],\n"
+        "    'trace': os.environ['TRICE_TRACE_PATH'],\n"
+        "    'verify_cmd': json.loads(os.environ['TRICE_VERIFY_CMD_JSON']),\n"
+        "  },\n"
         "}), encoding='utf-8')\n",
         encoding="utf-8",
     )
@@ -157,6 +172,10 @@ def test_command_repair_adapter_runs_real_command_and_blocks_test_edits(tmp_path
                     "budget_ratio": 0.4,
                     "realized_budget_ratio": 0.36953,
                     "projected_input_savings_pct": 63.05,
+                    "policy_path": str(tmp_path / "policy.json"),
+                    "compressed_context_path": str(tmp_path / "context.txt"),
+                    "trace_path": str(tmp_path / "trace.json"),
+                    "verify_cmd": ["python", "-m", "pytest"],
                     "policy_action_counts": {"keep": 2, "extract": 1},
                 },
             },
@@ -168,8 +187,16 @@ def test_command_repair_adapter_runs_real_command_and_blocks_test_edits(tmp_path
     assert adapter.last_receipt
     assert adapter.last_receipt["agent_reported"]["token_accounting"]["input_tokens"] == 456
     assert adapter.last_receipt["agent_reported"]["token_accounting"]["baseline_input_tokens"] == 1234
+    assert adapter.last_receipt["agent_reported"]["paths"]["context"] == str(tmp_path / "context.txt")
+    assert adapter.last_receipt["agent_reported"]["paths"]["policy"] == str(tmp_path / "policy.json")
+    assert adapter.last_receipt["agent_reported"]["paths"]["trace"] == str(tmp_path / "trace.json")
+    assert adapter.last_receipt["agent_reported"]["paths"]["verify_cmd"] == ["python", "-m", "pytest"]
     assert adapter.last_receipt["trice_context"]["input_tokens"] == 456
     assert "TRICE_INPUT_TOKENS" in adapter.last_receipt["reserved_env_keys"]
+    assert "TRICE_CONTEXT_PATH" in adapter.last_receipt["reserved_env_keys"]
+    assert "TRICE_POLICY_PATH" in adapter.last_receipt["reserved_env_keys"]
+    assert "TRICE_TRACE_PATH" in adapter.last_receipt["reserved_env_keys"]
+    assert "TRICE_VERIFY_CMD_JSON" in adapter.last_receipt["reserved_env_keys"]
     assert len(adapter.last_receipt["workspace_before_sha256"]) == 64
     receipt_path = tmp_path / "receipt.json"
     receipt_path.write_text(json.dumps(adapter.last_receipt, indent=2, sort_keys=True), encoding="utf-8")
@@ -214,6 +241,8 @@ def test_trice_v2_live_rollout_edits_real_workspace_and_updates_profile(tmp_path
     assert (workspace / "chunker.py").read_text(encoding="utf-8").count("size") >= 2
     assert live_round.optimized.policy_path
     assert Path(live_round.optimized.policy_path).is_file()
+    assert live_round.optimized.decision_trace_path
+    assert Path(live_round.optimized.decision_trace_path).is_file()
     assert Path(result.report_path or "").is_file()
     assert Path(result.result_path or "").is_file()
     assert Path(result.manifest_path or "").is_file()
@@ -221,6 +250,9 @@ def test_trice_v2_live_rollout_edits_real_workspace_and_updates_profile(tmp_path
     assert verdict["ok"] is True
     receipt = Path(live_round.optimized.receipt_path or "")
     assert receipt.is_file()
+    receipt_payload = json.loads(receipt.read_text(encoding="utf-8"))
+    assert receipt_payload["trice_context"]["trace_path"] == live_round.optimized.decision_trace_path
+    assert receipt_payload["trice_context"]["verify_cmd"] == list(task.verify_cmd)
     receipt_verdict = validate_run_receipt_file(receipt)
     assert receipt_verdict["adapter_type"] == "managed_python"
     assert receipt_verdict["trice_context_mode"] == "trice_policy"
@@ -340,6 +372,110 @@ def test_manifest_driven_suite_runs_real_repo_and_deep_verifies(tmp_path):
         fh.seek(-24, 2)
         fh.write(bytes([byte[0] ^ 1]))
     assert verify_evidence_bundle(tampered)["ok"] is False
+
+    card = build_claim_card(out_dir / str(result.result_path), manifest_path=out_dir / str(result.manifest_path))
+    assert card["schema_version"] == "trice-claim-card/v1"
+    assert card["claim_level"] == "smoke"
+    assert card["claim_allowed"] is False
+    assert card["verification"]["ok"] is True
+    assert card["metrics"]["mean_input_token_savings"] >= 0.60
+    assert any("Not an S-tier claim" in item for item in card["non_claims"])
+    assert "TRICE Claim Card" in render_claim_card_markdown(card)
+    assert "deterministic claim ladder" in render_claim_ladder_svg(card)
+
+
+def test_suite_scaffold_generates_locked_remote_git_manifest(tmp_path):
+    source = tmp_path / "remote-git-list.json"
+    out = tmp_path / "suite.json"
+    source.write_text(
+        json.dumps(
+            {
+                "schema_version": "trice-remote-git-list/v1",
+                "name": "held-out-pilot",
+                "adapter_profile": "profiles/codex-adapter.json",
+                "verify_cmd": ["python", "-m", "pytest", "-q", "--tb=short"],
+                "replicates": 2,
+                "tasks": [
+                    {
+                        "task_id": "sample-python-fix",
+                        "url": "https://github.com/example/project.git",
+                        "rev": "0123456789abcdef0123456789abcdef01234567",
+                        "prompt": "Fix the failing parser test without editing tests.",
+                    }
+                ],
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    manifest = scaffold_suite_manifest(source, out)
+
+    assert out.is_file()
+    assert manifest["schema_version"] == "trice-suite/v1"
+    assert manifest["replicates"] == 2
+    assert manifest["s_tier_gate"]["min_task_clusters"] == 50
+    assert manifest["tasks"][0]["git"]["url"] == "https://github.com/example/project.git"
+    assert manifest["tasks"][0]["git"]["rev"] == "0123456789abcdef0123456789abcdef01234567"
+    assert manifest["tasks"][0]["adapter_profile"] == "profiles/codex-adapter.json"
+    assert validate_suite_manifest_file(out)["ok"] is True
+
+    readiness = build_suite_readiness(out)
+    assert readiness["schema_version"] == "trice-suite-readiness/v1"
+    assert readiness["readiness_level"] == "smoke_ready"
+    assert readiness["pilot_execution_ready"] is False
+    assert readiness["claim_execution_ready"] is False
+    assert "pilot_task_clusters" in readiness["missing_for_pilot"]
+    assert "claim_task_clusters" in readiness["missing_for_claim"]
+    assert "TRICE Suite Readiness" in render_readiness_markdown(readiness)
+    assert "TRICE suite readiness preflight" in render_readiness_svg(readiness)
+    readiness_path = tmp_path / "readiness.json"
+    readiness_path.write_text(json.dumps(readiness, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert verify_readiness_file(readiness_path, manifest_path=out)["ok"] is True
+
+
+def test_suite_readiness_identifies_pilot_ready_manifest(tmp_path):
+    source = tmp_path / "remote-git-list.json"
+    out = tmp_path / "pilot-suite.json"
+    tasks = [
+        {
+            "task_id": f"pilot-task-{idx}",
+            "url": "https://github.com/example/project.git",
+            "rev": f"{idx:040x}",
+            "prompt": "Fix the failing parser test without editing tests.",
+            "verify_cmd": ["python", "-m", "pytest", "-q"],
+        }
+        for idx in range(1, 11)
+    ]
+    source.write_text(
+        json.dumps(
+            {
+                "schema_version": "trice-remote-git-list/v1",
+                "name": "pilot-ready-suite",
+                "adapter_profile": "profiles/codex-adapter.json",
+                "replicates": 2,
+                "target_savings": 0.60,
+                "tasks": tasks,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    manifest = scaffold_suite_manifest(source, out)
+    assert manifest["replicates"] == 2
+
+    readiness = build_suite_readiness(out)
+
+    assert readiness["readiness_level"] == "pilot_ready"
+    assert readiness["pilot_execution_ready"] is True
+    assert readiness["claim_execution_ready"] is False
+    assert readiness["planned_execution"]["planned_runs"] == 20
+    assert readiness["planned_execution"]["verify_command_invocations_min"] == 40
+    assert readiness["missing_for_claim"] == ["claim_task_clusters", "claim_replicates_per_task"]
 
 
 def test_manifest_suite_can_use_command_repair_adapter(tmp_path):

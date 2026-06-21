@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tracerazor"
-version = "1.0.2"
+version = "1.0.3"
 description = "Token efficiency auditing, adaptive sampling, and substitutability analysis for production AI agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -38,6 +38,7 @@ Repository    = "https://github.com/ZulfaqarHafez/tracerazor"
 Issues        = "https://github.com/ZulfaqarHafez/tracerazor/issues"
 Changelog     = "https://github.com/ZulfaqarHafez/tracerazor/blob/main/CHANGELOG.md"
 Documentation = "https://github.com/ZulfaqarHafez/tracerazor#readme"
+Security      = "https://github.com/ZulfaqarHafez/tracerazor/blob/main/SECURITY.md"
 
 [project.optional-dependencies]
 # LLM provider adapters for the sampling pillar.
@@ -52,6 +53,7 @@ agents    = ["openai-agents>=0.0.3"]
 
 # HTTP mode for the audit client (REST against tracerazor-server).
 http = ["requests>=2.28"]
+paper = ["reportlab>=4"]
 
 # Weight calibration tool (calibration/) — fits TAS weights to recoverable waste.
 calibrate = ["numpy>=1.24", "scipy>=1.10"]
@@ -79,10 +81,11 @@ all = [
     "pandas>=2.0",
     "numpy>=1.24",
     "scipy>=1.10",
+    "reportlab>=4",
 ]
 
 # Development dependencies.
-dev = ["pytest>=8", "pytest-asyncio>=0.23", "anyio[trio]"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "anyio[trio]", "reportlab>=4"]
 
 [tool.hatch.build]
 exclude = [
@@ -102,6 +105,8 @@ artifacts = ["tracerazor/bin/*"]
 "schemas/trice_bundle_manifest.schema.json" = "schemas/trice_bundle_manifest.schema.json"
 "schemas/trice_adapter_profile.schema.json" = "schemas/trice_adapter_profile.schema.json"
 "schemas/trice_run_receipt.schema.json" = "schemas/trice_run_receipt.schema.json"
+"schemas/trice_claim_card.schema.json" = "schemas/trice_claim_card.schema.json"
+"schemas/trice_suite_readiness.schema.json" = "schemas/trice_suite_readiness.schema.json"
 "examples/trice_patch_fix_offbyone.json" = "examples/trice_patch_fix_offbyone.json"
 "examples/trice_suite_fix_offbyone.json" = "examples/trice_suite_fix_offbyone.json"
 "examples/trice_adapter_profile_echo.json" = "examples/trice_adapter_profile_echo.json"

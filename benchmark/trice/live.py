@@ -98,6 +98,7 @@ class ConditionRun:
     verify_output_excerpt: str
     modified_files: list[str]
     trace_path: str
+    decision_trace_path: str | None = None
     receipt_path: str | None = None
     receipt_sha256: str | None = None
     adapter_type: str | None = None
@@ -313,7 +314,11 @@ def run_live_learning_loop(
     else:
         artifact_paths.append(profile_file)
     for live_round in result.rounds:
+        if live_round.baseline.decision_trace_path:
+            artifact_paths.append(Path(live_round.baseline.decision_trace_path))
         artifact_paths.append(Path(live_round.baseline.trace_path))
+        if live_round.optimized.decision_trace_path:
+            artifact_paths.append(Path(live_round.optimized.decision_trace_path))
         artifact_paths.append(Path(live_round.optimized.trace_path))
         if live_round.optimized.policy_path:
             artifact_paths.append(Path(live_round.optimized.policy_path))
@@ -426,6 +431,9 @@ def _run_condition(
     shutil.copytree(task.seed_dir, workspace)
 
     trace = _decision_trace(task, workspace)
+    decision_trace_path = round_dir / condition / "decision_trace.json"
+    decision_trace_path.parent.mkdir(parents=True, exist_ok=True)
+    decision_trace_path.write_text(json.dumps(trace, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     segments = segments_from_trace(trace)
     baseline_input_tokens = sum(s.tokens for s in segments)
     input_tokens = baseline_input_tokens
@@ -446,6 +454,8 @@ def _run_condition(
         policy=policy,
         policy_path=policy_path,
         context_path=context_path,
+        decision_trace_path=str(decision_trace_path),
+        verify_cmd=task.verify_cmd,
     )
     adapter_task = AdapterTaskContext(
         task_id=task.task_id,
@@ -493,6 +503,7 @@ def _run_condition(
         verify_output_excerpt=verify["output"][:1200],
         modified_files=modified,
         trace_path=str(trace_path),
+        decision_trace_path=str(decision_trace_path),
         receipt_path=str(receipt_path),
         receipt_sha256=receipt_sha,
         adapter_type=str(receipt.get("adapter_type") or type(adapter).__name__),
@@ -511,6 +522,8 @@ def _trice_context_for_condition(
     policy: ContextPolicy | None,
     policy_path: str | None,
     context_path: str | None,
+    decision_trace_path: str,
+    verify_cmd: tuple[str, ...],
 ) -> dict[str, Any]:
     action_counts: dict[str, int] = {}
     if policy is not None:
@@ -532,6 +545,10 @@ def _trice_context_for_condition(
         "policy_sha256": _sha256_file(Path(policy_path)) if policy_path else None,
         "compressed_context_path": context_path,
         "compressed_context_sha256": _sha256_file(Path(context_path)) if context_path else None,
+        "trace_path": decision_trace_path,
+        "decision_trace_path": decision_trace_path,
+        "decision_trace_sha256": _sha256_file(Path(decision_trace_path)),
+        "verify_cmd": list(verify_cmd),
         "policy_action_counts": action_counts,
     }
 

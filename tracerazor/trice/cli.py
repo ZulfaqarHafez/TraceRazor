@@ -7,6 +7,8 @@ import json
 from pathlib import Path
 
 from benchmark.trice.bundle import main as bundle_main
+from benchmark.trice.claim import main as claim_main, verify_claim_card_file
+from benchmark.trice.doctor import main as doctor_main
 from benchmark.trice.live import main as live_main
 from benchmark.trice.receipt import validate_run_receipt_file
 from benchmark.trice.schemas import load_schema, validate_adapter_profile_file, validate_patch_spec_file, validate_suite_manifest_file
@@ -40,8 +42,25 @@ def main(argv: list[str] | None = None) -> int:
     verify_bundle = sub.add_parser("verify-bundle", help="Verify a portable TRICE evidence bundle zip.")
     verify_bundle.add_argument("bundle", type=Path)
 
+    doctor = sub.add_parser("doctor", help="Diagnose local and public TraceRazor trust signals.")
+    doctor.add_argument("--format", choices=["text", "json"], default="text")
+    doctor.add_argument("--offline", action="store_true")
+    doctor.add_argument("--timeout-s", type=float, default=5.0)
+
+    claim = sub.add_parser("claim", help="Generate a deterministic TRICE claim card.")
+    claim.add_argument("--suite-result", type=Path, required=True)
+    claim.add_argument("--manifest", type=Path, default=None)
+    claim.add_argument("--out", type=Path, default=Path("trice_claim_card.json"))
+    claim.add_argument("--scope", default=None)
+    claim.add_argument("--format", choices=["json", "markdown", "tex"], default="json")
+
+    verify_claim = sub.add_parser("verify-claim", help="Verify a deterministic TRICE claim card.")
+    verify_claim.add_argument("claim_card", type=Path)
+    verify_claim.add_argument("--suite-result", type=Path, default=None)
+    verify_claim.add_argument("--manifest", type=Path, default=None)
+
     schema = sub.add_parser("schema", help="Print a shipped TRICE JSON Schema.")
-    schema.add_argument("name", choices=["patch", "manifest", "evidence", "suite", "bundle", "adapter", "adapter-profile", "receipt", "run-receipt"])
+    schema.add_argument("name", choices=["patch", "manifest", "evidence", "suite", "bundle", "adapter", "adapter-profile", "receipt", "run-receipt", "claim", "claim-card", "readiness", "suite-readiness"])
 
     validate = sub.add_parser("validate-patch", help="Validate a deterministic patch spec.")
     validate.add_argument("patch_spec", type=Path)
@@ -79,6 +98,22 @@ def main(argv: list[str] | None = None) -> int:
         return bundle_main(forwarded)
     if args.command == "verify-bundle":
         return bundle_main(["verify", str(args.bundle)])
+    if args.command == "doctor":
+        forwarded = ["--format", args.format, "--timeout-s", str(args.timeout_s)]
+        if args.offline:
+            forwarded.append("--offline")
+        return doctor_main(forwarded)
+    if args.command == "claim":
+        forwarded = ["--suite-result", str(args.suite_result), "--out", str(args.out), "--format", args.format]
+        if args.manifest is not None:
+            forwarded += ["--manifest", str(args.manifest)]
+        if args.scope is not None:
+            forwarded += ["--scope", args.scope]
+        return claim_main(forwarded)
+    if args.command == "verify-claim":
+        verdict = verify_claim_card_file(args.claim_card, suite_result_path=args.suite_result, manifest_path=args.manifest)
+        print(json.dumps(verdict, indent=2, sort_keys=True))
+        return 0 if verdict["ok"] else 1
     if args.command == "schema":
         print(json.dumps(load_schema(args.name.replace("-", "_")), indent=2, sort_keys=True))
         return 0

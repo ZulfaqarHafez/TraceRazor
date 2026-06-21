@@ -28,6 +28,18 @@
         but product evidence must be live, outcome-gated, and repeatable under
         the same artifact contract.
 
+        \section{Related Work}
+        TRICE sits at the intersection of real software-agent benchmarks,
+        prompt/context compression, memory systems, and serving efficiency.
+        Real-repo and tool-interaction benchmarks motivate executable,
+        environment-grounded outcomes rather than transcript-only scoring
+        \cite{swebench2023}, \cite{sweagent2024}, \cite{taubench2024}, \cite{agentbench2023}, \cite{llmlingua2023}, \cite{longllmlingua2023}, \cite{promptcache2023}, \cite{pagedattention2023}. Prompt compression and long-context work motivate
+        shrinking carried context, but TRICE treats compression as a
+        harness-verified decision-preservation problem rather than a standalone
+        language modeling objective. Serving work on prompt reuse, KV/cache
+        management, and attention-memory pressure motivates the cost term in
+        the TRICE portfolio controller.
+
         \section{Method}
         For each segment $s_i$, TRICE chooses an action $a_i$ from
         \{keep, extract, summarize, mask, anchor, lazy\_recall\}:
@@ -85,6 +97,79 @@ rename-api & 1814 & 349 & 80.8\% & yes & yes \\
         pass regressions 0; local smoke gate
         passed. Broad claim
         allowed: no.
+
+        \section{Deterministic Claim Card}
+Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{smoke}. Claim allowed: no. Determinism contract score: 84/100.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Requirement & Passed & Required \\
+\midrule
+accepted\_runs & yes & 0 unaccepted runs \\
+adapter\_profiles & yes & all tasks use adapter\_profile \\
+clustered\_savings\_ci\_low & yes & >= 0.600 \\
+locked\_git\_sources & no & all tasks use locked git sources \\
+mean\_savings & yes & >= 0.600 \\
+pass\_regressions & yes & <= 0 \\
+receipt\_validation & yes & enabled \\
+remote\_git\_sources & no & all tasks use remote Git URLs \\
+replicates\_per\_task & no & each task >= 3 \\
+task\_clusters & no & >= 50 \\
+\bottomrule
+\end{tabular}
+\caption{Machine-readable claim gate distilled from the suite result and evidence manifest.}
+\end{table}
+
+Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0. Claim-card hash: \texttt{4b8ac48b6d982a50...}.
+
+\noindent Non-claims:
+\begin{itemize}
+\item Not an S-tier claim; missing task\_clusters, replicates\_per\_task, locked\_git\_sources, remote\_git\_sources.
+\item Does not claim universal all-language or all-agent performance.
+\item Does not certify replay-only savings as live savings.
+\end{itemize}
+
+
+        \section{Suite Readiness Preflight}
+Suite \texttt{bundled-live-six-task-suite} is \texttt{smoke\_ready} with readiness score 55/100. It plans 6 live run(s) across 6 task cluster(s), requiring at least 12 verifier invocations before retries.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+manifest\_valid & yes & trice-suite/v1 \\
+unique\_task\_ids & yes & all task\_id values unique \\
+prompts & yes & every task has prompt \\
+verify\_commands & yes & every task has verify\_cmd \\
+interventions & yes & exactly one intervention per task \\
+pilot\_task\_clusters & no & >= 10 \\
+pilot\_replicates\_per\_task & no & each task >= 2 \\
+claim\_task\_clusters & no & >= 50 \\
+claim\_replicates\_per\_task & no & each task >= 3 \\
+remote\_git\_sources & no & all tasks use remote Git URLs \\
+commit\_sha\_revisions & no & all git.rev values are 40-hex commit SHA \\
+adapter\_profiles & yes & all tasks use adapter\_profile \\
+target\_savings & yes & >= 0.600 \\
+pass\_regression\_gate & yes & 0 \\
+receipt\_validation\_gate & yes & true \\
+\bottomrule
+\end{tabular}
+\caption{No-execution readiness checks for the held-out TRICE suite protocol.}
+\end{table}
+
+\noindent Recommendations:
+\begin{itemize}
+\item Use locked remote Git sources instead of local paths for pilot and claim suites.
+\item Pin every git.rev to an immutable 40-hex commit SHA before running held-out evidence.
+\item Add held-out task clusters until the pilot has at least 10 distinct task\_id values.
+\item Add held-out task clusters until the claim suite has at least 50 distinct task\_id values.
+\item Set replicates to at least 3 for every claim task.
+\end{itemize}
+
 
         \section{Replicated Suite Evidence}
         The public suite artifact \texttt{fix-offby-one-suite} contains 3 live replicate runs across 1 task cluster(s). Mean input-token savings is 76.6\% with clustered-by-task 95\% CI 76.6\%--76.6\%; pass regressions 0. S-tier gate: not passed; missing requirements: task\_clusters, locked\_git\_sources, remote\_git\_sources, adapter\_profiles.

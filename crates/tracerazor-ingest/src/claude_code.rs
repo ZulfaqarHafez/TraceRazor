@@ -15,7 +15,6 @@ const MAX_CONTEXT_CHARS: usize = 4_000;
 
 #[derive(Debug, Clone)]
 struct AssistantMessage {
-    id: String,
     model: String,
     blocks: Vec<Value>,
     usage: Value,
@@ -82,7 +81,6 @@ pub fn parse(data: &str) -> Result<Trace> {
                     idx
                 } else {
                     let rec = AssistantMessage {
-                        id: mid.to_string(),
                         model: msg
                             .get("model")
                             .and_then(Value::as_str)

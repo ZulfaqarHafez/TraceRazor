@@ -6,11 +6,13 @@
 [![PyPI](https://img.shields.io/pypi/v/tracerazor)](https://pypi.org/project/tracerazor/)
 &nbsp;·&nbsp; MIT &nbsp;·&nbsp; Rust + Python &nbsp;·&nbsp; Author: Zulfaqar Hafez
 
+Public trust status: [trust matrix](docs/public_trust_matrix.md) · [security policy](SECURITY.md) · [citation](CITATION.cff)
+
 ## 60-second start
 
 ```bash
 pip install tracerazor            # platform wheels bundle the CLI — no Rust toolchain needed
-# or: cargo install tracerazor    # build the CLI from crates.io
+# source build fallback: cargo build --release -p tracerazor
 # or: docker compose up           # REST API + dashboard on :8080
 
 tracerazor audit traces/support-agent-run-2847.json     # bundled sample trace
@@ -40,7 +42,7 @@ Coach mode is advisory: it never edits `CLAUDE.md`, prompts, settings, or tools.
 
 ## What TraceRazor Does
 
-TraceRazor v1.0.2 closes a full loop: **audit** a trace offline, **apply** the
+TraceRazor v1.0.3 closes a full loop: **audit** a trace offline, **apply** the
 emitted fixes, **measure** the real before/after delta at constant task
 outcome, and let anyone **verify** the report cryptographically.
 
@@ -150,6 +152,22 @@ tracerazor-trice bundle benchmark/trice/results/v2-suite/trice_suite_evidence_ma
 tracerazor-trice verify-bundle benchmark/trice/results/v2-suite/trice_suite_evidence.trice.zip
 ```
 
+For held-out remote repositories, scaffold a locked manifest first:
+
+```bash
+tracerazor-trice suite scaffold \
+  --source remote-git-list.json \
+  --out suite.json
+tracerazor-trice suite suite.json --out-dir benchmark/trice/results/heldout-pilot
+```
+
+To inspect local and public trust signals:
+
+```bash
+tracerazor-trice doctor --format text
+tracerazor-trice doctor --format json
+```
+
 The broader bundled smoke uses all six local live tasks through a reusable
 command adapter profile:
 
@@ -158,10 +176,19 @@ tracerazor-trice suite examples/trice_suite_bundled_live.json \
   --out-dir benchmark/trice/results/v2-broad-smoke \
   --rounds 1 \
   --replicates 1
+tracerazor-trice suite readiness examples/trice_suite_bundled_live.json \
+  --out docs/trice_suite_readiness.json
+tracerazor-trice suite verify-readiness docs/trice_suite_readiness.json \
+  --manifest examples/trice_suite_bundled_live.json
 tracerazor-trice verify-suite benchmark/trice/results/v2-broad-smoke/trice_suite_evidence_manifest.json
+tracerazor-trice verify-claim docs/trice_claim_card.json
 ```
 
 ![TRICE live input-token savings](docs/trice_v3_live_savings.svg)
+
+![TRICE suite readiness preflight](docs/trice_suite_readiness.svg)
+
+![TRICE deterministic claim ladder](docs/trice_claim_card.svg)
 
 Current deterministic smoke evidence: six bundled live repository tasks,
 fresh copied workspaces, real source edits, `pytest` verification, and a
@@ -187,8 +214,10 @@ profile tasks record profile SHA-256 and profile name. Every condition writes a
 changed files, a TRICE context envelope, and optional agent-reported token
 accounting from `TRICE_AGENT_RECEIPT`. Command adapters receive
 `TRICE_INPUT_TOKENS`, `TRICE_BASELINE_INPUT_TOKENS`, `TRICE_CONTEXT_MODE`, and
-policy hashes in their environment, so wrapped agents can report the exact
-assembled-context token count they acted on. Run receipts have a shipped JSON
+policy hashes in their environment. They also receive `TRICE_CONTEXT_PATH`,
+`TRICE_POLICY_PATH`, `TRICE_TRACE_PATH`, and `TRICE_VERIFY_CMD_JSON`, so wrapped
+agents can read the assembled context, policy, decision trace, and verifier
+contract they acted on. Run receipts have a shipped JSON
 Schema and are validated
 during manifest and bundle verification, so malformed receipts can fail even if
 their hashes match. Suite reports now include adapter and failure-mode
@@ -205,10 +234,25 @@ reports **81.5%** mean input-token reduction, zero pass regressions, and a
 `s_tier_gate.passed = false` because it is local, single-replicate, and not 50
 held-out locked remote Git task clusters.
 
+The generated [TRICE Claim Card](docs/trice_claim_card.md) binds the broad
+smoke suite result and evidence manifest hashes into a machine-readable public
+claim boundary that can be checked with `tracerazor-trice verify-claim`. Current
+level: `smoke`; claim allowed: `false`; determinism contract score: `84/100`.
+The card is intentionally a non-claim until the held-out remote-git suite clears
+the S-tier gate.
+
+The generated [TRICE Suite Readiness](docs/trice_suite_readiness.md) card is the
+no-execution preflight gate. Current level: `smoke_ready`; pilot-ready: `false`;
+claim-ready: `false`; readiness score: `55/100`. It estimates six planned live
+runs and twelve minimum verifier invocations, then names the missing pilot/claim
+requirements before any expensive held-out run starts.
+
 Research artifacts:
 
 - LaTeX source: [`paper/trice_v3_research_paper.tex`](paper/trice_v3_research_paper.tex)
 - PDF paper: [`paper/trice_v3_research_paper.pdf`](paper/trice_v3_research_paper.pdf)
+- Claim card: [`docs/trice_claim_card.md`](docs/trice_claim_card.md) ([JSON](docs/trice_claim_card.json), [SVG](docs/trice_claim_card.svg))
+- Readiness card: [`docs/trice_suite_readiness.md`](docs/trice_suite_readiness.md) ([JSON](docs/trice_suite_readiness.json), [SVG](docs/trice_suite_readiness.svg))
 - Library contract: [`docs/trice_library.md`](docs/trice_library.md)
 - Evidence manifest: [`benchmark/trice/results/v2-smoke/trice_v2_evidence_manifest.json`](benchmark/trice/results/v2-smoke/trice_v2_evidence_manifest.json)
 - Suite manifest: [`benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json`](benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json)
@@ -1118,7 +1162,7 @@ the JSON report as an artifact.
 permissions:
   pull-requests: write # for the sticky PR comment
 
-- uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v1.0.2
+- uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v1.0.3
   with:
     trace-file: traces/latest-run.json
     threshold: '75'
