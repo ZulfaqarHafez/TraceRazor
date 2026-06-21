@@ -1,5 +1,5 @@
 """
-TraceRazor 0.5.0
+TraceRazor 1.0.2
 
 TraceRazor is a token efficiency auditor and adaptive sampling library for
 production AI agents. It does two things:
@@ -107,7 +107,7 @@ from ._self_consistency import SCResult, SelfConsistencyBaseline
 # LLM adapters
 from ._adapters import anthropic_llm, mock_llm, openai_llm
 
-__version__ = "0.5.0"
+__version__ = "1.0.2"
 __author__ = "Zulfaqar Hafez"
 
 __all__ = [

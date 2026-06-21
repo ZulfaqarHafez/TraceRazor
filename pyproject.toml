@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tracerazor"
-version = "0.5.0"
+version = "1.0.2"
 description = "Token efficiency auditing, adaptive sampling, and substitutability analysis for production AI agents"
 readme = "README.md"
 license = { text = "MIT" }
@@ -83,6 +83,11 @@ all = [
 
 # Development dependencies.
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "anyio[trio]"]
+
+[tool.hatch.build]
+exclude = [
+    "/benchmark/trice/results",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["tracerazor", "benchmark"]

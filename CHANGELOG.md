@@ -4,6 +4,21 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-06-21
+
+### Added
+- Publish TRICE live-suite library surfaces: command adapter profiles, run
+  receipts, evidence bundles, schema validation, and regenerated LaTeX/PDF
+  research artifacts.
+- Add broad bundled live smoke evidence with six fresh-workspace tasks,
+  verified bundles, and an explicit S-tier gate that refuses local-only claims.
+
+### Changed
+- Ship TRICE schemas and runnable examples in the Python package so PyPI and
+  piwheels installs include the live evaluation contract.
+- Align package metadata with the public PyPI line after the existing 1.0.1
+  release.
+
 ### Scoring credibility (breaking: TAS values shift)
 - **TUR demoted from the composite to diagnostics** (weight 0.10 → 0;
   non-zero weights now sum to 0.82). Unlike the five variance-based 0.5.0
