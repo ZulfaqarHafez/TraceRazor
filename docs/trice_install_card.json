@@ -54,8 +54,8 @@
     },
     {
       "name": "rust_cli_bundled",
-      "observed": "exit=2; tracerazor: no auditor binary available.\nThis looks like a pure-Python install (sdist). Options:\n  1. pip install a platform wheel (bundles the binary), or\n  2. cargo build --relea",
-      "passed": false,
+      "observed": "exit=0; tracerazor 1.0.3\n",
+      "passed": true,
       "required": "tracerazor console script can find a bundled Rust auditor binary"
     }
   ],
@@ -92,13 +92,13 @@
     },
     "rust_console": {
       "command_sha256": "a0f3538f834bcc53bc23b77f1b5f10e4a1bdd191cfd6594077462e0fb0c58f32",
-      "exit_code": 2,
-      "ok": false,
-      "status": "failed",
-      "stderr_excerpt": "tracerazor: no auditor binary available.\nThis looks like a pure-Python install (sdist). Options:\n  1. pip install a platform wheel (bundles the binary), or\n  2. cargo build --release -p tracerazor and set TRACERAZOR_BIN, or\n  3. use the HTTP server mode (tracerazor-server).\n",
-      "stderr_sha256": "51da36279b02049e01619ac3f34a234e61f6f863830246c034448453a06ab4fa",
-      "stdout_excerpt": "",
-      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      "exit_code": 0,
+      "ok": true,
+      "status": "ok",
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_excerpt": "tracerazor 1.0.3\n",
+      "stdout_sha256": "e9a1d055b4b6e760957980e7c052f2f05786a9bb06fb363809e1b0cb306e8577"
     },
     "trice_console": {
       "command_sha256": "5695e414efa414eab6cc88b639b84dcff848720ac1f9f1b61a421cff27afc8d6",
@@ -120,21 +120,19 @@
       "present": true
     },
     "pyproject": {
-      "bytes": 5771,
+      "bytes": 5850,
       "kind": "file",
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "7e9268692d0e1c938f4c47c5e344f2641b46ba003802dd5425cc94ccbbfa2af7"
+      "sha256": "a59e14dfdd4c752e93403818f1a4b32c2ccb1bae577132d7f6e6aef53865d1a3"
     }
   },
-  "install_card_sha256": "b60412863ebbfac950a48253fba98a5b75bb0554455bee7a5818655e8e920ed0",
-  "install_level": "python_trice_install_ready",
-  "install_score": 90,
+  "install_card_sha256": "a6e0770ea6e5dd0ad0eeb2bda6abb9f4222eb504bf44f2a3237b6dc1bfcb91ac",
+  "install_level": "full_cli_install_ready",
+  "install_score": 100,
   "next_actions": [
-    "Keep Python/TRICE install claims allowed for the checked wheel.",
-    "Keep full `tracerazor` CLI claims scoped to platform wheels or source builds until a bundled Rust binary is present.",
-    "Generate platform-wheel install cards before claiming no-Rust-toolchain CLI install."
+    "Publish the install card with the release evidence bundle."
   ],
   "probe": {
     "build_crates_card": true,
@@ -157,11 +155,11 @@
   "schema_version": "trice-install-card/v1",
   "scope": "TraceRazor wheel installability",
   "wheel": {
-    "bytes": 607154,
+    "bytes": 607460,
     "kind": "file",
     "name": "wheel",
     "path": "dist/tracerazor-1.0.3-py3-none-any.whl",
     "present": true,
-    "sha256": "2698409bb78759f6e661ad5dd1097815bb5ea1d27ce8445fbe8692acc13f3712"
+    "sha256": "bda47590b13ab949078d45f866ff2ae61ae2f736f2211945a66cba098facad36"
   }
 }

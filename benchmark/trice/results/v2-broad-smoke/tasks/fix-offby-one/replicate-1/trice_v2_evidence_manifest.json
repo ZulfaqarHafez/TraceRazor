@@ -22,14 +22,14 @@
       "sha256": "f69c691a5374d58f079dd668d5146e00989ff3a41a898dd5991e07d40f2ef501"
     },
     {
-      "bytes": 3450,
+      "bytes": 3558,
       "path": "fix-offby-one/round-1/trice-v2/context_policy.json",
-      "sha256": "1663c6e2558986087ed641b4b93fd9ab687e9f9a51ec1b75a2ee4fcdc467c2f2"
+      "sha256": "7c9b0f4a74db2d4de3e4057a31ca9101a2f09e7cdb2f46d5c490ed92324b282e"
     },
     {
-      "bytes": 2942,
+      "bytes": 3007,
       "path": "fix-offby-one/round-1/trice-v2/compressed_context.txt",
-      "sha256": "eace5b9d4947999e5c39a219a234f955ae6e44df886cb46e716253813bb3b3db"
+      "sha256": "725295f03ff9853b0a55f9f4b7cf00509d51f0687580208df6dc645ec09bd372"
     },
     {
       "bytes": 3633,

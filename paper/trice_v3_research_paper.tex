@@ -234,7 +234,7 @@ task\_clusters & no & >= 50 \\
 \caption{Machine-readable claim gate distilled from the suite result and evidence manifest.}
 \end{table}
 
-Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{6f20ecbd0a990960...}.
+Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{8abf1b3576b41be1...}.
 
 \noindent Non-claims:
 \begin{itemize}
@@ -285,7 +285,7 @@ docs\_shipped & yes & README/library/research/trust docs are present \\
 
 
         \section{Installability Card}
-Install level: \texttt{python\_trice\_install\_ready}; score: 90/100; expected version: \texttt{1.0.3}.
+Install level: \texttt{full\_cli\_install\_ready}; score: 100/100; expected version: \texttt{1.0.3}.
 
 \begin{tabular}{lrl}
 Check & Passed & Required \\
@@ -297,7 +297,7 @@ version\_matches & yes & 1.0.3 \\
 schemas\_importable & yes & install, crates, and research schemas import from wheel \\
 trice\_api\_importable & yes & public tracerazor.trice install/crates/research APIs import \\
 trice\_console\_works & yes & tracerazor-trice console script works after wheel install \\
-rust\_cli\_bundled & no & tracerazor console script can find a bundled Rust auditor binary \\
+rust\_cli\_bundled & yes & tracerazor console script can find a bundled Rust auditor binary \\
 \end{tabular}
 
 
@@ -359,7 +359,7 @@ The generated crates card reports level \texttt{publish\_plan\_locked} and score
 
 
         \section{Clean Wheel Installability}
-The generated installability card reports level \texttt{python\_trice\_install\_ready} and score 90/100. It creates a clean virtual environment, installs the built wheel with \texttt{pip install --no-deps}, imports packaged TRICE schemas and public APIs, and runs the installed \texttt{tracerazor-trice} console script. The full \texttt{tracerazor} Rust CLI check is kept separate so generic wheels do not overclaim platform-bundled binary readiness \cite{pypapackaging,pipinstall,wheelpep}.
+The generated installability card reports level \texttt{full\_cli\_install\_ready} and score 100/100. It creates a clean virtual environment, installs the built wheel with \texttt{pip install --no-deps}, imports packaged TRICE schemas and public APIs, and runs the installed \texttt{tracerazor-trice} console script. The full \texttt{tracerazor} Rust CLI check is kept separate so generic wheels do not overclaim platform-bundled binary readiness \cite{pypapackaging,pipinstall,wheelpep}.
 
 
         \section{Replicated Suite Evidence}

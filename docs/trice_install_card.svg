@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="300" viewBox="0 0 980 300">
 <rect width="100%" height="100%" fill="#ffffff"/>
 <text x="28" y="34" font-family="Inter,Segoe UI,Arial" font-size="20" font-weight="700" fill="#111827">TRICE installability card</text>
-<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 90/100 | level python_trice_install_ready | version 1.0.3</text>
+<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 100/100 | level full_cli_install_ready | version 1.0.3</text>
 <rect x="36" y="96" width="138" height="58" rx="8" fill="#7c3aed"/>
 <text x="105" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">wheel</text>
 <line x1="184" y1="125" x2="212" y2="125" stroke="#9ca3af" stroke-width="3"/>
@@ -14,8 +14,8 @@
 <rect x="588" y="96" width="138" height="58" rx="8" fill="#7c3aed"/>
 <text x="657" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">trice cli</text>
 <line x1="736" y1="125" x2="764" y2="125" stroke="#9ca3af" stroke-width="3"/>
-<rect x="772" y="96" width="138" height="58" rx="8" fill="#e5e7eb"/>
-<text x="841" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#374151">rust cli</text>
+<rect x="772" y="96" width="138" height="58" rx="8" fill="#7c3aed"/>
+<text x="841" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">rust cli</text>
 <text x="28" y="214" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Generic wheels may be Python/TRICE-ready while full Rust CLI bundling remains a platform-wheel release task.</text>
-<text x="28" y="238" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">hash 92178fae37b67220...</text>
+<text x="28" y="238" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">hash a6e0770ea6e5dd0a...</text>
 </svg>

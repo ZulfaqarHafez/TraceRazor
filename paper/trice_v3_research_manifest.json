@@ -2,204 +2,204 @@
   "algorithm": "trice-v3-paper-generator",
   "artifacts": [
     {
-      "bytes": 23681,
+      "bytes": 24091,
       "path": "trice_v3_research_paper.tex",
-      "sha256": "8f5db5311aca8061917e8dd2c972aa2696611f1404eb4d5c63623ed137b233d8"
+      "sha256": "046bbd935e7bddf6d8340e8da150caaed256b6954f585c24eb1310e6d1c2a508"
     },
     {
-      "bytes": 11713,
+      "bytes": 12125,
       "path": "trice_v3_references.bib",
-      "sha256": "7fabbfee1a046856bffb0aad5c8b8ff3c68efbeeed50e1f06cd109981f93e3c9"
+      "sha256": "a8ae0477c8491baab65ae7b402d40318d7bdde0143dda9dca406d6ed41b83833"
     },
     {
-      "bytes": 13389,
+      "bytes": 13382,
       "path": "trice_v3_research_paper.pdf",
-      "sha256": "e989dc19be087a9991ff05424457fd9aeef541056a30472add2e2a1db24b597d"
+      "sha256": "a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45"
     },
     {
-      "bytes": 2943,
+      "bytes": 2974,
       "path": "trice_v3_live_savings.svg",
-      "sha256": "83e2305eb30c40073d5f32115d30cd181a368096dd3e415997a38b725cb9f363"
+      "sha256": "c8ff057df31ea5c4b98911076732715395042bb2cad9ab392ac896a731721661"
     },
     {
-      "bytes": 3861,
+      "bytes": 4003,
       "path": "trice_claim_card.json",
-      "sha256": "5dfc8a37bd69586add5ee24c5f5aa86ae39756fa7f28631fbe5722d94f6f50e7"
+      "sha256": "c2c8758ed555ccbc9328c894b63b20da289c56f754fd597c3b411e4bbad5009e"
     },
     {
-      "bytes": 2118,
+      "bytes": 2159,
       "path": "trice_claim_card.md",
-      "sha256": "5bb64ec2698acb3f164da3fe7e3e63aba814cf67f10dc0977353da0af3c1c9eb"
+      "sha256": "5dfa175ee4c314a3f69ede63fc75c3a417be88d3a9802bea820c59cf8215b0c0"
     },
     {
-      "bytes": 1454,
+      "bytes": 1487,
       "path": "trice_claim_card.tex",
-      "sha256": "3239e3240c00519e85fc73e2395e136327fc59bb88e10c56ed7e812258a52aa9"
+      "sha256": "416121d43096dece63aadfc09310c04d9293bf1568dcb783dba0b01243893abd"
     },
     {
-      "bytes": 1568,
+      "bytes": 1583,
       "path": "trice_claim_card.svg",
-      "sha256": "4b411e2befbd821e79dbb6fff6fc82276fa71a92bda24ddd9497355519b91655"
+      "sha256": "8966812c6faa4051a1c66b98fe1599c7f2c83a45d021ebb649232b4dc2ffc2fc"
     },
     {
-      "bytes": 3227,
+      "bytes": 3349,
       "path": "trice_remote_smoke_claim_card.json",
-      "sha256": "e296651963ef02ccfde115ab59f0cc87e5d938548878ed63ef8f8660113da641"
+      "sha256": "528f1f9e24d0497aff6b1302cb9fc66e05f2c63495d7bfb708f5748af4de9fc7"
     },
     {
-      "bytes": 1654,
+      "bytes": 1695,
       "path": "trice_remote_smoke_claim_card.md",
-      "sha256": "be853f3ca53854b89891e502cbf633d1dc7779148c1e6223225403e5a17632fb"
+      "sha256": "df555b59ce274bf898501a48440e94016777dbe538e44d8bb1092c07598033f4"
     },
     {
-      "bytes": 1381,
+      "bytes": 1414,
       "path": "trice_remote_smoke_claim_card.tex",
-      "sha256": "81cbffb211294a112e7be30367106e4d9b33bf0aecf28a246becc437f4a5de22"
+      "sha256": "5cfef7175ab2d65e807e5ee4d672f8a2a420c3bba2765cdf5b18189e27fd71ca"
     },
     {
-      "bytes": 1568,
+      "bytes": 1583,
       "path": "trice_remote_smoke_claim_card.svg",
-      "sha256": "83f680e0bc7052c66ed02d8049931e9bb823567f1d70151c281986f9d3f1d8dc"
+      "sha256": "0e36b692235d5aa18e6dddf25be0226247476c2094cc82656204ce2ee2f05bf2"
     },
     {
-      "bytes": 5903,
+      "bytes": 6132,
       "path": "trice_suite_readiness.json",
-      "sha256": "f98e2481ce47a262e618f0adee5481ee7227347e900613bfc68115cc420be1d7"
+      "sha256": "30a32533b71a878abb81be23e241617550a94ebfd1df4f23dcec5a68d59bf9a4"
     },
     {
-      "bytes": 2963,
+      "bytes": 3014,
       "path": "trice_suite_readiness.md",
-      "sha256": "86164b17f183f21148e3c2862f5fdc93f259d7d9f3384caecf591d1f5d6dd1d0"
+      "sha256": "213dfac8ef95e9af8af1bbb4a5609a773a930c24cd0a3245385a3b5e9df10161"
     },
     {
-      "bytes": 1726,
+      "bytes": 1764,
       "path": "trice_suite_readiness.tex",
-      "sha256": "4bf890b988dd6a1bed53cfc6903410a7ac979b065bcc120d123f3975e3ef8dec"
+      "sha256": "650fae004753c502a390d264c19f2d8058bfd887abf60a9bf50e6076a4b9b1d3"
     },
     {
-      "bytes": 1541,
+      "bytes": 1556,
       "path": "trice_suite_readiness.svg",
-      "sha256": "4d91f8694ce00bade3465790f10815166ae22a9f010eaa1c0f6077cdd014c059"
+      "sha256": "53aaecb582fb8d5e36f2858d9a6fea201f3be1950850ebf9e140acacb5378f75"
     },
     {
-      "bytes": 7194,
+      "bytes": 7447,
       "path": "trice_protocol_lock.json",
-      "sha256": "3e71413180ad94f43be0b6a35717ced48359b75ea382035c524a9b91e5e8296e"
+      "sha256": "877f06f9d5c312f5d9396fcc2bb3001122d27c91bdeb575236361c5d4c841d05"
     },
     {
-      "bytes": 3426,
+      "bytes": 3482,
       "path": "trice_protocol_lock.md",
-      "sha256": "c938a90b13682ff38edcec613d0a0122cc4991263cff8e115e160f61ae6dfe32"
+      "sha256": "91eea5cc7b9cdf84885cd25fad6e21c123ef8762fae12646318ac741df264b07"
     },
     {
-      "bytes": 2178,
+      "bytes": 2220,
       "path": "trice_protocol_lock.tex",
-      "sha256": "45cb5edf0cd52ec6a56a46ebac58ccb25682dd374ffbf21490917e89edbb37c8"
+      "sha256": "8954fbae74a61778e0ff1f8f4f4a97cfebd2141e2e094881a956bffd2608ffdc"
     },
     {
-      "bytes": 1853,
+      "bytes": 1871,
       "path": "trice_protocol_lock.svg",
-      "sha256": "a032e5c73b011aabe47c495ecbaccb10e3b5cb6c6d50b5dbfed91bf21ce33978"
+      "sha256": "60f21db9c8f26309a3b9bd820294ef550447ee1bac69926f6cd407544bdaf9c9"
     },
     {
-      "bytes": 4605,
+      "bytes": 4751,
       "path": "trice_design_card.json",
-      "sha256": "824157e0e43b9f08c69156e89e11c86314dde2afd4277989694fdea36c21c56b"
+      "sha256": "a9568aa5b32a54c99ab36bec232132c1a7f7ff7a25427353f0df1ef6f10140f2"
     },
     {
-      "bytes": 1769,
+      "bytes": 1808,
       "path": "trice_design_card.md",
-      "sha256": "83ff311eebbf057ee22082c7fdd820486e81fecfc3f3fd00e54b5657f4743179"
+      "sha256": "24184c75e8bc57ad8e022efa7a151b56c21738f50b8e5e2c6975947ec2f8db01"
     },
     {
-      "bytes": 1088,
+      "bytes": 1113,
       "path": "trice_design_card.tex",
-      "sha256": "61490dc79ab347e674338e85adb0df51b8ab03a528e5a6c6e272e56c2361bf83"
+      "sha256": "b286887225dc4fe3a6181107b77543d53d42fecc37e523319e704ddcccee0349"
     },
     {
-      "bytes": 1872,
+      "bytes": 1890,
       "path": "trice_design_card.svg",
-      "sha256": "ebd2a666e82bfca46d7f20c85f09bcf7a740a649fef14d131516a0640eb2a171"
+      "sha256": "c934474b06248e843374d971e53c30c06cc0190e779db1fc036a23c1782e640a"
     },
     {
-      "bytes": 19055,
+      "bytes": 19671,
       "path": "trice_contract_card.json",
-      "sha256": "d12882ba3835f059450a28dda62d2e281f89fab4688d3fb4ca22f12671770114"
+      "sha256": "2a6e22b58c2ab3af68bf77cea900c758d1e0e687a70a10eefd74743d6d303126"
     },
     {
-      "bytes": 3073,
+      "bytes": 3121,
       "path": "trice_contract_card.md",
-      "sha256": "7ca1e339f741f3d5abc9b4486ea138b5250624d52cef81c201ec2453cac3420c"
+      "sha256": "3f6d5e5735d9748d431e5980af509ce242341c17d519664b486f5859eb02fb61"
     },
     {
-      "bytes": 2281,
+      "bytes": 2315,
       "path": "trice_contract_card.tex",
-      "sha256": "7dfa5e4992145c76de08bfc9f22c9b0633ff8fae87400a1b24c4bcc423dc6cb1"
+      "sha256": "4171aa45f058f50401b48d114e43cc9185c34d2b17c7b0e3194cec75f569b778"
     },
     {
-      "bytes": 2770,
+      "bytes": 2800,
       "path": "trice_contract_card.svg",
-      "sha256": "ad479f93999029de732bf50f6cbca78a6906951b33c6fad692379d9d13b7dc78"
+      "sha256": "7e77597f9bdd0637d6724a1c6dfcae2c021bca715f21835ff9622b197ef1ce9d"
     },
     {
-      "bytes": 21475,
+      "bytes": 22152,
       "path": "trice_crates_card.json",
-      "sha256": "788b33d61254419e3d8615ae4214b28465bac0380ffd5953fbb19d90ce52724a"
+      "sha256": "f16c2a70c6b97b0bb311b5dc1cc4398eeb2d7a974f0e00255bda33a122fb16cf"
     },
     {
-      "bytes": 4314,
+      "bytes": 4374,
       "path": "trice_crates_card.md",
-      "sha256": "1da3276f117f27844d23aeca3efbe7f4dd70e18ce3904ae7bac58babf870b3bf"
+      "sha256": "aec12f6e366bc255d70f03f0764dec2fcd69fee1c287f364f09abb07edeee77b"
     },
     {
-      "bytes": 1586,
+      "bytes": 1614,
       "path": "trice_crates_card.tex",
-      "sha256": "bccd80f002520bf8768889252ea5af696b9f39ed7e39b003538ca3fbfe57c0fd"
+      "sha256": "86c113d572372a443d97acf0683b80c12380fcc2b07ca4e8bd90cbe2c509beef"
     },
     {
-      "bytes": 2098,
+      "bytes": 2119,
       "path": "trice_crates_card.svg",
-      "sha256": "664eb9831756a3911cb01fb218aed6f918757d1da3d1e761e30a65f57c1debd7"
+      "sha256": "506a9b559cb684b83291a60cf6b2e28d850e0a519b7cc82f3263920e4c0b21ee"
     },
     {
-      "bytes": 8044,
+      "bytes": 7300,
       "path": "trice_install_card.json",
-      "sha256": "c33a006c671916be9ddc94ffa00c6989af6941f523df93ab336e8a0979415a96"
+      "sha256": "5ce2df710d1d8763ed25bdf6ab79464ada6e22b45982a0b37efbd7eb7a5244f6"
     },
     {
-      "bytes": 1954,
+      "bytes": 1612,
       "path": "trice_install_card.md",
-      "sha256": "4f02b33fc4603696e451bf133216f3f3293b7aed5a39b0fcc060710cc3e5bd58"
+      "sha256": "5ce4188f9284a82ce94d154233ffbd04e38275341807e6b4b4828551af008968"
     },
     {
-      "bytes": 778,
+      "bytes": 791,
       "path": "trice_install_card.tex",
-      "sha256": "8e51c94ecfa2067f185c462fc023bcfcea150d55c6c7620a8233af6fa3686222"
+      "sha256": "44c0d99c3e7a9148efc51eacfe94b67da042f7fb9673128b23009b9a2983d4c2"
     },
     {
-      "bytes": 2118,
+      "bytes": 2136,
       "path": "trice_install_card.svg",
-      "sha256": "80c742d726e8a543640cc48a3423c74ab2de9c1bb87f284cc68a652ec71cd2ca"
+      "sha256": "6a00e58e08bb4ee9f95986c6d12ffc4352e2c9b35028dafe2a604bf8c231f291"
     },
     {
-      "bytes": 69670,
+      "bytes": 71467,
       "path": "trice_research_card.json",
-      "sha256": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
+      "sha256": "2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1"
     },
     {
-      "bytes": 2976,
+      "bytes": 3048,
       "path": "trice_research_card.md",
-      "sha256": "4e80e58ca503e9b2231cd3872492d8a62580c221e2c0eab0809de1d40e4a6a6d"
+      "sha256": "11017dcb47a10bdfe18d3c2441694a8bb30a5c6615893e9fc26edf382f042f4a"
     },
     {
-      "bytes": 1934,
+      "bytes": 1981,
       "path": "trice_research_card.tex",
-      "sha256": "ba418ccee03bd20ae7974b1a9bc1660aaf62ddea259309da5a628e4ceb69fdb1"
+      "sha256": "8d7063a24206a26ef502a54ddcd4174d38060bcea51e8fbf303a05ae21796dee"
     },
     {
-      "bytes": 2709,
+      "bytes": 2739,
       "path": "trice_research_card.svg",
-      "sha256": "efaab0fe3c99d58d14a4af53982db595ca6ae512e8e3a2f211df760439ac8a25"
+      "sha256": "5f7c83d6227266dca2ea31d08db13fe2d7b357689b5cc3507d61b60cbc930f42"
     },
     {
       "bytes": 45815,
@@ -224,6 +224,6 @@
   ],
   "platform": "Windows-10-10.0.26200-SP0",
   "python_version": "3.11.6",
-  "result_sha256": "edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a",
+  "result_sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8",
   "schema_version": "trice-evidence-manifest/v1"
 }

@@ -171,10 +171,10 @@
       "validate-receipt",
       "validate-suite"
     ],
-    "sha256": "08ff4bc81aee5c3acb9c4d0735b81465407561a70745df185ed6408262ee87fd",
+    "sha256": "8fd82b16299fb1eef8dc6138d0e8f68031bb7a8fe9f6edd880ab0d969fac7ccb",
     "source": "tracerazor/trice/cli.py"
   },
-  "contract_card_sha256": "5c574f3cc60b7aca8fdcf83f30ad68233beb2179ddbdca2291b96303a0bba450",
+  "contract_card_sha256": "dc9a3946bd06877f1585eb57075043b5ed4d3cc1d9a0d06134e09994a524a4f6",
   "contract_level": "library_contract_locked",
   "contract_score": 100,
   "examples": [

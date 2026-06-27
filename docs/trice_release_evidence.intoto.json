@@ -44,25 +44,25 @@
     },
     {
       "digest": {
-        "sha256": "e989dc19be087a9991ff05424457fd9aeef541056a30472add2e2a1db24b597d"
+        "sha256": "a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45"
       },
       "name": "paper/trice_v3_research_paper.pdf"
     },
     {
       "digest": {
-        "sha256": "c381bf08088c8c4d1227ee3b3d0f92439860f00195b362a01c7b2956ffee94d6"
+        "sha256": "b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e"
       },
       "name": "paper/trice_v3_research_manifest.json"
     },
     {
       "digest": {
-        "sha256": "8e6f523699b23b264876f48d41b042c5e74b3b30ba8381ef605bdc1f710f0b8f"
+        "sha256": "273a1df9a8542526243ed59fbc78032886e66a100c62d5bb33cdab432c1d2f36"
       },
       "name": "docs/trice_artifact_card.json"
     },
     {
       "digest": {
-        "sha256": "9d2cb75affbee6676d7e9a00949f41ca5995202b14f9fc0b7a18240f461e0b5c"
+        "sha256": "2a6e22b58c2ab3af68bf77cea900c758d1e0e687a70a10eefd74743d6d303126"
       },
       "name": "docs/trice_contract_card.json"
     },
@@ -74,13 +74,13 @@
     },
     {
       "digest": {
-        "sha256": "b019465c0cc37cf4af4ef6a2e8d9f5574cdf1ecc539a802ec7bf4ff59b9935a7"
+        "sha256": "5ce2df710d1d8763ed25bdf6ab79464ada6e22b45982a0b37efbd7eb7a5244f6"
       },
       "name": "docs/trice_install_card.json"
     },
     {
       "digest": {
-        "sha256": "579d3b8898f6bdb7ab8b20aa1e58dc6f5118923f3d12a09b8d512fc9fe26eb84"
+        "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
       },
       "name": "docs/trice_reproduction_card.json"
     },
@@ -92,7 +92,7 @@
     },
     {
       "digest": {
-        "sha256": "c2a3187435d2e3d6e360273ae488dc6ed1a708a1e9194fd737a19f83d6749adf"
+        "sha256": "2be33fcbc0dad91032d6f5c15df1fc5f0e40816f6e88cc3b7bee7c9e0e347095"
       },
       "name": "dist/tracerazor-1.0.3.tar.gz"
     },
@@ -110,7 +110,7 @@
     },
     {
       "digest": {
-        "sha256": "2698409bb78759f6e661ad5dd1097815bb5ea1d27ce8445fbe8692acc13f3712"
+        "sha256": "bda47590b13ab949078d45f866ff2ae61ae2f736f2211945a66cba098facad36"
       },
       "name": "dist/tracerazor-1.0.3-py3-none-any.whl"
     }
