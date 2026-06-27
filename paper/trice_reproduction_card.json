@@ -1,0 +1,200 @@
+{
+  "checks": [
+    {
+      "name": "inputs_available",
+      "observed": "10/10",
+      "passed": true,
+      "required": "10/10 inputs present"
+    },
+    {
+      "name": "readiness_reproduces",
+      "observed": "smoke_ready",
+      "passed": true,
+      "required": "readiness verifier ok"
+    },
+    {
+      "name": "protocol_reproduces",
+      "observed": "smoke_protocol_locked",
+      "passed": true,
+      "required": "protocol verifier ok"
+    },
+    {
+      "name": "design_reproduces",
+      "observed": "smoke_design_observed",
+      "passed": true,
+      "required": "design verifier ok"
+    },
+    {
+      "name": "claim_reproduces",
+      "observed": "smoke",
+      "passed": true,
+      "required": "claim-card verifier ok"
+    },
+    {
+      "name": "bundle_reproduces",
+      "observed": 77,
+      "passed": true,
+      "required": "bundle verifier ok"
+    },
+    {
+      "name": "paper_reproduces",
+      "observed": 43,
+      "passed": true,
+      "required": "paper manifest verifier ok"
+    }
+  ],
+  "claim_allowed": false,
+  "commands": [
+    {
+      "command": "python -m tracerazor.trice suite verify-readiness docs/trice_suite_readiness.json --manifest examples/trice_suite_bundled_live.json",
+      "name": "verify-readiness",
+      "purpose": "Verify suite readiness card.",
+      "sha256": "86ca731546337ec80d7c23f30f142f964758bd844b3842732525fa84e1e72f56"
+    },
+    {
+      "command": "python -m tracerazor.trice verify-protocol docs/trice_protocol_lock.json --manifest examples/trice_suite_bundled_live.json",
+      "name": "verify-protocol",
+      "purpose": "Verify protocol lock.",
+      "sha256": "3bb35232889d742c9426f6040f732f0310b94153db61c107e0c9a98b8e997d5c"
+    },
+    {
+      "command": "python -m tracerazor.trice verify-design docs/trice_design_card.json --protocol docs/trice_protocol_lock.json --suite-result benchmark/trice/results/v2-broad-smoke/trice_suite_results.json",
+      "name": "verify-design",
+      "purpose": "Verify statistical design card.",
+      "sha256": "fc7863596d03d6e321c8a1a38eee40f59c3e317d2c61eea71fd898cacbead3f2"
+    },
+    {
+      "command": "python -m tracerazor.trice verify-claim docs/trice_claim_card.json --suite-result benchmark/trice/results/v2-broad-smoke/trice_suite_results.json --manifest benchmark/trice/results/v2-broad-smoke/trice_suite_evidence_manifest.json",
+      "name": "verify-claim",
+      "purpose": "Verify deterministic claim card.",
+      "sha256": "1c328b3771b3a7e1ba337b59d5a46d15e966b3236e61e12f0e38a372624206d0"
+    },
+    {
+      "command": "python -m tracerazor.trice verify-bundle benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip",
+      "name": "verify-bundle",
+      "purpose": "Verify portable evidence bundle.",
+      "sha256": "19d410911fe88fd6c72596b132d46b878053e7193c094e026d63ccc2ec5999a1"
+    },
+    {
+      "command": "python -m tracerazor.trice verify paper/trice_v3_research_manifest.json --result benchmark/trice/results/v2-smoke/trice_v2_live_results.json",
+      "name": "verify-paper",
+      "purpose": "Verify paper manifest and generated artifacts.",
+      "sha256": "46a946c7471dd2eadfab90a359cf0148093b1eecc6e740ea9d6c1d252ca6cf36"
+    },
+    {
+      "command": "python -m tracerazor.trice verify-artifact docs/trice_artifact_card.json",
+      "name": "verify-artifact",
+      "purpose": "Verify final artifact card after it has been regenerated.",
+      "sha256": "05946657b30c14d6d761ee3c61583728aa661dded680f2751db56ec9980d43c7"
+    }
+  ],
+  "inputs": {
+    "broad_evidence_bundle": {
+      "bytes": 117496,
+      "path": "benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip",
+      "present": true,
+      "sha256": "a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564"
+    },
+    "broad_suite_manifest": {
+      "bytes": 2491,
+      "path": "benchmark/trice/results/v2-broad-smoke/trice_suite_evidence_manifest.json",
+      "present": true,
+      "sha256": "1d05fcbdb173da8629910545191ec55e3144743a8ded98f687d66d4df8f1d46b"
+    },
+    "broad_suite_result": {
+      "bytes": 17161,
+      "path": "benchmark/trice/results/v2-broad-smoke/trice_suite_results.json",
+      "present": true,
+      "sha256": "1622ffb36464e6e41cbadecd1c5ed6cceb678af89a2a5a5a3c999258559c3f2d"
+    },
+    "claim_card": {
+      "bytes": 4003,
+      "path": "docs/trice_claim_card.json",
+      "present": true,
+      "sha256": "c255524ca8674f1aaa1ae047f379589bab2ce9d538f29c90b249c18aca278761"
+    },
+    "design_card": {
+      "bytes": 4751,
+      "path": "docs/trice_design_card.json",
+      "present": true,
+      "sha256": "a9568aa5b32a54c99ab36bec232132c1a7f7ff7a25427353f0df1ef6f10140f2"
+    },
+    "paper_manifest": {
+      "bytes": 7591,
+      "path": "paper/trice_v3_research_manifest.json",
+      "present": true,
+      "sha256": "c381bf08088c8c4d1227ee3b3d0f92439860f00195b362a01c7b2956ffee94d6"
+    },
+    "paper_result": {
+      "bytes": 46879,
+      "path": "benchmark/trice/results/v2-smoke/trice_v2_live_results.json",
+      "present": true,
+      "sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8"
+    },
+    "protocol_lock": {
+      "bytes": 7447,
+      "path": "docs/trice_protocol_lock.json",
+      "present": true,
+      "sha256": "877f06f9d5c312f5d9396fcc2bb3001122d27c91bdeb575236361c5d4c841d05"
+    },
+    "readiness": {
+      "bytes": 6132,
+      "path": "docs/trice_suite_readiness.json",
+      "present": true,
+      "sha256": "30a32533b71a878abb81be23e241617550a94ebfd1df4f23dcec5a68d59bf9a4"
+    },
+    "suite_manifest": {
+      "bytes": 2066,
+      "path": "examples/trice_suite_bundled_live.json",
+      "present": true,
+      "sha256": "fd4335bea5164e4e0dd479ff5154947c54941d9c9704258b018b51c172a7859b"
+    }
+  },
+  "next_actions": [
+    "Publish the reproduction card with release assets.",
+    "Run the listed commands in a clean wheel install before public release.",
+    "Do not claim S-tier until held-out claim evidence and claim card pass."
+  ],
+  "python_executable": "python",
+  "reproduction_card_sha256": "93b72e49bf920f91a6a5c024cf74669d448c1dc1afed7ad6d5dab742fd747ec0",
+  "reproduction_level": "reviewer_replay_ready_smoke",
+  "reproduction_score": 100,
+  "research_basis": [
+    "Reproduction should be possible from documented commands, not only from prose.",
+    "FAIR and RO-Crate-style packaging motivate explicit inventories, metadata, and machine-checkable paths.",
+    "Artifact-review practice separates availability, functionality, and independent reproduction.",
+    "TRICE reproduction cards bind commands and input hashes while leaving S-tier outcome claims to claim cards."
+  ],
+  "schema_version": "trice-reproduction-card/v1",
+  "verdicts": {
+    "claim_card": {
+      "claim_level": "smoke",
+      "errors": [],
+      "ok": true
+    },
+    "design_card": {
+      "design_level": "smoke_design_observed",
+      "errors": [],
+      "ok": true
+    },
+    "evidence_bundle": {
+      "entry_count": 77,
+      "errors": [],
+      "ok": true
+    },
+    "paper_manifest": {
+      "errors": [],
+      "ok": true
+    },
+    "protocol_lock": {
+      "errors": [],
+      "ok": true,
+      "protocol_level": "smoke_protocol_locked"
+    },
+    "readiness": {
+      "errors": [],
+      "ok": true,
+      "readiness_level": "smoke_ready"
+    }
+  }
+}

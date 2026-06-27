@@ -1,0 +1,330 @@
+{
+  "checks": [
+    {
+      "name": "local_package",
+      "observed": "installed: version 1.0.3",
+      "passed": true,
+      "required": "local package imports with version"
+    },
+    {
+      "name": "bundled_cli",
+      "observed": "source-build: C:\\Users\\zulfa\\TraceRazor\\target\\release\\tracerazor.exe; binary=1.0.3",
+      "passed": true,
+      "required": "CLI binary is bundled or source-build reachable"
+    },
+    {
+      "name": "schemas",
+      "observed": "available: 19 schemas",
+      "passed": true,
+      "required": "all public contract schemas are shipped"
+    },
+    {
+      "name": "artifact_card_verifies",
+      "observed": "review_ready_smoke",
+      "passed": true,
+      "required": "artifact card verifies"
+    },
+    {
+      "name": "reproduction_card_verifies",
+      "observed": "reviewer_replay_ready_smoke",
+      "passed": true,
+      "required": "reproduction card verifies"
+    },
+    {
+      "name": "contract_card_verifies",
+      "observed": "library_contract_locked",
+      "passed": true,
+      "required": "public API/CLI/schema contract card verifies"
+    },
+    {
+      "name": "install_card_verifies",
+      "observed": "python_trice_install_ready",
+      "passed": true,
+      "required": "clean-wheel installability card verifies"
+    },
+    {
+      "name": "release_docs_present",
+      "observed": "8/8",
+      "passed": true,
+      "required": "README, trust matrix, release checklist, pyproject, contract card, and install card present"
+    },
+    {
+      "name": "pypi",
+      "observed": "mismatch: latest=1.0.2 local=1.0.3",
+      "passed": false,
+      "required": "PyPI latest version matches local version"
+    },
+    {
+      "name": "piwheels",
+      "observed": "missing: files=0 local=1.0.3",
+      "passed": false,
+      "required": "piwheels exposes the local version file"
+    },
+    {
+      "name": "crates_io",
+      "observed": "missing: crate tracerazor is not published",
+      "passed": false,
+      "required": "crates.io package is published"
+    },
+    {
+      "name": "github_tag",
+      "observed": "pending: head=ada742be30bb local_tag=False remote_tag=False",
+      "passed": false,
+      "required": "local version tag points at current commit locally and remotely"
+    },
+    {
+      "name": "github_actions",
+      "observed": "not-green: Agent Efficiency Gate=completed/success; Release=queued/None; TraceRazor CI=completed/failure",
+      "passed": false,
+      "required": "required public workflows are green"
+    },
+    {
+      "name": "openssf_scorecard",
+      "observed": "missing: OpenSSF Scorecard result is not published yet",
+      "passed": false,
+      "required": "OpenSSF Scorecard is published with score >= 7.0"
+    },
+    {
+      "name": "provenance_plan_documented",
+      "observed": "trusted publishing/OIDC",
+      "passed": true,
+      "required": "trusted publishing and OIDC documented"
+    },
+    {
+      "name": "attestation_plan_documented",
+      "observed": "GitHub artifact attestations",
+      "passed": true,
+      "required": "GitHub release artifact attestation documented"
+    },
+    {
+      "name": "sbom_plan_documented",
+      "observed": "CycloneDX/SHA-256",
+      "passed": true,
+      "required": "SBOM and checksum release assets documented"
+    }
+  ],
+  "commands": [
+    {
+      "command": "python -m tracerazor.trice doctor --format json --timeout-s 10",
+      "name": "doctor",
+      "sha256": "ace403f07d9cdbbb8401ec8e982c252642c33cc7acae62c7ff7807f3db991b4f"
+    },
+    {
+      "command": "python -m tracerazor.trice verify-contract docs/trice_contract_card.json",
+      "name": "verify-contract",
+      "sha256": "26a26a37b116960dfdca3bc9704e688eb6a5d1a1c82e3e69b84cbdb82010539c"
+    },
+    {
+      "command": "python -m tracerazor.trice verify-reproduction docs/trice_reproduction_card.json",
+      "name": "verify-reproduction",
+      "sha256": "779e496fabdd046bfe476feaaf83f55207dbecf8196056668147cd9cd51a77e4"
+    },
+    {
+      "command": "python -m tracerazor.trice verify-artifact docs/trice_artifact_card.json",
+      "name": "verify-artifact",
+      "sha256": "05946657b30c14d6d761ee3c61583728aa661dded680f2751db56ec9980d43c7"
+    },
+    {
+      "command": "python -m build --sdist --wheel --no-isolation",
+      "name": "build",
+      "sha256": "9031da9cd5124c3c14d41d5d56618decc8e63c2f41a6fa4af95b83ba63903d02"
+    },
+    {
+      "command": "python -m twine check dist/*",
+      "name": "twine-check",
+      "sha256": "2611b34af93f3e90963b7fed63687aa18ba0f214e5d182f5aa06a5034190b53c"
+    },
+    {
+      "command": "python -m pip_audit --progress-spinner off .",
+      "name": "pip-audit",
+      "sha256": "6f3d9cd7942d8fe624235804a19d35ae4dab5fffb847cfabee93798a1242965d"
+    },
+    {
+      "command": "scorecard --repo=github.com/ZulfaqarHafez/TraceRazor",
+      "name": "scorecard",
+      "sha256": "ff4ddd6a008e6779932b065ce97cd0c68610b19da5db90a6f952581576f439e9"
+    }
+  ],
+  "doctor_snapshot": {
+    "checks": {
+      "bundled_cli": {
+        "detail": "C:\\Users\\zulfa\\TraceRazor\\target\\release\\tracerazor.exe; binary=1.0.3",
+        "ok": true,
+        "status": "source-build"
+      },
+      "crates_io": {
+        "detail": "crate tracerazor is not published",
+        "ok": false,
+        "status": "missing",
+        "url": "https://crates.io/api/v1/crates/tracerazor"
+      },
+      "github_actions": {
+        "detail": "Agent Efficiency Gate=completed/success; Release=queued/None; TraceRazor CI=completed/failure",
+        "ok": false,
+        "status": "not-green",
+        "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
+      },
+      "github_tag": {
+        "detail": "head=ada742be30bb local_tag=False remote_tag=False",
+        "ok": false,
+        "status": "pending"
+      },
+      "local_package": {
+        "detail": "version 1.0.3",
+        "ok": true,
+        "status": "installed"
+      },
+      "openssf_scorecard": {
+        "detail": "OpenSSF Scorecard result is not published yet",
+        "ok": false,
+        "status": "missing",
+        "url": "https://api.scorecard.dev/projects/github.com/ZulfaqarHafez/TraceRazor"
+      },
+      "piwheels": {
+        "detail": "files=0 local=1.0.3",
+        "ok": false,
+        "status": "missing",
+        "url": "https://www.piwheels.org/project/tracerazor/json"
+      },
+      "pypi": {
+        "detail": "latest=1.0.2 local=1.0.3",
+        "ok": false,
+        "status": "mismatch",
+        "url": "https://pypi.org/pypi/tracerazor/json"
+      },
+      "schemas": {
+        "detail": "19 schemas",
+        "ok": true,
+        "status": "available"
+      }
+    },
+    "local_version": "1.0.3",
+    "offline": false,
+    "package": "tracerazor",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.6",
+    "schema_version": "trice-doctor/v1",
+    "summary": {
+      "failed": [
+        "pypi",
+        "piwheels",
+        "crates_io",
+        "github_tag",
+        "github_actions",
+        "openssf_scorecard"
+      ],
+      "ok": false,
+      "unknown": []
+    }
+  },
+  "doctor_snapshot_sha256": "5a5a8b7c941e8a5cb698f5e672b60590ee1f76b270a62d45749b4b2b417e2c2b",
+  "inputs": {
+    "artifact_card": {
+      "bytes": 16660,
+      "path": "docs/trice_artifact_card.json",
+      "present": true,
+      "sha256": "8e6f523699b23b264876f48d41b042c5e74b3b30ba8381ef605bdc1f710f0b8f"
+    },
+    "contract_card": {
+      "bytes": 19671,
+      "path": "docs/trice_contract_card.json",
+      "present": true,
+      "sha256": "9d2cb75affbee6676d7e9a00949f41ca5995202b14f9fc0b7a18240f461e0b5c"
+    },
+    "install_card": {
+      "bytes": 8219,
+      "path": "docs/trice_install_card.json",
+      "present": true,
+      "sha256": "b019465c0cc37cf4af4ef6a2e8d9f5574cdf1ecc539a802ec7bf4ff59b9935a7"
+    },
+    "public_trust_matrix": {
+      "bytes": 11212,
+      "path": "docs/public_trust_matrix.md",
+      "present": true,
+      "sha256": "c5b0b5173a8efbe35ce1526401a5a6b88c0813d92d6625eac7d3055813b614b5"
+    },
+    "pyproject": {
+      "bytes": 5850,
+      "path": "pyproject.toml",
+      "present": true,
+      "sha256": "a59e14dfdd4c752e93403818f1a4b32c2ccb1bae577132d7f6e6aef53865d1a3"
+    },
+    "readme": {
+      "bytes": 84701,
+      "path": "README.md",
+      "present": true,
+      "sha256": "61cb955903b1ef2a0c3684407111a836b8a130c8d6f36f1280bdd2994fbe478b"
+    },
+    "release_checklist": {
+      "bytes": 9097,
+      "path": "docs/release_checklist.md",
+      "present": true,
+      "sha256": "e76b3715759701f51d86cce960e7d25297c5b13f08534e6c8b574a683d79664a"
+    },
+    "reproduction_card": {
+      "bytes": 7494,
+      "path": "docs/trice_reproduction_card.json",
+      "present": true,
+      "sha256": "579d3b8898f6bdb7ab8b20aa1e58dc6f5118923f3d12a09b8d512fc9fe26eb84"
+    }
+  },
+  "next_actions": [
+    "Publish 1.0.3 to PyPI or lower the local version until it matches the public registry.",
+    "Wait for piwheels to expose the 1.0.3 file after PyPI publish.",
+    "Publish the Rust crates or keep cargo-install claims out of the README.",
+    "Create and push the v1.0.3 tag only after local gates pass.",
+    "Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.",
+    "Run and publish OpenSSF Scorecard until the public score is at least 7.0."
+  ],
+  "package": {
+    "local_version": "1.0.3",
+    "name": "tracerazor",
+    "offline": false,
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.6"
+  },
+  "public_release_ready": false,
+  "release_card_sha256": "a840896aecebd928cdd5b73499c811879a32e2dac91a656928b8f1760a370006",
+  "release_level": "local_release_candidate",
+  "release_score": 65,
+  "research_basis": [
+    "SLSA frames provenance as a release property: consumers need to know what built an artifact, how, and from which inputs.",
+    "OpenSSF Scorecard treats public project health as a set of automated checks rather than maintainer promises.",
+    "PyPI trusted publishing reduces long-lived credential exposure and enables index-hosted attestations.",
+    "GitHub artifact attestations provide hosted provenance records for release assets generated in Actions.",
+    "CycloneDX-style SBOMs and SHA-256 checksums make release assets inspectable by downstream users.",
+    "SemVer trust depends on a declared public API; the TRICE contract card binds imports, CLI commands, schemas, examples, and docs before publication.",
+    "Clean-wheel installability verifies packaged data and console scripts after build, separating Python/TRICE readiness from platform-bundled Rust CLI readiness.",
+    "TRICE release cards separate local proof readiness from public distribution readiness and refuse S-tier wording while public gates are red."
+  ],
+  "s_tier_claim_allowed": false,
+  "schema_version": "trice-release-card/v1",
+  "verdicts": {
+    "artifact_card": {
+      "artifact_level": "review_ready_smoke",
+      "artifact_review_score": 100,
+      "claim_allowed": false,
+      "errors": [],
+      "ok": true
+    },
+    "contract_card": {
+      "contract_level": "library_contract_locked",
+      "contract_score": 100,
+      "errors": [],
+      "ok": true
+    },
+    "install_card": {
+      "errors": [],
+      "install_level": "python_trice_install_ready",
+      "install_score": 90,
+      "ok": true
+    },
+    "reproduction_card": {
+      "claim_allowed": false,
+      "errors": [],
+      "ok": true,
+      "reproduction_level": "reviewer_replay_ready_smoke",
+      "reproduction_score": 100
+    }
+  }
+}

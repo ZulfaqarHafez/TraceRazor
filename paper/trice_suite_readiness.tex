@@ -1,5 +1,5 @@
 \section{Suite Readiness Preflight}
-Suite \texttt{bundled-live-six-task-suite} is \texttt{smoke\_ready} with readiness score 55/100. It plans 6 live run(s) across 6 task cluster(s), requiring at least 12 verifier invocations before retries.
+Suite \texttt{bundled-live-six-task-suite} is \texttt{smoke\_ready} with readiness score 60/100. It plans 6 live run(s) across 6 task cluster(s), requiring at least 12 verifier invocations before retries.
 
 \begin{table}[h]
 \centering
@@ -20,6 +20,7 @@ remote\_git\_sources & no & all tasks use remote Git URLs \\
 commit\_sha\_revisions & no & all git.rev values are 40-hex commit SHA \\
 adapter\_profiles & yes & all tasks use adapter\_profile \\
 target\_savings & yes & >= 0.600 \\
+evidence\_recall\_gate & yes & >= 0.950 \\
 pass\_regression\_gate & yes & 0 \\
 receipt\_validation\_gate & yes & true \\
 \bottomrule

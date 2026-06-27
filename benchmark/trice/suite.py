@@ -68,6 +68,8 @@ class SuiteTaskRun:
     accepted_rounds: int
     pass_regressions: int
     smoke_gate_passed: bool
+    evidence_recall: float | None = None
+    evidence_recall_passed: bool | None = None
 
 
 @dataclass
@@ -134,6 +136,7 @@ def scaffold_suite_manifest(source_path: str | Path, out_path: str | Path) -> di
                 "require_adapter_profiles": True,
                 "min_mean_savings": 0.60,
                 "min_clustered_savings_ci_low": 0.60,
+                "min_evidence_recall": 0.95,
                 "max_pass_regressions": 0,
             }
         ),
@@ -287,6 +290,8 @@ def run_suite_manifest(
             child_results.append(live_result)
             gate = live_result.claim_gate or {}
             run_savings = round(float(gate.get("mean_savings", 0.0)), 6)
+            recall_value = gate.get("evidence_recall_minimum")
+            recall_passed = int(gate.get("evidence_recall_failures", 0)) == 0
             cluster_savings.setdefault(spec.task_id, []).append(run_savings)
             result.tasks.append(
                 SuiteTaskRun(
@@ -305,6 +310,8 @@ def run_suite_manifest(
                     accepted_rounds=int(gate.get("accepted_rounds", 0)),
                     pass_regressions=int(gate.get("pass_regressions", 0)),
                     smoke_gate_passed=bool(gate.get("smoke_gate_passed", False)),
+                    evidence_recall=round(float(recall_value), 6) if recall_value is not None else None,
+                    evidence_recall_passed=recall_passed,
                 )
             )
 
@@ -367,8 +374,8 @@ def render_suite_report(result: SuiteRunResult) -> str:
         "",
         "## Tasks",
         "",
-        "| Task | Replicate | Rounds | Mean savings | Accepted | Pass regressions | Child manifest |",
-        "|---|---:|---:|---:|---:|---:|---|",
+            "| Task | Replicate | Rounds | Mean savings | Accepted | Pass regressions | Child manifest |",
+            "|---|---:|---:|---:|---:|---:|---|",
     ]
     for task in result.tasks:
         lines.append(
@@ -393,6 +400,8 @@ def render_suite_report(result: SuiteRunResult) -> str:
             f"- Task clusters: {gate.get('task_cluster_count', 0)}",
             f"- Replicates: {gate.get('replicate_count', 0)}",
             f"- Pass regressions: {gate.get('pass_regressions', 0)}",
+            f"- Evidence recall minimum: {gate.get('evidence_recall_minimum', 0.0):.1%}",
+            f"- Evidence recall failures: {gate.get('evidence_recall_failures', 0)}",
             f"- Local smoke gate passed: {'yes' if gate.get('smoke_gate_passed') else 'no'}",
             f"- Broad claim allowed: {'yes' if gate.get('broad_claim_allowed') else 'no'}",
             f"- Rationale: {gate.get('rationale', 'not computed')}",
@@ -481,6 +490,7 @@ def _s_tier_gate(
     min_mean_savings = float(config.get("min_mean_savings", target_savings))
     min_clustered_ci_low = float(config.get("min_clustered_savings_ci_low", target_savings))
     max_pass_regressions = int(config.get("max_pass_regressions", 0))
+    min_evidence_recall = float(config.get("min_evidence_recall", 0.95))
     require_locked_git_sources = bool(config.get("require_locked_git_sources", True))
     require_remote_git_sources = bool(config.get("require_remote_git_sources", True))
     require_adapter_profiles = bool(config.get("require_adapter_profiles", True))
@@ -506,6 +516,16 @@ def _s_tier_gate(
             int(failures.get("unaccepted_runs", 0)) == 0,
             observed=failures.get("unaccepted_runs", 0),
             required="0 unaccepted runs",
+        ),
+        "evidence_recall": _gate_check(
+            float(gate.get("evidence_recall_minimum", 0.0)) >= min_evidence_recall
+            and int(gate.get("evidence_recall_failures", 0)) == 0
+            and all(task.evidence_recall is not None for task in result.tasks),
+            observed={
+                "minimum": gate.get("evidence_recall_minimum"),
+                "failures": gate.get("evidence_recall_failures"),
+            },
+            required=f">= {min_evidence_recall:.3f} on every accepted optimized run",
         ),
         "task_clusters": _gate_check(
             len(cluster_savings) >= min_task_clusters,
@@ -554,6 +574,7 @@ def _s_tier_gate(
             "min_mean_savings": min_mean_savings,
             "min_clustered_savings_ci_low": min_clustered_ci_low,
             "max_pass_regressions": max_pass_regressions,
+            "min_evidence_recall": min_evidence_recall,
             "require_locked_git_sources": require_locked_git_sources,
             "require_remote_git_sources": require_remote_git_sources,
             "require_adapter_profiles": require_adapter_profiles,

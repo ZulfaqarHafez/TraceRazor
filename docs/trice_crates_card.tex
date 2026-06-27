@@ -1,0 +1,28 @@
+\section{Crates Publish Card}
+Crates level: \texttt{publish\_plan\_locked}; score: 80/100; cargo-install claim allowed: no.
+
+\begin{tabular}{lrl}
+Check & Passed & Required \\
+\hline
+workspace\_manifest\_present & yes & workspace Cargo.toml is present \\
+crate\_manifests\_present & yes & all publish crate manifests are present \\
+version\_alignment & yes & workspace and crate package versions match \\
+publish\_order\_topological & yes & each local dependency appears earlier in the publish order \\
+dependency\_versions\_pinned & yes & all local crate dependencies pin the workspace version \\
+metadata\_complete & yes & description, license, repository, readme, keywords, and categories are present \\
+stage\_one\_publishable & yes & first-stage crates have no unpublished local dependencies \\
+readme\_install\_honesty & yes & README does not claim cargo install until tracerazor is live on crates.io \\
+public\_crates\_live & no & all six crates are published at the local version \\
+cargo\_install\_truth & no & cargo install tracerazor is true for the local version \\
+\end{tabular}
+
+\begin{tabular}{rllr}
+Stage & Crate & Local dependencies & Publishable now \\
+\hline
+1 & tracerazor-core & none & yes \\
+1 & tracerazor-semantic & none & yes \\
+2 & tracerazor-ingest & tracerazor-core & no \\
+2 & tracerazor-store & tracerazor-core & no \\
+3 & tracerazor-server & tracerazor-core, tracerazor-ingest, tracerazor-semantic, tracerazor-store & no \\
+4 & tracerazor & tracerazor-core, tracerazor-ingest, tracerazor-semantic, tracerazor-server, tracerazor-store & no \\
+\end{tabular}

@@ -1,0 +1,121 @@
+{
+  "$id": "https://tracerazor.dev/schemas/trice_protocol_lock.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRICE protocol lock",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "protocol_id",
+    "scope",
+    "protocol_level",
+    "protocol_score",
+    "claim_allowed_by_protocol",
+    "input_sha256",
+    "source",
+    "suite_shape",
+    "evaluation_contract",
+    "checks",
+    "research_basis",
+    "non_claims",
+    "next_actions",
+    "protocol_lock_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trice-protocol-lock/v1"
+    },
+    "protocol_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "protocol_level": {
+      "enum": ["invalid_protocol", "smoke_protocol_locked", "pilot_protocol_ready", "claim_protocol_ready"]
+    },
+    "protocol_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "claim_allowed_by_protocol": {
+      "type": "boolean"
+    },
+    "input_sha256": {
+      "type": "object",
+      "required": ["suite_manifest", "readiness_preflight"],
+      "properties": {
+        "suite_manifest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "readiness_preflight": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["suite_manifest_path", "suite_name", "suite_schema_version"]
+    },
+    "suite_shape": {
+      "type": "object",
+      "required": ["task_clusters", "planned_runs", "rounds_per_run", "replicates_per_task"],
+      "properties": {
+        "task_clusters": { "type": "integer", "minimum": 0 },
+        "planned_runs": { "type": "integer", "minimum": 0 },
+        "rounds_per_run": { "type": "integer", "minimum": 1 },
+        "replicates_per_task": { "type": "object" }
+      }
+    },
+    "evaluation_contract": {
+      "type": "object",
+      "required": [
+        "primary_metric",
+        "quality_guardrail",
+        "confidence_method",
+        "unit_of_analysis",
+        "target_mean_input_token_savings",
+        "target_clustered_ci_low",
+        "evidence_recall_min",
+        "max_pass_regressions",
+        "min_task_clusters",
+        "min_replicates_per_task"
+      ],
+      "properties": {
+        "evidence_recall_min": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed", "observed", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "research_basis": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "non_claims": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "protocol_lock_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

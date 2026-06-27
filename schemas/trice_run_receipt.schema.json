@@ -173,6 +173,49 @@
             "type": "integer",
             "minimum": 0
           }
+        },
+        "evidence_recall": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": ["schema_version", "evidence_recall", "required_min", "passed"],
+          "properties": {
+            "schema_version": {
+              "type": "string",
+              "const": "trice-evidence-recall/v1"
+            },
+            "evidence_recall": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "required_min": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "passed": {
+              "type": "boolean"
+            },
+            "obligation_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "obligation_tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "recalled_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "recalled_tokens": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "missing": {
+              "type": "array"
+            }
+          }
         }
       }
     },

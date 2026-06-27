@@ -1,0 +1,253 @@
+{
+  "checks": [
+    {
+      "name": "manifest_valid",
+      "observed": "trice-suite/v1",
+      "passed": true,
+      "required": "trice-suite/v1"
+    },
+    {
+      "name": "unique_task_ids",
+      "observed": [
+        "csv-filter",
+        "dedupe-helpers",
+        "fix-imports",
+        "fix-offby-one",
+        "implement-median",
+        "rename-api"
+      ],
+      "passed": true,
+      "required": "all task_id values unique"
+    },
+    {
+      "name": "deterministic_interventions",
+      "observed": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "passed": true,
+      "required": "exactly one intervention per task"
+    },
+    {
+      "name": "primary_metric",
+      "observed": "input_token_savings",
+      "passed": true,
+      "required": "input_token_savings"
+    },
+    {
+      "name": "cost_quality_joint_gate",
+      "observed": [
+        "input_token_savings",
+        "pass_regressions"
+      ],
+      "passed": true,
+      "required": "savings measured with pass preservation"
+    },
+    {
+      "name": "target_mean_savings",
+      "observed": 0.6,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "clustered_ci_target",
+      "observed": 0.6,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "evidence_recall_gate",
+      "observed": 0.95,
+      "passed": true,
+      "required": ">= 0.950"
+    },
+    {
+      "name": "pass_regression_gate",
+      "observed": 0,
+      "passed": true,
+      "required": "0"
+    },
+    {
+      "name": "receipt_validation_gate",
+      "observed": true,
+      "passed": true,
+      "required": "true"
+    },
+    {
+      "name": "remote_git_sources",
+      "observed": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "passed": false,
+      "required": "all tasks use remote Git URLs"
+    },
+    {
+      "name": "commit_sha_revisions",
+      "observed": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "passed": false,
+      "required": "all git.rev values are 40-hex commit SHA"
+    },
+    {
+      "name": "adapter_profiles",
+      "observed": [
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json",
+        "trice_adapter_profile_bundled_tasks.json"
+      ],
+      "passed": true,
+      "required": "all tasks use adapter_profile"
+    },
+    {
+      "name": "pilot_task_clusters",
+      "observed": 6,
+      "passed": false,
+      "required": ">= 10"
+    },
+    {
+      "name": "pilot_replicates_per_task",
+      "observed": {
+        "csv-filter": 1,
+        "dedupe-helpers": 1,
+        "fix-imports": 1,
+        "fix-offby-one": 1,
+        "implement-median": 1,
+        "rename-api": 1
+      },
+      "passed": false,
+      "required": "each task >= 2"
+    },
+    {
+      "name": "claim_task_clusters",
+      "observed": 6,
+      "passed": false,
+      "required": ">= 50"
+    },
+    {
+      "name": "claim_replicates_per_task",
+      "observed": {
+        "csv-filter": 1,
+        "dedupe-helpers": 1,
+        "fix-imports": 1,
+        "fix-offby-one": 1,
+        "implement-median": 1,
+        "rename-api": 1
+      },
+      "passed": false,
+      "required": "each task >= 3"
+    },
+    {
+      "name": "all_runs_accepted_gate",
+      "observed": true,
+      "passed": true,
+      "required": "all optimized runs accepted"
+    },
+    {
+      "name": "evidence_bundle_required",
+      "observed": ".trice.zip",
+      "passed": true,
+      "required": "portable evidence bundle verifies"
+    },
+    {
+      "name": "claim_card_required",
+      "observed": "trice-claim-card/v1",
+      "passed": true,
+      "required": "claim card verifies before README S-tier wording"
+    },
+    {
+      "name": "artifact_card_required",
+      "observed": "trice-artifact-card/v1",
+      "passed": true,
+      "required": "artifact card verifies before release claim"
+    }
+  ],
+  "claim_allowed_by_protocol": false,
+  "evaluation_contract": {
+    "conditions": [
+      "baseline_full_context",
+      "trice_context_control"
+    ],
+    "confidence_method": "clustered bootstrap by task_id",
+    "evidence_recall_min": 0.95,
+    "max_pass_regressions": 0,
+    "min_replicates_per_task": 3,
+    "min_task_clusters": 50,
+    "primary_metric": "input_token_savings",
+    "quality_guardrail": "zero pass regressions versus baseline verifier outcome",
+    "require_adapter_profiles": true,
+    "require_artifact_card": true,
+    "require_claim_card": true,
+    "require_locked_git_sources": true,
+    "require_receipt_validation": true,
+    "require_remote_git_sources": true,
+    "require_verified_bundle": true,
+    "target_clustered_ci_low": 0.6,
+    "target_mean_input_token_savings": 0.6,
+    "unit_of_analysis": "task_id cluster"
+  },
+  "input_sha256": {
+    "readiness_preflight": "6f4baca234454b98a138be96f9d4792e1e1d79c59fd8977b86288da9d8ba2ea4",
+    "suite_manifest": "fd4335bea5164e4e0dd479ff5154947c54941d9c9704258b018b51c172a7859b"
+  },
+  "next_actions": [
+    "Replace local suite tasks with remote Git URLs pinned to immutable 40-hex commits.",
+    "Build the 10-task x 2-replicate pilot protocol before the claim run.",
+    "Scale to 50 task clusters and 3 replicates per task for the S-tier protocol."
+  ],
+  "non_claims": [
+    "Protocol lock is not outcome evidence; it does not claim measured savings or task success.",
+    "Not a claim-ready protocol until the suite has 50 task clusters and 3 replicates per task.",
+    "Not a held-out remote-repo protocol until every task uses a locked remote Git commit.",
+    "Does not permit README S-tier wording without a passing claim card and verified artifact card."
+  ],
+  "protocol_id": "bundled-live-six-task-suite:fd4335bea5164e4e",
+  "protocol_level": "smoke_protocol_locked",
+  "protocol_lock_sha256": "d3cebfda67594e0bd5e69d6cf96ff2126728c95fa5c665de2a5447c340761a70",
+  "protocol_score": 81,
+  "research_basis": [
+    "Agent benchmarks must evaluate cost and task success together, not accuracy alone.",
+    "Held-out real repositories and locked commits reduce benchmark shortcutting and overfitting.",
+    "Artifact review expects documented, complete, exercisable, and independently checkable evidence.",
+    "The protocol lock is pre-outcome evidence: it freezes thresholds before a claim run is executed."
+  ],
+  "schema_version": "trice-protocol-lock/v1",
+  "scope": "python software-repair/context-control tasks on held-out Git repositories",
+  "source": {
+    "suite_manifest_path": "examples/trice_suite_bundled_live.json",
+    "suite_name": "bundled-live-six-task-suite",
+    "suite_schema_version": "trice-suite/v1"
+  },
+  "suite_shape": {
+    "adapter_profile_count": 6,
+    "planned_runs": 6,
+    "remote_git_task_count": 0,
+    "replicates_per_task": {
+      "csv-filter": 1,
+      "dedupe-helpers": 1,
+      "fix-imports": 1,
+      "fix-offby-one": 1,
+      "implement-median": 1,
+      "rename-api": 1
+    },
+    "rounds_per_run": 1,
+    "task_clusters": 6
+  }
+}

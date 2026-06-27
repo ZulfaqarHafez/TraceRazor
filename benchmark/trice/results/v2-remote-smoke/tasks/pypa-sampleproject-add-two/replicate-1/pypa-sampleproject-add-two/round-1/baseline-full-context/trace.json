@@ -1,0 +1,83 @@
+{
+  "agent_name": "trice-remote-smoke-sample-add-two",
+  "framework": "trice-live",
+  "metadata": {
+    "condition": "baseline-full-context",
+    "run_receipt": "run_receipt.json",
+    "run_receipt_sha256": "d412343ede7b713b34e7255d62b4f3efbb11c3b9e8648095f0e61f8cc1076432",
+    "task": "Change sample.simple.add_one so add_one(1) returns 3 while preserving source-only edits. This is a remote-git smoke task for the live TRICE evidence path.",
+    "task_id": "pypa-sampleproject-add-two"
+  },
+  "steps": [
+    {
+      "content": "Change sample.simple.add_one so add_one(1) returns 3 while preserving source-only edits. This is a remote-git smoke task for the live TRICE evidence path.",
+      "id": 1,
+      "input_context": "Change sample.simple.add_one so add_one(1) returns 3 while preserving source-only edits. This is a remote-git smoke task for the live TRICE evidence path.",
+      "tokens": 29,
+      "type": "reasoning"
+    },
+    {
+      "content": "Run failing verifier before edit",
+      "id": 2,
+      "output": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nAssertionError",
+      "tokens": 96,
+      "tool_name": "pytest",
+      "tool_success": false,
+      "type": "tool_call"
+    },
+    {
+      "content": "Read editable project files",
+      "id": 3,
+      "output": "### noxfile.py\n# this file is *not* meant to cover or endorse the use of nox or pytest or\n# testing in general,\n#\n#  It's meant to show the use of:\n#\n#  - check-manifest\n#     confirm items checked into vcs are in your sdist\n#  - readme_renderer (when using a reStructuredText README)\n#     confirms your long_description will render correctly on PyPI.\n#\n#  and also to help confirm pull requests to this project.\n\nimport os\n\nimport nox\n\nnox.options.sessions = [\"lint\"]\n\n# Define the minimal nox version required to run\nnox.options.needs_version = \">= 2024.3.2\"\n\n\n@nox.session\ndef lint(session):\n    session.install(\"flake8\")\n    session.run(\n        \"flake8\", \"--exclude\", \".nox,*.egg,build,data\",\n        \"--select\", \"E,W,F\", \".\"\n    )\n\n\n@nox.session\ndef build_and_check_dists(session):\n    session.install(\"build\", \"check-manifest >= 0.42\", \"twine\")\n    # If your project uses README.rst, uncomment the following:\n    # session.install(\"readme_renderer\")\n\n    session.run(\"check-manifest\", \"--ignore\", \"noxfile.py,tests/**\")\n    session.run(\"python\", \"-m\", \"build\")\n    session.run(\"python\", \"-m\", \"twine\", \"check\", \"dist/*\")\n\n\n@nox.session(python=[\"3.9\", \"3.10\", \"3.11\", \"3.12\", \"3.13\"])\ndef tests(session):\n    session.install(\"pytest\")\n    build_and_check_dists(session)\n\n    generated_files = os.listdir(\"dist/\")\n    generated_sdist = os.path.join(\"dist/\", generated_files[1])\n\n    session.install(generated_sdist)\n\n    session.run(\"py.test\", \"tests/\", *session.posargs)\n\n\n### src/sample/__init__.py\ndef main():\n    \"\"\"Entry point for the application script\"\"\"\n    print(\"Call your main application code here\")\n\n\n### src/sample/simple.py\ndef add_one(number):\n    return number + 1\n",
+      "tokens": 256,
+      "tool_name": "read_project",
+      "tool_success": true,
+      "type": "tool_call"
+    },
+    {
+      "content": "Read tests as behavior oracle",
+      "id": 4,
+      "output": "### tests/__init__.py\n# The inclusion of the tests module is not meant to offer best practices for\n# testing in general.\n\n\n### tests/test_simple.py\n# the inclusion of the tests module is not meant to offer best practices for\n# testing in general, but rather to support the `find_packages` example in\n# setup.py that excludes installing the \"tests\" package\n\nimport unittest\n\nfrom sample.simple import add_one\n\n\nclass TestSimple(unittest.TestCase):\n\n    def test_add_one(self):\n        self.assertEqual(add_one(5), 6)\n\n\nif __name__ == '__main__':\n    unittest.main()\n",
+      "tokens": 256,
+      "tool_name": "read_tests",
+      "tool_success": true,
+      "type": "tool_call"
+    },
+    {
+      "content": "Traceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nAssertionError\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nAssertionError\nTraceback (most recent call last):\n  File \"<string>\", line 1, in <module>\nAssertionError",
+      "flags": [
+        "REDUNDANT"
+      ],
+      "id": 5,
+      "tokens": 640,
+      "type": "reasoning"
+    },
+    {
+      "content": "Stale hypothesis scratchpad: re-read the same failure, consider unrelated renames, then discard this branch. This is intentionally receipt-safe noise.",
+      "flags": [
+        "REDUNDANT"
+      ],
+      "id": 6,
+      "tokens": 420,
+      "type": "reasoning"
+    },
+    {
+      "content": "Ready to edit only source files and re-run the verifier.",
+      "id": 7,
+      "tokens": 64,
+      "type": "reasoning"
+    },
+    {
+      "content": "Run verifier after managed edit",
+      "id": 8,
+      "output": "",
+      "tokens": 1,
+      "tool_name": "pytest",
+      "tool_success": true,
+      "type": "tool_call"
+    }
+  ],
+  "task_value_score": 1.0,
+  "total_tokens": 1761,
+  "trace_id": "pypa-sampleproject-add-two.baseline-full-context"
+}

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="280" viewBox="0 0 980 280">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="28" y="34" font-family="Inter,Segoe UI,Arial" font-size="20" font-weight="700" fill="#111827">TRICE proof graph integrity</text>
+<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 100/100 | level proof_graph_integrity_locked | hash ddf9175c68c72105...</text>
+<rect x="28" y="96" width="118" height="58" rx="8" fill="#2563eb"/>
+<text x="87" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">doctor</text>
+<line x1="156" y1="125" x2="172" y2="125" stroke="#9ca3af" stroke-width="3"/>
+<rect x="182" y="96" width="118" height="58" rx="8" fill="#2563eb"/>
+<text x="241" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">proof</text>
+<line x1="310" y1="125" x2="326" y2="125" stroke="#9ca3af" stroke-width="3"/>
+<rect x="336" y="96" width="118" height="58" rx="8" fill="#2563eb"/>
+<text x="395" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">release</text>
+<line x1="464" y1="125" x2="480" y2="125" stroke="#9ca3af" stroke-width="3"/>
+<rect x="490" y="96" width="118" height="58" rx="8" fill="#2563eb"/>
+<text x="549" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">research</text>
+<line x1="618" y1="125" x2="634" y2="125" stroke="#9ca3af" stroke-width="3"/>
+<rect x="644" y="96" width="118" height="58" rx="8" fill="#2563eb"/>
+<text x="703" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">paper</text>
+<line x1="772" y1="125" x2="788" y2="125" stroke="#9ca3af" stroke-width="3"/>
+<rect x="798" y="96" width="118" height="58" rx="8" fill="#2563eb"/>
+<text x="857" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">ci</text>
+<text x="28" y="210" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Integrity card only: S-tier still requires the held-out remote live suite and passing claim card.</text>
+</svg>

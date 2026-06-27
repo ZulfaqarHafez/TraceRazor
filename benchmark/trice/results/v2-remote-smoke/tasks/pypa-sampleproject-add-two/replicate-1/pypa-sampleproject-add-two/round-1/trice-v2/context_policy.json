@@ -1,0 +1,108 @@
+{
+  "algorithm": "trice-v0.1-multi-choice-knapsack",
+  "baseline_input_tokens": 1761,
+  "bucket_size": 128,
+  "budget_exceeded": false,
+  "budget_ratio": 0.4,
+  "budget_tokens": 704,
+  "constraints": {
+    "evidence_recall_min": 0.95,
+    "locked_anchors_unchanged": true,
+    "pass_rate_noninferiority_pp": -2
+  },
+  "decisions": [
+    {
+      "action": "anchor_prefix",
+      "locked": true,
+      "original_tokens": 29,
+      "policy_tokens": 29,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "789a6ba9ba6e266ed1429b0c65dd3c6f15d40b4ae2fadf769bb69966a9b6847a",
+      "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:1",
+      "segment_id": "s1",
+      "state": "essential",
+      "step_id": 1,
+      "value": 1.379861
+    },
+    {
+      "action": "anchor_prefix",
+      "locked": true,
+      "original_tokens": 96,
+      "policy_tokens": 96,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "2cabbdfc46596288ddad75bb2cc2eab22c169b3c023384b646141040e4717d8e",
+      "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:2",
+      "segment_id": "s2",
+      "state": "essential",
+      "step_id": 2,
+      "value": 1.349539
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 256,
+      "policy_tokens": 17,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "f5cfc33dbb6cd89ed1437ced66d37ceffc5207d251015ce3a329e5ba1353f342",
+      "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:3",
+      "segment_id": "s3",
+      "state": "rehydratable",
+      "step_id": 3,
+      "value": 0.075871
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 256,
+      "policy_tokens": 17,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "b4170e99f7c734e06454c93289d48099a024aaf2dcdfc60a186beea52a500f50",
+      "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:4",
+      "segment_id": "s4",
+      "state": "rehydratable",
+      "step_id": 4,
+      "value": 0.067471
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 640,
+      "policy_tokens": 44,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "a21877daee09a23d655e66ed62991fdf64be45f22a7de80bbfbd957270f75c8b",
+      "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:5",
+      "segment_id": "s5",
+      "state": "redundant",
+      "step_id": 5,
+      "value": -0.065412
+    },
+    {
+      "action": "mask_with_receipt",
+      "locked": false,
+      "original_tokens": 420,
+      "policy_tokens": 29,
+      "rationale": "drop text, retain cryptographic receipt",
+      "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+      "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:6",
+      "segment_id": "s6",
+      "state": "redundant",
+      "step_id": 6,
+      "value": -0.064356
+    },
+    {
+      "action": "keep",
+      "locked": true,
+      "original_tokens": 64,
+      "policy_tokens": 64,
+      "rationale": "locked anchor kept byte-for-byte",
+      "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+      "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:7",
+      "segment_id": "s7",
+      "state": "essential",
+      "step_id": 7,
+      "value": 1.349693
+    }
+  ],
+  "policy_tokens": 296,
+  "projected_input_savings_pct": 83.19
+}

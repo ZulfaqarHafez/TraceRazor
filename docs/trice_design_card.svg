@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="280" viewBox="0 0 940 280">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="28" y="34" font-family="Inter,Segoe UI,Arial" font-size="20" font-weight="700" fill="#111827">TRICE statistical design card</text>
+<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 65/100 | level smoke_design_observed | claim design false</text>
+<rect x="52" y="96" width="164" height="58" rx="8" fill="#0f766e"/>
+<text x="134" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="17" font-weight="700" fill="#ffffff">signal</text>
+<line x1="226" y1="125" x2="260" y2="125" stroke="#9ca3af" stroke-width="3"/>
+<rect x="268" y="96" width="164" height="58" rx="8" fill="#0f766e"/>
+<text x="350" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="17" font-weight="700" fill="#ffffff">ci</text>
+<line x1="442" y1="125" x2="476" y2="125" stroke="#9ca3af" stroke-width="3"/>
+<rect x="484" y="96" width="164" height="58" rx="8" fill="#0f766e"/>
+<text x="566" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="17" font-weight="700" fill="#ffffff">power</text>
+<line x1="658" y1="125" x2="692" y2="125" stroke="#9ca3af" stroke-width="3"/>
+<rect x="700" y="96" width="164" height="58" rx="8" fill="#e5e7eb"/>
+<text x="782" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="17" font-weight="700" fill="#374151">external</text>
+<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Observed mean 81.5% | clustered low 79.0% | projected claim low 80.6%</text>
+<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Design review only: external validity still requires held-out locked remote repositories and claim evidence.</text>
+</svg>

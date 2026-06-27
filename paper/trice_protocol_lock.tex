@@ -1,0 +1,42 @@
+\section{Protocol Lock}
+Protocol \texttt{bundled-live-six-task-suite:fd4335bea5164e4e} is \texttt{smoke\_protocol\_locked} with score 81/100. It freezes 6 planned run(s) across 6 task cluster(s). The primary metric is \texttt{input\_token\_savings}; target mean input-token savings is 60.0\% and clustered CI lower-bound target is 60.0\%.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+manifest\_valid & yes & trice-suite/v1 \\
+unique\_task\_ids & yes & all task\_id values unique \\
+deterministic\_interventions & yes & exactly one intervention per task \\
+primary\_metric & yes & input\_token\_savings \\
+cost\_quality\_joint\_gate & yes & savings measured with pass preservation \\
+target\_mean\_savings & yes & >= 0.600 \\
+clustered\_ci\_target & yes & >= 0.600 \\
+evidence\_recall\_gate & yes & >= 0.950 \\
+pass\_regression\_gate & yes & 0 \\
+receipt\_validation\_gate & yes & true \\
+remote\_git\_sources & no & all tasks use remote Git URLs \\
+commit\_sha\_revisions & no & all git.rev values are 40-hex commit SHA \\
+adapter\_profiles & yes & all tasks use adapter\_profile \\
+pilot\_task\_clusters & no & >= 10 \\
+pilot\_replicates\_per\_task & no & each task >= 2 \\
+claim\_task\_clusters & no & >= 50 \\
+claim\_replicates\_per\_task & no & each task >= 3 \\
+all\_runs\_accepted\_gate & yes & all optimized runs accepted \\
+evidence\_bundle\_required & yes & portable evidence bundle verifies \\
+claim\_card\_required & yes & claim card verifies before README S-tier wording \\
+artifact\_card\_required & yes & artifact card verifies before release claim \\
+\bottomrule
+\end{tabular}
+\caption{Pre-registered TRICE protocol checks locked before live outcome claims.}
+\end{table}
+
+\noindent Non-claims:
+\begin{itemize}
+\item Protocol lock is not outcome evidence; it does not claim measured savings or task success.
+\item Not a claim-ready protocol until the suite has 50 task clusters and 3 replicates per task.
+\item Not a held-out remote-repo protocol until every task uses a locked remote Git commit.
+\item Does not permit README S-tier wording without a passing claim card and verified artifact card.
+\end{itemize}

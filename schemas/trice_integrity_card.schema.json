@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tracerazor.dev/schemas/trice_integrity_card.schema.json",
+  "title": "TRICE integrity card",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "scope",
+    "integrity_level",
+    "integrity_score",
+    "checks",
+    "inputs",
+    "schemas",
+    "workflows",
+    "doctor_snapshot",
+    "doctor_snapshot_sha256",
+    "verdicts",
+    "research_basis",
+    "next_actions",
+    "integrity_card_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trice-integrity-card/v1"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "integrity_level": {
+      "enum": [
+        "proof_graph_integrity_locked",
+        "partial_integrity",
+        "integrity_missing"
+      ]
+    },
+    "integrity_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed", "observed", "required"],
+        "properties": {
+          "name": {"type": "string"},
+          "passed": {"type": "boolean"}
+        }
+      }
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "schemas": {
+      "type": "array"
+    },
+    "workflows": {
+      "type": "array"
+    },
+    "doctor_snapshot": {
+      "type": "object"
+    },
+    "doctor_snapshot_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "verdicts": {
+      "type": "object"
+    },
+    "research_basis": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "next_actions": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "integrity_card_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

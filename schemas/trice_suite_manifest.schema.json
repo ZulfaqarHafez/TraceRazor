@@ -57,6 +57,12 @@
           "minimum": 0,
           "maximum": 1
         },
+        "min_evidence_recall": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.95
+        },
         "max_pass_regressions": {
           "type": "integer",
           "minimum": 0,

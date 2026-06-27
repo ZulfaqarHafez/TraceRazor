@@ -1,0 +1,20 @@
+\section{Integrity Card}
+Integrity level: \texttt{proof\_graph\_integrity\_locked}; score: 100/100.
+
+\begin{tabular}{lrl}
+Check & Passed & Required \\
+\hline
+offline\_doctor\_core & yes & local package, CLI, and schemas pass offline doctor \\
+contract\_card\_verifies & yes & public API/CLI/schema contract verifies \\
+artifact\_card\_verifies & yes & artifact-review packet verifies \\
+reproduction\_card\_verifies & yes & reviewer reproduction packet verifies \\
+release\_card\_verifies & yes & release trust card verifies \\
+release\_evidence\_verifies & yes & release evidence packet verifies \\
+crates\_card\_verifies & yes & crates staged-publish card verifies \\
+install\_card\_verifies & yes & clean-wheel installability card verifies \\
+research\_card\_verifies & yes & research-basis card verifies \\
+paper\_manifest\_verifies & yes & paper manifest and bound result verify \\
+schemas\_available & yes & all shipped TRICE schemas are present \\
+workflows\_bound & yes & CI, release, and Scorecard workflows contain integrity/provenance hooks \\
+claim\_honesty\_bound & yes & smoke evidence remains a non-S-tier claim \\
+\end{tabular}

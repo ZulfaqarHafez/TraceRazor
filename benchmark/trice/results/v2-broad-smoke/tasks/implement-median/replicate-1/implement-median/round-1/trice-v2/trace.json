@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "trice-v2",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "f65148a4cf2eb755280ee98d2621769de0f33dddc1d715bb4dfc756ccf3c015a",
+    "run_receipt_sha256": "362ef7b2c813ed611c41a8f5e2649e4b149b4ee23854001aae3407d23be19332",
     "task": "Implement median without editing tests.",
     "task_id": "implement-median"
   },

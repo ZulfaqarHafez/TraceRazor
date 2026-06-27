@@ -5,7 +5,7 @@
 - Readiness level: `smoke_ready`
 - Pilot execution ready: `false`
 - Claim execution ready: `false`
-- Readiness score: **55/100**
+- Readiness score: **60/100**
 - Task clusters: **6**
 - Planned runs: **6**
 - Minimum verifier invocations: **12**
@@ -27,6 +27,7 @@
 | commit_sha_revisions | no | [null, null, null, null, null, null] | all git.rev values are 40-hex commit SHA |
 | adapter_profiles | yes | ["trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json"] | all tasks use adapter_profile |
 | target_savings | yes | 0.6 | >= 0.600 |
+| evidence_recall_gate | yes | 0.95 | >= 0.950 |
 | pass_regression_gate | yes | 0 | 0 |
 | receipt_validation_gate | yes | True | true |
 
@@ -47,4 +48,4 @@
 ## Hashes
 
 - suite manifest: `fd4335bea5164e4e0dd479ff5154947c54941d9c9704258b018b51c172a7859b`
-- readiness report: `5df70669cb81a34cc4ea0a10904d93cc44d753992666301423daf300b18532e6`
+- readiness report: `6f4baca234454b98a138be96f9d4792e1e1d79c59fd8977b86288da9d8ba2ea4`

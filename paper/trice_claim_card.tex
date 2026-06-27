@@ -1,5 +1,5 @@
 \section{Deterministic Claim Card}
-Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{smoke}. Claim allowed: no. Determinism contract score: 84/100.
+Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{smoke}. Claim allowed: no. Determinism contract score: 100/100.
 
 \begin{table}[h]
 \centering
@@ -10,6 +10,7 @@ Requirement & Passed & Required \\
 accepted\_runs & yes & 0 unaccepted runs \\
 adapter\_profiles & yes & all tasks use adapter\_profile \\
 clustered\_savings\_ci\_low & yes & >= 0.600 \\
+evidence\_recall & yes & >= 0.950 on every accepted optimized run \\
 locked\_git\_sources & no & all tasks use locked git sources \\
 mean\_savings & yes & >= 0.600 \\
 pass\_regressions & yes & <= 0 \\
@@ -22,7 +23,7 @@ task\_clusters & no & >= 50 \\
 \caption{Machine-readable claim gate distilled from the suite result and evidence manifest.}
 \end{table}
 
-Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0. Claim-card hash: \texttt{4b8ac48b6d982a50...}.
+Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{6f20ecbd0a990960...}.
 
 \noindent Non-claims:
 \begin{itemize}

@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "trice-v2",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "f311758493e835dd7f7f3c856b35013a9305f1a5a9cf34b0acae6b45eda5c525",
+    "run_receipt_sha256": "c9780bdfd5521cab520a190ed75c0108e12d2bbd4b696abe6f94f3fb1179e96f",
     "task": "Rename the public API consistently without editing tests.",
     "task_id": "rename-api"
   },

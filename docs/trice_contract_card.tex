@@ -1,0 +1,34 @@
+\section{Contract Card}
+Package \texttt{tracerazor} version \texttt{1.0.3} has contract level \texttt{library\_contract\_locked} and score 100/100.
+
+\begin{tabular}{lll}
+Check & Pass & Required \\
+\hline
+semver\_version & yes & MAJOR.MINOR.PATCH \\
+top\_level\_api & yes & tracerazor.\_\_all\_\_ resolves \\
+trice\_api & yes & tracerazor.trice.\_\_all\_\_ resolves \\
+cli\_contract & yes & all documented tracerazor-trice commands exist \\
+schemas\_shipped & yes & all TRICE JSON Schemas are present \\
+contract\_schema\_shipped & yes & contract-card schema ships \\
+examples\_shipped & yes & public examples are present \\
+docs\_shipped & yes & README/library/research/trust docs are present \\
+\end{tabular}
+
+\noindent Research basis:
+\begin{itemize}
+\item Semantic Versioning requires the public API to be declared before compatibility claims are meaningful.
+\item Python packaging makes version identifiers public registry facts, so library contracts must bind version and import surface together.
+\item JSON Schema gives users and downstream agents a machine-checkable boundary for TRICE receipts, suites, cards, and bundles.
+\item SLSA, in-toto, and CycloneDX motivate release evidence that binds checksums, SBOMs, provenance statements, and public artifacts.
+\item Reproducible-build practice motivates checking that public examples, schemas, CLI commands, release evidence, and the integrity proof graph match the source being packaged.
+\item Cargo publication trust requires staged registry facts because downstream crates cannot honestly claim cargo-install readiness before upstream workspace crates are indexed.
+\item Clean-wheel installability must be verified after build because packaged data, console scripts, and bundled binaries can diverge from checkout behavior.
+\item Research-ledger integrity must be machine-checkable because product claims and papers can drift from the sources that supposedly justify them.
+\end{itemize}
+
+\noindent Next actions:
+\begin{itemize}
+\item Treat this card as the public API boundary for SemVer compatibility.
+\item Regenerate the contract card before every release and after any public API, CLI, schema, or example change.
+\item Promote only documented imports and schemas into long-term compatibility guarantees.
+\end{itemize}

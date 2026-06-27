@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "baseline-full-context",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "55290d0867296de62004e2efe86c0ef8c81dca6d7b437e741d2fb002cc0924d5",
+    "run_receipt_sha256": "007c6784bda8655eaee8e45760bc26fe83df5279ba46818f302644aacb8a4bcf",
     "task": "Rename the public API consistently without editing tests.",
     "task_id": "rename-api"
   },

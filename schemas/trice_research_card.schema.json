@@ -1,0 +1,124 @@
+{
+  "$id": "https://tracerazor.dev/schemas/trice_research_card.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "category_counts": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "type": "object"
+    },
+    "checks": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "passed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "passed",
+          "observed",
+          "required"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "domain_counts": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "type": "object"
+    },
+    "ledger": {
+      "additionalProperties": true,
+      "required": [
+        "path",
+        "sha256"
+      ],
+      "type": "object"
+    },
+    "non_claims": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "research_card_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "research_level": {
+      "enum": [
+        "research_basis_incomplete",
+        "working_research_ledger",
+        "research_basis_locked"
+      ]
+    },
+    "research_score": {
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "schema_version": {
+      "const": "trice-research-card/v1"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "source_count": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "sources": {
+      "items": {
+        "additionalProperties": true,
+        "required": [
+          "index",
+          "area",
+          "category",
+          "title",
+          "url",
+          "takeaway",
+          "row_sha256"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "thresholds": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "unique_source_count": {
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "scope",
+    "ledger",
+    "research_level",
+    "research_score",
+    "source_count",
+    "unique_source_count",
+    "category_counts",
+    "domain_counts",
+    "thresholds",
+    "checks",
+    "sources",
+    "research_basis",
+    "non_claims",
+    "next_actions",
+    "research_card_sha256"
+  ],
+  "title": "TRICE research card",
+  "type": "object"
+}

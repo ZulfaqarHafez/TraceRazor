@@ -1,0 +1,15 @@
+\section{Installability Card}
+Install level: \texttt{python\_trice\_install\_ready}; score: 90/100; expected version: \texttt{1.0.3}.
+
+\begin{tabular}{lrl}
+Check & Passed & Required \\
+\hline
+wheel\_present & yes & built wheel exists \\
+venv\_created & yes & clean virtual environment can be created \\
+wheel\_installs & yes & wheel installs with pip --no-deps \\
+version\_matches & yes & 1.0.3 \\
+schemas\_importable & yes & install, crates, and research schemas import from wheel \\
+trice\_api\_importable & yes & public tracerazor.trice install/crates/research APIs import \\
+trice\_console\_works & yes & tracerazor-trice console script works after wheel install \\
+rust\_cli\_bundled & no & tracerazor console script can find a bundled Rust auditor binary \\
+\end{tabular}

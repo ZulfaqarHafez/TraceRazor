@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "baseline-full-context",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "1b7926116fa737216779af5f0fca0209625fe467b1e938dbff733303cfb10d18",
+    "run_receipt_sha256": "f1dd9391434a22bee74199ef32e407fa42cb68bc647062fa6fc42c8b2f067964",
     "task": "Implement median without editing tests.",
     "task_id": "implement-median"
   },

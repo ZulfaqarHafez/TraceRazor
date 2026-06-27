@@ -1,0 +1,60 @@
+{
+  "adapter_name": "trice-remote-smoke-sample-add-two",
+  "adapter_type": "json_patch",
+  "agent_reported": null,
+  "allow_test_edits": false,
+  "changed_file_count": 1,
+  "changed_files": [
+    "src/sample/simple.py"
+  ],
+  "edit_count": 1,
+  "metadata": {
+    "claim_scope": "remote-git smoke evidence, not S-tier evidence",
+    "source_repo": "https://github.com/pypa/sampleproject",
+    "task_kind": "objective source repair on locked public Git checkout"
+  },
+  "prompt_sha256": "914c8932466e3dceb57725d15d3017a9b7909e38e394d3dbde58059639015515",
+  "schema_version": "trice-run-receipt/v1",
+  "task_id": "pypa-sampleproject-add-two",
+  "trice_context": {
+    "baseline_input_tokens": 1761,
+    "budget_exceeded": false,
+    "budget_ratio": 0.4,
+    "budget_tokens": 704,
+    "compressed_context_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\compressed_context.txt",
+    "compressed_context_sha256": "10367d57f75e9ccea8625561fd46062a5965b1864754e1ba89c158dbc92c86e4",
+    "condition": "trice-v2",
+    "context_mode": "trice_policy",
+    "decision_trace_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\decision_trace.json",
+    "decision_trace_sha256": "2a26a656574f3d0471a7ae0aed5ada2a2e66c3080afee3c3b8f7decf66451e02",
+    "evidence_recall": {
+      "evidence_recall": 1.0,
+      "missing": [],
+      "obligation_count": 3,
+      "obligation_tokens": 189,
+      "passed": true,
+      "recalled_count": 3,
+      "recalled_tokens": 189,
+      "required_min": 0.95,
+      "schema_version": "trice-evidence-recall/v1"
+    },
+    "input_tokens": 296,
+    "policy_action_counts": {
+      "anchor_prefix": 2,
+      "keep": 1,
+      "mask_with_receipt": 4
+    },
+    "policy_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\context_policy.json",
+    "policy_sha256": "cb150028c06ae3b749c9b3db5846bc3a5bbfbe0742ed76d8b83d3ed5e0e2fe46",
+    "policy_tokens": 296,
+    "projected_input_savings_pct": 83.19,
+    "realized_budget_ratio": 0.168086,
+    "schema_version": "trice-context-envelope/v1",
+    "trace_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\decision_trace.json",
+    "verify_cmd": [
+      "python",
+      "-c",
+      "import sys; sys.path.insert(0, 'src'); from sample.simple import add_one; assert add_one(1) == 3"
+    ]
+  }
+}

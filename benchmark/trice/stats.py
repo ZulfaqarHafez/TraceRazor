@@ -33,6 +33,9 @@ class ClaimGate:
     trice_pass_rate: float
     trice_pass_ci: ConfidenceInterval
     pass_regressions: int
+    evidence_recall_minimum: float
+    evidence_recall_required: float
+    evidence_recall_failures: int
     accepted_rounds: int
     total_rounds: int
     smoke_gate_passed: bool
@@ -131,10 +134,20 @@ def claim_gate_from_rounds(rounds: list, target_savings: float = 0.60) -> ClaimG
     baseline_pass = [_condition(_field(r, "baseline")).passed for r in rounds]
     trice_pass = [_condition(_field(r, "optimized")).passed for r in rounds]
     accepted = [bool(_field(r, "accepted")) for r in rounds]
+    evidence_recalls = [_evidence_recall(_field(r, "optimized")) for r in rounds]
+    evidence_recall_required = 0.95
+    evidence_recall_failures = sum(1 for value in evidence_recalls if value + 1e-12 < evidence_recall_required)
     regressions = sum(1 for b, t in zip(baseline_pass, trice_pass) if b and not t)
     savings_ci = bootstrap_mean_ci(savings)
     trice_ci = wilson_ci(sum(trice_pass), len(trice_pass))
-    smoke_gate = bool(rounds) and savings_ci.low >= target_savings and regressions == 0 and all(accepted)
+    smoke_gate = (
+        bool(rounds)
+        and savings_ci.low >= target_savings
+        and regressions == 0
+        and all(accepted)
+        and all(trice_pass)
+        and evidence_recall_failures == 0
+    )
     broad = False
     if smoke_gate:
         rationale = (
@@ -152,6 +165,9 @@ def claim_gate_from_rounds(rounds: list, target_savings: float = 0.60) -> ClaimG
         trice_pass_rate=round(sum(trice_pass) / len(trice_pass), 6) if trice_pass else 0.0,
         trice_pass_ci=trice_ci,
         pass_regressions=regressions,
+        evidence_recall_minimum=round(min(evidence_recalls), 6) if evidence_recalls else 1.0,
+        evidence_recall_required=evidence_recall_required,
+        evidence_recall_failures=evidence_recall_failures,
         accepted_rounds=sum(accepted),
         total_rounds=len(rounds),
         smoke_gate_passed=smoke_gate,
@@ -189,3 +205,19 @@ def _field(obj, key: str):
     if isinstance(obj, dict):
         return obj[key]
     return getattr(obj, key)
+
+
+def _optional_field(obj, key: str, default=None):
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
+def _evidence_recall(condition) -> float:
+    value = _optional_field(condition, "evidence_recall", None)
+    if value is not None:
+        return float(value)
+    report = _optional_field(condition, "evidence_recall_report", None)
+    if isinstance(report, dict) and report.get("evidence_recall") is not None:
+        return float(report["evidence_recall"])
+    return 1.0

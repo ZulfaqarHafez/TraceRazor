@@ -11,10 +11,12 @@ Public trust status: [trust matrix](docs/public_trust_matrix.md) · [security po
 ## 60-second start
 
 ```bash
-pip install tracerazor            # platform wheels bundle the CLI — no Rust toolchain needed
-# source build fallback: cargo build --release -p tracerazor
+pip install tracerazor            # Python package + tracerazor-trice proof tools
+# If `tracerazor --version` reports no bundled auditor binary, build the Rust CLI:
+cargo build --release -p tracerazor
 # or: docker compose up           # REST API + dashboard on :8080
 
+tracerazor-trice doctor --format text
 tracerazor audit traces/support-agent-run-2847.json     # bundled sample trace
 tracerazor audit my-trace.json --threshold 75           # CI gate: exit 1 below 75
 ```
@@ -161,6 +163,22 @@ tracerazor-trice suite scaffold \
 tracerazor-trice suite suite.json --out-dir benchmark/trice/results/heldout-pilot
 ```
 
+The repo includes a tiny remote-git smoke fixture that exercises the public
+clone path against PyPA `sampleproject` at a locked commit:
+
+```bash
+tracerazor-trice suite scaffold \
+  --source examples/trice_remote_smoke_source.json \
+  --out examples/trice_remote_smoke_suite.json
+tracerazor-trice suite examples/trice_remote_smoke_suite.json \
+  --out-dir benchmark/trice/results/v2-remote-smoke \
+  --rounds 1 \
+  --replicates 1
+tracerazor-trice verify-suite benchmark/trice/results/v2-remote-smoke/trice_suite_evidence_manifest.json
+tracerazor-trice verify-claim docs/trice_remote_smoke_claim_card.json
+tracerazor-trice verify-bundle benchmark/trice/results/v2-remote-smoke/trice_remote_smoke_evidence.trice.zip
+```
+
 To inspect local and public trust signals:
 
 ```bash
@@ -180,15 +198,65 @@ tracerazor-trice suite readiness examples/trice_suite_bundled_live.json \
   --out docs/trice_suite_readiness.json
 tracerazor-trice suite verify-readiness docs/trice_suite_readiness.json \
   --manifest examples/trice_suite_bundled_live.json
+tracerazor-trice protocol --manifest examples/trice_suite_bundled_live.json \
+  --out docs/trice_protocol_lock.json
+tracerazor-trice verify-protocol docs/trice_protocol_lock.json \
+  --manifest examples/trice_suite_bundled_live.json
+tracerazor-trice design --protocol docs/trice_protocol_lock.json \
+  --suite-result benchmark/trice/results/v2-broad-smoke/trice_suite_results.json \
+  --out docs/trice_design_card.json
+tracerazor-trice verify-design docs/trice_design_card.json \
+  --protocol docs/trice_protocol_lock.json \
+  --suite-result benchmark/trice/results/v2-broad-smoke/trice_suite_results.json
 tracerazor-trice verify-suite benchmark/trice/results/v2-broad-smoke/trice_suite_evidence_manifest.json
 tracerazor-trice verify-claim docs/trice_claim_card.json
+tracerazor-trice reproduction --out docs/trice_reproduction_card.json
+tracerazor-trice verify-reproduction docs/trice_reproduction_card.json
+tracerazor-trice contract --out docs/trice_contract_card.json
+tracerazor-trice verify-contract docs/trice_contract_card.json
+tracerazor-trice install --out docs/trice_install_card.json --dist-dir dist
+tracerazor-trice verify-install docs/trice_install_card.json
+tracerazor-trice research --out docs/trice_research_card.json
+tracerazor-trice verify-research docs/trice_research_card.json
+tracerazor-trice artifact --out docs/trice_artifact_card.json
+tracerazor-trice verify-artifact docs/trice_artifact_card.json
+tracerazor-trice release-evidence --out docs/trice_release_evidence.json --dist-dir dist
+tracerazor-trice verify-release-evidence docs/trice_release_evidence.json
+tracerazor-trice release --out docs/trice_release_card.json --timeout-s 10
+tracerazor-trice verify-release docs/trice_release_card.json
+tracerazor-trice crates --out docs/trice_crates_card.json --timeout-s 10
+tracerazor-trice verify-crates docs/trice_crates_card.json
+tracerazor-trice integrity --out docs/trice_integrity_card.json
+tracerazor-trice verify-integrity docs/trice_integrity_card.json
 ```
 
 ![TRICE live input-token savings](docs/trice_v3_live_savings.svg)
 
 ![TRICE suite readiness preflight](docs/trice_suite_readiness.svg)
 
+![TRICE protocol lock](docs/trice_protocol_lock.svg)
+
+![TRICE statistical design card](docs/trice_design_card.svg)
+
 ![TRICE deterministic claim ladder](docs/trice_claim_card.svg)
+
+![TRICE remote-git smoke claim ladder](docs/trice_remote_smoke_claim_card.svg)
+
+![TRICE reproduction card](docs/trice_reproduction_card.svg)
+
+![TRICE public contract card](docs/trice_contract_card.svg)
+
+![TRICE research basis card](docs/trice_research_card.svg)
+
+![TRICE public artifact review card](docs/trice_artifact_card.svg)
+
+![TRICE release evidence](docs/trice_release_evidence.svg)
+
+![TRICE release card](docs/trice_release_card.svg)
+
+![TRICE crates publish card](docs/trice_crates_card.svg)
+
+![TRICE proof graph integrity](docs/trice_integrity_card.svg)
 
 Current deterministic smoke evidence: six bundled live repository tasks,
 fresh copied workspaces, real source edits, `pytest` verification, and a
@@ -196,20 +264,20 @@ machine-verifiable manifest. TRICE normalizes verifier duration text and
 excludes wall-clock fields from the evidence hash, so identical real-run smoke
 executions are expected to reproduce the same manifest hashes. Mean measured
 input-token reduction is **81.5%** with a deterministic 95% bootstrap CI of
-**79.0%-83.5%** and zero pass regressions on all six tasks. This clears the
-local smoke gate, but it is not yet a broad S-tier claim. Suite results now
-include a formal `s_tier_gate` verdict that requires 50 task clusters, 3
-replicates per task, locked remote Git sources, adapter profiles, receipt
-validation, target-clearing clustered confidence intervals, zero pass
-regressions, and no unaccepted runs.
+**79.0%-83.5%**, zero pass regressions, and **100% evidence recall** with zero
+recall failures on all six tasks. This clears the local smoke gate, but it is
+not yet a broad S-tier claim. Suite results now include a formal `s_tier_gate`
+verdict that requires 50 task clusters, 3 replicates per task, locked remote
+Git sources, adapter profiles, receipt validation, at least 95% evidence recall
+on solved optimized runs, target-clearing clustered confidence intervals, zero
+pass regressions, and no unaccepted runs.
 
-The public suite smoke currently uses three fresh live replicates of the
-example repo task and reports clustered-by-task confidence intervals; repeated
-runs of one repo are not counted as independent held-out repositories. The
-suite records repo tree fingerprints and intervention provenance before
-execution: JSON patch tasks record patch-spec SHA-256 hashes, while command
-adapter tasks record command argv, timeout, and test-edit policy. Adapter
-profile tasks record profile SHA-256 and profile name. Every condition writes a
+Suite reports use clustered-by-task confidence intervals; repeated runs of one
+repo are not counted as independent held-out repositories. The suite records
+repo tree fingerprints and intervention provenance before execution: JSON patch
+tasks record patch-spec SHA-256 hashes, while command adapter tasks record
+command argv, timeout, and test-edit policy. Adapter profile tasks record
+profile SHA-256 and profile name. Every condition writes a
 `run_receipt.json` with command hashes, before/after workspace fingerprints,
 changed files, a TRICE context envelope, and optional agent-reported token
 accounting from `TRICE_AGENT_RECEIPT`. Command adapters receive
@@ -222,42 +290,167 @@ Schema and are validated
 during manifest and bundle verification, so malformed receipts can fail even if
 their hashes match. Suite reports now include adapter and failure-mode
 breakdowns. Suite tasks can also clone a locked Git source (`url` + `rev`) into
-a detached, `.git`-stripped checkout before running. The portable `.trice.zip`
-bundle contains 35 hashed entries and deep-verifies the aggregate suite manifest
-plus all child live manifests. The current public suite smoke correctly reports
+a detached, `.git`-stripped checkout before running. Portable `.trice.zip`
+bundles deep-verify the aggregate suite manifest plus all child live manifests.
+The broad smoke bundle currently contains 77 hashed entries; the remote smoke
+bundle contains 17. The current public suite smoke correctly reports
 `s_tier_gate.passed = false`; held-out external repos and provider adapters are
 the next proof gate.
 
 The bundled broad smoke uses six task clusters through an adapter profile and
-reports **81.5%** mean input-token reduction, zero pass regressions, and a
-65-entry verified `.trice.zip` bundle. It still reports
+reports **81.5%** mean input-token reduction, zero pass regressions, **100%
+evidence recall** with zero recall failures, and a 77-entry verified `.trice.zip`
+bundle. It still reports
 `s_tier_gate.passed = false` because it is local, single-replicate, and not 50
 held-out locked remote Git task clusters.
+
+The remote-git smoke fixture clones
+[`pypa/sampleproject`](https://github.com/pypa/sampleproject) at
+`621e4974ca25ce531773def586ba3ed8e736b3fc`, records the resolved commit and
+tree digest, applies a source-only declarative patch, and verifies the objective
+behavior with a Python command. It reports **83.2%** measured input-token
+reduction, zero pass regressions, **100% evidence recall** with zero recall
+failures, a 17-entry verified `.trice.zip` bundle, and
+`s_tier_gate.passed = false` because it is one public repo and one replicate.
+This is proof that the remote clone/evidence path works, not a broad product
+claim.
 
 The generated [TRICE Claim Card](docs/trice_claim_card.md) binds the broad
 smoke suite result and evidence manifest hashes into a machine-readable public
 claim boundary that can be checked with `tracerazor-trice verify-claim`. Current
-level: `smoke`; claim allowed: `false`; determinism contract score: `84/100`.
+level: `smoke`; claim allowed: `false`; determinism contract score: `100/100`.
 The card is intentionally a non-claim until the held-out remote-git suite clears
 the S-tier gate.
 
+The generated [TRICE Remote Smoke Claim Card](docs/trice_remote_smoke_claim_card.md)
+binds the locked public Git smoke run and its evidence manifest. Current level:
+`smoke`; claim allowed: `false`; determinism contract score: `100/100`.
+
 The generated [TRICE Suite Readiness](docs/trice_suite_readiness.md) card is the
 no-execution preflight gate. Current level: `smoke_ready`; pilot-ready: `false`;
-claim-ready: `false`; readiness score: `55/100`. It estimates six planned live
+claim-ready: `false`; readiness score: `60/100`. It estimates six planned live
 runs and twelve minimum verifier invocations, then names the missing pilot/claim
 requirements before any expensive held-out run starts.
+
+The generated [TRICE Protocol Lock](docs/trice_protocol_lock.md) is the
+pre-outcome contract for the suite. It freezes the primary metric
+(`input_token_savings`), pass-preservation guardrail, clustered confidence rule,
+target savings, task-cluster and replicate requirements, locked-source rule,
+adapter-profile rule, receipt rule, claim-card rule, and artifact-card rule
+before a claim run can be interpreted. Current level:
+`smoke_protocol_locked`; protocol score: `81/100`; claim allowed by protocol:
+`false`.
+
+The generated [TRICE Design Card](docs/trice_design_card.md) is the statistical
+design review. It uses task-cluster means from the current broad smoke to
+project the claim-run lower bound, while still refusing S-tier design when the
+protocol lacks held-out remote repos and enough replicates. Current level:
+`smoke_design_observed`; design score: `65/100`; projected claim lower bound:
+`80.6%`; claim design ready: `false`.
+
+The generated [TRICE Reproduction Card](docs/trice_reproduction_card.md) is the
+reviewer runbook. It binds readiness, protocol, design, claim, evidence bundle,
+paper manifest, paper result, and their exact verifier commands with SHA-256
+receipts, while staying outside the paper manifest to avoid a hash cycle.
+Current level: `reviewer_replay_ready_smoke`; reproduction score: `100/100`;
+claim allowed: `false`.
+
+The generated [TRICE Contract Card](docs/trice_contract_card.md) is the public
+library boundary. It binds the `tracerazor` and `tracerazor.trice` import
+surfaces, `tracerazor-trice` subcommands, shipped JSON Schemas, examples, and
+release docs so SemVer claims have a declared API to protect. Current level:
+`library_contract_locked`; contract score: `100/100`.
+
+The generated [TRICE Research Card](docs/trice_research_card.md) is the
+paper-basis boundary. It parses and hash-binds the research ledger, checks
+minimum source count, unique source URLs, category coverage, row ordering, and
+non-empty TRICE takeaways, then renders JSON, Markdown, SVG, and LaTeX. Current
+level: `research_basis_locked`; research score: `100/100`; sources: `165`.
+This proves the literature basis is reviewable. It does not prove the held-out
+S-tier outcome gate.
+
+The generated [TRICE Artifact Card](docs/trice_artifact_card.md) is the
+reviewer-facing packet for the public evidence. It binds the README, paper
+source/PDF, paper manifest, readiness card, protocol lock, design card,
+reproduction card, contract card, installability card, research card, claim card, remote
+smoke claim card, broad evidence bundle, remote smoke bundle, library doc,
+and nineteen shipped schemas
+together, then can be checked with
+`tracerazor-trice verify-artifact`. Current level: `review_ready_smoke`;
+artifact review score: `100/100`; claim allowed: `false`.
+
+The generated [TRICE Installability Card](docs/trice_install_card.md) proves the
+built wheel in a clean virtual environment. It installs the wheel with
+`pip install --no-deps`, imports packaged TRICE schemas and public APIs, runs
+the installed `tracerazor-trice` console script, and separately checks whether
+the `tracerazor` Rust CLI can find a bundled binary. Current level is expected
+to be `python_trice_install_ready` for the generic wheel until platform-wheel
+release assets carry bundled CLI proof.
+
+```bash
+tracerazor-trice install --out docs/trice_install_card.json --dist-dir dist
+tracerazor-trice verify-install docs/trice_install_card.json
+```
+
+The generated [TRICE Release Evidence](docs/trice_release_evidence.md) packet
+binds the built wheel, sdist, Rust CLI binary, proof cards including the crates
+publish card, installability card, and research card, paper artifacts, broad and remote evidence bundles, SHA-256
+checksums, CycloneDX-style Python and Cargo SBOMs, and an in-toto/SLSA-shaped
+provenance statement. It can be checked with
+`tracerazor-trice verify-release-evidence`. Current level:
+`release_evidence_ready`; release evidence score: `100/100`.
+
+The generated [TRICE Release Card](docs/trice_release_card.md) is the
+distribution trust gate. It snapshots `tracerazor-trice doctor`, binds the
+Artifact, Reproduction, Contract, and Installability Cards, and refuses
+`public_release_ready` until PyPI, piwheels, crates.io, GitHub tag, GitHub
+Actions, and OpenSSF Scorecard are all green.
+Current level: `local_release_candidate`; public release ready: `false`.
+The release workflow also generates release-evidence assets and GitHub artifact
+attestations for wheels, sdists, binaries, and release-evidence sidecars, but
+those public attestations remain pending until the next GitHub release run.
+
+The generated [TRICE Crates Publish Card](docs/trice_crates_card.md) is the
+Rust distribution preflight. It binds the workspace manifests, staged publish
+DAG, crates.io status snapshot, and README install honesty so `cargo install
+tracerazor` cannot be reintroduced as public wording before the final CLI crate
+is live. Current level: `publish_plan_locked`; crates publish score: `80/100`;
+cargo-install claim allowed: `false`. The currently publishable first-stage
+crates are `tracerazor-core` and `tracerazor-semantic`.
+
+The generated [TRICE Integrity Card](docs/trice_integrity_card.md) is the
+top-level proof graph gate. It binds offline doctor output, the Contract,
+Artifact, Reproduction, Release, Release Evidence, Crates, Installability, Research, and
+paper-manifest verifiers, all shipped schemas, and the CI/release/Scorecard
+workflow hooks. Current
+level: `proof_graph_integrity_locked`; integrity score: `100/100`.
 
 Research artifacts:
 
 - LaTeX source: [`paper/trice_v3_research_paper.tex`](paper/trice_v3_research_paper.tex)
 - PDF paper: [`paper/trice_v3_research_paper.pdf`](paper/trice_v3_research_paper.pdf)
 - Claim card: [`docs/trice_claim_card.md`](docs/trice_claim_card.md) ([JSON](docs/trice_claim_card.json), [SVG](docs/trice_claim_card.svg))
+- Remote smoke claim card: [`docs/trice_remote_smoke_claim_card.md`](docs/trice_remote_smoke_claim_card.md) ([JSON](docs/trice_remote_smoke_claim_card.json), [SVG](docs/trice_remote_smoke_claim_card.svg))
 - Readiness card: [`docs/trice_suite_readiness.md`](docs/trice_suite_readiness.md) ([JSON](docs/trice_suite_readiness.json), [SVG](docs/trice_suite_readiness.svg))
+- Protocol lock: [`docs/trice_protocol_lock.md`](docs/trice_protocol_lock.md) ([JSON](docs/trice_protocol_lock.json), [SVG](docs/trice_protocol_lock.svg))
+- Design card: [`docs/trice_design_card.md`](docs/trice_design_card.md) ([JSON](docs/trice_design_card.json), [SVG](docs/trice_design_card.svg))
+- Reproduction card: [`docs/trice_reproduction_card.md`](docs/trice_reproduction_card.md) ([JSON](docs/trice_reproduction_card.json), [SVG](docs/trice_reproduction_card.svg))
+- Contract card: [`docs/trice_contract_card.md`](docs/trice_contract_card.md) ([JSON](docs/trice_contract_card.json), [SVG](docs/trice_contract_card.svg))
+- Research card: [`docs/trice_research_card.md`](docs/trice_research_card.md) ([JSON](docs/trice_research_card.json), [SVG](docs/trice_research_card.svg))
+- Artifact card: [`docs/trice_artifact_card.md`](docs/trice_artifact_card.md) ([JSON](docs/trice_artifact_card.json), [SVG](docs/trice_artifact_card.svg))
+- Installability card: [`docs/trice_install_card.md`](docs/trice_install_card.md) ([JSON](docs/trice_install_card.json), [SVG](docs/trice_install_card.svg))
+- Release evidence: [`docs/trice_release_evidence.md`](docs/trice_release_evidence.md) ([JSON](docs/trice_release_evidence.json), [SVG](docs/trice_release_evidence.svg), [checksums](docs/trice_release_evidence.checksums.txt), [Python SBOM](docs/trice_release_evidence.python.cdx.json), [Cargo SBOM](docs/trice_release_evidence.cargo.cdx.json), [provenance](docs/trice_release_evidence.intoto.json))
+- Release card: [`docs/trice_release_card.md`](docs/trice_release_card.md) ([JSON](docs/trice_release_card.json), [SVG](docs/trice_release_card.svg))
+- Crates publish card: [`docs/trice_crates_card.md`](docs/trice_crates_card.md) ([JSON](docs/trice_crates_card.json), [SVG](docs/trice_crates_card.svg))
+- Integrity card: [`docs/trice_integrity_card.md`](docs/trice_integrity_card.md) ([JSON](docs/trice_integrity_card.json), [SVG](docs/trice_integrity_card.svg))
 - Library contract: [`docs/trice_library.md`](docs/trice_library.md)
 - Evidence manifest: [`benchmark/trice/results/v2-smoke/trice_v2_evidence_manifest.json`](benchmark/trice/results/v2-smoke/trice_v2_evidence_manifest.json)
+- Paper manifest verification: `tracerazor-trice verify paper/trice_v3_research_manifest.json --result benchmark/trice/results/v2-smoke/trice_v2_live_results.json`
 - Suite manifest: [`benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json`](benchmark/trice/results/v2-suite/trice_suite_evidence_manifest.json)
 - Evidence bundle: [`benchmark/trice/results/v2-suite/trice_suite_evidence.trice.zip`](benchmark/trice/results/v2-suite/trice_suite_evidence.trice.zip)
 - Broad smoke bundle: [`benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip`](benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip)
+- Remote smoke suite manifest: [`benchmark/trice/results/v2-remote-smoke/trice_suite_evidence_manifest.json`](benchmark/trice/results/v2-remote-smoke/trice_suite_evidence_manifest.json)
+- Remote smoke bundle: [`benchmark/trice/results/v2-remote-smoke/trice_remote_smoke_evidence.trice.zip`](benchmark/trice/results/v2-remote-smoke/trice_remote_smoke_evidence.trice.zip)
 
 ---
 

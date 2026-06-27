@@ -1,0 +1,86 @@
+{
+  "$id": "https://tracerazor.dev/schemas/trice_release_card.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRICE release card",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "release_level",
+    "release_score",
+    "public_release_ready",
+    "s_tier_claim_allowed",
+    "package",
+    "doctor_snapshot",
+    "doctor_snapshot_sha256",
+    "inputs",
+    "checks",
+    "verdicts",
+    "research_basis",
+    "next_actions",
+    "commands",
+    "release_card_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trice-release-card/v1"
+    },
+    "release_level": {
+      "enum": ["not_release_ready", "local_release_candidate", "public_release_ready"]
+    },
+    "release_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "public_release_ready": {
+      "type": "boolean"
+    },
+    "s_tier_claim_allowed": {
+      "type": "boolean"
+    },
+    "package": {
+      "type": "object",
+      "required": ["name", "local_version"]
+    },
+    "doctor_snapshot": {
+      "type": "object"
+    },
+    "doctor_snapshot_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed", "observed", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "verdicts": {
+      "type": "object"
+    },
+    "research_basis": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "commands": {
+      "type": "array"
+    },
+    "release_card_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

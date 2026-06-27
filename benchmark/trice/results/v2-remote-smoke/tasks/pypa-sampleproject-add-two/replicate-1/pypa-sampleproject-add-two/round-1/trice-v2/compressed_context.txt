@@ -1,0 +1,29 @@
+TRICE_CONTEXT_POLICY
+algorithm=trice-v0.1-multi-choice-knapsack
+projected_input_savings_pct=83.19
+
+[s1 step=1 action=anchor_prefix state=essential]
+Change sample.simple.add_one so add_one(1) returns 3 while preserving source-only edits. This is a remote-git smoke task for the live TRICE evidence path.
+Change sample.simple.add_one so add_one(1) returns 3 while preserving source-only edits. This is a remote-git smoke task for the live TRICE evidence path.
+
+[s2 step=2 action=anchor_prefix state=essential]
+Run failing verifier before edit
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+AssertionError
+tool:pytest
+
+[s3 step=3 action=mask_with_receipt state=rehydratable]
+masked receipt=f5cfc33dbb6cd89e pointer=trace:pypa-sampleproject-add-two.decision:step:3
+
+[s4 step=4 action=mask_with_receipt state=rehydratable]
+masked receipt=b4170e99f7c734e0 pointer=trace:pypa-sampleproject-add-two.decision:step:4
+
+[s5 step=5 action=mask_with_receipt state=redundant]
+masked receipt=a21877daee09a23d pointer=trace:pypa-sampleproject-add-two.decision:step:5
+
+[s6 step=6 action=mask_with_receipt state=redundant]
+masked receipt=c68671d9315a7139 pointer=trace:pypa-sampleproject-add-two.decision:step:6
+
+[s7 step=7 action=keep state=essential]
+Ready to edit only source files and re-run the verifier.

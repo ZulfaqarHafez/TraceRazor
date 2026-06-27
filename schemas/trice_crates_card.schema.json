@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "properties": {
+    "cargo_install_claim_allowed": {
+      "type": "boolean"
+    },
+    "checks": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "observed": {},
+          "passed": {
+            "type": "boolean"
+          },
+          "required": {}
+        },
+        "required": [
+          "name",
+          "passed",
+          "observed",
+          "required"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "crates_card_level": {
+      "enum": [
+        "crates_live",
+        "publish_plan_locked",
+        "not_publishable"
+      ]
+    },
+    "crates_card_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "crates_publish_score": {
+      "maximum": 100,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "local_publish_plan_locked": {
+      "type": "boolean"
+    },
+    "packages": {
+      "items": {
+        "additionalProperties": true,
+        "properties": {
+          "currently_publishable": {
+            "type": "boolean"
+          },
+          "local_dependencies": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "manifest": {
+            "type": "object"
+          },
+          "name": {
+            "type": "string"
+          },
+          "registry": {
+            "type": "object"
+          },
+          "stage": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "version": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "version",
+          "stage",
+          "manifest",
+          "local_dependencies",
+          "registry",
+          "currently_publishable"
+        ],
+        "type": "object"
+      },
+      "minItems": 6,
+      "type": "array"
+    },
+    "public_crates_live": {
+      "type": "boolean"
+    },
+    "publish_commands": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "schema_version": {
+      "const": "trice-crates-card/v1"
+    },
+    "scope": {
+      "type": "string"
+    },
+    "status_snapshot": {
+      "type": "object"
+    },
+    "status_snapshot_sha256": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "workspace_version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "scope",
+    "workspace_version",
+    "crates_card_level",
+    "crates_publish_score",
+    "local_publish_plan_locked",
+    "public_crates_live",
+    "cargo_install_claim_allowed",
+    "packages",
+    "checks",
+    "inputs",
+    "status_snapshot",
+    "status_snapshot_sha256",
+    "publish_commands",
+    "research_basis",
+    "next_actions",
+    "crates_card_sha256"
+  ],
+  "title": "TRICE crates publish card",
+  "type": "object"
+}

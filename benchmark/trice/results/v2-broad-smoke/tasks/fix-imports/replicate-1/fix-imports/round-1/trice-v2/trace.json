@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "trice-v2",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "9e47b253637d9af37ba6ee1e837c435d23d030e1d58d5c16bb6e110e816d1448",
+    "run_receipt_sha256": "6c80b7651ee680a68c14efb2c20a9debd901e2ff1e7dd9b7cc68a3e24c4a2c95",
     "task": "Fix package imports without editing tests.",
     "task_id": "fix-imports"
   },

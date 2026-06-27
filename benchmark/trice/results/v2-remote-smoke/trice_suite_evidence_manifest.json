@@ -1,0 +1,38 @@
+{
+  "algorithm": "trice-v2-suite-live-user-conditioned-rollout",
+  "artifacts": [
+    {
+      "bytes": 1244,
+      "path": "trice_suite_manifest.snapshot.json",
+      "sha256": "84d155146afc9a81fa30e47c87e4f15534d0c3a2074b6595d84fef4f7a6bbff7"
+    },
+    {
+      "bytes": 1285,
+      "path": "trice_suite_sources.json",
+      "sha256": "dd6e5db713525f9dd881becc91c50127f0902cbed2003d99b10eba3e321dc92d"
+    },
+    {
+      "bytes": 1903,
+      "path": "trice_suite_report.md",
+      "sha256": "325faf80c683b89ddaad8001e9c4d429e19ed00ddfd39ed7d3747cad0dbd516e"
+    },
+    {
+      "bytes": 2783,
+      "path": "tasks/pypa-sampleproject-add-two/replicate-1/trice_v2_evidence_manifest.json",
+      "sha256": "12884e743a19b2d6ff58d0eae10ecd9adc90881b5d1e7c5727c00da02e4709b2"
+    }
+  ],
+  "canonical_result_sha256": "c819a6f304fdd96da37032756c6236acbb8609f56a158d5782ac739c7fe83f16",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "Manifest-driven TRICE suite",
+    "Each child task is a real live rollout with its own evidence manifest",
+    "Replicates use fresh child output bundles",
+    "Repo tree fingerprints and intervention provenance captured before execution",
+    "Aggregate manifest hashes suite snapshot and child manifests"
+  ],
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
+  "result_sha256": "a3d099d31dca99057da805dedf01a1a0a3dc70e0c74bc8b33d6bec4862272ff5",
+  "schema_version": "trice-evidence-manifest/v1"
+}

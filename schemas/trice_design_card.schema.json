@@ -1,0 +1,108 @@
+{
+  "$id": "https://tracerazor.dev/schemas/trice_design_card.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRICE statistical design card",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "design_level",
+    "design_score",
+    "claim_design_ready",
+    "input_sha256",
+    "source",
+    "observed",
+    "projection",
+    "checks",
+    "research_basis",
+    "non_claims",
+    "next_actions",
+    "design_card_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trice-design-card/v1"
+    },
+    "design_level": {
+      "enum": ["not_design_ready", "smoke_design_observed", "pilot_design_ready", "claim_design_ready"]
+    },
+    "design_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "claim_design_ready": {
+      "type": "boolean"
+    },
+    "input_sha256": {
+      "type": "object",
+      "required": ["protocol_lock", "suite_result"],
+      "properties": {
+        "protocol_lock": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "suite_result": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["protocol_lock_path", "suite_result_path", "protocol_id"]
+    },
+    "observed": {
+      "type": "object",
+      "required": [
+        "task_clusters",
+        "total_runs",
+        "cluster_means",
+        "cluster_sample_sd",
+        "mean_input_token_savings",
+        "clustered_ci_low",
+        "pass_regressions"
+      ]
+    },
+    "projection": {
+      "type": "object",
+      "required": [
+        "target",
+        "observed_margin_to_target",
+        "projected_clusters_for_target",
+        "protocol_min_task_clusters",
+        "effective_required_task_clusters",
+        "projected_ci_low_at_claim_n",
+        "projected_ci_passes_target",
+        "method"
+      ]
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed", "observed", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "research_basis": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "non_claims": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "design_card_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

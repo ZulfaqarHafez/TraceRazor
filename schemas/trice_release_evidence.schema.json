@@ -1,0 +1,97 @@
+{
+  "$id": "https://tracerazor.dev/schemas/trice_release_evidence.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRICE release evidence",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "package",
+    "version",
+    "release_evidence_level",
+    "release_evidence_score",
+    "inputs",
+    "artifacts",
+    "checks",
+    "sidecars",
+    "python_sbom",
+    "cargo_sbom",
+    "provenance_statement",
+    "research_basis",
+    "next_actions",
+    "release_evidence_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trice-release-evidence/v1"
+    },
+    "package": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string"
+    },
+    "release_evidence_level": {
+      "enum": ["release_evidence_missing", "partial_release_evidence", "release_evidence_ready"]
+    },
+    "release_evidence_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "kind", "path", "present", "bytes", "sha256"],
+        "properties": {
+          "name": { "type": "string" },
+          "kind": { "type": "string" },
+          "path": { "type": "string" },
+          "present": { "type": "boolean" },
+          "bytes": { "type": "integer", "minimum": 0 },
+          "sha256": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed", "observed", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "sidecars": {
+      "type": "array"
+    },
+    "python_sbom": {
+      "type": "object"
+    },
+    "cargo_sbom": {
+      "type": "object"
+    },
+    "provenance_statement": {
+      "type": "object"
+    },
+    "research_basis": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "release_evidence_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

@@ -1,0 +1,175 @@
+{
+  "checks": [
+    {
+      "name": "wheel_present",
+      "observed": "dist/tracerazor-1.0.3-py3-none-any.whl",
+      "passed": true,
+      "required": "built wheel exists"
+    },
+    {
+      "name": "venv_created",
+      "observed": 0,
+      "passed": true,
+      "required": "clean virtual environment can be created"
+    },
+    {
+      "name": "wheel_installs",
+      "observed": 0,
+      "passed": true,
+      "required": "wheel installs with pip --no-deps"
+    },
+    {
+      "name": "version_matches",
+      "observed": "1.0.3",
+      "passed": true,
+      "required": "1.0.3"
+    },
+    {
+      "name": "schemas_importable",
+      "observed": {
+        "crates_schema_title": "TRICE crates publish card",
+        "install_schema_title": "TRICE installability card",
+        "research_schema_title": "TRICE research card"
+      },
+      "passed": true,
+      "required": "install, crates, and research schemas import from wheel"
+    },
+    {
+      "name": "trice_api_importable",
+      "observed": {
+        "build_crates_card": true,
+        "build_install_card": true,
+        "build_research_card": true,
+        "verify_install_card_file": true,
+        "verify_research_card_file": true
+      },
+      "passed": true,
+      "required": "public tracerazor.trice install/crates/research APIs import"
+    },
+    {
+      "name": "trice_console_works",
+      "observed": 0,
+      "passed": true,
+      "required": "tracerazor-trice console script works after wheel install"
+    },
+    {
+      "name": "rust_cli_bundled",
+      "observed": "exit=2; tracerazor: no auditor binary available.\nThis looks like a pure-Python install (sdist). Options:\n  1. pip install a platform wheel (bundles the binary), or\n  2. cargo build --relea",
+      "passed": false,
+      "required": "tracerazor console script can find a bundled Rust auditor binary"
+    }
+  ],
+  "commands": {
+    "create_venv": {
+      "command_sha256": "4f3ab3ed0132810037204e2c53e18b4a70854934c1a1f8413a4e57ae75c514e4",
+      "exit_code": 0,
+      "ok": true,
+      "status": "ok",
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_excerpt": "",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "import_probe": {
+      "command_sha256": "28b972af38d4c813521ad03e03f0a4601f9e6eb1040708670c79e6c234f7e075",
+      "exit_code": 0,
+      "ok": true,
+      "status": "ok",
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_excerpt": "{\"build_crates_card\": true, \"build_install_card\": true, \"build_research_card\": true, \"crates_schema_title\": \"TRICE crates publish card\", \"install_schema_title\": \"TRICE installability card\", \"research_schema_title\": \"TRICE research card\", \"verify_install_card_file\": true, \"verify_research_card_file\": true, \"version\": \"1.0.3\"}\n",
+      "stdout_sha256": "7f87ec0acdb92e9ca5a639eada5cd69d8c2f16186dd90dd45ed359f4f1973d94"
+    },
+    "install_wheel": {
+      "command_sha256": "6e07be580df95ebb90b479e794d61eb93a8b9661abc79812f19c31932fc14750",
+      "exit_code": 0,
+      "ok": true,
+      "status": "ok",
+      "stderr_excerpt": "\n[notice] A new release of pip is available: 23.2.1 -> 26.1.2\n[notice] To update, run: <tmp>\\venv\\Scripts\\python.exe -m pip install --upgrade pip\n",
+      "stderr_sha256": "8eb0c7312275437de5456b0c117ca7ac2340f7bf88b143c4f8f5fc14da97db21",
+      "stdout_excerpt": "Processing c:\\users\\zulfa\\tracerazor\\dist\\tracerazor-1.0.3-py3-none-any.whl\nInstalling collected packages: tracerazor\nSuccessfully installed tracerazor-1.0.3\n",
+      "stdout_sha256": "8ff08175107caaae6e46768a6f24b068e1806d7672dfeaed292caff8a4bb37f7"
+    },
+    "rust_console": {
+      "command_sha256": "a0f3538f834bcc53bc23b77f1b5f10e4a1bdd191cfd6594077462e0fb0c58f32",
+      "exit_code": 2,
+      "ok": false,
+      "status": "failed",
+      "stderr_excerpt": "tracerazor: no auditor binary available.\nThis looks like a pure-Python install (sdist). Options:\n  1. pip install a platform wheel (bundles the binary), or\n  2. cargo build --release -p tracerazor and set TRACERAZOR_BIN, or\n  3. use the HTTP server mode (tracerazor-server).\n",
+      "stderr_sha256": "51da36279b02049e01619ac3f34a234e61f6f863830246c034448453a06ab4fa",
+      "stdout_excerpt": "",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "trice_console": {
+      "command_sha256": "5695e414efa414eab6cc88b639b84dcff848720ac1f9f1b61a421cff27afc8d6",
+      "exit_code": 0,
+      "ok": true,
+      "status": "ok",
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_excerpt": "{\n  \"$id\": \"https://tracerazor.dev/schemas/trice_install_card.schema.json\",\n  \"$schema\": \"https://json-schema.org/draft/2020-12/schema\",\n  \"additionalProperties\": true,\n  \"properties\": {\n    \"checks\": {\n      \"items\": {\n        \"additionalProperties\": true,\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\"\n          },\n          \"passed\": {\n            \"type\": \"boolean\"\n          }\n        },\n        \"required\": [\n          \"name\",\n          \"passed\",\n          \"observed\",",
+      "stdout_sha256": "ce83b0525f48f45480c7bcf8ceb0de7cd49e5f4bfdfe60737aebe165278edc02"
+    }
+  },
+  "expected_version": "1.0.3",
+  "inputs": {
+    "dist_dir": {
+      "kind": "directory",
+      "name": "dist",
+      "path": "dist",
+      "present": true
+    },
+    "pyproject": {
+      "bytes": 5850,
+      "kind": "file",
+      "name": "pyproject",
+      "path": "pyproject.toml",
+      "present": true,
+      "sha256": "a59e14dfdd4c752e93403818f1a4b32c2ccb1bae577132d7f6e6aef53865d1a3"
+    },
+    "wheel": {
+      "bytes": 607154,
+      "kind": "file",
+      "name": "wheel",
+      "path": "dist/tracerazor-1.0.3-py3-none-any.whl",
+      "present": true,
+      "sha256": "2698409bb78759f6e661ad5dd1097815bb5ea1d27ce8445fbe8692acc13f3712"
+    }
+  },
+  "install_card_sha256": "92178fae37b672209b77ddab02d548a5ef1f69a4b35a29b78a09567a51005844",
+  "install_level": "python_trice_install_ready",
+  "install_score": 90,
+  "next_actions": [
+    "Keep Python/TRICE install claims allowed for the checked wheel.",
+    "Keep full `tracerazor` CLI claims scoped to platform wheels or source builds until a bundled Rust binary is present.",
+    "Generate platform-wheel install cards before claiming no-Rust-toolchain CLI install."
+  ],
+  "probe": {
+    "build_crates_card": true,
+    "build_install_card": true,
+    "build_research_card": true,
+    "crates_schema_title": "TRICE crates publish card",
+    "install_schema_title": "TRICE installability card",
+    "research_schema_title": "TRICE research card",
+    "verify_install_card_file": true,
+    "verify_research_card_file": true,
+    "version": "1.0.3"
+  },
+  "python_executable": "C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  "research_basis": [
+    "PyPA packaging guidance distinguishes building a distribution from installing and using it in a clean environment.",
+    "Wheel artifacts are user-facing contracts: import surfaces, console scripts, and packaged data must be verified after installation, not only hashed before upload.",
+    "TRICE separates Python/TRICE install readiness from full Rust CLI readiness so generic pure-Python wheels do not overclaim bundled-binary behavior.",
+    "Research-card schemas and APIs must be importable from the wheel because the paper/release basis is now a public contract surface."
+  ],
+  "schema_version": "trice-install-card/v1",
+  "scope": "TraceRazor wheel installability",
+  "wheel": {
+    "bytes": 607154,
+    "kind": "file",
+    "name": "wheel",
+    "path": "dist/tracerazor-1.0.3-py3-none-any.whl",
+    "present": true,
+    "sha256": "2698409bb78759f6e661ad5dd1097815bb5ea1d27ce8445fbe8692acc13f3712"
+  }
+}

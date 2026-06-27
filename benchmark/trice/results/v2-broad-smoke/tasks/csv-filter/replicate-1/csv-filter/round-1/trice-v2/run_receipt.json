@@ -48,14 +48,18 @@
     "TRICE_COMPRESSED_CONTEXT_SHA256",
     "TRICE_CONDITION",
     "TRICE_CONTEXT_MODE",
+    "TRICE_CONTEXT_PATH",
     "TRICE_INPUT_TOKENS",
     "TRICE_POLICY_ACTION_COUNTS_JSON",
+    "TRICE_POLICY_PATH",
     "TRICE_POLICY_SHA256",
     "TRICE_POLICY_TOKENS",
     "TRICE_PROJECTED_INPUT_SAVINGS_PCT",
     "TRICE_PROMPT",
     "TRICE_REALIZED_BUDGET_RATIO",
     "TRICE_TASK_ID",
+    "TRICE_TRACE_PATH",
+    "TRICE_VERIFY_CMD_JSON",
     "TRICE_WORKSPACE"
   ],
   "schema_version": "trice-run-receipt/v1",
@@ -74,6 +78,19 @@
     "compressed_context_sha256": "37d0247aeba98db3b22d7bc0a2bf63521afb27fb06eb5a79e2972e2464cdc5e8",
     "condition": "trice-v2",
     "context_mode": "trice_policy",
+    "decision_trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\csv-filter\\replicate-1\\csv-filter\\round-1\\trice-v2\\decision_trace.json",
+    "decision_trace_sha256": "d8e740c98d29e3fcc1816d5dea9fe48c62fe66f8ce23a5af5be6684ef0d06a8e",
+    "evidence_recall": {
+      "evidence_recall": 1.0,
+      "missing": [],
+      "obligation_count": 3,
+      "obligation_tokens": 256,
+      "passed": true,
+      "recalled_count": 3,
+      "recalled_tokens": 256,
+      "required_min": 0.95,
+      "schema_version": "trice-evidence-recall/v1"
+    },
     "input_tokens": 363,
     "policy_action_counts": {
       "anchor_prefix": 2,
@@ -85,7 +102,15 @@
     "policy_tokens": 363,
     "projected_input_savings_pct": 80.14,
     "realized_budget_ratio": 0.198578,
-    "schema_version": "trice-context-envelope/v1"
+    "schema_version": "trice-context-envelope/v1",
+    "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\csv-filter\\replicate-1\\csv-filter\\round-1\\trice-v2\\decision_trace.json",
+    "verify_cmd": [
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "--tb=short"
+    ]
   },
   "workspace_after_sha256": "03777fc3ea82eac7ba5c03a834a12535ab4d498902094d340a4d32a20b3fa60e",
   "workspace_before_sha256": "6f5dfb669d81d426453ba8c1892c8c9e2130bb9413c52057b82c10d8bd0f2b2d"

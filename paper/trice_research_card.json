@@ -1,0 +1,1797 @@
+{
+  "category_counts": {
+    "agent_evaluation": 43,
+    "context_efficiency": 75,
+    "other": 8,
+    "public_trust": 25,
+    "statistical_quality": 9,
+    "trice_internal": 5
+  },
+  "checks": [
+    {
+      "name": "ledger_present",
+      "observed": "docs/trice_research_ledger.md",
+      "passed": true,
+      "required": "ledger file exists"
+    },
+    {
+      "name": "minimum_sources",
+      "observed": 165,
+      "passed": true,
+      "required": ">= 150 ledger rows"
+    },
+    {
+      "name": "unique_source_urls",
+      "observed": 165,
+      "passed": true,
+      "required": ">= 127 unique source URLs"
+    },
+    {
+      "name": "category_coverage",
+      "observed": {
+        "agent_evaluation": 43,
+        "context_efficiency": 75,
+        "other": 8,
+        "public_trust": 25,
+        "statistical_quality": 9,
+        "trice_internal": 5
+      },
+      "passed": true,
+      "required": {
+        "agent_evaluation": 30,
+        "context_efficiency": 30,
+        "public_trust": 20,
+        "statistical_quality": 5
+      }
+    },
+    {
+      "name": "valid_source_links",
+      "observed": 0.9818,
+      "passed": true,
+      "required": ">= 0.95 valid http/local links"
+    },
+    {
+      "name": "takeaways_present",
+      "observed": {
+        "missing": 0,
+        "present": 165
+      },
+      "passed": true,
+      "required": "every row has a takeaway"
+    },
+    {
+      "name": "index_sequence",
+      "observed": {
+        "count": 165,
+        "first": 1,
+        "last": 165,
+        "unique": 165
+      },
+      "passed": true,
+      "required": "rows are uniquely indexed in ascending order"
+    },
+    {
+      "name": "product_decision_section",
+      "observed": "Product Decision From The Ledger",
+      "passed": true,
+      "required": "ledger includes product decision synthesis"
+    }
+  ],
+  "domain_counts": {
+    "arxiv.org": 16,
+    "csrc.nist.gov": 1,
+    "cyclonedx.org": 1,
+    "doc.rust-lang.org": 1,
+    "docs.github.com": 1,
+    "docs.mlcommons.org": 1,
+    "docs.pypi.org": 2,
+    "docs.sigstore.dev": 1,
+    "github.com": 2,
+    "hf.co": 120,
+    "in-toto.io": 1,
+    "json-schema.org": 1,
+    "local": 4,
+    "openai.com": 1,
+    "packaging.python.org": 2,
+    "peps.python.org": 2,
+    "pip.pypa.io": 1,
+    "reproducible-builds.org": 1,
+    "scorecard.dev": 1,
+    "semver.org": 1,
+    "slsa.dev": 2,
+    "www.acm.org": 2
+  },
+  "ledger": {
+    "bytes": 35605,
+    "name": "trice_research_ledger.md",
+    "path": "docs/trice_research_ledger.md",
+    "present": true,
+    "sha256": "fd4bd4a9e466a6ce3100cb0ebc9e10f17b307109eafed2f1f1aaff4c7e5f5236"
+  },
+  "next_actions": [
+    "Regenerate this card whenever the ledger, paper, README, or proof graph changes.",
+    "Keep S-tier outcome claims gated by live held-out suite results, not by research-card status.",
+    "Scale the ledger toward 300+ primary sources before submitting the paper outside the repo."
+  ],
+  "non_claims": [
+    "A green research card does not prove the 60% S-tier outcome gate.",
+    "A green research card does not prove that every cited paper was replicated.",
+    "A green research card proves that the current ledger is broad, hashed, categorized, and bound to generated artifacts."
+  ],
+  "research_basis": [
+    "Agent evaluation research motivates fixed task environments, repeated trials, and cost-aware metrics.",
+    "Prompt-compression and long-context research motivate decision-preserving context control rather than shortest-prompt contests.",
+    "RAG and evidence-recall research motivate explicit recall floors for hidden or compressed evidence.",
+    "Reproducible-build and supply-chain practice motivates hash-bound research, package, release, and provenance artifacts.",
+    "TRICE treats its literature base as a versioned product input: if the ledger drifts, the paper, README, and integrity proof must be regenerated."
+  ],
+  "research_card_sha256": "8fc4acd4bbfc30a06263602dcd44cdb2eb58a59cfcf03d337a9e38894e91b07b",
+  "research_level": "research_basis_locked",
+  "research_score": 100,
+  "schema_version": "trice-research-card/v1",
+  "scope": "TRICE deterministic research basis",
+  "source_count": 165,
+  "sources": [
+    {
+      "area": "agent optimization",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 1,
+      "row_sha256": "1235bbf61a3b3418584052a83b6bb6f4dcd7a9ece1ec75ceafc020c4c9133b40",
+      "takeaway": "Closed-loop self-improvement must be gated by benchmark outcomes.",
+      "title": "A Self-Improving Coding Agent",
+      "url": "https://hf.co/papers/2504.15228"
+    },
+    {
+      "area": "prompt/memory",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 2,
+      "row_sha256": "70f359e02f0349793d27daf656680d6a70e68b733217db2beb181f4719543594",
+      "takeaway": "Structured compact representations can outperform verbose dialogue traces.",
+      "title": "CodeAgents",
+      "url": "https://hf.co/papers/2507.03254"
+    },
+    {
+      "area": "cost analysis",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 3,
+      "row_sha256": "f2f21cc5c3fd7d2e0050fdbda48bdd1d78fa3958f8eedf37c2731b8507b285a5",
+      "takeaway": "Input tokens dominate software-agent cost; optimize carried context first.",
+      "title": "Tokenomics",
+      "url": "https://hf.co/papers/2601.14470"
+    },
+    {
+      "area": "software agents",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 4,
+      "row_sha256": "3b2263d19188598086af7626b66b2c732e4d7c48eb20e9bbcb07bf7135daddb1",
+      "takeaway": "Agent context, memory, tools, and evaluation must be treated as one system.",
+      "title": "From LLMs to LLM-based Agents for Software Engineering",
+      "url": "https://hf.co/papers/2408.02479"
+    },
+    {
+      "area": "plan caching",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 5,
+      "row_sha256": "c9e34f4c98807681183afcadaf14a087f1c57dbb0c6cbf70184f4bb11f7c532c",
+      "takeaway": "Reusable plans deserve cache-aware stable prefixes.",
+      "title": "Cost-Efficient Serving of LLM Agents via Test-Time Plan Caching",
+      "url": "https://hf.co/papers/2506.14852"
+    },
+    {
+      "area": "harness",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 6,
+      "row_sha256": "38bebd7a65143cd8a52d8c7ff6dd97bb3031aee79b6be1265b9045c4cd4aa8a9",
+      "takeaway": "Technical workflows need structured-data and execution-aware evaluation.",
+      "title": "DrafterBench",
+      "url": "https://hf.co/papers/2507.11527"
+    },
+    {
+      "area": "trajectory reduction",
+      "category": "trice_internal",
+      "domain": "hf.co",
+      "index": 7,
+      "row_sha256": "fe21f6077f4c1c2e5747bc7753d49a2dae58d1382d65aead37056b09781a034f",
+      "takeaway": "Trajectory reduction is a baseline; TRICE must add decision/evidence gates.",
+      "title": "AgentDiet",
+      "url": "https://hf.co/papers/2509.23586"
+    },
+    {
+      "area": "memory",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 8,
+      "row_sha256": "62df6a6c29f0136ef105789f2245e60c3c120df81e107220155346b963300fde",
+      "takeaway": "Experience and layered memory can guide cheaper future decisions.",
+      "title": "Jenius Agent",
+      "url": "https://hf.co/papers/2601.01857"
+    },
+    {
+      "area": "test-time scaling",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 9,
+      "row_sha256": "b4b0016f78a7babcc10ffa8346b56cb5d659031e8b0a5a6e8332c76bcebcf1af",
+      "takeaway": "More compute is not automatically better; budgeted frontiers matter.",
+      "title": "General AgentBench Test-Time Scaling",
+      "url": "https://hf.co/papers/2602.18998"
+    },
+    {
+      "area": "skills",
+      "category": "other",
+      "domain": "hf.co",
+      "index": 10,
+      "row_sha256": "1d11ac33cda96e3c8da3a748f2a5b46e186e8fa21d9cc2f18b6f35348542c89e",
+      "takeaway": "Procedural instructions should be progressively disclosed and compressed.",
+      "title": "SkillReducer",
+      "url": "https://hf.co/papers/2603.29919"
+    },
+    {
+      "area": "context compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 11,
+      "row_sha256": "fd7297e58216cc249e9490f8d863d085cdff7d06e04bc2cbe8a0bb6ed9c62a97",
+      "takeaway": "Stable summary tokens motivate receipt/anchor representations.",
+      "title": "Sentinel Tokens",
+      "url": "https://hf.co/papers/2310.08152"
+    },
+    {
+      "area": "agent tuning",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 12,
+      "row_sha256": "c15fb5cc691b469158d72ee3e6cfd966747a10fdef69627dd58879a54ecc3997",
+      "takeaway": "Agent ability and context efficiency are coupled.",
+      "title": "AgentTuning",
+      "url": "https://hf.co/papers/2310.12823"
+    },
+    {
+      "area": "repo agents",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 13,
+      "row_sha256": "6e7b4cb645df844a40815807f910ab29f6f201176f7d581e65d6d984cab9dbc6",
+      "takeaway": "Tool-integrated repo agents expose code-navigation context bloat.",
+      "title": "CodeAgent",
+      "url": "https://hf.co/papers/2401.07339"
+    },
+    {
+      "area": "serving",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 14,
+      "row_sha256": "3d126b1ece689aa86b923c9d147f0dbcd0d8396a08857d513faca73fce1429d4",
+      "takeaway": "Long system prompts create serving overhead even when text is repeated.",
+      "title": "RelayAttention",
+      "url": "https://hf.co/papers/2402.14808"
+    },
+    {
+      "area": "benchmark creation",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 15,
+      "row_sha256": "59dbee7f966629cc04b16b2aef1c8db9f0c9c9db7c79ac832a7007e9220a507b",
+      "takeaway": "Automated benchmark creation needs verification, not only generated tasks.",
+      "title": "BENCHAGENTS",
+      "url": "https://hf.co/papers/2410.22584"
+    },
+    {
+      "area": "bug fixing",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 16,
+      "row_sha256": "32aee4ee4ba8af6f77a6d2c505358e1d00c037ab458d360e6e20cea7be764f0b",
+      "takeaway": "Fault localization and repair have different context needs.",
+      "title": "Empirical Study on LLM Agents for Bug Fixing",
+      "url": "https://hf.co/papers/2411.10213"
+    },
+    {
+      "area": "repo deployment",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 17,
+      "row_sha256": "1f77e9ac15d3eed9c5a0e34a30428cd360868f17b5a879bf7ae8bbc4cbfb0624",
+      "takeaway": "Research repos stress setup logs, dependency errors, and retry loops.",
+      "title": "CSR-Bench",
+      "url": "https://hf.co/papers/2502.06111"
+    },
+    {
+      "area": "project-level eval",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 18,
+      "row_sha256": "36f70c946fc90421e7c51d0632c4b013927a716f6baa3265d6294860fe884154",
+      "takeaway": "Project-level generation needs whole-repo context discipline.",
+      "title": "ProjectEval",
+      "url": "https://hf.co/papers/2503.07010"
+    },
+    {
+      "area": "trajectory judging",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 19,
+      "row_sha256": "c590678e835bc9b2615cc0c9e9045f54f446258f678c237562aa3a3cec579dcf",
+      "takeaway": "Automatic trajectory scores can undercount success; keep objective oracles.",
+      "title": "AgentRewardBench",
+      "url": "https://hf.co/papers/2504.08942"
+    },
+    {
+      "area": "research agents",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 20,
+      "row_sha256": "7ea147e1fb94d12e5dcd949f4fcba94aa27420888fb3ed4eb30740e399fc81b7",
+      "takeaway": "Multi-agent research coding creates reusable plan/context fragments.",
+      "title": "ResearchCodeAgent",
+      "url": "https://hf.co/papers/2504.20117"
+    },
+    {
+      "area": "prompt compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 21,
+      "row_sha256": "fddaefd5b56fabf43dd74a017b92009d096830967af4142f2affda7ff411e826",
+      "takeaway": "Compression needs quality/rate tradeoff measurement.",
+      "title": "Empirical Study on Prompt Compression",
+      "url": "https://hf.co/papers/2505.00019"
+    },
+    {
+      "area": "code graphs",
+      "category": "other",
+      "domain": "hf.co",
+      "index": 22,
+      "row_sha256": "bd5a8ad2c754f6a07a644b36869f689cf39eb5ca2ad2cc59d947202e2aa23bf7",
+      "takeaway": "Dependency centrality should raise utility for code identifiers.",
+      "title": "Code Graph Model",
+      "url": "https://hf.co/papers/2505.16901"
+    },
+    {
+      "area": "self-evolving workflows",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 23,
+      "row_sha256": "6d12a2e26a7ef163528de32ed73197b9a63b6a4dbe778f5fe6cbc960c695f5d4",
+      "takeaway": "The optimizer itself should learn across benchmark rounds.",
+      "title": "SEW",
+      "url": "https://hf.co/papers/2505.18646"
+    },
+    {
+      "area": "agent issues",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 24,
+      "row_sha256": "8b6b2e1802cd2116d70cd1cdaf0ed696c882f2a5b8aa4b94dc1585ee3652f71f",
+      "takeaway": "Agent-system repos are hard, realistic product benchmarks.",
+      "title": "Can Agents Fix Agent Issues?",
+      "url": "https://hf.co/papers/2505.20749"
+    },
+    {
+      "area": "security tasks",
+      "category": "public_trust",
+      "domain": "hf.co",
+      "index": 25,
+      "row_sha256": "317e0e159a0d48d97479af034f432e881e9a9f2dfb27d23989de4e0273588634",
+      "takeaway": "Security workflows require strict evidence preservation.",
+      "title": "SEC-bench",
+      "url": "https://hf.co/papers/2506.11791"
+    },
+    {
+      "area": "unified SWE agents",
+      "category": "statistical_quality",
+      "domain": "hf.co",
+      "index": 26,
+      "row_sha256": "425c67b4d3b5d0e30252be99147be8e37eec870ee669ebd5fb85fbab186273f4",
+      "takeaway": "Multiple SWE task modes demand adapter-level evaluation.",
+      "title": "USEagent",
+      "url": "https://hf.co/papers/2506.14683"
+    },
+    {
+      "area": "research extension",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 27,
+      "row_sha256": "62ed82832f9b1746c920825aec3ee3bfe32a9b182a4d8417a7a6a5714ed7e9e9",
+      "takeaway": "Long-horizon research tasks stress memory and false-progress pruning.",
+      "title": "RExBench",
+      "url": "https://hf.co/papers/2506.22598"
+    },
+    {
+      "area": "KV cache",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 28,
+      "row_sha256": "682492758ff33edaf0ed2d2ca03de804d8c99dfb8c06b5c26f771e111793c279",
+      "takeaway": "Agent workflow schedules can guide cache preservation.",
+      "title": "KVFlow",
+      "url": "https://hf.co/papers/2507.07400"
+    },
+    {
+      "area": "context routing",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 29,
+      "row_sha256": "352fe77410e2bdc54268298bf846e48b2ad690228e45d6cbb3af5e59668375b9",
+      "takeaway": "Route only role-relevant context subsets to each agent.",
+      "title": "RCR-Router",
+      "url": "https://hf.co/papers/2508.04903"
+    },
+    {
+      "area": "observation masking",
+      "category": "other",
+      "domain": "hf.co",
+      "index": 30,
+      "row_sha256": "1c82c3802ea2f25ffb48e5f826c7228f0e30eb1a2f5038f48330bffc4e2c4554",
+      "takeaway": "Simple masking can beat expensive summaries; receipts are first-class.",
+      "title": "The Complexity Trap",
+      "url": "https://hf.co/papers/2508.21433"
+    },
+    {
+      "area": "distillation",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 31,
+      "row_sha256": "e2b9bfc2a10f19f8f3fe01ea9c3f894aba0f4bc58ffff53bcc4a9f1635e02548",
+      "takeaway": "Expensive multi-agent traces can teach compact future behavior.",
+      "title": "MapCoder-Lite",
+      "url": "https://hf.co/papers/2509.17489"
+    },
+    {
+      "area": "semantic cache",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 32,
+      "row_sha256": "684d12b3e58ec6065d07ff10ff8012abc98c3850f2f978f9399264c50cce43f3",
+      "takeaway": "Similar prompts can share cache state beyond exact text matches.",
+      "title": "SemShareKV",
+      "url": "https://hf.co/papers/2509.24832"
+    },
+    {
+      "area": "context optimization",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 33,
+      "row_sha256": "077c71cac46aadf73791044005ca01e09ba6eb08cb2c248e789c2faae3a90966",
+      "takeaway": "Failure-driven compressor optimization belongs in the loop.",
+      "title": "ACON",
+      "url": "https://hf.co/papers/2510.00615"
+    },
+    {
+      "area": "SWE benchmark survey",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 34,
+      "row_sha256": "c495497fcd523930a89908c3276e85681dc00f7c46b577b37fba271fa4c15103",
+      "takeaway": "Report task families, not one blended score.",
+      "title": "Benchmarks and Solutions in LLM-Empowered Agentic Systems",
+      "url": "https://hf.co/papers/2510.09721"
+    },
+    {
+      "area": "agent systems efficiency",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 35,
+      "row_sha256": "322293f503674922d534340b84626e6834ab9d07a655f42bb5424cc9d01ef13c",
+      "takeaway": "Environment and API overheads can dominate LLM-only estimates.",
+      "title": "What Limits Agentic Systems Efficiency?",
+      "url": "https://hf.co/papers/2510.16276"
+    },
+    {
+      "area": "environments",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 36,
+      "row_sha256": "e21cceeabef36c2594423c54e56e841f129733f0203f5697a75a66c997ac6a9d",
+      "takeaway": "Environment setup is itself a real benchmark dimension.",
+      "title": "Multi-Docker-Eval",
+      "url": "https://hf.co/papers/2512.06915"
+    },
+    {
+      "area": "reliability",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 37,
+      "row_sha256": "c40f6339019a6a40e3fcc1d6497a797f1d0a0631e78be59db28fafdfa249110f",
+      "takeaway": "Noninferiority should include perturbations and failure tolerance.",
+      "title": "ReliabilityBench",
+      "url": "https://hf.co/papers/2601.06112"
+    },
+    {
+      "area": "state diffs",
+      "category": "statistical_quality",
+      "domain": "hf.co",
+      "index": 38,
+      "row_sha256": "81eb1f5197bf86040368f2caaefc48ce1f021ae1fb796dd9446ee2ac7b5e908c",
+      "takeaway": "State-diff evaluation catches collateral task damage.",
+      "title": "Agent-Diff",
+      "url": "https://hf.co/papers/2602.11224"
+    },
+    {
+      "area": "replicability",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 39,
+      "row_sha256": "c77f54f364298e8152d2c0769543645003fb1d655ae3277e976388c9caa015cd",
+      "takeaway": "Reproducibility and exact environment state matter.",
+      "title": "ReplicatorBench",
+      "url": "https://hf.co/papers/2602.11354"
+    },
+    {
+      "area": "inference optimization",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 40,
+      "row_sha256": "f0c13968d19234568c0e6e8dc997d5db2d95940c4f114436e30e8d8e1a30ff4b",
+      "takeaway": "Real optimization tasks test engineering feedback loops.",
+      "title": "ISO-Bench",
+      "url": "https://hf.co/papers/2602.19594"
+    },
+    {
+      "area": "memory generation",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 41,
+      "row_sha256": "85058041cf104b9b6c79688e77508808430f1227fff54500eec9a02bc77e9c0e",
+      "takeaway": "Useful memory should be learned from trajectories, not handcrafted once.",
+      "title": "Trajectory-Informed Memory Generation",
+      "url": "https://hf.co/papers/2603.10600"
+    },
+    {
+      "area": "collaboration cache",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 42,
+      "row_sha256": "bb129bc13d05fc07b63a758365985978bf04b12a63b65866d29974a67233aac6",
+      "takeaway": "Multi-agent collaboration benefits from decoding/cache reuse.",
+      "title": "RelayCaching",
+      "url": "https://hf.co/papers/2603.13289"
+    },
+    {
+      "area": "code execution",
+      "category": "other",
+      "domain": "hf.co",
+      "index": 43,
+      "row_sha256": "6eb6b175cc6ae6f9c4a6068c07c7ee5094d90a4ff41b15d7b28a16ae11701b6d",
+      "takeaway": "Overlap and early interruption can reduce wasted tool cycles.",
+      "title": "Executing as You Generate",
+      "url": "https://hf.co/papers/2604.00491"
+    },
+    {
+      "area": "psychometrics",
+      "category": "statistical_quality",
+      "domain": "hf.co",
+      "index": 44,
+      "row_sha256": "f76901583234a7d16f650a6bab586e50bdc69a9b8401d1a43ff650e785e8f6c3",
+      "takeaway": "Predict task difficulty before setting token budgets.",
+      "title": "Agent Psychometrics",
+      "url": "https://hf.co/papers/2604.00594"
+    },
+    {
+      "area": "wild prompt compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 45,
+      "row_sha256": "ef5635fd656b4907f4360e249bc713116cfb1cae209119f8a9bdae0441ec744e",
+      "takeaway": "Latency break-even must include compressor overhead.",
+      "title": "Prompt Compression in the Wild",
+      "url": "https://hf.co/papers/2604.02985"
+    },
+    {
+      "area": "multi-agent KV",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 46,
+      "row_sha256": "900abe53ba8f56d500456c99d3cafe2898269e15eeedc80fb131271c45561a9a",
+      "takeaway": "Collective KV sharing motivates shared context anchors.",
+      "title": "TokenDance",
+      "url": "https://hf.co/papers/2604.03143"
+    },
+    {
+      "area": "productivity agents",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 47,
+      "row_sha256": "435d9c7bfb5a3369f70f6f382527bb3c7606a7f49947d7e31a08a6407c19cdb4",
+      "takeaway": "Simulated workspaces need safety and unsafe-action tracking.",
+      "title": "ClawsBench",
+      "url": "https://hf.co/papers/2604.05172"
+    },
+    {
+      "area": "agent RL",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 48,
+      "row_sha256": "417afc50d284ff96b5758387feec7257e407f39cf0f5d8e1f2c28fc6ca96e36b",
+      "takeaway": "Optimization loops require stable, verifiable tasks.",
+      "title": "Agent^2 RL-Bench",
+      "url": "https://hf.co/papers/2604.10547"
+    },
+    {
+      "area": "self-evolving tasks",
+      "category": "other",
+      "domain": "hf.co",
+      "index": 49,
+      "row_sha256": "1518e64f7ce6b12cfb361cad3f177450b2aa30a28cdb190dc0b0140e058787cd",
+      "takeaway": "S-tier claims should include real engineering tasks.",
+      "title": "Frontier-Eng",
+      "url": "https://hf.co/papers/2604.12290"
+    },
+    {
+      "area": "coworker agents",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 50,
+      "row_sha256": "c7f185457eb520e9c906dbe3e4e9df450aee28170248e0e59daf57fc036f2dd4",
+      "takeaway": "Multi-day state changes make stale context dangerous.",
+      "title": "ClawMark",
+      "url": "https://hf.co/papers/2604.23781"
+    },
+    {
+      "area": "live benchmarks",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 51,
+      "row_sha256": "d6be1b35ddcddd83ef32d1ea94d8f34cccbdf2df6b1df88859587e37491587b0",
+      "takeaway": "Living benchmarks reduce contamination risk.",
+      "title": "Claw-Eval-Live",
+      "url": "https://hf.co/papers/2604.28139"
+    },
+    {
+      "area": "repo generation",
+      "category": "public_trust",
+      "domain": "hf.co",
+      "index": 52,
+      "row_sha256": "50a0f9f402b581dc5e9f773fe02f694fb8fcbe2d6a8a898c27be711c457c546e",
+      "takeaway": "Scratch repos stress planning context and artifact state.",
+      "title": "RepoZero",
+      "url": "https://hf.co/papers/2605.07122"
+    },
+    {
+      "area": "long horizon",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 53,
+      "row_sha256": "64f1e07cdb119468c9fbc423f1b72c5f6ce0f9a625ec9c861965038436f5f566",
+      "takeaway": "Real CLI tasks catch harness assumptions.",
+      "title": "WildClawBench",
+      "url": "https://hf.co/papers/2605.10912"
+    },
+    {
+      "area": "termination",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 54,
+      "row_sha256": "7f1e56191bb36a947a1a8dbb43a275d0f441826eca7d4f544819fe8c464a1a45",
+      "takeaway": "Early stop is useful only with success-preservation guards.",
+      "title": "AgentStop",
+      "url": "https://hf.co/papers/2605.15206"
+    },
+    {
+      "area": "skills",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 55,
+      "row_sha256": "4e6af9b8055dfae2eec19162f6c765ce9b8a7468c3c5740b16ec11a4bc64eef1",
+      "takeaway": "Generated skills must be measured for token overhead and utility.",
+      "title": "SkillGenBench",
+      "url": "https://hf.co/papers/2605.18693"
+    },
+    {
+      "area": "workflow optimization",
+      "category": "other",
+      "domain": "hf.co",
+      "index": 56,
+      "row_sha256": "f791a9f7b6daa664e762e466e886bfba8ed42ecb0ededc8ebcee03c90500a480",
+      "takeaway": "Temporal reuse should be modeled separately from static text length.",
+      "title": "Temporal Semantic Caching",
+      "url": "https://hf.co/papers/2605.20630"
+    },
+    {
+      "area": "harness effects",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 57,
+      "row_sha256": "7cd27c57e444652f06cb3c5797c47283dfd4e3515e4fa24ccb33672bc603c9e1",
+      "takeaway": "Execution-layer configuration changes agent capability and cost.",
+      "title": "Harness-Bench",
+      "url": "https://hf.co/papers/2605.27922"
+    },
+    {
+      "area": "full lifecycle",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 58,
+      "row_sha256": "69a0d4e22c356a885ca26f67be77fd16c673de08a158b0202917be8c197c58d2",
+      "takeaway": "Persistent workspaces need lifecycle-aware memory.",
+      "title": "OR-Space",
+      "url": "https://hf.co/papers/2605.28158"
+    },
+    {
+      "area": "benchmark generation",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 59,
+      "row_sha256": "59b360a50fa5c3c694eb2cbc281beae883169fef2caf9af7fb53b602852d7a58",
+      "takeaway": "Generated benchmarks require consistency checks.",
+      "title": "Benchmark Everything Everywhere All at Once",
+      "url": "https://hf.co/papers/2606.06462"
+    },
+    {
+      "area": "repo exploration",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 60,
+      "row_sha256": "1cff2ef8ebaf7ffb2e2e8ff746539b608227072f7b409093dae4802007bd47d7",
+      "takeaway": "Separate exploration context from solving context.",
+      "title": "FastContext",
+      "url": "https://hf.co/papers/2606.14066"
+    },
+    {
+      "area": "cache-aware context",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 61,
+      "row_sha256": "49d93ce287d04ae2790cf39c1b73a45c49465e7fd8a13e4d9ba3a204f1152fed",
+      "takeaway": "Prefix stability and lifecycle eviction are core cost levers.",
+      "title": "TokenPilot",
+      "url": "https://hf.co/papers/2606.17016"
+    },
+    {
+      "area": "prompt engineering",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 62,
+      "row_sha256": "1a4904f91f36cf77b52666078dca82c0af5644bac1c53e00d4cd942ed10e463c",
+      "takeaway": "Prompt optimization can be automated but needs held-out validation.",
+      "title": "Large Language Models Are Human-Level Prompt Engineers",
+      "url": "https://hf.co/papers/2211.01910"
+    },
+    {
+      "area": "prompt patterns",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 63,
+      "row_sha256": "45f0f382e47e1fca1952d1e2c1ded3ce6ba21e5e2f151a91e5df40adde9c7328",
+      "takeaway": "Prompt structure should be reusable and compact.",
+      "title": "Prompt Pattern Catalog",
+      "url": "https://hf.co/papers/2302.11382"
+    },
+    {
+      "area": "gist tokens",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 64,
+      "row_sha256": "553cc0251e16fe000deab52658c5123611b5e78a69d6e37fdc28aa4b37d94dd4",
+      "takeaway": "Recurrent instructions can become compact anchors.",
+      "title": "Learning to Compress Prompts with Gist Tokens",
+      "url": "https://hf.co/papers/2304.08467"
+    },
+    {
+      "area": "compressed models",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 65,
+      "row_sha256": "5271869ab4588e24927d655561f501de23baf9bfc951640232d13e5a848a0033",
+      "takeaway": "Accuracy-efficiency tradeoffs must be jointly measured.",
+      "title": "Compress, Then Prompt",
+      "url": "https://hf.co/papers/2305.11186"
+    },
+    {
+      "area": "context adapters",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 66,
+      "row_sha256": "9432ac11ba1b053776e8fc0f024c592e166a590a552b502f66f6eabe2b235d2f",
+      "takeaway": "Recursive compression inspires hierarchical summaries.",
+      "title": "Adapting Language Models to Compress Contexts",
+      "url": "https://hf.co/papers/2305.14788"
+    },
+    {
+      "area": "translation memory",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 67,
+      "row_sha256": "ef9de5790bec7e9a15828dca784ee9961c93b630283845478336b41eacddcc00",
+      "takeaway": "Memory retrieval must avoid resending full prior context.",
+      "title": "Translation Memories for LLM Translators",
+      "url": "https://hf.co/papers/2305.17367"
+    },
+    {
+      "area": "prompt space",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 68,
+      "row_sha256": "3f970de749c8a5b231f7c5ccdbc693591bad1541ddbc46956ada40122b0ef56b",
+      "takeaway": "Embedding-space prompt choice suggests policy features.",
+      "title": "Prompt Space",
+      "url": "https://hf.co/papers/2306.03799"
+    },
+    {
+      "area": "watermarking",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 69,
+      "row_sha256": "bac3be646cc292b2da3e7169781564ca921a9f127db66c572cbc1497139e9dab",
+      "takeaway": "Receipts/hashes make compressed context auditable.",
+      "title": "PromptCARE",
+      "url": "https://hf.co/papers/2308.02816"
+    },
+    {
+      "area": "agent eval",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 70,
+      "row_sha256": "756a1b920b723fad7df26fa8ccd6b4f106b98cdf8e92d1ecdce278342295aa6f",
+      "takeaway": "Evaluate across environments, not just coding.",
+      "title": "AgentBench",
+      "url": "https://hf.co/papers/2308.03688"
+    },
+    {
+      "area": "RL compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 71,
+      "row_sha256": "6ababc2ccfb3ea3946812261f9b1d90c6d1d521cb987539f790f4dd3e5d79e1a",
+      "takeaway": "Compression can be learned from reward, but v1 should stay offline.",
+      "title": "Discrete Prompt Compression with RL",
+      "url": "https://hf.co/papers/2308.08758"
+    },
+    {
+      "area": "dynamic prompting",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 72,
+      "row_sha256": "a8c532c6cf696d56d4584607743c1858b0ca02d5bddfe0a9b9bbd0c9cd1a53e2",
+      "takeaway": "Runtime prompt selection can recover capability after compression.",
+      "title": "Dynamic Prompting for Compressed LLMs",
+      "url": "https://hf.co/papers/2310.00867"
+    },
+    {
+      "area": "memory architecture",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 73,
+      "row_sha256": "fc8e69de9d9476dd9531d800b5b2bc4695e48e2b622cd28566ffb2fa8ebb3436",
+      "takeaway": "State externalization reduces long-context pressure.",
+      "title": "L2MAC",
+      "url": "https://hf.co/papers/2310.02003"
+    },
+    {
+      "area": "agent network",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 74,
+      "row_sha256": "c9dfb0acfb066c537cd7f7a53d26cc57c1d4328b4f69dc08377c4ebbeaaadf76",
+      "takeaway": "Agent collaboration topology changes context needs.",
+      "title": "Dynamic LLM-Agent Network",
+      "url": "https://hf.co/papers/2310.02170"
+    },
+    {
+      "area": "prompt compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 75,
+      "row_sha256": "c09df9070c3fafebbeb418a221a48d6dc4b545cb702cb36fb0c7745390d43be5",
+      "takeaway": "Budget controllers are useful, but code safety needs locked anchors.",
+      "title": "LLMLingua",
+      "url": "https://hf.co/papers/2310.05736"
+    },
+    {
+      "area": "real repo benchmark",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 76,
+      "row_sha256": "e7fb2a32b8def183b0a28033b230fad4a800e8c689c057be23dea331cd3f07c5",
+      "takeaway": "Real GitHub issues are the main rollout target.",
+      "title": "SWE-bench",
+      "url": "https://hf.co/papers/2310.06770"
+    },
+    {
+      "area": "long prompt compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 77,
+      "row_sha256": "e7ddd5f9d501cf3c3eead6f435b05066c8cbfafdc05330a7da61c84a0007067a",
+      "takeaway": "Position and key information placement matter.",
+      "title": "LongLLMLingua",
+      "url": "https://hf.co/papers/2310.06839"
+    },
+    {
+      "area": "KV loading",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 78,
+      "row_sha256": "d87858b10ee08bba73147c8c2cd2ba7a696ab34768bebf2c2cc6a715a9a8ec9b",
+      "takeaway": "Avoid retransmitting or recomputing stable long context.",
+      "title": "CacheGen",
+      "url": "https://hf.co/papers/2310.07240"
+    },
+    {
+      "area": "planning",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 79,
+      "row_sha256": "0bc54ba47ab149bb447580585ea8cab0dab118e6fe6d55cd92466eacd56737f5",
+      "takeaway": "Plans should be cached and compared against outcomes.",
+      "title": "Tree-Planner",
+      "url": "https://hf.co/papers/2310.08582"
+    },
+    {
+      "area": "prompt survey",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 80,
+      "row_sha256": "e6d3e5ab5d3745540800f3456c1b518332cebea7cee1de1be17804f5ae09c5e8",
+      "takeaway": "Prompt rituals can add cost; measure each one.",
+      "title": "Prompt Engineering Review",
+      "url": "https://hf.co/papers/2310.14735"
+    },
+    {
+      "area": "RAG compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 81,
+      "row_sha256": "251b03dc4322f9925c5de02a49c66914acf9068771fd38bde98282154b82beb8",
+      "takeaway": "Retrieved text should be compressed by task relevance.",
+      "title": "TCRA-LLM",
+      "url": "https://hf.co/papers/2310.15556"
+    },
+    {
+      "area": "prompt cache",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 82,
+      "row_sha256": "62958eb4e9d7218f74903091fea5daaec0ff500069710d2ef6c3594b79c22aa8",
+      "takeaway": "Stable prompt modules should remain byte-identical.",
+      "title": "Prompt Cache",
+      "url": "https://hf.co/papers/2311.04934"
+    },
+    {
+      "area": "prompt engineer",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 83,
+      "row_sha256": "44769016804be283dd45715b2b142af63951587469fce49241ea8ae01741c38f",
+      "takeaway": "Meta-prompting needs regression tests.",
+      "title": "Prompt Engineering a Prompt Engineer",
+      "url": "https://hf.co/papers/2311.05661"
+    },
+    {
+      "area": "multi-agent cognition",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 84,
+      "row_sha256": "a584a6de4726f39c8e96902ccdf4d73b8acb468d9456d3ffc59792d1bbbe9c67",
+      "takeaway": "Collaboration adds rationality and adaptability failure modes.",
+      "title": "MAgIC",
+      "url": "https://hf.co/papers/2311.08562"
+    },
+    {
+      "area": "demonstrations",
+      "category": "other",
+      "domain": "hf.co",
+      "index": 85,
+      "row_sha256": "86fed182cc20d14d589ccf8657af45af4a62341a4a0f096ae508dee973695eb3",
+      "takeaway": "Demonstrations may be useful but expensive; route only when needed.",
+      "title": "AlignedCoT",
+      "url": "https://hf.co/papers/2311.13538"
+    },
+    {
+      "area": "efficiency survey",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 86,
+      "row_sha256": "c96a4c9763f6b067efc344dc657f05ceff432060da8ca1f73690d4e6dda52315",
+      "takeaway": "Token, model, and system efficiency are separate axes.",
+      "title": "Efficiency Spectrum of LLMs",
+      "url": "https://hf.co/papers/2312.00678"
+    },
+    {
+      "area": "semantic compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 87,
+      "row_sha256": "945dd03633d376e78249c0c1ce175e4fda5a190372c9c493d81c10503c1bc6a1",
+      "takeaway": "Semantic compression must expose reconstruction risk.",
+      "title": "Extending Context Window via Semantic Compression",
+      "url": "https://hf.co/papers/2312.09571"
+    },
+    {
+      "area": "believable agents",
+      "category": "statistical_quality",
+      "domain": "hf.co",
+      "index": 88,
+      "row_sha256": "01de7a7ccb1cba656825be9dc7f4f8f42b3c20299a1f0580b7f9f07b384b55aa",
+      "takeaway": "Agent behavior metrics go beyond final answer correctness.",
+      "title": "Believable AI Agents",
+      "url": "https://hf.co/papers/2312.17115"
+    },
+    {
+      "area": "self-planning",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 89,
+      "row_sha256": "6229ec1a2a08f7c0e8ff6809f0e3f616fac5195240787910d33428055468a9be",
+      "takeaway": "Agents can learn workflows, but budget should constrain exploration.",
+      "title": "AUTOACT",
+      "url": "https://hf.co/papers/2401.05268"
+    },
+    {
+      "area": "memory attention",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 90,
+      "row_sha256": "29d8e7dc65b500fa887f73329896451437b9c4c0a326977ecc0915afd922af1d",
+      "takeaway": "Memory compression should aim for lossless anchors where possible.",
+      "title": "LoMA",
+      "url": "https://hf.co/papers/2401.09486"
+    },
+    {
+      "area": "safety",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 91,
+      "row_sha256": "95a80c5cbc29f29d95db6f7eb7ad18b1a9e28e6e712e0f66ca3818aaa763aef0",
+      "takeaway": "Safety-critical context is never lossy-compressed in v1.",
+      "title": "R-Judge",
+      "url": "https://hf.co/papers/2401.10019"
+    },
+    {
+      "area": "goal prompting",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 92,
+      "row_sha256": "e16f4290d106c149bf6d1565b9524a38332e3a67c04b752a198fa4b2a3ad69dc",
+      "takeaway": "Goal alignment is a utility signal.",
+      "title": "Goal-Oriented Prompt Engineering Survey",
+      "url": "https://hf.co/papers/2401.14043"
+    },
+    {
+      "area": "social prompting",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 93,
+      "row_sha256": "69a3f9ec6b94a858aa47661e3991e833706da77dc43593fb3e1674808e256c3a",
+      "takeaway": "Prompt collaboration can bloat context unless scoped.",
+      "title": "Wordflow",
+      "url": "https://hf.co/papers/2401.14447"
+    },
+    {
+      "area": "code actions",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 94,
+      "row_sha256": "2bcff168397c1624d89dbec18116ece8f993b71b62bd7ddf3b5bd66f2b05b144",
+      "takeaway": "Executable state can replace verbose natural language memory.",
+      "title": "Executable Code Actions",
+      "url": "https://hf.co/papers/2402.01030"
+    },
+    {
+      "area": "KV quantization",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 95,
+      "row_sha256": "10f0e90aff2342f22e2e9831f2fb9202cf95bd900260208f691d19b0ed3ba459",
+      "takeaway": "KV bytes belong in cost models.",
+      "title": "KIVI",
+      "url": "https://hf.co/papers/2402.02750"
+    },
+    {
+      "area": "calibration",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 96,
+      "row_sha256": "91629a12a181f7b13e44b159d9331e3af2fb4b986cb7c744de7ec6ff39a293ec",
+      "takeaway": "Boundary cases should test compression safety.",
+      "title": "Intent-Based Prompt Calibration",
+      "url": "https://hf.co/papers/2402.03099"
+    },
+    {
+      "area": "sublinear generation",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 97,
+      "row_sha256": "3311cd7e19648fd837969e24adae818c6f30f448e0658e7ef98ba5ef3c130c06",
+      "takeaway": "Long-context generation cost is reducible with selection/sampling.",
+      "title": "SubGen",
+      "url": "https://hf.co/papers/2402.06082"
+    },
+    {
+      "area": "prompt survey",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 98,
+      "row_sha256": "8659b90792a81790c61557d191ed3c84d6100722da0eadca7f5c106ef3679c93",
+      "takeaway": "Taxonomies help classify prompt overhead.",
+      "title": "Systematic Survey of Prompt Engineering",
+      "url": "https://hf.co/papers/2402.07927"
+    },
+    {
+      "area": "gist memory",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 99,
+      "row_sha256": "e3593a2b0be1b312a2eed2719a34e961e5d240fe8a3737215d8e90d36b98caae",
+      "takeaway": "Long context can be replaced with episodic gist memory.",
+      "title": "ReadAgent",
+      "url": "https://hf.co/papers/2402.09727"
+    },
+    {
+      "area": "agent graphs",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 100,
+      "row_sha256": "e292d9aa05d37233ced05222c9266dea01cc16b51dacad166c04b3f5902e3f9f",
+      "takeaway": "Treat agent traces as optimizable graphs, not flat transcripts.",
+      "title": "Language Agents as Optimizable Graphs",
+      "url": "https://hf.co/papers/2402.16823"
+    },
+    {
+      "area": "KV precision",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 101,
+      "row_sha256": "602fb86fd1cdda2f6412278fd4e70fbbef46d659ab3b848f5d18d6de89be2336",
+      "takeaway": "Rare high-value tokens need special protection.",
+      "title": "No Token Left Behind",
+      "url": "https://hf.co/papers/2402.18096"
+    },
+    {
+      "area": "NL compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 102,
+      "row_sha256": "bf7983e1a8675ce8260c339450f7af744b437d8b5739f2e980c33ede8d59b7e0",
+      "takeaway": "Natural-language compression can be portable but risky.",
+      "title": "Learning to Compress Prompt in Natural Language Formats",
+      "url": "https://hf.co/papers/2402.18700"
+    },
+    {
+      "area": "code-as-policy",
+      "category": "other",
+      "domain": "hf.co",
+      "index": 103,
+      "row_sha256": "c0078b665aad65e9de5446f7f158f41d1f4c32570ef5083cffee3e0e3e04d358",
+      "takeaway": "Programmatic state can compress repeated action logic.",
+      "title": "RL-GPT",
+      "url": "https://hf.co/papers/2402.19299"
+    },
+    {
+      "area": "KV recipe",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 104,
+      "row_sha256": "71dd79403cf328d78a03e088d9cb24a59ba08deaa54287e88b95883421d8745b",
+      "takeaway": "Near-lossless KV compression motivates conservative loss budgets.",
+      "title": "GEAR",
+      "url": "https://hf.co/papers/2403.05527"
+    },
+    {
+      "area": "agent data",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 105,
+      "row_sha256": "fd6be6755bfeaf35d8c260c5687dd290584fa9eaac83680886336aa0cf92d663",
+      "takeaway": "Agent training data should include efficient trajectories.",
+      "title": "Agent-FLAN",
+      "url": "https://hf.co/papers/2403.12881"
+    },
+    {
+      "area": "faithful compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 106,
+      "row_sha256": "2bb0e8455d06aa1eeba90b5f2d0c829795728aab2a67df878140d7d3198bed20",
+      "takeaway": "Extractive compression is safer than abstractive summaries for code.",
+      "title": "LLMLingua-2",
+      "url": "https://hf.co/papers/2403.12968"
+    },
+    {
+      "area": "GitHub issues",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 107,
+      "row_sha256": "95f24187337c5fc7cce1cab11a75c016ab4184dcee549c9072e01f373f1d08db",
+      "takeaway": "GitHub issue agents need multi-step repo navigation.",
+      "title": "MAGIS",
+      "url": "https://hf.co/papers/2403.17927"
+    },
+    {
+      "area": "efficient prompting",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 108,
+      "row_sha256": "5a16ec88667c279a7c6b470baec18de7bac1a61423d5c1ec1716d3b33dec7e2a",
+      "takeaway": "Prompt efficiency deserves its own benchmark axis.",
+      "title": "Efficient Prompting Methods Survey",
+      "url": "https://hf.co/papers/2404.01077"
+    },
+    {
+      "area": "layer budgets",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 109,
+      "row_sha256": "cb64160b18f7c169fe6b05b6359bc6ae49d58b26d1042302205cf826dae2d39c",
+      "takeaway": "Budget allocation can vary by abstraction level.",
+      "title": "SqueezeAttention",
+      "url": "https://hf.co/papers/2404.04793"
+    },
+    {
+      "area": "soft prompt compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 110,
+      "row_sha256": "23167b1c7259b829c0f372386b39b79ea82ed8894c4b2f682d55859017d74aee",
+      "takeaway": "Learned soft prompts are future work; v1 stays text/audit based.",
+      "title": "SoftPromptComp",
+      "url": "https://hf.co/papers/2404.04997"
+    },
+    {
+      "area": "memory survey",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 111,
+      "row_sha256": "36799e09c5c9ba675cd03815dc53a9b8d026745b0974e002bdb45b871d8c7dc8",
+      "takeaway": "Memory write, storage, retrieval, and evaluation are separate decisions.",
+      "title": "Memory Mechanism Survey",
+      "url": "https://hf.co/papers/2404.13501"
+    },
+    {
+      "area": "KV runahead",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 112,
+      "row_sha256": "6b1bf2e5ca82e005e9e10d54d5e62fefc96af5a2798c590a2f54c9e7f528b0de",
+      "takeaway": "Prefill/decode scheduling affects cost beyond token count.",
+      "title": "KV-Runahead",
+      "url": "https://hf.co/papers/2405.05329"
+    },
+    {
+      "area": "salient KV",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 113,
+      "row_sha256": "2b4bd3fcab6de93c2fd509412b85b5e4ae0d79f311df2ca99398c6569ad0fab6",
+      "takeaway": "Salient token detection informs identifier protection.",
+      "title": "ZipCache",
+      "url": "https://hf.co/papers/2405.14256"
+    },
+    {
+      "area": "depth compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 114,
+      "row_sha256": "6119d738b514b27a68c898a0bf5767484857dceac52fc47e1b9e876d5be349cd",
+      "takeaway": "Cache compression can happen by layer/depth, not only text.",
+      "title": "MiniCache",
+      "url": "https://hf.co/papers/2405.14366"
+    },
+    {
+      "area": "agent-computer interface",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 115,
+      "row_sha256": "467396234b70812cb99f850a385b7eecb6f9aadb413b3ebd65a03de9c0853f01",
+      "takeaway": "Harness design changes both success and token use.",
+      "title": "SWE-agent",
+      "url": "https://hf.co/papers/2405.15793"
+    },
+    {
+      "area": "frozen-model compression",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 116,
+      "row_sha256": "72c87946e1b573661df0264f917946405dd918a60209cd3f73190459a944aafe",
+      "takeaway": "Frozen compressors motivate no-finetune v1 methods.",
+      "title": "SelfCP",
+      "url": "https://hf.co/papers/2405.17052"
+    },
+    {
+      "area": "serving",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 117,
+      "row_sha256": "95f45e534b1d31b4918e48bab7306ae0d46d5282f79c950b1516d9c562d61622",
+      "takeaway": "Semantic variables can externalize repeated context.",
+      "title": "Parrot",
+      "url": "https://hf.co/papers/2405.19888"
+    },
+    {
+      "area": "repo understanding",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 118,
+      "row_sha256": "27987fb34ef88ba0b5830e84b81bdf955517bcf3a7dbd495885fa47a32b94995",
+      "takeaway": "Repo graph context should be recalled by relevance.",
+      "title": "RepoUnderstander",
+      "url": "https://hf.co/papers/2406.01422"
+    },
+    {
+      "area": "dataset agents",
+      "category": "agent_evaluation",
+      "domain": "hf.co",
+      "index": 119,
+      "row_sha256": "68dfbbfc742d92eb22b0522ebe7c78bcc56f0a65e2a3008322e643e38c20275b",
+      "takeaway": "Dataset curation traces stress repetitive inspection.",
+      "title": "DCA-Bench",
+      "url": "https://hf.co/papers/2406.07275"
+    },
+    {
+      "area": "token importance",
+      "category": "context_efficiency",
+      "domain": "hf.co",
+      "index": 120,
+      "row_sha256": "f709fb6552451619042cf7f87351c3d9a8fe25d3a97fd0ca3dc1f3f8b29dbc92",
+      "takeaway": "Attention alone is insufficient; value/content signals matter.",
+      "title": "Value Also Matters",
+      "url": "https://hf.co/papers/2406.12335"
+    },
+    {
+      "area": "supply-chain provenance",
+      "category": "public_trust",
+      "domain": "slsa.dev",
+      "index": 121,
+      "row_sha256": "01a74be86dd44716b5add7bb04304295f7255724c36bf2f302427c84458f72f1",
+      "takeaway": "Release trust should bind artifact provenance, not only local tests.",
+      "title": "SLSA specification",
+      "url": "https://slsa.dev/spec/"
+    },
+    {
+      "area": "project health checks",
+      "category": "public_trust",
+      "domain": "scorecard.dev",
+      "index": 122,
+      "row_sha256": "eda115b371aa5afae84ff8b44cac6ef461ed263b5cff3fc0c47d23d25e5d8247",
+      "takeaway": "Public trust can be represented as automated checks with explicit failures.",
+      "title": "OpenSSF Scorecard",
+      "url": "https://scorecard.dev/"
+    },
+    {
+      "area": "package credentials",
+      "category": "public_trust",
+      "domain": "docs.pypi.org",
+      "index": 123,
+      "row_sha256": "a399016e092d0ec1f14ea4b7646eaeff45ff85c53e94c4135e80d98402837877",
+      "takeaway": "OIDC publishing reduces long-lived token risk and belongs in release gates.",
+      "title": "PyPI Trusted Publishing",
+      "url": "https://docs.pypi.org/trusted-publishers/"
+    },
+    {
+      "area": "package attestations",
+      "category": "public_trust",
+      "domain": "docs.pypi.org",
+      "index": 124,
+      "row_sha256": "6a9de9f31bf22988c9e40501a1ba4298276717a3abbf03da88fb579a1a718481",
+      "takeaway": "Index-hosted attestations make Python release artifacts more verifiable.",
+      "title": "PyPI Digital Attestations",
+      "url": "https://docs.pypi.org/attestations/"
+    },
+    {
+      "area": "signing/provenance",
+      "category": "public_trust",
+      "domain": "docs.sigstore.dev",
+      "index": 125,
+      "row_sha256": "055e87979bba88dacab1ed1290b88f06b8c5192dce47b040da1ef9f614e12f58",
+      "takeaway": "Keyless signing and transparency logs motivate public release receipts.",
+      "title": "Sigstore documentation",
+      "url": "https://docs.sigstore.dev/"
+    },
+    {
+      "area": "SBOM contract",
+      "category": "public_trust",
+      "domain": "cyclonedx.org",
+      "index": 126,
+      "row_sha256": "e2e7a339843d4261f782e0559b609ec71ec37543c640ef28dad073c914d79873",
+      "takeaway": "SBOMs and checksums should be tracked as release-card requirements.",
+      "title": "CycloneDX specification",
+      "url": "https://cyclonedx.org/specification/overview/"
+    },
+    {
+      "area": "artifact badging",
+      "category": "trice_internal",
+      "domain": "www.acm.org",
+      "index": 127,
+      "row_sha256": "23aef976b2b5b77125d716b39ecc311c8ee45bd046d0eebb8ae7a9fe79b29415",
+      "takeaway": "Remote smoke evidence should be available, functional, and reusable, but claims must stay scoped.",
+      "title": "ACM Artifact Review and Badging",
+      "url": "https://www.acm.org/publications/policies/artifact-review-badging"
+    },
+    {
+      "area": "benchmark submissions",
+      "category": "agent_evaluation",
+      "domain": "docs.mlcommons.org",
+      "index": 128,
+      "row_sha256": "8f133082dd2ccc51ce36349dd85eaa26ecde995152658bde448188442a13738f",
+      "takeaway": "Public benchmark evidence needs locked rules, fixed inputs, and reproducible submitted artifacts.",
+      "title": "MLCommons Inference Policies",
+      "url": "https://docs.mlcommons.org/inference/policies/"
+    },
+    {
+      "area": "packaging sample repo",
+      "category": "agent_evaluation",
+      "domain": "github.com",
+      "index": 129,
+      "row_sha256": "7221014477d290d960ccc67ac220d715f7a662099ce50f51cd76f00e7db3aadc",
+      "takeaway": "A tiny public Python repo is useful for exercising remote Git clone, revision lock, source-only patch, and verifier evidence paths.",
+      "title": "PyPA sampleproject",
+      "url": "https://github.com/pypa/sampleproject"
+    },
+    {
+      "area": "reproducible smoke",
+      "category": "trice_internal",
+      "domain": "local",
+      "index": 130,
+      "row_sha256": "703e420f1147317ee301deecab1b9f1a7d70326c17de8de6104fd4b593294a2c",
+      "takeaway": "Small remote-git smoke should prove infrastructure, not upgrade the product to S-tier.",
+      "title": "TRICE remote smoke suite",
+      "url": "../examples/trice_remote_smoke_suite.json"
+    },
+    {
+      "area": "positional evidence loss",
+      "category": "context_efficiency",
+      "domain": "arxiv.org",
+      "index": 131,
+      "row_sha256": "76e6355e64c30075a3f1694584709d8dbbca8ac2a3c609463187dcd8686fc055",
+      "takeaway": "Context control must prove that early and middle evidence still survives compression, not only that the prompt is shorter.",
+      "title": "Lost in the Middle",
+      "url": "https://arxiv.org/abs/2307.03172"
+    },
+    {
+      "area": "retrieval context recall",
+      "category": "context_efficiency",
+      "domain": "arxiv.org",
+      "index": 132,
+      "row_sha256": "4ee67b1f0e11450e85ae1bdd88a44760d3621ff286431db4e9105b52932d9eb6",
+      "takeaway": "Recall-style evaluation motivates TRICE's deterministic evidence-recall floor, but TRICE binds it to receipts and live verifier outcomes instead of LLM-judge scoring.",
+      "title": "RAGAS",
+      "url": "https://arxiv.org/abs/2309.15217"
+    },
+    {
+      "area": "SemVer public API",
+      "category": "public_trust",
+      "domain": "semver.org",
+      "index": 133,
+      "row_sha256": "3b789b7ebf64a3795d761ac523d8ca205fe2904ab925e3a6694d981cdc562031",
+      "takeaway": "Compatibility claims are not meaningful until the public API is declared.",
+      "title": "Semantic Versioning 2.0.0",
+      "url": "https://semver.org/"
+    },
+    {
+      "area": "Python package versioning",
+      "category": "public_trust",
+      "domain": "packaging.python.org",
+      "index": 134,
+      "row_sha256": "e5d8f2c257562ee9eb308ce51d044c64687d1204af2b2b7858ba2773758406cd",
+      "takeaway": "Public registry versions become downstream dependency facts, so release cards should bind local package version and public surface.",
+      "title": "Python version specifiers",
+      "url": "https://packaging.python.org/en/latest/specifications/version-specifiers/"
+    },
+    {
+      "area": "JSON contract schemas",
+      "category": "public_trust",
+      "domain": "json-schema.org",
+      "index": 135,
+      "row_sha256": "c1f819f8425d73212e52d7d90927d018cd649dafd0847866abea69987a4058e6",
+      "takeaway": "Public receipts, cards, bundles, and manifests should have machine-checkable schemas.",
+      "title": "JSON Schema 2020-12",
+      "url": "https://json-schema.org/draft/2020-12"
+    },
+    {
+      "area": "reproducible release inputs",
+      "category": "public_trust",
+      "domain": "reproducible-builds.org",
+      "index": 136,
+      "row_sha256": "60461879d09d7acdd86afb93025a68b39730383bd963cef3ea63c0da51366e27",
+      "takeaway": "Examples, schemas, and docs should be hashed inputs rather than mutable prose around a binary.",
+      "title": "Reproducible Builds",
+      "url": "https://reproducible-builds.org/"
+    },
+    {
+      "area": "attestation envelope",
+      "category": "public_trust",
+      "domain": "in-toto.io",
+      "index": 137,
+      "row_sha256": "1e68c504c2987512204afecb9c771fcdca59d8734f963bbc442fd83cf9e430ab",
+      "takeaway": "Release evidence should use a portable statement envelope with named subjects and predicate type.",
+      "title": "in-toto attestations",
+      "url": "https://in-toto.io/"
+    },
+    {
+      "area": "local release verification",
+      "category": "public_trust",
+      "domain": "local",
+      "index": 138,
+      "row_sha256": "628d519ee86e27e34b6792046c443deb8c73d8053097c229243c31525a56a24d",
+      "takeaway": "Wheels, sdist, CLI binary, SBOMs, checksums, provenance, proof cards, paper, and evidence bundles should verify together before publication.",
+      "title": "TRICE release evidence packet",
+      "url": "trice_release_evidence.md"
+    },
+    {
+      "area": "GitHub release attestations",
+      "category": "public_trust",
+      "domain": "docs.github.com",
+      "index": 139,
+      "row_sha256": "04d8b81b9e7a1041630b46765b97c16ad1042b8392b1969b19aecd3ab8753ed5",
+      "takeaway": "GitHub-hosted provenance should cover release assets generated by Actions, not only local files committed to the repo.",
+      "title": "GitHub Artifact Attestations",
+      "url": "https://docs.github.com/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds"
+    },
+    {
+      "area": "Scorecard workflow",
+      "category": "public_trust",
+      "domain": "github.com",
+      "index": 140,
+      "row_sha256": "0f8bd48516aa5130b4094bf632bd0ecde3930a2f46e49d6fac30b2fbe1f4e3a7",
+      "takeaway": "Public project health should have an independently hosted signal that can be checked by doctor.",
+      "title": "OpenSSF Scorecard Action",
+      "url": "https://github.com/ossf/scorecard-action"
+    },
+    {
+      "area": "proof graph integrity",
+      "category": "public_trust",
+      "domain": "slsa.dev",
+      "index": 141,
+      "row_sha256": "49741eb227835d292c686c3081ff5f3f1d5c3f25654eeb9e52b071c270898af7",
+      "takeaway": "Provenance and evidence are only useful when a top-level verifier summarizes which predicates and subjects were actually checked.",
+      "title": "SLSA Verification Summary Attestation",
+      "url": "https://slsa.dev/spec/v1.0/verification_summary"
+    },
+    {
+      "area": "Cargo staged publishing",
+      "category": "public_trust",
+      "domain": "doc.rust-lang.org",
+      "index": 142,
+      "row_sha256": "b0962ab45bdf24b203e5ddc93845277252315bb30a57870e3063847d2456c0c1",
+      "takeaway": "Rust distribution trust needs a staged publish plan because dependent workspace crates can only verify against crates.io after upstream crates are indexed.",
+      "title": "Cargo publishing reference",
+      "url": "https://doc.rust-lang.org/cargo/reference/publishing.html"
+    },
+    {
+      "area": "packaging",
+      "category": "public_trust",
+      "domain": "packaging.python.org",
+      "index": 143,
+      "row_sha256": "edbf6dde5998bcb3614df2b844e5ea4cd358a66091ac8a7f45067106fae8e762",
+      "takeaway": "Build artifacts must be followed by clean install/import/console verification.",
+      "title": "Python Packaging User Guide",
+      "url": "https://packaging.python.org/tutorials/packaging-projects/"
+    },
+    {
+      "area": "packaging",
+      "category": "public_trust",
+      "domain": "pip.pypa.io",
+      "index": 144,
+      "row_sha256": "1bd464f9f7218c9962422fd25faf5c150eb405f8775ba037815f0103b8e85bc8",
+      "takeaway": "Installability should be measured with the same command path users run.",
+      "title": "pip install Reference",
+      "url": "https://pip.pypa.io/en/stable/cli/pip_install/"
+    },
+    {
+      "area": "packaging",
+      "category": "public_trust",
+      "domain": "peps.python.org",
+      "index": 145,
+      "row_sha256": "319041f4536733c406f1fe022c734df2ccb1da8be014f51aa1fca16da9b48570",
+      "takeaway": "Wheels are binary distribution contracts; packaged data and scripts must be verified after install.",
+      "title": "Wheel Format PEP 427",
+      "url": "https://peps.python.org/pep-0427/"
+    },
+    {
+      "area": "benchmark methodology",
+      "category": "statistical_quality",
+      "domain": "arxiv.org",
+      "index": 146,
+      "row_sha256": "232d721aed328a27f00851a6505c522c83331a33dcc95b14005e20844fdebe90",
+      "takeaway": "Evaluation should separate scenarios, metrics, models, and transparency artifacts.",
+      "title": "HELM",
+      "url": "https://arxiv.org/abs/2211.09110"
+    },
+    {
+      "area": "code generation",
+      "category": "agent_evaluation",
+      "domain": "arxiv.org",
+      "index": 147,
+      "row_sha256": "17f291a0934ed94f6a219045ef500e9b89e3bc2448d32f00d28f021f05f5091c",
+      "takeaway": "Executable tests make coding-agent claims more objective than text-only grading.",
+      "title": "HumanEval",
+      "url": "https://arxiv.org/abs/2107.03374"
+    },
+    {
+      "area": "code generation",
+      "category": "agent_evaluation",
+      "domain": "arxiv.org",
+      "index": 148,
+      "row_sha256": "d454fa5bd226bfbd1c1cfc1882cacbfad2f0454e571146d7ab9d649aa45ea16b",
+      "takeaway": "Small programming tasks are useful smoke tests but cannot substitute for repo-level repair.",
+      "title": "MBPP",
+      "url": "https://arxiv.org/abs/2108.07732"
+    },
+    {
+      "area": "live code benchmark",
+      "category": "agent_evaluation",
+      "domain": "arxiv.org",
+      "index": 149,
+      "row_sha256": "8014ac3b313ffe2b3b474f5b1f7e9794839379848dabcd7c6f985d411c9cf908",
+      "takeaway": "Time-split evaluation reduces contamination risk and motivates held-out remote tasks.",
+      "title": "LiveCodeBench",
+      "url": "https://arxiv.org/abs/2403.07974"
+    },
+    {
+      "area": "real-repo benchmark",
+      "category": "agent_evaluation",
+      "domain": "openai.com",
+      "index": 150,
+      "row_sha256": "4b4cd4bcdde7f54ce4de33ccd064fe463a18d8e2ffe9bef1f7bc0fe65d313636",
+      "takeaway": "Human-validated subsets improve trust in software-repair outcome labels.",
+      "title": "SWE-bench Verified",
+      "url": "https://openai.com/index/introducing-swe-bench-verified/"
+    },
+    {
+      "area": "machine-learning agents",
+      "category": "agent_evaluation",
+      "domain": "arxiv.org",
+      "index": 151,
+      "row_sha256": "e1e32bb0232bfeef8a1a4825252662f9f8cd22b6f74078048dddb58ef806a7fb",
+      "takeaway": "Agent benchmarks should include realistic setup, execution, and scoring pipelines.",
+      "title": "MLE-bench",
+      "url": "https://arxiv.org/abs/2410.07095"
+    },
+    {
+      "area": "general assistants",
+      "category": "agent_evaluation",
+      "domain": "arxiv.org",
+      "index": 152,
+      "row_sha256": "f5a05246a155ddf7361da1837ebbe31b8299b8bcdbed71dad5d502a33531a801",
+      "takeaway": "Tool-using agents need verifiable answers and multi-step evidence, not just final text.",
+      "title": "GAIA",
+      "url": "https://arxiv.org/abs/2311.12983"
+    },
+    {
+      "area": "multi-agent systems",
+      "category": "context_efficiency",
+      "domain": "arxiv.org",
+      "index": 153,
+      "row_sha256": "44d36bee9512feeecc357a71cb08074cb42daaf75c7f526d8a8cab627fecac53",
+      "takeaway": "Multi-agent workflows need explicit message routing and termination controls to avoid context growth.",
+      "title": "AutoGen",
+      "url": "https://arxiv.org/abs/2308.08155"
+    },
+    {
+      "area": "multi-agent software",
+      "category": "agent_evaluation",
+      "domain": "arxiv.org",
+      "index": 154,
+      "row_sha256": "ccbf4f14c27a16484907e983dba160deaed55222c732aec98017ead70804ff24",
+      "takeaway": "Role decomposition can help software tasks, but every role adds context and coordination cost.",
+      "title": "MetaGPT",
+      "url": "https://arxiv.org/abs/2308.00352"
+    },
+    {
+      "area": "prompt programming",
+      "category": "statistical_quality",
+      "domain": "arxiv.org",
+      "index": 155,
+      "row_sha256": "1790cb2fd3640f3bcbe20efa02d81dae14ceee2eef98faff8e3371f0c8b6410e",
+      "takeaway": "Optimized prompt/program pipelines need held-out validation and reproducible compilation inputs.",
+      "title": "DSPy",
+      "url": "https://arxiv.org/abs/2310.03714"
+    },
+    {
+      "area": "tool agents",
+      "category": "agent_evaluation",
+      "domain": "arxiv.org",
+      "index": 156,
+      "row_sha256": "16cae91dd8245e6ac9c06f124988e30f050ca74ec1dad1ba6052d4eda6d84b41",
+      "takeaway": "Tool calls should be evaluated with execution state and argument correctness.",
+      "title": "API-Bank",
+      "url": "https://arxiv.org/abs/2304.08244"
+    },
+    {
+      "area": "tool learning",
+      "category": "public_trust",
+      "domain": "arxiv.org",
+      "index": 157,
+      "row_sha256": "a4a3d12a602fa09ce78c01fc226e25c45ab33016cbfc392355ebaf2f9b7cd8cc",
+      "takeaway": "Tool-use traces stress retrieval, API selection, and compact tool-schema presentation.",
+      "title": "ToolBench",
+      "url": "https://arxiv.org/abs/2307.16789"
+    },
+    {
+      "area": "long-context evaluation",
+      "category": "statistical_quality",
+      "domain": "arxiv.org",
+      "index": 158,
+      "row_sha256": "5916abad646e1745faf7590c96b3fefe34604ac6edb4b6bf8ad63e3564b875ea",
+      "takeaway": "Long-context capability must be measured by task family instead of assumed from context window size.",
+      "title": "LongBench",
+      "url": "https://arxiv.org/abs/2308.14508"
+    },
+    {
+      "area": "evaluation reproducibility",
+      "category": "statistical_quality",
+      "domain": "arxiv.org",
+      "index": 159,
+      "row_sha256": "4f118f741254af001edd89b15f98092b8abdfa7ffc1400619344044d82350e23",
+      "takeaway": "Evaluation claims need frozen prompts, decoding settings, data versions, and reporting metadata.",
+      "title": "Towards Reproducible LLM Evaluation",
+      "url": "https://arxiv.org/abs/2410.03492"
+    },
+    {
+      "area": "statistical rigor",
+      "category": "statistical_quality",
+      "domain": "arxiv.org",
+      "index": 160,
+      "row_sha256": "cc23c7484dea8de2376f35c60cea976b7cf7ecd00709af5d64085a33b1515639",
+      "takeaway": "Small improvements should be judged with paired or clustered uncertainty, not raw means alone.",
+      "title": "Paired Bootstrap Protocols for LLM Evaluation",
+      "url": "https://arxiv.org/abs/2511.19794"
+    },
+    {
+      "area": "artifact review",
+      "category": "public_trust",
+      "domain": "www.acm.org",
+      "index": 161,
+      "row_sha256": "8776e4b1819900f6a0d703a313851d6005462d27d3a155b17505391112f521bb",
+      "takeaway": "Paper artifacts should make availability, functionality, reproducibility, and reuse separately inspectable.",
+      "title": "ACM Reproducibility Badging",
+      "url": "https://www.acm.org/publications/policies/artifact-review-and-badging-current"
+    },
+    {
+      "area": "secure development",
+      "category": "public_trust",
+      "domain": "csrc.nist.gov",
+      "index": 162,
+      "row_sha256": "32dd2b7590ef17b1aada7a27e5b949c383cbae027d53f39feeecac61d25617a7",
+      "takeaway": "Public trust needs secure-development controls beyond package build success.",
+      "title": "NIST SSDF",
+      "url": "https://csrc.nist.gov/Projects/ssdf"
+    },
+    {
+      "area": "package attestations",
+      "category": "public_trust",
+      "domain": "peps.python.org",
+      "index": 163,
+      "row_sha256": "1ae791ba35993a6302455247091e87805418e9092c08eff5ee21edfb1d3e0966",
+      "takeaway": "Index-hosted attestations turn distribution metadata into a verifiable user-facing signal.",
+      "title": "PEP 740",
+      "url": "https://peps.python.org/pep-0740/"
+    },
+    {
+      "area": "deterministic research basis",
+      "category": "trice_internal",
+      "domain": "local",
+      "index": 164,
+      "row_sha256": "10c4240dfee1f25593c49cb79f979bce14e2e6dce21ecd5dbbbaad89c2db842f",
+      "takeaway": "The literature base should be hash-bound, categorized, and regenerated with the paper.",
+      "title": "TRICE research card",
+      "url": "trice_research_card.md"
+    },
+    {
+      "area": "proof graph release",
+      "category": "trice_internal",
+      "domain": "local",
+      "index": 165,
+      "row_sha256": "ae159d2800a942c5bb78ac1b6c2b6a160ca84f69e6730847d9a4270fedc97b78",
+      "takeaway": "Research, contract, release, installability, evidence, and paper artifacts should verify as one graph.",
+      "title": "TRICE integrity card",
+      "url": "trice_integrity_card.md"
+    }
+  ],
+  "thresholds": {
+    "min_category_counts": {
+      "agent_evaluation": 30,
+      "context_efficiency": 30,
+      "public_trust": 20,
+      "statistical_quality": 5
+    },
+    "min_sources": 150,
+    "valid_link_fraction_min": 0.95
+  },
+  "unique_source_count": 165
+}

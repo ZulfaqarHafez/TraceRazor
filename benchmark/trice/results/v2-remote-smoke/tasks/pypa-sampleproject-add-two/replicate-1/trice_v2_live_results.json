@@ -1,0 +1,263 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "claim_gate": {
+    "accepted_rounds": 1,
+    "baseline_pass_rate": 1.0,
+    "broad_claim_allowed": false,
+    "evidence_recall_failures": 0,
+    "evidence_recall_minimum": 1.0,
+    "evidence_recall_required": 0.95,
+    "mean_savings": 0.831914,
+    "pass_regressions": 0,
+    "rationale": "local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals",
+    "savings_ci": {
+      "high": 0.831914,
+      "level": 0.95,
+      "low": 0.831914,
+      "mean": 0.831914
+    },
+    "scope": "local_deterministic_smoke",
+    "smoke_gate_passed": true,
+    "target_savings": 0.6,
+    "total_rounds": 1,
+    "trice_pass_ci": {
+      "high": 1.0,
+      "level": 0.95,
+      "low": 0.206549,
+      "mean": 1.0
+    },
+    "trice_pass_rate": 1.0
+  },
+  "manifest_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\trice_v2_evidence_manifest.json",
+  "profile": {
+    "allow_test_edits": false,
+    "budget_ratio": 0.4,
+    "lessons": [
+      "user requires live rollout evidence, not replay-only acceptance",
+      "replay is allowed only as a preflight, not as final proof",
+      "round 1: accepted 83% savings with pass preservation"
+    ],
+    "max_rounds": 3,
+    "pass_noninferiority_margin_pp": -2.0,
+    "prefer_receipts": true,
+    "require_live_rollout": true,
+    "rounds_seen": 1,
+    "target_savings": 0.6,
+    "user_id": "local"
+  },
+  "report_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\trice_v2_live_report.md",
+  "result_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\trice_v2_live_results.json",
+  "rounds": [
+    {
+      "accepted": true,
+      "baseline": {
+        "adapter_reported_input_tokens": null,
+        "adapter_type": "json_patch",
+        "condition": "baseline-full-context",
+        "context_path": null,
+        "decision_trace_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\baseline-full-context\\decision_trace.json",
+        "evidence_recall": 1.0,
+        "evidence_recall_passed": true,
+        "evidence_recall_report": {
+          "evidence_recall": 1.0,
+          "missing": [],
+          "obligation_count": 0,
+          "obligation_tokens": 0,
+          "passed": true,
+          "recalled_count": 0,
+          "recalled_tokens": 0,
+          "required_min": 0.95,
+          "schema_version": "trice-evidence-recall/v1"
+        },
+        "input_tokens": 1761,
+        "modified_files": [
+          "src/sample/simple.py"
+        ],
+        "passed": true,
+        "policy": null,
+        "policy_path": null,
+        "receipt_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\baseline-full-context\\run_receipt.json",
+        "receipt_sha256": "d412343ede7b713b34e7255d62b4f3efbb11c3b9e8648095f0e61f8cc1076432",
+        "task_id": "pypa-sampleproject-add-two",
+        "trace_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\baseline-full-context\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "",
+        "workspace": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\baseline-full-context\\workspace"
+      },
+      "learning_update": {
+        "error": -1.39883,
+        "prediction": 2.171914,
+        "reward": 0.773083,
+        "weights": {
+          "cache": 0.38809358319136855,
+          "cost": 0.8,
+          "hallucination": 1.1,
+          "risk": 1.332856149914821,
+          "utility": 0.9069035203721493
+        }
+      },
+      "measured_input_savings": 0.831914,
+      "optimized": {
+        "adapter_reported_input_tokens": null,
+        "adapter_type": "json_patch",
+        "condition": "trice-v2",
+        "context_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\compressed_context.txt",
+        "decision_trace_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\decision_trace.json",
+        "evidence_recall": 1.0,
+        "evidence_recall_passed": true,
+        "evidence_recall_report": {
+          "evidence_recall": 1.0,
+          "missing": [],
+          "obligation_count": 3,
+          "obligation_tokens": 189,
+          "passed": true,
+          "recalled_count": 3,
+          "recalled_tokens": 189,
+          "required_min": 0.95,
+          "schema_version": "trice-evidence-recall/v1"
+        },
+        "input_tokens": 296,
+        "modified_files": [
+          "src/sample/simple.py"
+        ],
+        "passed": true,
+        "policy": {
+          "algorithm": "trice-v0.1-multi-choice-knapsack",
+          "baseline_input_tokens": 1761,
+          "bucket_size": 128,
+          "budget_exceeded": false,
+          "budget_ratio": 0.4,
+          "budget_tokens": 704,
+          "constraints": {
+            "evidence_recall_min": 0.95,
+            "locked_anchors_unchanged": true,
+            "pass_rate_noninferiority_pp": -2
+          },
+          "decisions": [
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 29,
+              "policy_tokens": 29,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "789a6ba9ba6e266ed1429b0c65dd3c6f15d40b4ae2fadf769bb69966a9b6847a",
+              "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:1",
+              "segment_id": "s1",
+              "state": "essential",
+              "step_id": 1,
+              "value": 1.379861
+            },
+            {
+              "action": "anchor_prefix",
+              "locked": true,
+              "original_tokens": 96,
+              "policy_tokens": 96,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "2cabbdfc46596288ddad75bb2cc2eab22c169b3c023384b646141040e4717d8e",
+              "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:2",
+              "segment_id": "s2",
+              "state": "essential",
+              "step_id": 2,
+              "value": 1.349539
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "f5cfc33dbb6cd89ed1437ced66d37ceffc5207d251015ce3a329e5ba1353f342",
+              "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:3",
+              "segment_id": "s3",
+              "state": "rehydratable",
+              "step_id": 3,
+              "value": 0.075871
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 256,
+              "policy_tokens": 17,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "b4170e99f7c734e06454c93289d48099a024aaf2dcdfc60a186beea52a500f50",
+              "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:4",
+              "segment_id": "s4",
+              "state": "rehydratable",
+              "step_id": 4,
+              "value": 0.067471
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 640,
+              "policy_tokens": 44,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "a21877daee09a23d655e66ed62991fdf64be45f22a7de80bbfbd957270f75c8b",
+              "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:5",
+              "segment_id": "s5",
+              "state": "redundant",
+              "step_id": 5,
+              "value": -0.065412
+            },
+            {
+              "action": "mask_with_receipt",
+              "locked": false,
+              "original_tokens": 420,
+              "policy_tokens": 29,
+              "rationale": "drop text, retain cryptographic receipt",
+              "receipt": "c68671d9315a7139f46c174c3f5beb5f1c8c9330d93574d3d405d47d751a3253",
+              "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:6",
+              "segment_id": "s6",
+              "state": "redundant",
+              "step_id": 6,
+              "value": -0.064356
+            },
+            {
+              "action": "keep",
+              "locked": true,
+              "original_tokens": 64,
+              "policy_tokens": 64,
+              "rationale": "locked anchor kept byte-for-byte",
+              "receipt": "612cb8da79e601116dc57e23a69b12a25244cae1d54c7cfab918ac57e62d1fed",
+              "rehydrate_pointer": "trace:pypa-sampleproject-add-two.decision:step:7",
+              "segment_id": "s7",
+              "state": "essential",
+              "step_id": 7,
+              "value": 1.349693
+            }
+          ],
+          "policy_tokens": 296,
+          "projected_input_savings_pct": 83.19
+        },
+        "policy_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\context_policy.json",
+        "receipt_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\run_receipt.json",
+        "receipt_sha256": "64808446b0e8dbb74634798673382eb258b6654e711d7e9294a959a5500c4a55",
+        "task_id": "pypa-sampleproject-add-two",
+        "trace_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\trace.json",
+        "verify_exit_code": 0,
+        "verify_output_excerpt": "",
+        "workspace": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\trice-v2\\workspace"
+      },
+      "pass_noninferior": true,
+      "profile_after": {
+        "allow_test_edits": false,
+        "budget_ratio": 0.4,
+        "lessons": [
+          "user requires live rollout evidence, not replay-only acceptance",
+          "replay is allowed only as a preflight, not as final proof",
+          "round 1: accepted 83% savings with pass preservation"
+        ],
+        "max_rounds": 3,
+        "pass_noninferiority_margin_pp": -2.0,
+        "prefer_receipts": true,
+        "require_live_rollout": true,
+        "rounds_seen": 1,
+        "target_savings": 0.6,
+        "user_id": "local"
+      },
+      "quality_delta": 0.0,
+      "round_index": 1,
+      "task_id": "pypa-sampleproject-add-two"
+    }
+  ]
+}

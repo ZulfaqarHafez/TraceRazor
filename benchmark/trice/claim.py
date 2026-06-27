@@ -131,6 +131,8 @@ def render_claim_card_markdown(card: dict[str, Any]) -> str:
         f"- Mean input-token savings: **{100 * metrics['mean_input_token_savings']:.1f}%**",
         f"- Clustered CI lower bound: **{100 * metrics['clustered_savings_ci_low']:.1f}%**",
         f"- Pass regressions: **{metrics['pass_regressions']}**",
+        f"- Evidence recall minimum: **{100 * metrics['evidence_recall_minimum']:.1f}%**",
+        f"- Evidence recall failures: **{metrics['evidence_recall_failures']}**",
         f"- Accepted runs: **{metrics['accepted_rounds']}/{metrics['total_rounds']}**",
         f"- Evidence verification: **{'ok' if card['verification']['ok'] else 'failed'}**",
         "",
@@ -182,7 +184,8 @@ def render_claim_card_tex(card: dict[str, Any]) -> str:
         "\\end{table}\n\n"
         f"Mean input-token savings is {100 * metrics['mean_input_token_savings']:.1f}\\%; "
         f"clustered CI lower bound is {100 * metrics['clustered_savings_ci_low']:.1f}\\%; "
-        f"pass regressions: {metrics['pass_regressions']}. "
+        f"pass regressions: {metrics['pass_regressions']}; "
+        f"evidence recall minimum is {100 * metrics['evidence_recall_minimum']:.1f}\\%. "
         f"Claim-card hash: \\texttt{{{card['claim_card_sha256'][:16]}...}}.\n\n"
         "\\noindent Non-claims:\n\\begin{itemize}\n"
         f"{non_claims}\n"
@@ -273,6 +276,9 @@ def _metrics(gate: dict[str, Any]) -> dict[str, Any]:
         "replicate_count": int(gate.get("replicate_count") or 0),
         "task_cluster_count": int(gate.get("task_cluster_count") or 0),
         "trice_pass_rate": float(gate.get("trice_pass_rate") or 0.0),
+        "evidence_recall_minimum": float(gate.get("evidence_recall_minimum", 1.0)),
+        "evidence_recall_required": float(gate.get("evidence_recall_required", 0.95)),
+        "evidence_recall_failures": int(gate.get("evidence_recall_failures", 0)),
     }
 
 
@@ -309,6 +315,8 @@ def _determinism_contract_score(rows: list[dict[str, Any]], gate: dict[str, Any]
         "target_savings_met": float(gate.get("mean_savings") or 0.0) >= float(gate.get("target_savings") or 0.60),
         "clustered_ci_met": float((gate.get("clustered_savings_ci") or gate.get("savings_ci") or {}).get("low") or 0.0)
         >= float(gate.get("target_savings") or 0.60),
+        "evidence_recall_met": float(gate.get("evidence_recall_minimum", 1.0)) >= float(gate.get("evidence_recall_required", 0.95))
+        and int(gate.get("evidence_recall_failures", 0)) == 0,
     }
     score = sum(12 for passed in checks.values() if passed)
     score += sum(4 for row in rows if row["passed"])

@@ -1,0 +1,37 @@
+\section{Artifact Review Card}
+Artifact level: \texttt{review\_ready\_smoke}; review score: 100/100; claim allowed: no.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+artifacts\_available & yes & 17/17 present \\
+readiness\_verifies & yes & readiness hash and suite manifest hash verify \\
+protocol\_lock\_verifies & yes & protocol hash and deterministic suite rebuild verify \\
+design\_card\_verifies & yes & design-card hash and deterministic protocol/result rebuild verify \\
+reproduction\_card\_verifies & yes & reproduction-card hash, input hashes, and deterministic rebuild verify \\
+contract\_card\_verifies & yes & public API/CLI/schema contract card verifies \\
+install\_card\_verifies & yes & clean-wheel installability card verifies \\
+research\_card\_verifies & yes & research-basis card verifies \\
+claim\_card\_verifies & yes & claim-card hash and bound suite hashes verify \\
+remote\_smoke\_claim\_verifies & yes & remote-git smoke claim card hash and bound suite hashes verify \\
+evidence\_bundle\_verifies & yes & bundle hashes and child manifests verify \\
+remote\_smoke\_bundle\_verifies & yes & remote-git smoke bundle hashes and child manifest verify \\
+paper\_manifest\_verifies & yes & paper artifacts and result hash verify \\
+schemas\_available & yes & 19/19 schemas present \\
+claim\_honesty & yes & non-S-tier evidence must not allow S-tier claim \\
+remote\_smoke\_honesty & yes & remote smoke evidence must not allow S-tier claim \\
+readiness\_honesty & yes & smoke package must not be claim-ready \\
+\bottomrule
+\end{tabular}
+\caption{Public artifact-review checks for TRICE evidence, paper, schemas, and claim boundaries.}
+\end{table}
+
+\noindent Next actions:
+\begin{itemize}
+\item Publish the artifact card with the release assets.
+\item Run the held-out remote pilot, then regenerate readiness, protocol, design, reproduction, contract, claim, bundle, paper, and artifact cards.
+\item Do not upgrade the README to S-tier passed until claim\_allowed is true on held-out evidence.
+\end{itemize}

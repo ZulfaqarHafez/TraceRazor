@@ -17,6 +17,53 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
   schema for deterministic no-execution pilot/claim preflight reports.
 - Add `tracerazor-trice suite verify-readiness` to check readiness self hashes
   and bound suite-manifest hashes.
+- Add `tracerazor-trice protocol` and `tracerazor-trice verify-protocol` plus
+  `trice-protocol-lock/v1` schema for deterministic pre-outcome protocol locks
+  over metric, guardrail, clustered CI, source, adapter, receipt, claim-card,
+  and artifact-card requirements.
+- Add `tracerazor-trice design` and `tracerazor-trice verify-design` plus
+  `trice-design-card/v1` schema for deterministic statistical-design review
+  over protocol locks and suite-result task-cluster variance.
+- Add `tracerazor-trice artifact` plus `trice-artifact-card/v1` schema for a
+  deterministic public artifact-review packet over README, paper, evidence,
+  readiness, claim, library docs, and schemas.
+- Add `tracerazor-trice verify-artifact` to check artifact-card self hashes and
+  every bound artifact/schema hash.
+- Add `tracerazor-trice release-evidence` plus
+  `trice-release-evidence/v1` schema for deterministic release packets that
+  bind wheels, sdist, CLI binaries, checksums, CycloneDX-style SBOMs,
+  provenance sidecars, proof cards, paper artifacts, and evidence bundles.
+- Add `tracerazor-trice verify-release-evidence` to check release-evidence
+  self hashes, bound artifact hashes, sidecar byte counts, sidecar hashes, and
+  deterministic rebuilds from the bound `dist` directory and CLI binary.
+- Add GitHub release-evidence generation and artifact attestation steps so the
+  release workflow can attach wheels, sdists, binaries, checksums, SBOMs,
+  provenance sidecars, and hosted attestations together.
+- Add an OpenSSF Scorecard workflow and doctor/release-card checks that keep
+  public release readiness false until a public Scorecard result exists with
+  score >= 7.0.
+- Add `tracerazor-trice integrity` plus `trice-integrity-card/v1` schema for a
+  top-level proof graph verifier over offline doctor output, proof cards,
+  release evidence, paper manifests, schemas, and workflow provenance hooks.
+- Add `tracerazor-trice verify-integrity` and a CI integrity gate that builds
+  fresh release subjects, generates runtime release evidence, and verifies the
+  proof graph before publication.
+- Add `tracerazor-trice crates` and `tracerazor-trice verify-crates` plus
+  `trice-crates-card/v1` schema for a staged crates.io publish plan that binds
+  Cargo manifests, dependency order, registry status, and README cargo-install
+  honesty before Rust distribution claims are made.
+- Add `tracerazor-trice install` and `tracerazor-trice verify-install` plus
+  `trice-install-card/v1` schema for clean-wheel installability proof over
+  packaged schemas/APIs, the installed `tracerazor-trice` console script, and
+  bundled Rust CLI availability.
+- Add `tracerazor-trice research` and `tracerazor-trice verify-research` plus
+  `trice-research-card/v1` schema for deterministic research-ledger coverage,
+  row hashing, Markdown/SVG/LaTeX rendering, and paper-basis verification.
+- Add a checked-in remote-git smoke fixture over PyPA `sampleproject`, with a
+  locked suite manifest, source-only patch spec, verified remote claim card,
+  and portable `.trice.zip` evidence bundle.
+- Add remote-smoke evidence to the generated LaTeX/PDF paper and README
+  visualization set while keeping `claim_allowed=false`.
 - Expose explicit TRICE adapter context path env vars for policy, context,
   trace, and verifier command pointers.
 
@@ -24,7 +71,21 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 - Prepare a follow-up release after 1.0.2 with honest public install guidance:
   PyPI/piwheels remain the Python install path, and the crates.io install claim
   stays out of README until `tracerazor` is published there.
+- Bind the installability card into artifact, release, release-evidence, and
+  integrity cards so public trust cannot go green without a clean-wheel proof.
+- Bind the research card into artifact, release-evidence, integrity, README,
+  and paper artifacts so the cited research basis cannot silently drift.
+- Extend `tracerazor-trice verify` with `--result` so paper manifests can bind
+  result JSON stored outside the manifest directory.
+- Tighten TRICE live-round acceptance so optimized verifier success is required;
+  token savings alone cannot pass a smoke gate when both baseline and optimized
+  runs fail.
 - Fix Rust clippy docs lint in SRR so the public CI trust signal can go green.
+
+### Fixed
+- Clear Python bytecode caches before live verification and run verifiers with
+  bytecode writes disabled, preventing stale `.pyc` reuse after same-size source
+  edits in remote-git smoke tasks.
 
 ## [1.0.2] - 2026-06-21
 

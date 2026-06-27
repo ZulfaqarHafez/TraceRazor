@@ -10,9 +10,21 @@ import pytest
 from benchmark.trice.adapters import CommandRepairAdapter, JsonPatchAdapter
 from benchmark.trice.bundle import export_evidence_bundle, verify_evidence_bundle
 from benchmark.trice.claim import build_claim_card, render_claim_card_markdown, render_claim_ladder_svg
+from benchmark.trice.artifact import build_artifact_card, render_artifact_markdown, render_artifact_svg
+from benchmark.trice.contract import build_contract_card, render_contract_markdown, render_contract_svg, verify_contract_card_file
+from benchmark.trice.crates import build_crates_card, render_crates_markdown, render_crates_svg, verify_crates_card_file
+from benchmark.trice.design import build_design_card, render_design_markdown, render_design_svg, verify_design_card_file
+from benchmark.trice.integrity import build_integrity_card, render_integrity_markdown, render_integrity_svg, verify_integrity_card_file, write_integrity_outputs
+from benchmark.trice.install import render_install_markdown, render_install_svg, verify_install_card_file
+from benchmark.trice.protocol import build_protocol_lock, render_protocol_markdown, render_protocol_svg, verify_protocol_lock_file
 from benchmark.trice.readiness import build_suite_readiness, render_readiness_markdown, render_readiness_svg, verify_readiness_file
+from benchmark.trice.release import build_release_card, render_release_markdown, render_release_svg, verify_release_card_file
+from benchmark.trice.release_evidence import build_release_evidence_card, render_release_evidence_markdown, render_release_evidence_svg, verify_release_evidence_file, write_release_evidence_outputs
+from benchmark.trice.reproduction import build_reproduction_card, render_reproduction_markdown, render_reproduction_svg, verify_reproduction_card_file
+from benchmark.trice.research import build_research_card, render_research_markdown, render_research_svg, verify_research_card_file
 from benchmark.trice.evidence import canonical_json, verify_manifest
 from benchmark.trice.live import LiveTask, run_live_learning_loop
+from benchmark.trice.recall import evidence_recall_from_policy
 from benchmark.trice.receipt import validate_run_receipt_file
 from benchmark.trice.schemas import load_schema, schema_path, validate_adapter_profile_file, validate_patch_spec_file, validate_suite_manifest_file
 from benchmark.trice.stats import bootstrap_mean_ci, claim_gate_from_rounds, clustered_bootstrap_mean_ci, wilson_ci
@@ -33,10 +45,33 @@ def test_public_tracerazor_trice_import_surface():
     assert trice.canonical_json({"b": 1, "a": 2}) == '{"a":2,"b":1}'
     assert callable(trice.run_live_learning_loop)
     assert callable(trice.scaffold_suite_manifest)
+    assert callable(trice.evidence_recall_from_policy)
     assert callable(trice.build_claim_card)
+    assert callable(trice.build_artifact_card)
+    assert callable(trice.build_contract_card)
+    assert callable(trice.build_crates_card)
+    assert callable(trice.build_design_card)
+    assert callable(trice.build_integrity_card)
+    assert callable(trice.build_install_card)
+    assert callable(trice.build_protocol_lock)
+    assert callable(trice.build_release_card)
+    assert callable(trice.build_release_evidence_card)
+    assert callable(trice.build_reproduction_card)
+    assert callable(trice.build_research_card)
     assert callable(trice.build_suite_readiness)
     assert callable(trice.verify_readiness_file)
+    assert callable(trice.verify_release_card_file)
+    assert callable(trice.verify_release_evidence_file)
     assert callable(trice.verify_claim_card_file)
+    assert callable(trice.verify_artifact_card_file)
+    assert callable(trice.verify_contract_card_file)
+    assert callable(trice.verify_crates_card_file)
+    assert callable(trice.verify_install_card_file)
+    assert callable(trice.verify_protocol_lock_file)
+    assert callable(trice.verify_design_card_file)
+    assert callable(trice.verify_integrity_card_file)
+    assert callable(trice.verify_reproduction_card_file)
+    assert callable(trice.verify_research_card_file)
     assert callable(trice.claim_gate_from_rounds)
     assert callable(trice.CommandRepairAdapter.from_dict)
     assert callable(trice.JsonPatchAdapter.from_dict)
@@ -55,6 +90,20 @@ def test_schema_helpers_validate_example_patch():
     assert load_schema("receipt")["title"] == "TRICE run receipt"
     assert load_schema("claim")["title"] == "TRICE deterministic claim card"
     assert load_schema("readiness")["title"] == "TRICE suite readiness preflight"
+    assert load_schema("artifact")["title"] == "TRICE artifact review card"
+    assert load_schema("protocol")["title"] == "TRICE protocol lock"
+    assert load_schema("design")["title"] == "TRICE statistical design card"
+    assert load_schema("reproduction")["title"] == "TRICE reproduction card"
+    assert load_schema("release")["title"] == "TRICE release card"
+    assert load_schema("contract")["title"] == "TRICE public contract card"
+    assert load_schema("contract-card")["title"] == "TRICE public contract card"
+    assert load_schema("release-evidence")["title"] == "TRICE release evidence"
+    assert load_schema("integrity")["title"] == "TRICE integrity card"
+    assert load_schema("crates")["title"] == "TRICE crates publish card"
+    assert load_schema("install")["title"] == "TRICE installability card"
+    assert load_schema("install-card")["title"] == "TRICE installability card"
+    assert load_schema("research")["title"] == "TRICE research card"
+    assert load_schema("research-card")["title"] == "TRICE research card"
     verdict = validate_patch_spec_file(REPO / "examples" / "trice_patch_fix_offbyone.json")
     assert verdict["ok"] is True
     assert verdict["edit_count"] == 1
@@ -95,9 +144,66 @@ def test_deterministic_stats_are_repeatable_and_gate_local_claim():
     assert gate.smoke_gate_passed is True
     assert gate.broad_claim_allowed is False
     assert gate.savings_ci.low >= 0.60
+    failed_gate = claim_gate_from_rounds(
+        [
+            {
+                "measured_input_savings": 0.9,
+                "baseline": {"passed": False},
+                "optimized": {"passed": False},
+                "accepted": True,
+            }
+        ],
+        target_savings=0.60,
+    )
+    assert failed_gate.smoke_gate_passed is False
     clustered = clustered_bootstrap_mean_ci({"repo-a": [0.7, 0.8], "repo-b": [0.6]})
     assert clustered.mean == 0.7
     assert 0.6 <= clustered.low <= clustered.high <= 0.8
+
+
+def test_evidence_recall_from_policy_requires_recallable_essential_evidence():
+    policy = {
+        "constraints": {"evidence_recall_min": 0.95},
+        "decisions": [
+            {
+                "segment_id": "s1",
+                "step_id": 1,
+                "state": "essential",
+                "action": "keep",
+                "original_tokens": 80,
+                "locked": True,
+                "receipt": "a" * 64,
+                "rehydrate_pointer": "trace:t:step:1",
+            },
+            {
+                "segment_id": "s2",
+                "step_id": 2,
+                "state": "essential",
+                "action": "mask_with_receipt",
+                "original_tokens": 20,
+                "locked": True,
+                "receipt": "",
+                "rehydrate_pointer": None,
+            },
+            {
+                "segment_id": "s3",
+                "step_id": 3,
+                "state": "redundant",
+                "action": "mask_with_receipt",
+                "original_tokens": 1000,
+                "locked": False,
+                "receipt": "",
+                "rehydrate_pointer": None,
+            },
+        ],
+    }
+
+    report = evidence_recall_from_policy(policy)
+
+    assert report.evidence_recall == 0.8
+    assert report.passed is False
+    assert report.obligation_count == 2
+    assert report.missing[0]["segment_id"] == "s2"
 
 
 def test_user_profile_learns_live_aggressive_target_from_feedback(tmp_path):
@@ -257,6 +363,10 @@ def test_trice_v2_live_rollout_edits_real_workspace_and_updates_profile(tmp_path
     assert receipt_verdict["adapter_type"] == "managed_python"
     assert receipt_verdict["trice_context_mode"] == "trice_policy"
     assert receipt_verdict["trice_input_tokens"] == live_round.optimized.input_tokens
+    assert receipt_verdict["evidence_recall"] == 1.0
+    assert receipt_verdict["evidence_recall_passed"] is True
+    assert live_round.optimized.evidence_recall == 1.0
+    assert live_round.optimized.evidence_recall_passed is True
     baseline_receipt = validate_run_receipt_file(live_round.baseline.receipt_path)
     assert baseline_receipt["trice_context_mode"] == "full_context"
     assert baseline_receipt["trice_input_tokens"] == live_round.baseline.input_tokens
@@ -291,6 +401,55 @@ def test_generic_repo_json_patch_rollout(tmp_path):
     assert live_round.measured_input_savings >= 0.60
     assert result.claim_gate["smoke_gate_passed"] is True
     assert verify_manifest(result.manifest_path)["ok"] is True
+
+
+def test_json_patch_rollout_clears_stale_python_bytecode_after_same_size_edit(tmp_path):
+    repo = tmp_path / "same-size-repo"
+    (repo / "src" / "sample").mkdir(parents=True)
+    (repo / "src" / "sample" / "__init__.py").write_text("", encoding="utf-8")
+    (repo / "src" / "sample" / "simple.py").write_text(
+        "def add_one(number):\n"
+        "    return number + 1\n",
+        encoding="utf-8",
+    )
+    verify_cmd = [
+        sys.executable,
+        "-c",
+        "import sys; sys.path.insert(0, 'src'); from sample.simple import add_one; assert add_one(1) == 3",
+    ]
+    task = LiveTask.from_repo(
+        repo,
+        task_id="same-size-pyc",
+        prompt="Change add_one so add_one(1) returns 3.",
+        verify_cmd=verify_cmd,
+    )
+    adapter = JsonPatchAdapter.from_dict(
+        {
+            "name": "same-size-pyc-repair",
+            "edits": [
+                {
+                    "op": "replace",
+                    "path": "src/sample/simple.py",
+                    "old": "return number + 1",
+                    "new": "return number + 2",
+                }
+            ],
+        }
+    )
+
+    result = run_live_learning_loop(
+        [task],
+        out_dir=tmp_path / "same-size-out",
+        user_feedback="real runs, not replay; target 60% savings",
+        rounds=1,
+        adapter=adapter,
+    )
+
+    live_round = result.rounds[0]
+    assert live_round.baseline.passed is True
+    assert live_round.optimized.passed is True
+    assert live_round.accepted is True
+    assert result.claim_gate["trice_pass_rate"] == 1.0
 
 
 def test_manifest_driven_suite_runs_real_repo_and_deep_verifies(tmp_path):
@@ -349,6 +508,8 @@ def test_manifest_driven_suite_runs_real_repo_and_deep_verifies(tmp_path):
     assert result.claim_gate["replicate_count"] == 2
     assert result.claim_gate["task_cluster_count"] == 1
     assert result.claim_gate["clustered_savings_ci"]["low"] >= 0.60
+    assert result.claim_gate["evidence_recall_minimum"] == 1.0
+    assert result.claim_gate["evidence_recall_failures"] == 0
     assert result.claim_gate["smoke_gate_passed"] is True
     assert result.claim_gate["s_tier_gate"]["passed"] is False
     assert "task_clusters" in result.claim_gate["s_tier_gate"]["missing_requirements"]
@@ -435,6 +596,124 @@ def test_suite_scaffold_generates_locked_remote_git_manifest(tmp_path):
     readiness_path.write_text(json.dumps(readiness, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     assert verify_readiness_file(readiness_path, manifest_path=out)["ok"] is True
 
+    protocol = build_protocol_lock(out)
+    assert protocol["schema_version"] == "trice-protocol-lock/v1"
+    assert protocol["protocol_level"] == "smoke_protocol_locked"
+    assert protocol["claim_allowed_by_protocol"] is False
+    assert "TRICE Protocol Lock" in render_protocol_markdown(protocol)
+    assert "TRICE protocol lock" in render_protocol_svg(protocol)
+    protocol_path = tmp_path / "protocol.json"
+    protocol_path.write_text(json.dumps(protocol, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert verify_protocol_lock_file(protocol_path, manifest_path=out)["ok"] is True
+
+    design = build_design_card(protocol_path, suite_result_path=REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_suite_results.json")
+    assert design["schema_version"] == "trice-design-card/v1"
+    assert design["design_level"] == "smoke_design_observed"
+    assert design["claim_design_ready"] is False
+    assert "TRICE Design Card" in render_design_markdown(design)
+    assert "TRICE statistical design card" in render_design_svg(design)
+    design_path = tmp_path / "design.json"
+    design_path.write_text(json.dumps(design, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert verify_design_card_file(
+        design_path,
+        protocol_path=protocol_path,
+        suite_result_path=REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_suite_results.json",
+    )["ok"] is True
+
+    reproduction = build_reproduction_card()
+    assert reproduction["schema_version"] == "trice-reproduction-card/v1"
+    assert reproduction["reproduction_level"] == "reviewer_replay_ready_smoke"
+    assert reproduction["claim_allowed"] is False
+    assert "TRICE Reproduction Card" in render_reproduction_markdown(reproduction)
+    assert "TRICE reproduction card" in render_reproduction_svg(reproduction)
+    reproduction_path = tmp_path / "reproduction.json"
+    reproduction_path.write_text(json.dumps(reproduction, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert verify_reproduction_card_file(reproduction_path)["ok"] is True
+
+    contract = build_contract_card()
+    assert contract["schema_version"] == "trice-contract-card/v1"
+    assert contract["contract_level"] == "library_contract_locked"
+    assert contract["contract_score"] == 100
+    assert "TRICE Contract Card" in render_contract_markdown(contract)
+    assert "TRICE public contract card" in render_contract_svg(contract)
+    contract_path = tmp_path / "contract.json"
+    contract_path.write_text(json.dumps(contract, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert verify_contract_card_file(contract_path)["ok"] is True
+
+    crates = build_crates_card(offline=True)
+    assert crates["schema_version"] == "trice-crates-card/v1"
+    assert crates["crates_card_level"] == "publish_plan_locked"
+    assert crates["local_publish_plan_locked"] is True
+    assert crates["cargo_install_claim_allowed"] is False
+    assert "TRICE Crates Publish Card" in render_crates_markdown(crates)
+    assert "TRICE crates publish card" in render_crates_svg(crates)
+    crates_path = tmp_path / "crates.json"
+    crates_path.write_text(json.dumps(crates, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert verify_crates_card_file(crates_path)["ok"] is True
+
+    install_path = REPO / "docs" / "trice_install_card.json"
+    install_verdict = verify_install_card_file(install_path)
+    assert install_verdict["ok"] is True
+    assert install_verdict["install_level"] in {"python_trice_install_ready", "full_cli_install_ready"}
+    install_card = json.loads(install_path.read_text(encoding="utf-8"))
+    assert "TRICE Installability Card" in render_install_markdown(install_card)
+    assert "TRICE installability card" in render_install_svg(install_card)
+
+    research = build_research_card()
+    assert research["schema_version"] == "trice-research-card/v1"
+    assert research["research_level"] == "research_basis_locked"
+    assert research["research_score"] == 100
+    assert research["source_count"] >= 150
+    assert "TRICE Research Card" in render_research_markdown(research)
+    assert "TRICE research basis card" in render_research_svg(research)
+    research_path = tmp_path / "research.json"
+    research_path.write_text(json.dumps(research, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert verify_research_card_file(research_path)["ok"] is True
+
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "tracerazor-1.0.3-py3-none-any.whl").write_bytes(b"fake wheel for release evidence\n")
+    (dist / "tracerazor-1.0.3.tar.gz").write_bytes(b"fake sdist for release evidence\n")
+    cli_binary = tmp_path / ("tracerazor.exe" if sys.platform.startswith("win") else "tracerazor")
+    cli_binary.write_bytes(b"fake cli binary for release evidence\n")
+    release_evidence = build_release_evidence_card(dist_dir=dist, cli_binary_path=cli_binary, sidecar_stem="release-evidence")
+    assert release_evidence["schema_version"] == "trice-release-evidence/v1"
+    assert release_evidence["release_evidence_level"] == "release_evidence_ready"
+    assert release_evidence["release_evidence_score"] == 100
+    assert "TRICE Release Evidence" in render_release_evidence_markdown(release_evidence)
+    assert "TRICE release evidence" in render_release_evidence_svg(release_evidence)
+    evidence_path = tmp_path / "release-evidence.json"
+    write_release_evidence_outputs(release_evidence, evidence_path)
+    evidence_verdict = verify_release_evidence_file(evidence_path)
+    assert evidence_verdict["ok"] is True
+    assert "rust_cli" in evidence_verdict["checked_artifacts"]
+    assert "release-evidence.checksums.txt" in evidence_verdict["checked_sidecars"]
+
+    release = build_release_card(offline=True)
+    assert release["schema_version"] == "trice-release-card/v1"
+    assert release["release_level"] == "local_release_candidate"
+    assert release["public_release_ready"] is False
+    assert "TRICE Release Card" in render_release_markdown(release)
+    assert "TRICE release card" in render_release_svg(release)
+    release_path = tmp_path / "release.json"
+    release_path.write_text(json.dumps(release, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    assert verify_release_card_file(release_path)["ok"] is True
+
+    integrity = build_integrity_card(release_path=release_path, release_evidence_path=evidence_path, crates_path=crates_path, install_path=install_path, research_path=research_path)
+    assert integrity["schema_version"] == "trice-integrity-card/v1"
+    assert integrity["integrity_level"] == "proof_graph_integrity_locked"
+    assert integrity["integrity_score"] == 100
+    assert "TRICE Integrity Card" in render_integrity_markdown(integrity)
+    assert "TRICE proof graph integrity" in render_integrity_svg(integrity)
+    integrity_path = tmp_path / "integrity.json"
+    write_integrity_outputs(integrity, integrity_path)
+    integrity_verdict = verify_integrity_card_file(integrity_path)
+    assert integrity_verdict["ok"] is True
+    assert "release_evidence" in integrity_verdict["checked_inputs"]
+    assert "crates_card" in integrity_verdict["checked_inputs"]
+    assert "install_card" in integrity_verdict["checked_inputs"]
+    assert "research_card" in integrity_verdict["checked_inputs"]
+
 
 def test_suite_readiness_identifies_pilot_ready_manifest(tmp_path):
     source = tmp_path / "remote-git-list.json"
@@ -476,6 +755,13 @@ def test_suite_readiness_identifies_pilot_ready_manifest(tmp_path):
     assert readiness["planned_execution"]["planned_runs"] == 20
     assert readiness["planned_execution"]["verify_command_invocations_min"] == 40
     assert readiness["missing_for_claim"] == ["claim_task_clusters", "claim_replicates_per_task"]
+    assert any(row["name"] == "evidence_recall_gate" and row["passed"] for row in readiness["checks"])
+
+    protocol = build_protocol_lock(out)
+    assert protocol["protocol_level"] == "pilot_protocol_ready"
+    assert protocol["suite_shape"]["planned_runs"] == 20
+    assert protocol["claim_allowed_by_protocol"] is False
+    assert protocol["evaluation_contract"]["evidence_recall_min"] == 0.95
 
 
 def test_manifest_suite_can_use_command_repair_adapter(tmp_path):
@@ -577,6 +863,7 @@ def test_manifest_suite_can_use_adapter_profile(tmp_path):
                     "require_adapter_profiles": True,
                     "min_mean_savings": 0.60,
                     "min_clustered_savings_ci_low": 0.60,
+                    "min_evidence_recall": 0.95,
                 },
                 "tasks": [
                     {
@@ -604,6 +891,8 @@ def test_manifest_suite_can_use_adapter_profile(tmp_path):
     assert task.mean_savings >= 0.60
     assert result.claim_gate["adapter_breakdown"]["command_profile"]["runs"] == 1
     assert result.claim_gate["failure_breakdown"]["pass_regression_runs"] == 0
+    assert result.claim_gate["evidence_recall_minimum"] == 1.0
+    assert result.claim_gate["s_tier_gate"]["requirements"]["evidence_recall"]["passed"] is True
     assert result.claim_gate["s_tier_gate"]["passed"] is True
     assert result.claim_gate["s_tier_gate"]["claim_level"] == "s_tier"
 

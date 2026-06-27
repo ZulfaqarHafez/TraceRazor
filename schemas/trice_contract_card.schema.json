@@ -1,0 +1,92 @@
+{
+  "$id": "https://tracerazor.dev/schemas/trice_contract_card.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRICE public contract card",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "scope",
+    "package",
+    "version",
+    "semver",
+    "contract_level",
+    "contract_score",
+    "checks",
+    "public_api",
+    "cli",
+    "schemas",
+    "examples",
+    "inputs",
+    "research_basis",
+    "next_actions",
+    "contract_card_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trice-contract-card/v1"
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "package": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+    },
+    "semver": {
+      "type": "object",
+      "required": ["major", "minor", "patch"]
+    },
+    "contract_level": {
+      "enum": ["contract_unusable", "partial_contract", "library_contract_locked"]
+    },
+    "contract_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed", "observed", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "public_api": {
+      "type": "object"
+    },
+    "cli": {
+      "type": "object"
+    },
+    "schemas": {
+      "type": "array"
+    },
+    "examples": {
+      "type": "array"
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "research_basis": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "contract_card_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

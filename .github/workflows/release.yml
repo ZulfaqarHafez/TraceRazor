@@ -173,6 +173,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
+      contents: read
       id-token: write
     steps:
       - uses: actions/download-artifact@v4
@@ -185,13 +186,74 @@ jobs:
           packages-dir: dist
           skip-existing: true
 
-  # Attach wheels + binaries to the GitHub release.
+  # Generate deterministic release evidence sidecars from the exact release
+  # artifacts staged by the wheel jobs. PyPI Trusted Publishing covers index
+  # attestations; this packet covers GitHub release assets, SBOMs, checksums,
+  # proof cards, installability, the crates publish card, paper artifacts, and evidence bundles.
+  release-evidence:
+    name: Release evidence packet
+    needs: [tag, wheels, binaries]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheel-*
+          merge-multiple: true
+          path: dist
+      - name: Build release CLI for evidence subject
+        run: cargo build --release -p tracerazor
+      - name: Generate and verify release evidence
+        run: |
+          python -m tracerazor.trice crates \
+            --offline \
+            --out docs/trice_crates_card.json \
+            --format tex
+          python -m tracerazor.trice verify-crates docs/trice_crates_card.json
+          python -m tracerazor.trice install \
+            --out docs/trice_install_card.json \
+            --dist-dir dist \
+            --format tex
+          python -m tracerazor.trice verify-install docs/trice_install_card.json
+          python -m tracerazor.trice research \
+            --out docs/trice_research_card.json \
+            --format tex
+          python -m tracerazor.trice verify-research docs/trice_research_card.json
+          mkdir -p release-assets
+          cp docs/trice_crates_card.* release-assets/
+          cp docs/trice_install_card.* release-assets/
+          cp docs/trice_research_card.* release-assets/
+          python -m tracerazor.trice release-evidence \
+            --out release-assets/trice_release_evidence.json \
+            --dist-dir dist \
+            --cli-binary target/release/tracerazor \
+            --format tex
+          python -m tracerazor.trice verify-release-evidence \
+            release-assets/trice_release_evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-evidence
+          path: |
+            release-assets/trice_release_evidence.*
+            release-assets/trice_crates_card.*
+            release-assets/trice_install_card.*
+            release-assets/trice_research_card.*
+
+  # Attach wheels, binaries, and deterministic release evidence to the GitHub release.
   publish-release:
     name: Publish GitHub release
-    needs: [tag, wheels, binaries]
+    needs: [tag, wheels, binaries, release-evidence]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -199,13 +261,32 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+      - name: Attest release assets
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            artifacts/**/*.whl
+            artifacts/**/*.tar.gz
+            artifacts/**/*.zip
+            artifacts/**/trice_crates_card.*
+            artifacts/**/trice_install_card.*
+            artifacts/**/trice_research_card.*
+            artifacts/**/trice_release_evidence.*
       - name: Create release with assets
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.tag.outputs.tag }}
         run: |
           set -euo pipefail
-          ASSETS=$(find artifacts -type f \( -name '*.whl' -o -name '*.tar.gz' \))
+          ASSETS=$(find artifacts -type f \( \
+            -name '*.whl' -o \
+            -name '*.tar.gz' -o \
+            -name '*.zip' -o \
+            -name 'trice_crates_card.*' -o \
+            -name 'trice_install_card.*' -o \
+            -name 'trice_research_card.*' -o \
+            -name 'trice_release_evidence.*' \
+          \))
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
             # shellcheck disable=SC2086
             gh release upload "$RELEASE_TAG" $ASSETS --clobber

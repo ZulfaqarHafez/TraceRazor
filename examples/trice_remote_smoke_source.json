@@ -1,0 +1,33 @@
+{
+  "name": "trice-remote-smoke",
+  "patch_spec": "trice_remote_smoke_patch.json",
+  "replicates": 1,
+  "rounds": 1,
+  "s_tier_gate": {
+    "max_pass_regressions": 0,
+    "min_clustered_savings_ci_low": 0.6,
+    "min_evidence_recall": 0.95,
+    "min_mean_savings": 0.6,
+    "min_replicates_per_task": 3,
+    "min_task_clusters": 50,
+    "require_adapter_profiles": false,
+    "require_locked_git_sources": true,
+    "require_receipt_validation": true,
+    "require_remote_git_sources": true
+  },
+  "target_savings": 0.6,
+  "tasks": [
+    {
+      "prompt": "Change sample.simple.add_one so add_one(1) returns 3 while preserving source-only edits. This is a remote-git smoke task for the live TRICE evidence path.",
+      "rev": "621e4974ca25ce531773def586ba3ed8e736b3fc",
+      "task_id": "pypa-sampleproject-add-two",
+      "url": "https://github.com/pypa/sampleproject.git",
+      "verify_cmd": [
+        "python",
+        "-c",
+        "import sys; sys.path.insert(0, 'src'); from sample.simple import add_one; assert add_one(1) == 3"
+      ]
+    }
+  ],
+  "user_feedback": "real remote-git run, deterministic patch adapter, no replay"
+}

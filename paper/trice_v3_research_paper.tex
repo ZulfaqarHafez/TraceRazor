@@ -98,42 +98,8 @@ rename-api & 1814 & 349 & 80.8\% & yes & yes \\
         passed. Broad claim
         allowed: no.
 
-        \section{Deterministic Claim Card}
-Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{smoke}. Claim allowed: no. Determinism contract score: 84/100.
-
-\begin{table}[h]
-\centering
-\begin{tabular}{lrl}
-\toprule
-Requirement & Passed & Required \\
-\midrule
-accepted\_runs & yes & 0 unaccepted runs \\
-adapter\_profiles & yes & all tasks use adapter\_profile \\
-clustered\_savings\_ci\_low & yes & >= 0.600 \\
-locked\_git\_sources & no & all tasks use locked git sources \\
-mean\_savings & yes & >= 0.600 \\
-pass\_regressions & yes & <= 0 \\
-receipt\_validation & yes & enabled \\
-remote\_git\_sources & no & all tasks use remote Git URLs \\
-replicates\_per\_task & no & each task >= 3 \\
-task\_clusters & no & >= 50 \\
-\bottomrule
-\end{tabular}
-\caption{Machine-readable claim gate distilled from the suite result and evidence manifest.}
-\end{table}
-
-Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0. Claim-card hash: \texttt{4b8ac48b6d982a50...}.
-
-\noindent Non-claims:
-\begin{itemize}
-\item Not an S-tier claim; missing task\_clusters, replicates\_per\_task, locked\_git\_sources, remote\_git\_sources.
-\item Does not claim universal all-language or all-agent performance.
-\item Does not certify replay-only savings as live savings.
-\end{itemize}
-
-
         \section{Suite Readiness Preflight}
-Suite \texttt{bundled-live-six-task-suite} is \texttt{smoke\_ready} with readiness score 55/100. It plans 6 live run(s) across 6 task cluster(s), requiring at least 12 verifier invocations before retries.
+Suite \texttt{bundled-live-six-task-suite} is \texttt{smoke\_ready} with readiness score 60/100. It plans 6 live run(s) across 6 task cluster(s), requiring at least 12 verifier invocations before retries.
 
 \begin{table}[h]
 \centering
@@ -154,6 +120,7 @@ remote\_git\_sources & no & all tasks use remote Git URLs \\
 commit\_sha\_revisions & no & all git.rev values are 40-hex commit SHA \\
 adapter\_profiles & yes & all tasks use adapter\_profile \\
 target\_savings & yes & >= 0.600 \\
+evidence\_recall\_gate & yes & >= 0.950 \\
 pass\_regression\_gate & yes & 0 \\
 receipt\_validation\_gate & yes & true \\
 \bottomrule
@@ -171,11 +138,244 @@ receipt\_validation\_gate & yes & true \\
 \end{itemize}
 
 
+        \section{Protocol Lock}
+Protocol \texttt{bundled-live-six-task-suite:fd4335bea5164e4e} is \texttt{smoke\_protocol\_locked} with score 81/100. It freezes 6 planned run(s) across 6 task cluster(s). The primary metric is \texttt{input\_token\_savings}; target mean input-token savings is 60.0\% and clustered CI lower-bound target is 60.0\%.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+manifest\_valid & yes & trice-suite/v1 \\
+unique\_task\_ids & yes & all task\_id values unique \\
+deterministic\_interventions & yes & exactly one intervention per task \\
+primary\_metric & yes & input\_token\_savings \\
+cost\_quality\_joint\_gate & yes & savings measured with pass preservation \\
+target\_mean\_savings & yes & >= 0.600 \\
+clustered\_ci\_target & yes & >= 0.600 \\
+evidence\_recall\_gate & yes & >= 0.950 \\
+pass\_regression\_gate & yes & 0 \\
+receipt\_validation\_gate & yes & true \\
+remote\_git\_sources & no & all tasks use remote Git URLs \\
+commit\_sha\_revisions & no & all git.rev values are 40-hex commit SHA \\
+adapter\_profiles & yes & all tasks use adapter\_profile \\
+pilot\_task\_clusters & no & >= 10 \\
+pilot\_replicates\_per\_task & no & each task >= 2 \\
+claim\_task\_clusters & no & >= 50 \\
+claim\_replicates\_per\_task & no & each task >= 3 \\
+all\_runs\_accepted\_gate & yes & all optimized runs accepted \\
+evidence\_bundle\_required & yes & portable evidence bundle verifies \\
+claim\_card\_required & yes & claim card verifies before README S-tier wording \\
+artifact\_card\_required & yes & artifact card verifies before release claim \\
+\bottomrule
+\end{tabular}
+\caption{Pre-registered TRICE protocol checks locked before live outcome claims.}
+\end{table}
+
+\noindent Non-claims:
+\begin{itemize}
+\item Protocol lock is not outcome evidence; it does not claim measured savings or task success.
+\item Not a claim-ready protocol until the suite has 50 task clusters and 3 replicates per task.
+\item Not a held-out remote-repo protocol until every task uses a locked remote Git commit.
+\item Does not permit README S-tier wording without a passing claim card and verified artifact card.
+\end{itemize}
+
+
+        \section{Statistical Design Card}
+Design level: \texttt{smoke\_design\_observed}; score: 65/100; claim-design ready: no. Observed mean input-token savings is 81.5\%; observed clustered CI lower bound is 79.0\%; projected claim lower bound at the locked claim sample size is 80.6\%.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+protocol\_verifies & yes & protocol lock verifies \\
+suite\_result\_schema & yes & trice-suite-result/v1 \\
+primary\_metric\_locked & yes & input\_token\_savings \\
+observed\_mean\_above\_target & yes & >= 0.600 \\
+observed\_clustered\_ci\_above\_target & yes & >= 0.600 \\
+zero\_pass\_regressions & yes & 0 \\
+all\_runs\_accepted & yes & all runs accepted \\
+pilot\_task\_clusters & no & >= 10 \\
+claim\_task\_clusters & no & >= 50 \\
+claim\_replicates & no & each task >= 3 \\
+projected\_claim\_ci\_above\_target & yes & >= 0.600 \\
+protocol\_claim\_ready & no & claim\_protocol\_ready \\
+\bottomrule
+\end{tabular}
+\caption{TRICE statistical-design checks before interpreting a live claim run.}
+\end{table}
+
+
+        \section{Deterministic Claim Card}
+Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{smoke}. Claim allowed: no. Determinism contract score: 100/100.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Requirement & Passed & Required \\
+\midrule
+accepted\_runs & yes & 0 unaccepted runs \\
+adapter\_profiles & yes & all tasks use adapter\_profile \\
+clustered\_savings\_ci\_low & yes & >= 0.600 \\
+evidence\_recall & yes & >= 0.950 on every accepted optimized run \\
+locked\_git\_sources & no & all tasks use locked git sources \\
+mean\_savings & yes & >= 0.600 \\
+pass\_regressions & yes & <= 0 \\
+receipt\_validation & yes & enabled \\
+remote\_git\_sources & no & all tasks use remote Git URLs \\
+replicates\_per\_task & no & each task >= 3 \\
+task\_clusters & no & >= 50 \\
+\bottomrule
+\end{tabular}
+\caption{Machine-readable claim gate distilled from the suite result and evidence manifest.}
+\end{table}
+
+Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{6f20ecbd0a990960...}.
+
+\noindent Non-claims:
+\begin{itemize}
+\item Not an S-tier claim; missing task\_clusters, replicates\_per\_task, locked\_git\_sources, remote\_git\_sources.
+\item Does not claim universal all-language or all-agent performance.
+\item Does not certify replay-only savings as live savings.
+\end{itemize}
+
+
+        \section{Reviewer Reproduction Packet}
+TRICE emits a separate reproduction card after the paper manifest is written. The card binds readiness, protocol, design, claim, bundle, paper-manifest, and paper-result inputs with SHA-256 receipts and lists the exact verifier commands a reviewer can run. It is intentionally outside the paper manifest to avoid a hash cycle; the final artifact card binds both the paper manifest and reproduction card.
+
+
+        \section{Contract Card}
+Package \texttt{tracerazor} version \texttt{1.0.3} has contract level \texttt{library\_contract\_locked} and score 100/100.
+
+\begin{tabular}{lll}
+Check & Pass & Required \\
+\hline
+semver\_version & yes & MAJOR.MINOR.PATCH \\
+top\_level\_api & yes & tracerazor.\_\_all\_\_ resolves \\
+trice\_api & yes & tracerazor.trice.\_\_all\_\_ resolves \\
+cli\_contract & yes & all documented tracerazor-trice commands exist \\
+schemas\_shipped & yes & all TRICE JSON Schemas are present \\
+contract\_schema\_shipped & yes & contract-card schema ships \\
+examples\_shipped & yes & public examples are present \\
+docs\_shipped & yes & README/library/research/trust docs are present \\
+\end{tabular}
+
+\noindent Research basis:
+\begin{itemize}
+\item Semantic Versioning requires the public API to be declared before compatibility claims are meaningful.
+\item Python packaging makes version identifiers public registry facts, so library contracts must bind version and import surface together.
+\item JSON Schema gives users and downstream agents a machine-checkable boundary for TRICE receipts, suites, cards, and bundles.
+\item SLSA, in-toto, and CycloneDX motivate release evidence that binds checksums, SBOMs, provenance statements, and public artifacts.
+\item Reproducible-build practice motivates checking that public examples, schemas, CLI commands, release evidence, and the integrity proof graph match the source being packaged.
+\item Cargo publication trust requires staged registry facts because downstream crates cannot honestly claim cargo-install readiness before upstream workspace crates are indexed.
+\item Clean-wheel installability must be verified after build because packaged data, console scripts, and bundled binaries can diverge from checkout behavior.
+\item Research-ledger integrity must be machine-checkable because product claims and papers can drift from the sources that supposedly justify them.
+\end{itemize}
+
+\noindent Next actions:
+\begin{itemize}
+\item Treat this card as the public API boundary for SemVer compatibility.
+\item Regenerate the contract card before every release and after any public API, CLI, schema, or example change.
+\item Promote only documented imports and schemas into long-term compatibility guarantees.
+\end{itemize}
+
+
+        \section{Installability Card}
+Install level: \texttt{python\_trice\_install\_ready}; score: 90/100; expected version: \texttt{1.0.3}.
+
+\begin{tabular}{lrl}
+Check & Passed & Required \\
+\hline
+wheel\_present & yes & built wheel exists \\
+venv\_created & yes & clean virtual environment can be created \\
+wheel\_installs & yes & wheel installs with pip --no-deps \\
+version\_matches & yes & 1.0.3 \\
+schemas\_importable & yes & install, crates, and research schemas import from wheel \\
+trice\_api\_importable & yes & public tracerazor.trice install/crates/research APIs import \\
+trice\_console\_works & yes & tracerazor-trice console script works after wheel install \\
+rust\_cli\_bundled & no & tracerazor console script can find a bundled Rust auditor binary \\
+\end{tabular}
+
+
+        \section{Research Card}
+The TRICE research card binds 165 ledgered sources (165 unique URLs) with research level \texttt{research\_basis\_locked} and score 100/100.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+ledger\_present & yes & ledger file exists \\
+minimum\_sources & yes & >= 150 ledger rows \\
+unique\_source\_urls & yes & >= 127 unique source URLs \\
+category\_coverage & yes & \{'agent\_evaluation': 30, 'context\_efficiency': 30, 'public\_trust': 20, 'statistical\_quality': 5\} \\
+valid\_source\_links & yes & >= 0.95 valid http/local links \\
+takeaways\_present & yes & every row has a takeaway \\
+index\_sequence & yes & rows are uniquely indexed in ascending order \\
+product\_decision\_section & yes & ledger includes product decision synthesis \\
+\bottomrule
+\end{tabular}
+\caption{Deterministic checks over the TRICE research ledger.}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lr}
+\toprule
+Category & Sources \\
+\midrule
+agent\_evaluation & 43 \\
+context\_efficiency & 75 \\
+other & 8 \\
+public\_trust & 25 \\
+statistical\_quality & 9 \\
+trice\_internal & 5 \\
+\bottomrule
+\end{tabular}
+\caption{Research coverage categories bound by the research card.}
+\end{table}
+
+\noindent Research basis:
+\begin{itemize}
+\item Agent evaluation research motivates fixed task environments, repeated trials, and cost-aware metrics.
+\item Prompt-compression and long-context research motivate decision-preserving context control rather than shortest-prompt contests.
+\item RAG and evidence-recall research motivate explicit recall floors for hidden or compressed evidence.
+\item Reproducible-build and supply-chain practice motivates hash-bound research, package, release, and provenance artifacts.
+\item TRICE treats its literature base as a versioned product input: if the ledger drifts, the paper, README, and integrity proof must be regenerated.
+\end{itemize}
+
+
+        \section{Release Trust Card}
+TRICE treats distribution readiness as a separate machine-readable contract from benchmark evidence. The release card snapshots \texttt{tracerazor-trice doctor}, binds the artifact, reproduction, and contract cards, records package metadata, and refuses \texttt{public\_release\_ready} until PyPI, piwheels, crates.io, GitHub tag alignment, GitHub Actions, and OpenSSF Scorecard are green. This follows supply-chain guidance that provenance, public project health, trusted publishing, attestations, SBOMs, and checksums should be release artifacts rather than prose-only claims \cite{slsa,openssfscorecard,pypitrust,pypiattest,intoto,cyclonedx}. The separate \texttt{tracerazor-trice release-evidence} packet binds the wheel, source distribution, CLI binary, installability card, proof cards, paper artifacts, evidence bundles, SHA-256 checksums, CycloneDX-style Python and Cargo SBOMs, and an in-toto/SLSA-shaped provenance statement. The GitHub release workflow then generates release-evidence sidecars and hosted artifact attestations for release assets produced by Actions. A separate \texttt{tracerazor-trice integrity} card binds offline doctor output, proof-card verifiers, release evidence, the crates publish card, the research card, the paper manifest, schemas, and workflow hooks as one top-level proof graph. The contract card follows SemVer, Python package-versioning, JSON Schema, and reproducible-input practice by declaring the API boundary before release claims \cite{semver,pyversion,jsonschema2020,reprobuilds}.
+
+
+        \section{Crates Publish Card}
+The generated crates card reports level \texttt{publish\_plan\_locked} and score 80/100. It binds Cargo manifests, local dependency order, crates.io registry status, and README cargo-install honesty. At generation time, \texttt{cargo\_install\_claim\_allowed} was false, so Rust install claims remain blocked until the final CLI crate is public \cite{cargoPublishing}.
+
+
+        \section{Clean Wheel Installability}
+The generated installability card reports level \texttt{python\_trice\_install\_ready} and score 90/100. It creates a clean virtual environment, installs the built wheel with \texttt{pip install --no-deps}, imports packaged TRICE schemas and public APIs, and runs the installed \texttt{tracerazor-trice} console script. The full \texttt{tracerazor} Rust CLI check is kept separate so generic wheels do not overclaim platform-bundled binary readiness \cite{pypapackaging,pipinstall,wheelpep}.
+
+
         \section{Replicated Suite Evidence}
         The public suite artifact \texttt{fix-offby-one-suite} contains 3 live replicate runs across 1 task cluster(s). Mean input-token savings is 76.6\% with clustered-by-task 95\% CI 76.6\%--76.6\%; pass regressions 0. S-tier gate: not passed; missing requirements: task\_clusters, locked\_git\_sources, remote\_git\_sources, adapter\_profiles.
 
         \section{Broad Smoke Evidence}
-        The suite \texttt{bundled-live-six-task-suite} contains 6 live run(s) across 6 task cluster(s). Mean input-token savings is 81.5\% with clustered-by-task 95\% CI 79.0\%--83.5\%; pass regressions 0. S-tier gate: not passed; missing requirements: task\_clusters, replicates\_per\_task, locked\_git\_sources, remote\_git\_sources. The broad-smoke bundle \texttt{trice_broad_smoke_evidence.trice.zip} contains 65 hashed entries.
+        The suite \texttt{bundled-live-six-task-suite} contains 6 live run(s) across 6 task cluster(s). Mean input-token savings is 81.5\% with clustered-by-task 95\% CI 79.0\%--83.5\%; pass regressions 0. S-tier gate: not passed; missing requirements: task\_clusters, replicates\_per\_task, locked\_git\_sources, remote\_git\_sources. The broad-smoke bundle \texttt{trice_broad_smoke_evidence.trice.zip} contains 77 hashed entries.
+
+        \section{Remote-Git Smoke Evidence}
+        The suite \texttt{trice-remote-smoke} contains 1 live run(s) across 1 task cluster(s). Mean input-token savings is 83.2\% with clustered-by-task 95\% CI 83.2\%--83.2\%; pass regressions 0. S-tier gate: not passed; missing requirements: task\_clusters, replicates\_per\_task. The remote-git smoke bundle \texttt{trice_remote_smoke_evidence.trice.zip} contains 17 hashed entries. The remote-git smoke claim card reports claim level \texttt{smoke}, claim allowed no, and determinism score 100/100. It is a verified smoke artifact, not an S-tier claim.
+        The remote smoke fixture clones the locked public PyPA sample project
+        revision, records the resolved commit and repository tree digest, applies
+        a declarative source-only patch, and verifies the objective behavior.
+        This follows benchmark-submission practice that inputs, revisions, and
+        rules must be fixed before a claim is interpreted
+        \cite{mlperfpolicies,pypasample}.
 
         \section{Portable Artifact Bundle}
         The public bundle \texttt{trice_suite_evidence.trice.zip} contains 35 hashed entries, root manifest \texttt{trice_suite_evidence_manifest.json}, and root result \texttt{trice_suite_results.json}. Verification replays aggregate and child-manifest checks after safe extraction.

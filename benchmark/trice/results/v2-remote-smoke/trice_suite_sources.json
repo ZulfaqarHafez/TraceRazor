@@ -1,0 +1,39 @@
+{
+  "schema_version": "trice-suite-sources/v1",
+  "sources": [
+    {
+      "adapter_type": "json_patch",
+      "git": {
+        "resolved_commit": "621e4974ca25ce531773def586ba3ed8e736b3fc",
+        "rev": "621e4974ca25ce531773def586ba3ed8e736b3fc",
+        "subdir": null,
+        "url": "https://github.com/pypa/sampleproject.git"
+      },
+      "patch_sha256": "8929691e6a0c91eeb1ab603e41cb5f8dba86e4e5d0154fe13160c5c2232dc131",
+      "patch_spec": "trice_remote_smoke_patch.json",
+      "repo": "git+https://github.com/pypa/sampleproject.git@621e4974ca25ce531773def586ba3ed8e736b3fc",
+      "repo_tree": {
+        "algorithm": "trice-tree-sha256/v1",
+        "bytes": 13759,
+        "digest": "75743fd331dbb4ecbfdad66ffdbfa1a34051f67fe75af199baf0406c90b17d31",
+        "file_count": 12,
+        "ignored_dirs": [
+          ".git",
+          ".hg",
+          ".mypy_cache",
+          ".pytest_cache",
+          ".ruff_cache",
+          ".svn",
+          "__pycache__"
+        ]
+      },
+      "source_type": "git",
+      "task_id": "pypa-sampleproject-add-two",
+      "verify_cmd": [
+        "python",
+        "-c",
+        "import sys; sys.path.insert(0, 'src'); from sample.simple import add_one; assert add_one(1) == 3"
+      ]
+    }
+  ]
+}

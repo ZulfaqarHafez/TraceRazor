@@ -21,6 +21,8 @@ PYPI_JSON_URL = f"https://pypi.org/pypi/{PROJECT}/json"
 PIWHEELS_JSON_URL = f"https://www.piwheels.org/project/{PROJECT}/json"
 CRATES_JSON_URL = f"https://crates.io/api/v1/crates/{PROJECT}"
 GITHUB_RUNS_URL = f"https://api.github.com/repos/{GITHUB_REPO}/actions/runs?per_page=30"
+SCORECARD_URL = "https://api.scorecard.dev/projects/github.com/ZulfaqarHafez/TraceRazor"
+SCORECARD_MIN_SCORE = 7.0
 
 FetchJson = Callable[[str, float], dict[str, Any]]
 
@@ -39,13 +41,14 @@ def doctor_report(*, offline: bool = False, timeout_s: float = 5.0, fetch_json: 
     local_version = _local_version()
     checks = {
         "local_package": _check_local_package(local_version),
-        "bundled_cli": _check_bundled_cli(),
+        "bundled_cli": _check_bundled_cli(local_version),
         "schemas": _check_schemas(),
         "pypi": _check_pypi(local_version, options, fetch),
         "piwheels": _check_piwheels(local_version, options, fetch),
         "crates_io": _check_crates(options, fetch),
         "github_tag": _check_github_tag(local_version),
         "github_actions": _check_github_actions(options, fetch),
+        "openssf_scorecard": _check_scorecard(options, fetch),
     }
     failed = [name for name, check in checks.items() if check.get("ok") is False]
     unknown = [name for name, check in checks.items() if check.get("ok") is None]
@@ -111,7 +114,7 @@ def _check_local_package(local_version: str | None) -> dict[str, Any]:
     return _check(True, "installed", f"version {local_version}")
 
 
-def _check_bundled_cli() -> dict[str, Any]:
+def _check_bundled_cli(local_version: str | None = None) -> dict[str, Any]:
     try:
         import tracerazor
         from tracerazor._launcher import find_binary
@@ -132,14 +135,39 @@ def _check_bundled_cli() -> dict[str, Any]:
         status = "on-path"
     else:
         status = "env"
-    return _check(True, status, str(path))
+    version = _binary_version(path)
+    if version.get("ok") is False:
+        return _check(False, status, f"{path}; version check failed: {version['detail']}")
+    observed = str(version.get("version") or "unknown")
+    if local_version and observed != "unknown" and observed != local_version:
+        return _check(False, f"{status}-version-mismatch", f"{path}; binary={observed} local={local_version}")
+    return _check(True, status, f"{path}; binary={observed}")
+
+
+def _binary_version(path: Path) -> dict[str, Any]:
+    try:
+        proc = subprocess.run(
+            [str(path), "--version"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+    except Exception as exc:  # pragma: no cover - environment-specific process failure.
+        return {"ok": False, "detail": str(exc)}
+    text = (proc.stdout or proc.stderr or "").strip()
+    if proc.returncode != 0:
+        return {"ok": False, "detail": text or f"exit {proc.returncode}"}
+    parts = text.split()
+    version = parts[-1] if parts else ""
+    return {"ok": bool(version), "version": version or "unknown", "detail": text or "empty version output"}
 
 
 def _check_schemas() -> dict[str, Any]:
     try:
         from .schemas import schema_path
 
-        required = ["suite", "receipt", "adapter", "bundle", "evidence", "patch", "claim", "readiness"]
+        required = ["suite", "receipt", "adapter", "bundle", "evidence", "patch", "claim", "readiness", "artifact", "protocol", "design", "reproduction", "release", "contract", "release-evidence", "integrity", "crates", "install", "research"]
         missing = [name for name in required if not schema_path(name).is_file()]
     except Exception as exc:
         return _check(False, "error", str(exc))
@@ -233,6 +261,27 @@ def _check_github_actions(options: DoctorOptions, fetch: FetchJson) -> dict[str,
     if missing:
         detail = (detail + "; " if detail else "") + f"missing={','.join(missing)}"
     return _check(ok, "green" if ok else "not-green", detail, url=GITHUB_RUNS_URL)
+
+
+def _check_scorecard(options: DoctorOptions, fetch: FetchJson) -> dict[str, Any]:
+    if options.offline:
+        return _check(None, "skipped", "offline mode")
+    data = fetch(SCORECARD_URL, options.timeout_s)
+    if data.get("__http_status") == 404:
+        return _check(False, "missing", "OpenSSF Scorecard result is not published yet", url=SCORECARD_URL)
+    if "__error__" in data:
+        return _check(None, "unknown", data["__error__"], url=SCORECARD_URL)
+    raw_score = data.get("score")
+    try:
+        score = float(raw_score)
+    except (TypeError, ValueError):
+        return _check(False, "missing-score", f"score={raw_score!r}", url=SCORECARD_URL)
+    date = str(data.get("date") or "unknown-date")
+    commit = str(((data.get("repo") or {}).get("commit")) or "unknown-commit")
+    ok = score >= SCORECARD_MIN_SCORE
+    status = "green" if ok else "below-threshold"
+    detail = f"score={score:.1f} minimum={SCORECARD_MIN_SCORE:.1f} date={date} commit={commit[:12]}"
+    return _check(ok, status, detail, url=SCORECARD_URL)
 
 
 def _fetch_json(url: str, timeout_s: float) -> dict[str, Any]:

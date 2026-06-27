@@ -19,6 +19,9 @@
       "low": 0.789866,
       "mean": 0.81489
     },
+    "evidence_recall_failures": 0,
+    "evidence_recall_minimum": 1.0,
+    "evidence_recall_required": 0.95,
     "failure_breakdown": {
       "failed_smoke_gate_runs": 0,
       "pass_regression_runs": 0,
@@ -33,6 +36,7 @@
       "config": {
         "max_pass_regressions": 0,
         "min_clustered_savings_ci_low": 0.6,
+        "min_evidence_recall": 0.95,
         "min_mean_savings": 0.6,
         "min_replicates_per_task": 3,
         "min_task_clusters": 50,
@@ -71,6 +75,14 @@
           "observed": 0.789866,
           "passed": true,
           "required": ">= 0.600"
+        },
+        "evidence_recall": {
+          "observed": {
+            "failures": 0,
+            "minimum": 1.0
+          },
+          "passed": true,
+          "required": ">= 0.950 on every accepted optimized run"
         },
         "locked_git_sources": {
           "observed": [
@@ -167,6 +179,8 @@
     {
       "accepted_rounds": 1,
       "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
       "manifest_path": "tasks/csv-filter/replicate-1/trice_v2_evidence_manifest.json",
       "mean_savings": 0.801422,
       "pass_regressions": 0,
@@ -221,6 +235,8 @@
     {
       "accepted_rounds": 1,
       "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
       "manifest_path": "tasks/dedupe-helpers/replicate-1/trice_v2_evidence_manifest.json",
       "mean_savings": 0.841954,
       "pass_regressions": 0,
@@ -275,6 +291,8 @@
     {
       "accepted_rounds": 1,
       "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
       "manifest_path": "tasks/fix-imports/replicate-1/trice_v2_evidence_manifest.json",
       "mean_savings": 0.841954,
       "pass_regressions": 0,
@@ -329,6 +347,8 @@
     {
       "accepted_rounds": 1,
       "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
       "manifest_path": "tasks/fix-offby-one/replicate-1/trice_v2_evidence_manifest.json",
       "mean_savings": 0.766397,
       "pass_regressions": 0,
@@ -383,6 +403,8 @@
     {
       "accepted_rounds": 1,
       "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
       "manifest_path": "tasks/implement-median/replicate-1/trice_v2_evidence_manifest.json",
       "mean_savings": 0.796629,
       "pass_regressions": 0,
@@ -437,6 +459,8 @@
     {
       "accepted_rounds": 1,
       "adapter_profile": "trice_adapter_profile_bundled_tasks.json",
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
       "manifest_path": "tasks/rename-api/replicate-1/trice_v2_evidence_manifest.json",
       "mean_savings": 0.840987,
       "pass_regressions": 0,

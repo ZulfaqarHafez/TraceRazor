@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "baseline-full-context",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "64200dd822c69c2528d59f1dad664ae826e99f7d40899ebbd4726f952bb69da3",
+    "run_receipt_sha256": "d33844d0efdb21555a23dc150d2f40f53162cd8bf01c1f1cc71441e282be4c1e",
     "task": "Fix package imports without editing tests.",
     "task_id": "fix-imports"
   },

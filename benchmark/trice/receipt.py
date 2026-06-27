@@ -66,6 +66,12 @@ def validate_run_receipt(data: dict[str, Any]) -> dict[str, Any]:
         "trice_context_mode": trice_context.get("context_mode"),
         "trice_input_tokens": trice_context.get("input_tokens"),
         "trice_baseline_input_tokens": trice_context.get("baseline_input_tokens"),
+        "evidence_recall": (trice_context.get("evidence_recall") or {}).get("evidence_recall")
+        if isinstance(trice_context.get("evidence_recall"), dict)
+        else None,
+        "evidence_recall_passed": (trice_context.get("evidence_recall") or {}).get("passed")
+        if isinstance(trice_context.get("evidence_recall"), dict)
+        else None,
     }
 
 
@@ -142,4 +148,20 @@ def _validate_trice_context(value: Any) -> dict[str, Any]:
     if action_counts is not None:
         if not isinstance(action_counts, dict) or not all(isinstance(k, str) and isinstance(v, int) and v >= 0 for k, v in action_counts.items()):
             raise ValueError("run receipt trice_context.policy_action_counts must map strings to non-negative integers")
+    recall = value.get("evidence_recall")
+    if recall is not None:
+        if not isinstance(recall, dict):
+            raise ValueError("run receipt trice_context.evidence_recall must be an object")
+        if recall.get("schema_version") != "trice-evidence-recall/v1":
+            raise ValueError("run receipt trice_context.evidence_recall has unsupported schema_version")
+        for field in ("evidence_recall", "required_min"):
+            item = recall.get(field)
+            if not isinstance(item, (int, float)) or not 0 <= float(item) <= 1:
+                raise ValueError(f"run receipt trice_context.evidence_recall.{field} must be in [0, 1]")
+        if not isinstance(recall.get("passed"), bool):
+            raise ValueError("run receipt trice_context.evidence_recall.passed must be boolean")
+        for field in ("obligation_count", "obligation_tokens", "recalled_count", "recalled_tokens"):
+            item = recall.get(field)
+            if item is not None and (not isinstance(item, int) or item < 0):
+                raise ValueError(f"run receipt trice_context.evidence_recall.{field} must be a non-negative integer")
     return value

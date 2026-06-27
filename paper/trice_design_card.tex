@@ -1,0 +1,25 @@
+\section{Statistical Design Card}
+Design level: \texttt{smoke\_design\_observed}; score: 65/100; claim-design ready: no. Observed mean input-token savings is 81.5\%; observed clustered CI lower bound is 79.0\%; projected claim lower bound at the locked claim sample size is 80.6\%.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+protocol\_verifies & yes & protocol lock verifies \\
+suite\_result\_schema & yes & trice-suite-result/v1 \\
+primary\_metric\_locked & yes & input\_token\_savings \\
+observed\_mean\_above\_target & yes & >= 0.600 \\
+observed\_clustered\_ci\_above\_target & yes & >= 0.600 \\
+zero\_pass\_regressions & yes & 0 \\
+all\_runs\_accepted & yes & all runs accepted \\
+pilot\_task\_clusters & no & >= 10 \\
+claim\_task\_clusters & no & >= 50 \\
+claim\_replicates & no & each task >= 3 \\
+projected\_claim\_ci\_above\_target & yes & >= 0.600 \\
+protocol\_claim\_ready & no & claim\_protocol\_ready \\
+\bottomrule
+\end{tabular}
+\caption{TRICE statistical-design checks before interpreting a live claim run.}
+\end{table}

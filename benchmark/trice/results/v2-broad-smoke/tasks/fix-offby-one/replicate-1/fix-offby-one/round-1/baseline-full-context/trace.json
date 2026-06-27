@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "baseline-full-context",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "0781ba29a1fb4f961aaf363610f2382a0bee26116b880bbaff8601283f837aa1",
+    "run_receipt_sha256": "70650955219b1fdbe5d68113a4a7fd26a1a99d802a059ae78739847168c62ec0",
     "task": "Fix chunker.py without editing tests.",
     "task_id": "fix-offby-one"
   },

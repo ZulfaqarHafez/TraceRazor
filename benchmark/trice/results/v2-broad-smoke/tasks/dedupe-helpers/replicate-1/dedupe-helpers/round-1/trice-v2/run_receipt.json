@@ -52,14 +52,18 @@
     "TRICE_COMPRESSED_CONTEXT_SHA256",
     "TRICE_CONDITION",
     "TRICE_CONTEXT_MODE",
+    "TRICE_CONTEXT_PATH",
     "TRICE_INPUT_TOKENS",
     "TRICE_POLICY_ACTION_COUNTS_JSON",
+    "TRICE_POLICY_PATH",
     "TRICE_POLICY_SHA256",
     "TRICE_POLICY_TOKENS",
     "TRICE_PROJECTED_INPUT_SAVINGS_PCT",
     "TRICE_PROMPT",
     "TRICE_REALIZED_BUDGET_RATIO",
     "TRICE_TASK_ID",
+    "TRICE_TRACE_PATH",
+    "TRICE_VERIFY_CMD_JSON",
     "TRICE_WORKSPACE"
   ],
   "schema_version": "trice-run-receipt/v1",
@@ -78,6 +82,19 @@
     "compressed_context_sha256": "de900c8b1f052af3c216155fffe9d3c985eb3ee1bdbd688fda77873a5f2e4e59",
     "condition": "trice-v2",
     "context_mode": "trice_policy",
+    "decision_trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\dedupe-helpers\\replicate-1\\dedupe-helpers\\round-1\\trice-v2\\decision_trace.json",
+    "decision_trace_sha256": "d5fd81fc6f337a10784177080c7991245a8caabf1b471f6f43e5b968c3fa5255",
+    "evidence_recall": {
+      "evidence_recall": 1.0,
+      "missing": [],
+      "obligation_count": 3,
+      "obligation_tokens": 168,
+      "passed": true,
+      "recalled_count": 3,
+      "recalled_tokens": 168,
+      "required_min": 0.95,
+      "schema_version": "trice-evidence-recall/v1"
+    },
     "input_tokens": 275,
     "policy_action_counts": {
       "anchor_prefix": 2,
@@ -89,7 +106,15 @@
     "policy_tokens": 275,
     "projected_input_savings_pct": 84.2,
     "realized_budget_ratio": 0.158046,
-    "schema_version": "trice-context-envelope/v1"
+    "schema_version": "trice-context-envelope/v1",
+    "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\dedupe-helpers\\replicate-1\\dedupe-helpers\\round-1\\trice-v2\\decision_trace.json",
+    "verify_cmd": [
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "--tb=short"
+    ]
   },
   "workspace_after_sha256": "0fd82da05c55f5479e6b0b13801f9740dd23d4210fd5a16ac672ca71296de7bd",
   "workspace_before_sha256": "2408d3a8aed89fb0b88550fad065da7e32a0d2157fb339e4a0cbee0aabcf1db0"

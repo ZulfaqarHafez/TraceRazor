@@ -1,0 +1,210 @@
+{
+  "algorithm": "trice-v2-suite-live-user-conditioned-rollout",
+  "claim_gate": {
+    "accepted_rounds": 1,
+    "adapter_breakdown": {
+      "json_patch": {
+        "accepted_runs": 1,
+        "mean_savings": 0.831914,
+        "pass_regressions": 0,
+        "runs": 1
+      }
+    },
+    "baseline_pass_rate": 1.0,
+    "broad_claim_allowed": false,
+    "clustered_by": "task_id",
+    "clustered_savings_ci": {
+      "high": 0.831914,
+      "level": 0.95,
+      "low": 0.831914,
+      "mean": 0.831914
+    },
+    "evidence_recall_failures": 0,
+    "evidence_recall_minimum": 1.0,
+    "evidence_recall_required": 0.95,
+    "failure_breakdown": {
+      "failed_smoke_gate_runs": 0,
+      "pass_regression_runs": 0,
+      "unaccepted_runs": 0
+    },
+    "mean_savings": 0.831914,
+    "pass_regressions": 0,
+    "rationale": "local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals",
+    "replicate_count": 1,
+    "s_tier_gate": {
+      "claim_level": "not_s_tier",
+      "config": {
+        "max_pass_regressions": 0,
+        "min_clustered_savings_ci_low": 0.6,
+        "min_evidence_recall": 0.95,
+        "min_mean_savings": 0.6,
+        "min_replicates_per_task": 3,
+        "min_task_clusters": 50,
+        "require_adapter_profiles": false,
+        "require_locked_git_sources": true,
+        "require_receipt_validation": true,
+        "require_remote_git_sources": true
+      },
+      "missing_requirements": [
+        "task_clusters",
+        "replicates_per_task"
+      ],
+      "passed": false,
+      "rationale": "suite evidence is useful but not broad enough for an S-tier claim",
+      "requirements": {
+        "accepted_runs": {
+          "observed": 0,
+          "passed": true,
+          "required": "0 unaccepted runs"
+        },
+        "adapter_profiles": {
+          "observed": [
+            null
+          ],
+          "passed": true,
+          "required": "not required"
+        },
+        "clustered_savings_ci_low": {
+          "observed": 0.831914,
+          "passed": true,
+          "required": ">= 0.600"
+        },
+        "evidence_recall": {
+          "observed": {
+            "failures": 0,
+            "minimum": 1.0
+          },
+          "passed": true,
+          "required": ">= 0.950 on every accepted optimized run"
+        },
+        "locked_git_sources": {
+          "observed": [
+            "git"
+          ],
+          "passed": true,
+          "required": "all tasks use locked git sources"
+        },
+        "mean_savings": {
+          "observed": 0.831914,
+          "passed": true,
+          "required": ">= 0.600"
+        },
+        "pass_regressions": {
+          "observed": 0,
+          "passed": true,
+          "required": "<= 0"
+        },
+        "receipt_validation": {
+          "observed": "enabled",
+          "passed": true,
+          "required": "enabled"
+        },
+        "remote_git_sources": {
+          "observed": [
+            "https://github.com/pypa/sampleproject.git"
+          ],
+          "passed": true,
+          "required": "all tasks use remote Git URLs"
+        },
+        "replicates_per_task": {
+          "observed": {
+            "pypa-sampleproject-add-two": 1
+          },
+          "passed": false,
+          "required": "each task >= 3"
+        },
+        "task_clusters": {
+          "observed": 1,
+          "passed": false,
+          "required": ">= 50"
+        }
+      },
+      "schema_version": "trice-s-tier-gate/v1"
+    },
+    "savings_ci": {
+      "high": 0.831914,
+      "level": 0.95,
+      "low": 0.831914,
+      "mean": 0.831914
+    },
+    "scope": "local_deterministic_smoke",
+    "smoke_gate_passed": true,
+    "target_savings": 0.6,
+    "task_cluster_count": 1,
+    "total_rounds": 1,
+    "trice_pass_ci": {
+      "high": 1.0,
+      "level": 0.95,
+      "low": 0.206549,
+      "mean": 1.0
+    },
+    "trice_pass_rate": 1.0
+  },
+  "manifest_path": "trice_suite_evidence_manifest.json",
+  "report_path": "trice_suite_report.md",
+  "result_path": "trice_suite_results.json",
+  "schema_version": "trice-suite-result/v1",
+  "suite": {
+    "clustered_by": "task_id",
+    "manifest_snapshot": "trice_suite_manifest.snapshot.json",
+    "name": "trice-remote-smoke",
+    "replicate_count": 1,
+    "source_manifest": "trice_suite_sources.json",
+    "task_count": 1,
+    "user_feedback": "real remote-git run, deterministic patch adapter, no replay"
+  },
+  "tasks": [
+    {
+      "accepted_rounds": 1,
+      "adapter_profile": null,
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
+      "manifest_path": "tasks/pypa-sampleproject-add-two/replicate-1/trice_v2_evidence_manifest.json",
+      "mean_savings": 0.831914,
+      "pass_regressions": 0,
+      "patch_spec": "trice_remote_smoke_patch.json",
+      "repair_cmd": null,
+      "replicate_index": 1,
+      "repo": "git+https://github.com/pypa/sampleproject.git@621e4974ca25ce531773def586ba3ed8e736b3fc",
+      "report_path": "tasks/pypa-sampleproject-add-two/replicate-1/trice_v2_live_report.md",
+      "result_path": "tasks/pypa-sampleproject-add-two/replicate-1/trice_v2_live_results.json",
+      "rounds": 1,
+      "smoke_gate_passed": true,
+      "source": {
+        "adapter_type": "json_patch",
+        "git": {
+          "resolved_commit": "621e4974ca25ce531773def586ba3ed8e736b3fc",
+          "rev": "621e4974ca25ce531773def586ba3ed8e736b3fc",
+          "subdir": null,
+          "url": "https://github.com/pypa/sampleproject.git"
+        },
+        "patch_sha256": "8929691e6a0c91eeb1ab603e41cb5f8dba86e4e5d0154fe13160c5c2232dc131",
+        "patch_spec": "trice_remote_smoke_patch.json",
+        "repo": "git+https://github.com/pypa/sampleproject.git@621e4974ca25ce531773def586ba3ed8e736b3fc",
+        "repo_tree": {
+          "algorithm": "trice-tree-sha256/v1",
+          "bytes": 13759,
+          "digest": "75743fd331dbb4ecbfdad66ffdbfa1a34051f67fe75af199baf0406c90b17d31",
+          "file_count": 12,
+          "ignored_dirs": [
+            ".git",
+            ".hg",
+            ".mypy_cache",
+            ".pytest_cache",
+            ".ruff_cache",
+            ".svn",
+            "__pycache__"
+          ]
+        },
+        "source_type": "git",
+        "task_id": "pypa-sampleproject-add-two",
+        "verify_cmd": [
+          "python",
+          "-c",
+          "import sys; sys.path.insert(0, 'src'); from sample.simple import add_one; assert add_one(1) == 3"
+        ]
+      },
+      "task_id": "pypa-sampleproject-add-two"
+    }
+  ]
+}

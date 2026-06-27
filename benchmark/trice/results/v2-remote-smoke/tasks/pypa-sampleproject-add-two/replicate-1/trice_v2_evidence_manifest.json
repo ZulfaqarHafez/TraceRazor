@@ -1,0 +1,70 @@
+{
+  "algorithm": "trice-v2-live-user-conditioned-rollout",
+  "artifacts": [
+    {
+      "bytes": 1574,
+      "path": "trice_v2_live_report.md",
+      "sha256": "78316f31bbc9d4f15969b1be15b1983c512a5e4b6771f7af538b02c89f594d57"
+    },
+    {
+      "bytes": 472,
+      "path": "user_profile.json",
+      "sha256": "0a210a2a0017804a5cb3ed6c6307814f14bae5f787f3e6c4e744d4d43186d985"
+    },
+    {
+      "bytes": 4901,
+      "path": "pypa-sampleproject-add-two/round-1/baseline-full-context/decision_trace.json",
+      "sha256": "2a26a656574f3d0471a7ae0aed5ada2a2e66c3080afee3c3b8f7decf66451e02"
+    },
+    {
+      "bytes": 5337,
+      "path": "pypa-sampleproject-add-two/round-1/baseline-full-context/trace.json",
+      "sha256": "0a0ca413b81dbb7ff416f917ca379d10b36b1705f6094d5d24f48438162f154a"
+    },
+    {
+      "bytes": 4901,
+      "path": "pypa-sampleproject-add-two/round-1/trice-v2/decision_trace.json",
+      "sha256": "2a26a656574f3d0471a7ae0aed5ada2a2e66c3080afee3c3b8f7decf66451e02"
+    },
+    {
+      "bytes": 5310,
+      "path": "pypa-sampleproject-add-two/round-1/trice-v2/trace.json",
+      "sha256": "2bc39158c4797322454a0c24b069f9c09ded987db479a52249a961ce5f706e69"
+    },
+    {
+      "bytes": 3648,
+      "path": "pypa-sampleproject-add-two/round-1/trice-v2/context_policy.json",
+      "sha256": "cb150028c06ae3b749c9b3db5846bc3a5bbfbe0742ed76d8b83d3ed5e0e2fe46"
+    },
+    {
+      "bytes": 1347,
+      "path": "pypa-sampleproject-add-two/round-1/trice-v2/compressed_context.txt",
+      "sha256": "10367d57f75e9ccea8625561fd46062a5965b1864754e1ba89c158dbc92c86e4"
+    },
+    {
+      "bytes": 2205,
+      "path": "pypa-sampleproject-add-two/round-1/baseline-full-context/run_receipt.json",
+      "sha256": "d412343ede7b713b34e7255d62b4f3efbb11c3b9e8648095f0e61f8cc1076432"
+    },
+    {
+      "bytes": 2694,
+      "path": "pypa-sampleproject-add-two/round-1/trice-v2/run_receipt.json",
+      "sha256": "64808446b0e8dbb74634798673382eb258b6654e711d7e9294a959a5500c4a55"
+    }
+  ],
+  "canonical_result_sha256": "deda14914fc7be66a9dcde7e5ae2c91edd8ae90b11cca408f65b28769d21c02f",
+  "created_by": "TraceRazor TRICE",
+  "notes": [
+    "Fresh workspace per condition",
+    "Objective verifier command per run",
+    "User-conditioned profile captured in result JSON",
+    "Verifier durations normalized before hashing",
+    "Wall-clock metadata excluded from traces",
+    "Run receipts capture adapter envelopes and changed workspace fingerprints",
+    "Replay is not accepted as final proof"
+  ],
+  "platform": "Windows-10-10.0.26200-SP0",
+  "python_version": "3.11.6",
+  "result_sha256": "e49dd36fa495ce082ab2d3983f558b5276d369bfd4db78b5069ded98fa2f3674",
+  "schema_version": "trice-evidence-manifest/v1"
+}

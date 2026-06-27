@@ -142,6 +142,12 @@
       "required": ">= 0.600"
     },
     {
+      "name": "evidence_recall_gate",
+      "observed": 0.95,
+      "passed": true,
+      "required": ">= 0.950"
+    },
+    {
       "name": "pass_regression_gate",
       "observed": 0,
       "passed": true,
@@ -158,6 +164,7 @@
   "gate_config": {
     "max_pass_regressions": 0,
     "min_clustered_savings_ci_low": 0.6,
+    "min_evidence_recall": 0.95,
     "min_mean_savings": 0.6,
     "min_replicates_per_task": 3,
     "min_task_clusters": 50,
@@ -198,8 +205,8 @@
     "verify_command_invocations_min": 12
   },
   "readiness_level": "smoke_ready",
-  "readiness_score": 55,
-  "readiness_sha256": "5df70669cb81a34cc4ea0a10904d93cc44d753992666301423daf300b18532e6",
+  "readiness_score": 60,
+  "readiness_sha256": "6f4baca234454b98a138be96f9d4792e1e1d79c59fd8977b86288da9d8ba2ea4",
   "recommendations": [
     "Use locked remote Git sources instead of local paths for pilot and claim suites.",
     "Pin every git.rev to an immutable 40-hex commit SHA before running held-out evidence.",

@@ -1,0 +1,81 @@
+{
+  "$id": "https://tracerazor.dev/schemas/trice_artifact_card.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRICE artifact review card",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "scope",
+    "artifact_level",
+    "artifact_review_score",
+    "claim_allowed",
+    "readiness_level",
+    "checks",
+    "availability",
+    "schemas",
+    "verdicts",
+    "input_sha256",
+    "research_basis",
+    "next_actions",
+    "artifact_card_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trice-artifact-card/v1"
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "artifact_level": {
+      "enum": ["not_review_ready", "partial_review_packet", "review_ready_smoke"]
+    },
+    "artifact_review_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "claim_allowed": {
+      "type": "boolean"
+    },
+    "readiness_level": {
+      "type": ["string", "null"]
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed", "observed", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "availability": {
+      "type": "array"
+    },
+    "schemas": {
+      "type": "array"
+    },
+    "verdicts": {
+      "type": "object"
+    },
+    "input_sha256": {
+      "type": "object"
+    },
+    "research_basis": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "artifact_card_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

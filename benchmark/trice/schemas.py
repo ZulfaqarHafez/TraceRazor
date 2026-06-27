@@ -20,6 +20,17 @@ ADAPTER_PROFILE_SCHEMA = "trice_adapter_profile.schema.json"
 RUN_RECEIPT_SCHEMA = "trice_run_receipt.schema.json"
 CLAIM_CARD_SCHEMA = "trice_claim_card.schema.json"
 SUITE_READINESS_SCHEMA = "trice_suite_readiness.schema.json"
+ARTIFACT_CARD_SCHEMA = "trice_artifact_card.schema.json"
+PROTOCOL_LOCK_SCHEMA = "trice_protocol_lock.schema.json"
+DESIGN_CARD_SCHEMA = "trice_design_card.schema.json"
+REPRODUCTION_CARD_SCHEMA = "trice_reproduction_card.schema.json"
+RELEASE_CARD_SCHEMA = "trice_release_card.schema.json"
+CONTRACT_CARD_SCHEMA = "trice_contract_card.schema.json"
+RELEASE_EVIDENCE_SCHEMA = "trice_release_evidence.schema.json"
+INTEGRITY_CARD_SCHEMA = "trice_integrity_card.schema.json"
+CRATES_CARD_SCHEMA = "trice_crates_card.schema.json"
+INSTALL_CARD_SCHEMA = "trice_install_card.schema.json"
+RESEARCH_CARD_SCHEMA = "trice_research_card.schema.json"
 
 
 def schema_path(name: str) -> Path:
@@ -27,38 +38,102 @@ def schema_path(name: str) -> Path:
 
     aliases = {
         "patch": PATCH_SPEC_SCHEMA,
+        "patch-spec": PATCH_SPEC_SCHEMA,
         "patch_spec": PATCH_SPEC_SCHEMA,
         "trice_patch_spec": PATCH_SPEC_SCHEMA,
         PATCH_SPEC_SCHEMA: PATCH_SPEC_SCHEMA,
         "manifest": EVIDENCE_MANIFEST_SCHEMA,
         "evidence": EVIDENCE_MANIFEST_SCHEMA,
+        "evidence-manifest": EVIDENCE_MANIFEST_SCHEMA,
         "evidence_manifest": EVIDENCE_MANIFEST_SCHEMA,
         "trice_evidence_manifest": EVIDENCE_MANIFEST_SCHEMA,
         EVIDENCE_MANIFEST_SCHEMA: EVIDENCE_MANIFEST_SCHEMA,
         "suite": SUITE_MANIFEST_SCHEMA,
+        "suite-manifest": SUITE_MANIFEST_SCHEMA,
         "suite_manifest": SUITE_MANIFEST_SCHEMA,
         "trice_suite_manifest": SUITE_MANIFEST_SCHEMA,
         SUITE_MANIFEST_SCHEMA: SUITE_MANIFEST_SCHEMA,
         "bundle": BUNDLE_MANIFEST_SCHEMA,
+        "bundle-manifest": BUNDLE_MANIFEST_SCHEMA,
         "bundle_manifest": BUNDLE_MANIFEST_SCHEMA,
         "trice_bundle_manifest": BUNDLE_MANIFEST_SCHEMA,
         BUNDLE_MANIFEST_SCHEMA: BUNDLE_MANIFEST_SCHEMA,
         "adapter": ADAPTER_PROFILE_SCHEMA,
+        "adapter-profile": ADAPTER_PROFILE_SCHEMA,
         "adapter_profile": ADAPTER_PROFILE_SCHEMA,
         "trice_adapter_profile": ADAPTER_PROFILE_SCHEMA,
         ADAPTER_PROFILE_SCHEMA: ADAPTER_PROFILE_SCHEMA,
         "receipt": RUN_RECEIPT_SCHEMA,
+        "run-receipt": RUN_RECEIPT_SCHEMA,
         "run_receipt": RUN_RECEIPT_SCHEMA,
         "trice_run_receipt": RUN_RECEIPT_SCHEMA,
         RUN_RECEIPT_SCHEMA: RUN_RECEIPT_SCHEMA,
         "claim": CLAIM_CARD_SCHEMA,
+        "claim-card": CLAIM_CARD_SCHEMA,
         "claim_card": CLAIM_CARD_SCHEMA,
         "trice_claim_card": CLAIM_CARD_SCHEMA,
         CLAIM_CARD_SCHEMA: CLAIM_CARD_SCHEMA,
         "readiness": SUITE_READINESS_SCHEMA,
+        "suite-readiness": SUITE_READINESS_SCHEMA,
         "suite_readiness": SUITE_READINESS_SCHEMA,
         "trice_suite_readiness": SUITE_READINESS_SCHEMA,
         SUITE_READINESS_SCHEMA: SUITE_READINESS_SCHEMA,
+        "artifact": ARTIFACT_CARD_SCHEMA,
+        "artifact-card": ARTIFACT_CARD_SCHEMA,
+        "artifact_card": ARTIFACT_CARD_SCHEMA,
+        "trice_artifact_card": ARTIFACT_CARD_SCHEMA,
+        ARTIFACT_CARD_SCHEMA: ARTIFACT_CARD_SCHEMA,
+        "protocol": PROTOCOL_LOCK_SCHEMA,
+        "protocol-lock": PROTOCOL_LOCK_SCHEMA,
+        "protocol_lock": PROTOCOL_LOCK_SCHEMA,
+        "trice_protocol_lock": PROTOCOL_LOCK_SCHEMA,
+        PROTOCOL_LOCK_SCHEMA: PROTOCOL_LOCK_SCHEMA,
+        "design": DESIGN_CARD_SCHEMA,
+        "design-card": DESIGN_CARD_SCHEMA,
+        "design_card": DESIGN_CARD_SCHEMA,
+        "trice_design_card": DESIGN_CARD_SCHEMA,
+        DESIGN_CARD_SCHEMA: DESIGN_CARD_SCHEMA,
+        "reproduction": REPRODUCTION_CARD_SCHEMA,
+        "reproduction-card": REPRODUCTION_CARD_SCHEMA,
+        "reproduction_card": REPRODUCTION_CARD_SCHEMA,
+        "trice_reproduction_card": REPRODUCTION_CARD_SCHEMA,
+        REPRODUCTION_CARD_SCHEMA: REPRODUCTION_CARD_SCHEMA,
+        "release": RELEASE_CARD_SCHEMA,
+        "release-card": RELEASE_CARD_SCHEMA,
+        "release_card": RELEASE_CARD_SCHEMA,
+        "trice_release_card": RELEASE_CARD_SCHEMA,
+        RELEASE_CARD_SCHEMA: RELEASE_CARD_SCHEMA,
+        "contract": CONTRACT_CARD_SCHEMA,
+        "contract-card": CONTRACT_CARD_SCHEMA,
+        "contract_card": CONTRACT_CARD_SCHEMA,
+        "trice_contract_card": CONTRACT_CARD_SCHEMA,
+        CONTRACT_CARD_SCHEMA: CONTRACT_CARD_SCHEMA,
+        "release_evidence": RELEASE_EVIDENCE_SCHEMA,
+        "release-evidence": RELEASE_EVIDENCE_SCHEMA,
+        "release_evidence_card": RELEASE_EVIDENCE_SCHEMA,
+        "release-evidence-card": RELEASE_EVIDENCE_SCHEMA,
+        "trice_release_evidence": RELEASE_EVIDENCE_SCHEMA,
+        RELEASE_EVIDENCE_SCHEMA: RELEASE_EVIDENCE_SCHEMA,
+        "integrity": INTEGRITY_CARD_SCHEMA,
+        "integrity-card": INTEGRITY_CARD_SCHEMA,
+        "integrity_card": INTEGRITY_CARD_SCHEMA,
+        "trice_integrity_card": INTEGRITY_CARD_SCHEMA,
+        INTEGRITY_CARD_SCHEMA: INTEGRITY_CARD_SCHEMA,
+        "crates": CRATES_CARD_SCHEMA,
+        "crates-card": CRATES_CARD_SCHEMA,
+        "crates_card": CRATES_CARD_SCHEMA,
+        "trice_crates_card": CRATES_CARD_SCHEMA,
+        CRATES_CARD_SCHEMA: CRATES_CARD_SCHEMA,
+        "install": INSTALL_CARD_SCHEMA,
+        "install-card": INSTALL_CARD_SCHEMA,
+        "install_card": INSTALL_CARD_SCHEMA,
+        "trice_install_card": INSTALL_CARD_SCHEMA,
+        INSTALL_CARD_SCHEMA: INSTALL_CARD_SCHEMA,
+        "research": RESEARCH_CARD_SCHEMA,
+        "research-card": RESEARCH_CARD_SCHEMA,
+        "research_card": RESEARCH_CARD_SCHEMA,
+        "trice_research_card": RESEARCH_CARD_SCHEMA,
+        RESEARCH_CARD_SCHEMA: RESEARCH_CARD_SCHEMA,
     }
     filename = aliases.get(name)
     if not filename:

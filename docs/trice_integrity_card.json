@@ -1,0 +1,477 @@
+{
+  "checks": [
+    {
+      "name": "offline_doctor_core",
+      "observed": "local_package=installed; bundled_cli=source-build; schemas=available",
+      "passed": true,
+      "required": "local package, CLI, and schemas pass offline doctor"
+    },
+    {
+      "name": "contract_card_verifies",
+      "observed": "library_contract_locked",
+      "passed": true,
+      "required": "public API/CLI/schema contract verifies"
+    },
+    {
+      "name": "artifact_card_verifies",
+      "observed": "review_ready_smoke",
+      "passed": true,
+      "required": "artifact-review packet verifies"
+    },
+    {
+      "name": "reproduction_card_verifies",
+      "observed": "reviewer_replay_ready_smoke",
+      "passed": true,
+      "required": "reviewer reproduction packet verifies"
+    },
+    {
+      "name": "release_card_verifies",
+      "observed": "local_release_candidate",
+      "passed": true,
+      "required": "release trust card verifies"
+    },
+    {
+      "name": "release_evidence_verifies",
+      "observed": "release_evidence_ready",
+      "passed": true,
+      "required": "release evidence packet verifies"
+    },
+    {
+      "name": "crates_card_verifies",
+      "observed": "publish_plan_locked",
+      "passed": true,
+      "required": "crates staged-publish card verifies"
+    },
+    {
+      "name": "install_card_verifies",
+      "observed": "python_trice_install_ready",
+      "passed": true,
+      "required": "clean-wheel installability card verifies"
+    },
+    {
+      "name": "research_card_verifies",
+      "observed": "research_basis_locked",
+      "passed": true,
+      "required": "research-basis card verifies"
+    },
+    {
+      "name": "paper_manifest_verifies",
+      "observed": 43,
+      "passed": true,
+      "required": "paper manifest and bound result verify"
+    },
+    {
+      "name": "schemas_available",
+      "observed": "19/19",
+      "passed": true,
+      "required": "all shipped TRICE schemas are present"
+    },
+    {
+      "name": "workflows_bound",
+      "observed": "release_workflow=ok; ci_workflow=ok; scorecard_workflow=ok",
+      "passed": true,
+      "required": "CI, release, and Scorecard workflows contain integrity/provenance hooks"
+    },
+    {
+      "name": "claim_honesty_bound",
+      "observed": "claim_allowed=False public_release_ready=False",
+      "passed": true,
+      "required": "smoke evidence remains a non-S-tier claim"
+    }
+  ],
+  "doctor_snapshot": {
+    "checks": {
+      "bundled_cli": {
+        "detail": "C:\\Users\\zulfa\\TraceRazor\\target\\release\\tracerazor.exe; binary=1.0.3",
+        "ok": true,
+        "status": "source-build"
+      },
+      "crates_io": {
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
+      },
+      "github_actions": {
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
+      },
+      "github_tag": {
+        "detail": "head=ada742be30bb local_tag=False remote_tag=False",
+        "ok": false,
+        "status": "pending"
+      },
+      "local_package": {
+        "detail": "version 1.0.3",
+        "ok": true,
+        "status": "installed"
+      },
+      "openssf_scorecard": {
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
+      },
+      "piwheels": {
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
+      },
+      "pypi": {
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
+      },
+      "schemas": {
+        "detail": "19 schemas",
+        "ok": true,
+        "status": "available"
+      }
+    },
+    "local_version": "1.0.3",
+    "offline": true,
+    "package": "tracerazor",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "python": "3.11.6",
+    "schema_version": "trice-doctor/v1",
+    "summary": {
+      "failed": [
+        "github_tag"
+      ],
+      "ok": false,
+      "unknown": [
+        "pypi",
+        "piwheels",
+        "crates_io",
+        "github_actions",
+        "openssf_scorecard"
+      ]
+    }
+  },
+  "doctor_snapshot_sha256": "ca464424d939fda60146e0a651034b3d72344d98100b16d29eb4c1202984155b",
+  "inputs": {
+    "artifact_card": {
+      "bytes": 16660,
+      "name": "trice_artifact_card.json",
+      "path": "docs/trice_artifact_card.json",
+      "present": true,
+      "sha256": "8e6f523699b23b264876f48d41b042c5e74b3b30ba8381ef605bdc1f710f0b8f"
+    },
+    "contract_card": {
+      "bytes": 19671,
+      "name": "trice_contract_card.json",
+      "path": "docs/trice_contract_card.json",
+      "present": true,
+      "sha256": "9d2cb75affbee6676d7e9a00949f41ca5995202b14f9fc0b7a18240f461e0b5c"
+    },
+    "crates_card": {
+      "bytes": 22152,
+      "name": "trice_crates_card.json",
+      "path": "docs/trice_crates_card.json",
+      "present": true,
+      "sha256": "f16c2a70c6b97b0bb311b5dc1cc4398eeb2d7a974f0e00255bda33a122fb16cf"
+    },
+    "install_card": {
+      "bytes": 8219,
+      "name": "trice_install_card.json",
+      "path": "docs/trice_install_card.json",
+      "present": true,
+      "sha256": "b019465c0cc37cf4af4ef6a2e8d9f5574cdf1ecc539a802ec7bf4ff59b9935a7"
+    },
+    "paper_manifest": {
+      "bytes": 7591,
+      "name": "trice_v3_research_manifest.json",
+      "path": "paper/trice_v3_research_manifest.json",
+      "present": true,
+      "sha256": "c381bf08088c8c4d1227ee3b3d0f92439860f00195b362a01c7b2956ffee94d6"
+    },
+    "paper_result": {
+      "bytes": 46879,
+      "name": "trice_v2_live_results.json",
+      "path": "benchmark/trice/results/v2-smoke/trice_v2_live_results.json",
+      "present": true,
+      "sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8"
+    },
+    "release_card": {
+      "bytes": 11790,
+      "name": "trice_release_card.json",
+      "path": "docs/trice_release_card.json",
+      "present": true,
+      "sha256": "e4e279efae522767d31c1db17318ea4855f1301b3b396dc02c104e9830bc00bc"
+    },
+    "release_evidence": {
+      "bytes": 144833,
+      "name": "trice_release_evidence.json",
+      "path": "docs/trice_release_evidence.json",
+      "present": true,
+      "sha256": "7b6cc9eff38d73afcecbfcaf8f0d51884a60f9ca7b0946ac837e3270e772363a"
+    },
+    "reproduction_card": {
+      "bytes": 7494,
+      "name": "trice_reproduction_card.json",
+      "path": "docs/trice_reproduction_card.json",
+      "present": true,
+      "sha256": "579d3b8898f6bdb7ab8b20aa1e58dc6f5118923f3d12a09b8d512fc9fe26eb84"
+    },
+    "research_card": {
+      "bytes": 71467,
+      "name": "trice_research_card.json",
+      "path": "docs/trice_research_card.json",
+      "present": true,
+      "sha256": "2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1"
+    }
+  },
+  "integrity_card_sha256": "ddf9175c68c721053dc61356d43e0b651a18f2976c8e62428fe9a9a58b7b66ca",
+  "integrity_level": "proof_graph_integrity_locked",
+  "integrity_score": 100,
+  "next_actions": [
+    "Run this card in CI after building release artifacts.",
+    "Regenerate the integrity card after changing proof cards, schemas, workflows, README, paper, or release evidence.",
+    "Keep S-tier wording blocked until the held-out remote claim card passes."
+  ],
+  "research_basis": [
+    "SLSA and in-toto make provenance useful only when the resulting subjects and predicates are inspected by a verifier.",
+    "GitHub artifact attestations cover hosted release assets, while local release evidence binds checksums, SBOMs, provenance sidecars, paper artifacts, and evidence bundles.",
+    "OpenSSF Scorecard is a public health signal, but local integrity must also prove the repository's proof graph is internally consistent.",
+    "TRICE integrity cards make stale README, paper, workflow, schema, and proof-card drift fail as one deterministic gate.",
+    "TRICE research cards make stale or under-covered literature grounding fail before paper and README claims drift."
+  ],
+  "schema_version": "trice-integrity-card/v1",
+  "schemas": [
+    {
+      "bytes": 1772,
+      "name": "trice_patch_spec.schema.json",
+      "path": "schemas/trice_patch_spec.schema.json",
+      "present": true,
+      "sha256": "11cb3f98672f04204094733b7abbddd1f744c4e3f55304e7d21fe2cb38784d9d"
+    },
+    {
+      "bytes": 1636,
+      "name": "trice_evidence_manifest.schema.json",
+      "path": "schemas/trice_evidence_manifest.schema.json",
+      "present": true,
+      "sha256": "3541efdd44b8da389237ac730d1eb91f04e94c9e7a5efa10864031bcff649797"
+    },
+    {
+      "bytes": 5297,
+      "name": "trice_suite_manifest.schema.json",
+      "path": "schemas/trice_suite_manifest.schema.json",
+      "present": true,
+      "sha256": "4201b9af8fd7e758fcbe19732c8f3dc817306645a3aa852f79e692ce138d9ac7"
+    },
+    {
+      "bytes": 1337,
+      "name": "trice_bundle_manifest.schema.json",
+      "path": "schemas/trice_bundle_manifest.schema.json",
+      "present": true,
+      "sha256": "d463e12f1d23d64f65bfcc5d1b2dcfd88fe73a91015e30ddf09d600bbc6ea106"
+    },
+    {
+      "bytes": 1757,
+      "name": "trice_adapter_profile.schema.json",
+      "path": "schemas/trice_adapter_profile.schema.json",
+      "present": true,
+      "sha256": "9a140615436a64441932a7441743182cb34d8b961996c8c81bdd4263d9054b4d"
+    },
+    {
+      "bytes": 6008,
+      "name": "trice_run_receipt.schema.json",
+      "path": "schemas/trice_run_receipt.schema.json",
+      "present": true,
+      "sha256": "f09452661ee271cd16f823a1d833bdc781e900394a79fe70726c702f9e8f89e3"
+    },
+    {
+      "bytes": 2041,
+      "name": "trice_claim_card.schema.json",
+      "path": "schemas/trice_claim_card.schema.json",
+      "present": true,
+      "sha256": "ebad4d1258c87c50b118d851128be648c9677a2e8df0d195afe1c07dbddfa36a"
+    },
+    {
+      "bytes": 2315,
+      "name": "trice_suite_readiness.schema.json",
+      "path": "schemas/trice_suite_readiness.schema.json",
+      "present": true,
+      "sha256": "76ee26b1fc4c64460b1ae1d9b7d18cbabdd38fb0170f8bbcda8c04f0649a0637"
+    },
+    {
+      "bytes": 1780,
+      "name": "trice_artifact_card.schema.json",
+      "path": "schemas/trice_artifact_card.schema.json",
+      "present": true,
+      "sha256": "8210cace6dfd646ced58aa986cfd630dc9ef29fe799083592e5bf160645427d3"
+    },
+    {
+      "bytes": 3114,
+      "name": "trice_protocol_lock.schema.json",
+      "path": "schemas/trice_protocol_lock.schema.json",
+      "present": true,
+      "sha256": "23e034f1ce83897d2c7d7a5a2f9d232675f0847ad730d602389e75de06386987"
+    },
+    {
+      "bytes": 2607,
+      "name": "trice_design_card.schema.json",
+      "path": "schemas/trice_design_card.schema.json",
+      "present": true,
+      "sha256": "d0a1b0c5dddbab0b9c2c086b4ecef2962d21372b35c509d618e0418feafb7126"
+    },
+    {
+      "bytes": 1928,
+      "name": "trice_reproduction_card.schema.json",
+      "path": "schemas/trice_reproduction_card.schema.json",
+      "present": true,
+      "sha256": "3cbea66a6a4f6612998ed69a324cc1a74d2ae44b670c5e1505d262f4dcbb8565"
+    },
+    {
+      "bytes": 1921,
+      "name": "trice_release_card.schema.json",
+      "path": "schemas/trice_release_card.schema.json",
+      "present": true,
+      "sha256": "9fe0c531a67f9a53f743d3bb71595ef74e1cce8701c0d76f6ed5b491b5b3de0b"
+    },
+    {
+      "bytes": 1942,
+      "name": "trice_contract_card.schema.json",
+      "path": "schemas/trice_contract_card.schema.json",
+      "present": true,
+      "sha256": "0c614525c6512c59955959a020fa238b08654e2d2d571afbe26666abead95196"
+    },
+    {
+      "bytes": 2303,
+      "name": "trice_release_evidence.schema.json",
+      "path": "schemas/trice_release_evidence.schema.json",
+      "present": true,
+      "sha256": "1c5f66cf27cfbe170f485dd84c7a87963edfda96a193c544aa41c16aac9ee1c4"
+    },
+    {
+      "bytes": 1801,
+      "name": "trice_integrity_card.schema.json",
+      "path": "schemas/trice_integrity_card.schema.json",
+      "present": true,
+      "sha256": "c0360d4a7151116cddcd9deb9f7e4a1814d803127cc256683db374e6c5f1dab4"
+    },
+    {
+      "bytes": 3022,
+      "name": "trice_crates_card.schema.json",
+      "path": "schemas/trice_crates_card.schema.json",
+      "present": true,
+      "sha256": "7e4983eed4ff54a3ea94ccc1ba40bb1f44288d14df294ee03c6564ee7a9cf6e0"
+    },
+    {
+      "bytes": 1777,
+      "name": "trice_install_card.schema.json",
+      "path": "schemas/trice_install_card.schema.json",
+      "present": true,
+      "sha256": "cb61804bfe5085822d4cadba415eb9a6ef8a5441f97d5f4ab2670af3199b63fb"
+    },
+    {
+      "bytes": 2495,
+      "name": "trice_research_card.schema.json",
+      "path": "schemas/trice_research_card.schema.json",
+      "present": true,
+      "sha256": "63e578dbacc2461ff83c0407b13ed15b4f44b8f8cda9611602d77d89bfd212b9"
+    }
+  ],
+  "scope": "TRICE proof graph integrity",
+  "verdicts": {
+    "artifact_card": {
+      "artifact_level": "review_ready_smoke",
+      "artifact_review_score": 100,
+      "claim_allowed": false,
+      "errors": [],
+      "ok": true
+    },
+    "contract_card": {
+      "contract_level": "library_contract_locked",
+      "contract_score": 100,
+      "errors": [],
+      "ok": true
+    },
+    "crates_card": {
+      "cargo_install_claim_allowed": false,
+      "crates_card_level": "publish_plan_locked",
+      "crates_publish_score": 80,
+      "errors": [],
+      "local_publish_plan_locked": true,
+      "ok": true
+    },
+    "install_card": {
+      "errors": [],
+      "install_level": "python_trice_install_ready",
+      "install_score": 90,
+      "ok": true
+    },
+    "paper_manifest": {
+      "errors": [],
+      "ok": true
+    },
+    "release_card": {
+      "errors": [],
+      "ok": true,
+      "public_release_ready": false,
+      "release_level": "local_release_candidate",
+      "release_score": 65
+    },
+    "release_evidence": {
+      "errors": [],
+      "ok": true,
+      "release_evidence_level": "release_evidence_ready",
+      "release_evidence_score": 100
+    },
+    "reproduction_card": {
+      "claim_allowed": false,
+      "errors": [],
+      "ok": true,
+      "reproduction_level": "reviewer_replay_ready_smoke",
+      "reproduction_score": 100
+    },
+    "research_card": {
+      "errors": [],
+      "ok": true,
+      "research_level": "research_basis_locked",
+      "research_score": 100
+    }
+  },
+  "workflows": [
+    {
+      "bytes": 11474,
+      "markers_present": true,
+      "name": "release_workflow",
+      "path": ".github/workflows/release.yml",
+      "present": true,
+      "required_markers": [
+        "actions/attest",
+        "trice_release_evidence",
+        "trice_crates_card",
+        "trice_install_card",
+        "trice_research_card",
+        "pypa/gh-action-pypi-publish"
+      ],
+      "sha256": "d02083a6220393b437cd1913635fe84df7833c6c1fadcdf3364454a967cfceb3"
+    },
+    {
+      "bytes": 10112,
+      "markers_present": true,
+      "name": "ci_workflow",
+      "path": ".github/workflows/tracerazor.yml",
+      "present": true,
+      "required_markers": [
+        "tracerazor.trice research",
+        "tracerazor.trice integrity",
+        "tracerazor.trice verify-integrity"
+      ],
+      "sha256": "6341863650243dc90df4d7680e78490f21480738f0466e8771f51896a0acff90"
+    },
+    {
+      "bytes": 788,
+      "markers_present": true,
+      "name": "scorecard_workflow",
+      "path": ".github/workflows/scorecard.yml",
+      "present": true,
+      "required_markers": [
+        "ossf/scorecard-action",
+        "publish_results: true"
+      ],
+      "sha256": "f9daf95010aa83a119b1f678e8db74a54894ebbe5f97e23f6d037b8a1293ab18"
+    }
+  ]
+}

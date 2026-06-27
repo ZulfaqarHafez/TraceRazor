@@ -1,0 +1,40 @@
+\section{Release Card}
+Release level: \texttt{local\_release\_candidate}; score: 65/100; public release ready: no.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+local\_package & yes & local package imports with version \\
+bundled\_cli & yes & CLI binary is bundled or source-build reachable \\
+schemas & yes & all public contract schemas are shipped \\
+artifact\_card\_verifies & yes & artifact card verifies \\
+reproduction\_card\_verifies & yes & reproduction card verifies \\
+contract\_card\_verifies & yes & public API/CLI/schema contract card verifies \\
+install\_card\_verifies & yes & clean-wheel installability card verifies \\
+release\_docs\_present & yes & README, trust matrix, release checklist, pyproject, contract card, and install card present \\
+pypi & no & PyPI latest version matches local version \\
+piwheels & no & piwheels exposes the local version file \\
+crates\_io & no & crates.io package is published \\
+github\_tag & no & local version tag points at current commit locally and remotely \\
+github\_actions & no & required public workflows are green \\
+openssf\_scorecard & no & OpenSSF Scorecard is published with score >= 7.0 \\
+provenance\_plan\_documented & yes & trusted publishing and OIDC documented \\
+attestation\_plan\_documented & yes & GitHub release artifact attestation documented \\
+sbom\_plan\_documented & yes & SBOM and checksum release assets documented \\
+\bottomrule
+\end{tabular}
+\caption{Distribution trust checks for TraceRazor/TRICE release readiness.}
+\end{table}
+
+\noindent Next actions:
+\begin{itemize}
+\item Publish 1.0.3 to PyPI or lower the local version until it matches the public registry.
+\item Wait for piwheels to expose the 1.0.3 file after PyPI publish.
+\item Publish the Rust crates or keep cargo-install claims out of the README.
+\item Create and push the v1.0.3 tag only after local gates pass.
+\item Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.
+\item Run and publish OpenSSF Scorecard until the public score is at least 7.0.
+\end{itemize}

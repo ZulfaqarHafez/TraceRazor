@@ -1,0 +1,33 @@
+\section{Deterministic Claim Card}
+Scope: \texttt{remote-git smoke path on one locked public Python repository}. Claim level: \texttt{smoke}. Claim allowed: no. Determinism contract score: 100/100.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Requirement & Passed & Required \\
+\midrule
+accepted\_runs & yes & 0 unaccepted runs \\
+adapter\_profiles & yes & not required \\
+clustered\_savings\_ci\_low & yes & >= 0.600 \\
+evidence\_recall & yes & >= 0.950 on every accepted optimized run \\
+locked\_git\_sources & yes & all tasks use locked git sources \\
+mean\_savings & yes & >= 0.600 \\
+pass\_regressions & yes & <= 0 \\
+receipt\_validation & yes & enabled \\
+remote\_git\_sources & yes & all tasks use remote Git URLs \\
+replicates\_per\_task & no & each task >= 3 \\
+task\_clusters & no & >= 50 \\
+\bottomrule
+\end{tabular}
+\caption{Machine-readable claim gate distilled from the suite result and evidence manifest.}
+\end{table}
+
+Mean input-token savings is 83.2\%; clustered CI lower bound is 83.2\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{a00a66f27f85f397...}.
+
+\noindent Non-claims:
+\begin{itemize}
+\item Not an S-tier claim; missing task\_clusters, replicates\_per\_task.
+\item Does not claim universal all-language or all-agent performance.
+\item Does not certify replay-only savings as live savings.
+\end{itemize}

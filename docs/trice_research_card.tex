@@ -1,0 +1,47 @@
+\section{Research Card}
+The TRICE research card binds 165 ledgered sources (165 unique URLs) with research level \texttt{research\_basis\_locked} and score 100/100.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrl}
+\toprule
+Check & Passed & Required \\
+\midrule
+ledger\_present & yes & ledger file exists \\
+minimum\_sources & yes & >= 150 ledger rows \\
+unique\_source\_urls & yes & >= 127 unique source URLs \\
+category\_coverage & yes & \{'agent\_evaluation': 30, 'context\_efficiency': 30, 'public\_trust': 20, 'statistical\_quality': 5\} \\
+valid\_source\_links & yes & >= 0.95 valid http/local links \\
+takeaways\_present & yes & every row has a takeaway \\
+index\_sequence & yes & rows are uniquely indexed in ascending order \\
+product\_decision\_section & yes & ledger includes product decision synthesis \\
+\bottomrule
+\end{tabular}
+\caption{Deterministic checks over the TRICE research ledger.}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lr}
+\toprule
+Category & Sources \\
+\midrule
+agent\_evaluation & 43 \\
+context\_efficiency & 75 \\
+other & 8 \\
+public\_trust & 25 \\
+statistical\_quality & 9 \\
+trice\_internal & 5 \\
+\bottomrule
+\end{tabular}
+\caption{Research coverage categories bound by the research card.}
+\end{table}
+
+\noindent Research basis:
+\begin{itemize}
+\item Agent evaluation research motivates fixed task environments, repeated trials, and cost-aware metrics.
+\item Prompt-compression and long-context research motivate decision-preserving context control rather than shortest-prompt contests.
+\item RAG and evidence-recall research motivate explicit recall floors for hidden or compressed evidence.
+\item Reproducible-build and supply-chain practice motivates hash-bound research, package, release, and provenance artifacts.
+\item TRICE treats its literature base as a versioned product input: if the ledger drifts, the paper, README, and integrity proof must be regenerated.
+\end{itemize}

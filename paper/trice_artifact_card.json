@@ -1,0 +1,469 @@
+{
+  "artifact_card_sha256": "85fb7edb838235f8b37ad1a77f0c0b777f018d5d2168f6c28324f8181530abfd",
+  "artifact_level": "review_ready_smoke",
+  "artifact_review_score": 100,
+  "availability": [
+    {
+      "bytes": 6132,
+      "name": "readiness",
+      "path": "docs/trice_suite_readiness.json",
+      "present": true,
+      "sha256": "30a32533b71a878abb81be23e241617550a94ebfd1df4f23dcec5a68d59bf9a4"
+    },
+    {
+      "bytes": 7447,
+      "name": "protocol_lock",
+      "path": "docs/trice_protocol_lock.json",
+      "present": true,
+      "sha256": "877f06f9d5c312f5d9396fcc2bb3001122d27c91bdeb575236361c5d4c841d05"
+    },
+    {
+      "bytes": 4751,
+      "name": "design_card",
+      "path": "docs/trice_design_card.json",
+      "present": true,
+      "sha256": "a9568aa5b32a54c99ab36bec232132c1a7f7ff7a25427353f0df1ef6f10140f2"
+    },
+    {
+      "bytes": 7494,
+      "name": "reproduction_card",
+      "path": "docs/trice_reproduction_card.json",
+      "present": true,
+      "sha256": "579d3b8898f6bdb7ab8b20aa1e58dc6f5118923f3d12a09b8d512fc9fe26eb84"
+    },
+    {
+      "bytes": 19671,
+      "name": "contract_card",
+      "path": "docs/trice_contract_card.json",
+      "present": true,
+      "sha256": "9d2cb75affbee6676d7e9a00949f41ca5995202b14f9fc0b7a18240f461e0b5c"
+    },
+    {
+      "bytes": 8219,
+      "name": "install_card",
+      "path": "docs/trice_install_card.json",
+      "present": true,
+      "sha256": "b019465c0cc37cf4af4ef6a2e8d9f5574cdf1ecc539a802ec7bf4ff59b9935a7"
+    },
+    {
+      "bytes": 71467,
+      "name": "research_card",
+      "path": "docs/trice_research_card.json",
+      "present": true,
+      "sha256": "2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1"
+    },
+    {
+      "bytes": 4003,
+      "name": "claim",
+      "path": "docs/trice_claim_card.json",
+      "present": true,
+      "sha256": "c255524ca8674f1aaa1ae047f379589bab2ce9d538f29c90b249c18aca278761"
+    },
+    {
+      "bytes": 3349,
+      "name": "remote_smoke_claim",
+      "path": "docs/trice_remote_smoke_claim_card.json",
+      "present": true,
+      "sha256": "528f1f9e24d0497aff6b1302cb9fc66e05f2c63495d7bfb708f5748af4de9fc7"
+    },
+    {
+      "bytes": 117496,
+      "name": "evidence_bundle",
+      "path": "benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip",
+      "present": true,
+      "sha256": "a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564"
+    },
+    {
+      "bytes": 25131,
+      "name": "remote_smoke_bundle",
+      "path": "benchmark/trice/results/v2-remote-smoke/trice_remote_smoke_evidence.trice.zip",
+      "present": true,
+      "sha256": "93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d"
+    },
+    {
+      "bytes": 7591,
+      "name": "paper_manifest",
+      "path": "paper/trice_v3_research_manifest.json",
+      "present": true,
+      "sha256": "c381bf08088c8c4d1227ee3b3d0f92439860f00195b362a01c7b2956ffee94d6"
+    },
+    {
+      "bytes": 46879,
+      "name": "paper_result",
+      "path": "benchmark/trice/results/v2-smoke/trice_v2_live_results.json",
+      "present": true,
+      "sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8"
+    },
+    {
+      "bytes": 24096,
+      "name": "paper_tex",
+      "path": "paper/trice_v3_research_paper.tex",
+      "present": true,
+      "sha256": "6bd869c5a86dc37f1a67dace1b78b37c89ca29239decc6edd3be6c5bf65da532"
+    },
+    {
+      "bytes": 13389,
+      "name": "paper_pdf",
+      "path": "paper/trice_v3_research_paper.pdf",
+      "present": true,
+      "sha256": "e989dc19be087a9991ff05424457fd9aeef541056a30472add2e2a1db24b597d"
+    },
+    {
+      "bytes": 84701,
+      "name": "readme",
+      "path": "README.md",
+      "present": true,
+      "sha256": "61cb955903b1ef2a0c3684407111a836b8a130c8d6f36f1280bdd2994fbe478b"
+    },
+    {
+      "bytes": 24295,
+      "name": "library_doc",
+      "path": "docs/trice_library.md",
+      "present": true,
+      "sha256": "a256eb788c0dc9c04a976e19e1ca0f8a788c2c5b03e2b8433f3114cff55524bf"
+    }
+  ],
+  "checks": [
+    {
+      "name": "artifacts_available",
+      "observed": "17/17",
+      "passed": true,
+      "required": "17/17 present"
+    },
+    {
+      "name": "readiness_verifies",
+      "observed": "smoke_ready",
+      "passed": true,
+      "required": "readiness hash and suite manifest hash verify"
+    },
+    {
+      "name": "protocol_lock_verifies",
+      "observed": "smoke_protocol_locked",
+      "passed": true,
+      "required": "protocol hash and deterministic suite rebuild verify"
+    },
+    {
+      "name": "design_card_verifies",
+      "observed": "smoke_design_observed",
+      "passed": true,
+      "required": "design-card hash and deterministic protocol/result rebuild verify"
+    },
+    {
+      "name": "reproduction_card_verifies",
+      "observed": "reviewer_replay_ready_smoke",
+      "passed": true,
+      "required": "reproduction-card hash, input hashes, and deterministic rebuild verify"
+    },
+    {
+      "name": "contract_card_verifies",
+      "observed": "library_contract_locked",
+      "passed": true,
+      "required": "public API/CLI/schema contract card verifies"
+    },
+    {
+      "name": "install_card_verifies",
+      "observed": "python_trice_install_ready",
+      "passed": true,
+      "required": "clean-wheel installability card verifies"
+    },
+    {
+      "name": "research_card_verifies",
+      "observed": "research_basis_locked",
+      "passed": true,
+      "required": "research-basis card verifies"
+    },
+    {
+      "name": "claim_card_verifies",
+      "observed": "smoke",
+      "passed": true,
+      "required": "claim-card hash and bound suite hashes verify"
+    },
+    {
+      "name": "remote_smoke_claim_verifies",
+      "observed": "smoke",
+      "passed": true,
+      "required": "remote-git smoke claim card hash and bound suite hashes verify"
+    },
+    {
+      "name": "evidence_bundle_verifies",
+      "observed": 77,
+      "passed": true,
+      "required": "bundle hashes and child manifests verify"
+    },
+    {
+      "name": "remote_smoke_bundle_verifies",
+      "observed": 17,
+      "passed": true,
+      "required": "remote-git smoke bundle hashes and child manifest verify"
+    },
+    {
+      "name": "paper_manifest_verifies",
+      "observed": 43,
+      "passed": true,
+      "required": "paper artifacts and result hash verify"
+    },
+    {
+      "name": "schemas_available",
+      "observed": "19/19",
+      "passed": true,
+      "required": "19/19 schemas present"
+    },
+    {
+      "name": "claim_honesty",
+      "observed": "smoke",
+      "passed": true,
+      "required": "non-S-tier evidence must not allow S-tier claim"
+    },
+    {
+      "name": "remote_smoke_honesty",
+      "observed": "smoke",
+      "passed": true,
+      "required": "remote smoke evidence must not allow S-tier claim"
+    },
+    {
+      "name": "readiness_honesty",
+      "observed": "smoke_ready",
+      "passed": true,
+      "required": "smoke package must not be claim-ready"
+    }
+  ],
+  "claim_allowed": false,
+  "input_sha256": {
+    "claim": "c255524ca8674f1aaa1ae047f379589bab2ce9d538f29c90b249c18aca278761",
+    "contract_card": "9d2cb75affbee6676d7e9a00949f41ca5995202b14f9fc0b7a18240f461e0b5c",
+    "design_card": "a9568aa5b32a54c99ab36bec232132c1a7f7ff7a25427353f0df1ef6f10140f2",
+    "evidence_bundle": "a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564",
+    "install_card": "b019465c0cc37cf4af4ef6a2e8d9f5574cdf1ecc539a802ec7bf4ff59b9935a7",
+    "library_doc": "a256eb788c0dc9c04a976e19e1ca0f8a788c2c5b03e2b8433f3114cff55524bf",
+    "paper_manifest": "c381bf08088c8c4d1227ee3b3d0f92439860f00195b362a01c7b2956ffee94d6",
+    "paper_pdf": "e989dc19be087a9991ff05424457fd9aeef541056a30472add2e2a1db24b597d",
+    "paper_result": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8",
+    "paper_tex": "6bd869c5a86dc37f1a67dace1b78b37c89ca29239decc6edd3be6c5bf65da532",
+    "protocol_lock": "877f06f9d5c312f5d9396fcc2bb3001122d27c91bdeb575236361c5d4c841d05",
+    "readiness": "30a32533b71a878abb81be23e241617550a94ebfd1df4f23dcec5a68d59bf9a4",
+    "readme": "61cb955903b1ef2a0c3684407111a836b8a130c8d6f36f1280bdd2994fbe478b",
+    "remote_smoke_bundle": "93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d",
+    "remote_smoke_claim": "528f1f9e24d0497aff6b1302cb9fc66e05f2c63495d7bfb708f5748af4de9fc7",
+    "reproduction_card": "579d3b8898f6bdb7ab8b20aa1e58dc6f5118923f3d12a09b8d512fc9fe26eb84",
+    "research_card": "2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1"
+  },
+  "next_actions": [
+    "Publish the artifact card with the release assets.",
+    "Run the held-out remote pilot, then regenerate readiness, protocol, design, reproduction, contract, claim, bundle, paper, and artifact cards.",
+    "Do not upgrade the README to S-tier passed until claim_allowed is true on held-out evidence."
+  ],
+  "readiness_level": "smoke_ready",
+  "research_basis": [
+    "ACM-style artifact review: availability, functionality, reusability, and reproducibility must be explicit.",
+    "Agent-evaluation research: cost, repeated trials, and verifiable environments are part of the benchmark, not an appendix.",
+    "Benchmark-submission practice: locked inputs, fixed revisions, and portable evidence bundles make small public smoke runs reviewable without inflating them into broad claims.",
+    "Contract-card practice: SemVer, public imports, CLI commands, schemas, examples, and docs must be declared before users can trust a library compatibility promise.",
+    "TRICE rule: a paper claim is reviewable only when the protocol lock, design card, reproduction card, contract card, installability card, README, paper, readiness card, claim card, bundle, and schemas verify together.",
+    "Research-card practice: the literature ledger is a versioned product input, so paper and README claims should fail review when the source basis drifts."
+  ],
+  "schema_version": "trice-artifact-card/v1",
+  "schemas": [
+    {
+      "bytes": 1772,
+      "name": "trice_patch_spec.schema.json",
+      "path": "schemas/trice_patch_spec.schema.json",
+      "present": true,
+      "sha256": "11cb3f98672f04204094733b7abbddd1f744c4e3f55304e7d21fe2cb38784d9d"
+    },
+    {
+      "bytes": 1636,
+      "name": "trice_evidence_manifest.schema.json",
+      "path": "schemas/trice_evidence_manifest.schema.json",
+      "present": true,
+      "sha256": "3541efdd44b8da389237ac730d1eb91f04e94c9e7a5efa10864031bcff649797"
+    },
+    {
+      "bytes": 5297,
+      "name": "trice_suite_manifest.schema.json",
+      "path": "schemas/trice_suite_manifest.schema.json",
+      "present": true,
+      "sha256": "4201b9af8fd7e758fcbe19732c8f3dc817306645a3aa852f79e692ce138d9ac7"
+    },
+    {
+      "bytes": 1337,
+      "name": "trice_bundle_manifest.schema.json",
+      "path": "schemas/trice_bundle_manifest.schema.json",
+      "present": true,
+      "sha256": "d463e12f1d23d64f65bfcc5d1b2dcfd88fe73a91015e30ddf09d600bbc6ea106"
+    },
+    {
+      "bytes": 1757,
+      "name": "trice_adapter_profile.schema.json",
+      "path": "schemas/trice_adapter_profile.schema.json",
+      "present": true,
+      "sha256": "9a140615436a64441932a7441743182cb34d8b961996c8c81bdd4263d9054b4d"
+    },
+    {
+      "bytes": 6008,
+      "name": "trice_run_receipt.schema.json",
+      "path": "schemas/trice_run_receipt.schema.json",
+      "present": true,
+      "sha256": "f09452661ee271cd16f823a1d833bdc781e900394a79fe70726c702f9e8f89e3"
+    },
+    {
+      "bytes": 2041,
+      "name": "trice_claim_card.schema.json",
+      "path": "schemas/trice_claim_card.schema.json",
+      "present": true,
+      "sha256": "ebad4d1258c87c50b118d851128be648c9677a2e8df0d195afe1c07dbddfa36a"
+    },
+    {
+      "bytes": 2315,
+      "name": "trice_suite_readiness.schema.json",
+      "path": "schemas/trice_suite_readiness.schema.json",
+      "present": true,
+      "sha256": "76ee26b1fc4c64460b1ae1d9b7d18cbabdd38fb0170f8bbcda8c04f0649a0637"
+    },
+    {
+      "bytes": 1780,
+      "name": "trice_artifact_card.schema.json",
+      "path": "schemas/trice_artifact_card.schema.json",
+      "present": true,
+      "sha256": "8210cace6dfd646ced58aa986cfd630dc9ef29fe799083592e5bf160645427d3"
+    },
+    {
+      "bytes": 3114,
+      "name": "trice_protocol_lock.schema.json",
+      "path": "schemas/trice_protocol_lock.schema.json",
+      "present": true,
+      "sha256": "23e034f1ce83897d2c7d7a5a2f9d232675f0847ad730d602389e75de06386987"
+    },
+    {
+      "bytes": 2607,
+      "name": "trice_design_card.schema.json",
+      "path": "schemas/trice_design_card.schema.json",
+      "present": true,
+      "sha256": "d0a1b0c5dddbab0b9c2c086b4ecef2962d21372b35c509d618e0418feafb7126"
+    },
+    {
+      "bytes": 1928,
+      "name": "trice_reproduction_card.schema.json",
+      "path": "schemas/trice_reproduction_card.schema.json",
+      "present": true,
+      "sha256": "3cbea66a6a4f6612998ed69a324cc1a74d2ae44b670c5e1505d262f4dcbb8565"
+    },
+    {
+      "bytes": 1921,
+      "name": "trice_release_card.schema.json",
+      "path": "schemas/trice_release_card.schema.json",
+      "present": true,
+      "sha256": "9fe0c531a67f9a53f743d3bb71595ef74e1cce8701c0d76f6ed5b491b5b3de0b"
+    },
+    {
+      "bytes": 1942,
+      "name": "trice_contract_card.schema.json",
+      "path": "schemas/trice_contract_card.schema.json",
+      "present": true,
+      "sha256": "0c614525c6512c59955959a020fa238b08654e2d2d571afbe26666abead95196"
+    },
+    {
+      "bytes": 2303,
+      "name": "trice_release_evidence.schema.json",
+      "path": "schemas/trice_release_evidence.schema.json",
+      "present": true,
+      "sha256": "1c5f66cf27cfbe170f485dd84c7a87963edfda96a193c544aa41c16aac9ee1c4"
+    },
+    {
+      "bytes": 1801,
+      "name": "trice_integrity_card.schema.json",
+      "path": "schemas/trice_integrity_card.schema.json",
+      "present": true,
+      "sha256": "c0360d4a7151116cddcd9deb9f7e4a1814d803127cc256683db374e6c5f1dab4"
+    },
+    {
+      "bytes": 3022,
+      "name": "trice_crates_card.schema.json",
+      "path": "schemas/trice_crates_card.schema.json",
+      "present": true,
+      "sha256": "7e4983eed4ff54a3ea94ccc1ba40bb1f44288d14df294ee03c6564ee7a9cf6e0"
+    },
+    {
+      "bytes": 1777,
+      "name": "trice_install_card.schema.json",
+      "path": "schemas/trice_install_card.schema.json",
+      "present": true,
+      "sha256": "cb61804bfe5085822d4cadba415eb9a6ef8a5441f97d5f4ab2670af3199b63fb"
+    },
+    {
+      "bytes": 2495,
+      "name": "trice_research_card.schema.json",
+      "path": "schemas/trice_research_card.schema.json",
+      "present": true,
+      "sha256": "63e578dbacc2461ff83c0407b13ed15b4f44b8f8cda9611602d77d89bfd212b9"
+    }
+  ],
+  "scope": "TRICE deterministic context-control evidence package",
+  "verdicts": {
+    "claim": {
+      "claim_allowed": false,
+      "claim_level": "smoke",
+      "errors": [],
+      "ok": true
+    },
+    "contract_card": {
+      "contract_level": "library_contract_locked",
+      "contract_score": 100,
+      "errors": [],
+      "ok": true
+    },
+    "design_card": {
+      "design_level": "smoke_design_observed",
+      "errors": [],
+      "ok": true
+    },
+    "evidence_bundle": {
+      "entry_count": 77,
+      "errors": [],
+      "ok": true
+    },
+    "install_card": {
+      "errors": [],
+      "install_level": "python_trice_install_ready",
+      "install_score": 90,
+      "ok": true
+    },
+    "paper_manifest": {
+      "errors": [],
+      "ok": true
+    },
+    "protocol_lock": {
+      "errors": [],
+      "ok": true,
+      "protocol_level": "smoke_protocol_locked"
+    },
+    "readiness": {
+      "errors": [],
+      "ok": true,
+      "readiness_level": "smoke_ready"
+    },
+    "remote_smoke_bundle": {
+      "entry_count": 17,
+      "errors": [],
+      "ok": true
+    },
+    "remote_smoke_claim": {
+      "claim_allowed": false,
+      "claim_level": "smoke",
+      "errors": [],
+      "ok": true
+    },
+    "reproduction_card": {
+      "claim_allowed": false,
+      "errors": [],
+      "ok": true,
+      "reproduction_level": "reviewer_replay_ready_smoke"
+    },
+    "research_card": {
+      "errors": [],
+      "ok": true,
+      "research_level": "research_basis_locked",
+      "research_score": 100,
+      "source_count": 165
+    }
+  }
+}

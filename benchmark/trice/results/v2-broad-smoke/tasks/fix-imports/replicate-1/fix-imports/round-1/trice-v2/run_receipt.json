@@ -50,14 +50,18 @@
     "TRICE_COMPRESSED_CONTEXT_SHA256",
     "TRICE_CONDITION",
     "TRICE_CONTEXT_MODE",
+    "TRICE_CONTEXT_PATH",
     "TRICE_INPUT_TOKENS",
     "TRICE_POLICY_ACTION_COUNTS_JSON",
+    "TRICE_POLICY_PATH",
     "TRICE_POLICY_SHA256",
     "TRICE_POLICY_TOKENS",
     "TRICE_PROJECTED_INPUT_SAVINGS_PCT",
     "TRICE_PROMPT",
     "TRICE_REALIZED_BUDGET_RATIO",
     "TRICE_TASK_ID",
+    "TRICE_TRACE_PATH",
+    "TRICE_VERIFY_CMD_JSON",
     "TRICE_WORKSPACE"
   ],
   "schema_version": "trice-run-receipt/v1",
@@ -76,6 +80,19 @@
     "compressed_context_sha256": "6158daa64e0759e491987533e738a93fd1f3f008ffd75e2f206bcbd287ce0f65",
     "condition": "trice-v2",
     "context_mode": "trice_policy",
+    "decision_trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\trice-v2\\decision_trace.json",
+    "decision_trace_sha256": "35bf207a333fc29237149da7e6129364c6a6e0fd1e6b3140fe7b6dc4c9b9579a",
+    "evidence_recall": {
+      "evidence_recall": 1.0,
+      "missing": [],
+      "obligation_count": 3,
+      "obligation_tokens": 168,
+      "passed": true,
+      "recalled_count": 3,
+      "recalled_tokens": 168,
+      "required_min": 0.95,
+      "schema_version": "trice-evidence-recall/v1"
+    },
     "input_tokens": 275,
     "policy_action_counts": {
       "anchor_prefix": 2,
@@ -87,7 +104,15 @@
     "policy_tokens": 275,
     "projected_input_savings_pct": 84.2,
     "realized_budget_ratio": 0.158046,
-    "schema_version": "trice-context-envelope/v1"
+    "schema_version": "trice-context-envelope/v1",
+    "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\fix-imports\\replicate-1\\fix-imports\\round-1\\trice-v2\\decision_trace.json",
+    "verify_cmd": [
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "--tb=short"
+    ]
   },
   "workspace_after_sha256": "7344ebbb6644f48654560ea58f84f72eaa5ed839a752ef8c6237306194932785",
   "workspace_before_sha256": "be4f4bfd3755f89e5a968b5c2024bd62940335c6be34df2de6f13a3b21a80da4"

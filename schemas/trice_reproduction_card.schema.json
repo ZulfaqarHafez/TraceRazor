@@ -1,0 +1,82 @@
+{
+  "$id": "https://tracerazor.dev/schemas/trice_reproduction_card.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "TRICE reproduction card",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "reproduction_level",
+    "reproduction_score",
+    "claim_allowed",
+    "python_executable",
+    "inputs",
+    "commands",
+    "checks",
+    "verdicts",
+    "research_basis",
+    "next_actions",
+    "reproduction_card_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "trice-reproduction-card/v1"
+    },
+    "reproduction_level": {
+      "enum": ["not_reproducible", "partial_reproduction_packet", "reviewer_replay_ready_smoke"]
+    },
+    "reproduction_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "claim_allowed": {
+      "type": "boolean"
+    },
+    "python_executable": {
+      "type": "string",
+      "minLength": 1
+    },
+    "inputs": {
+      "type": "object"
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "command", "purpose"],
+        "properties": {
+          "name": { "type": "string" },
+          "command": { "type": "string" },
+          "purpose": { "type": "string" }
+        }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "passed", "observed", "required"],
+        "properties": {
+          "name": { "type": "string" },
+          "passed": { "type": "boolean" }
+        }
+      }
+    },
+    "verdicts": {
+      "type": "object"
+    },
+    "research_basis": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "next_actions": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "reproduction_card_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

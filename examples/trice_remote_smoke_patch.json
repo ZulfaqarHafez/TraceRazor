@@ -1,0 +1,17 @@
+{
+  "allow_test_edits": false,
+  "edits": [
+    {
+      "new": "return number + 2",
+      "old": "return number + 1",
+      "op": "replace",
+      "path": "src/sample/simple.py"
+    }
+  ],
+  "metadata": {
+    "claim_scope": "remote-git smoke evidence, not S-tier evidence",
+    "source_repo": "https://github.com/pypa/sampleproject",
+    "task_kind": "objective source repair on locked public Git checkout"
+  },
+  "name": "trice-remote-smoke-sample-add-two"
+}

@@ -23,9 +23,18 @@ from reportlab.platypus import (
     TableStyle,
 )
 
+from .artifact import build_artifact_card, write_artifact_outputs
 from .claim import build_claim_card, render_claim_card_tex, write_claim_outputs
+from .contract import build_contract_card, render_contract_tex, write_contract_outputs
+from .crates import build_crates_card, write_crates_outputs
+from .design import build_design_card, render_design_tex, write_design_outputs
 from .evidence import build_manifest, write_manifest
+from .install import build_install_card, render_install_tex, write_install_outputs
+from .protocol import build_protocol_lock, render_protocol_tex, write_protocol_outputs
 from .readiness import build_suite_readiness, render_readiness_tex, write_readiness_outputs
+from .release_evidence import build_release_evidence_card, write_release_evidence_outputs
+from .reproduction import build_reproduction_card, write_reproduction_outputs
+from .research import build_research_card, render_research_tex, write_research_outputs
 from .stats import claim_gate_from_rounds
 
 REPO = Path(__file__).resolve().parents[2]
@@ -35,6 +44,9 @@ DEFAULT_SUITE_BUNDLE = REPO / "benchmark" / "trice" / "results" / "v2-suite" / "
 DEFAULT_BROAD_SUITE_RESULTS = REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_suite_results.json"
 DEFAULT_BROAD_SUITE_MANIFEST = REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_suite_evidence_manifest.json"
 DEFAULT_BROAD_SUITE_BUNDLE = REPO / "benchmark" / "trice" / "results" / "v2-broad-smoke" / "trice_broad_smoke_evidence.trice.zip"
+DEFAULT_REMOTE_SUITE_RESULTS = REPO / "benchmark" / "trice" / "results" / "v2-remote-smoke" / "trice_suite_results.json"
+DEFAULT_REMOTE_SUITE_MANIFEST = REPO / "benchmark" / "trice" / "results" / "v2-remote-smoke" / "trice_suite_evidence_manifest.json"
+DEFAULT_REMOTE_SUITE_BUNDLE = REPO / "benchmark" / "trice" / "results" / "v2-remote-smoke" / "trice_remote_smoke_evidence.trice.zip"
 DEFAULT_READINESS_MANIFEST = REPO / "examples" / "trice_suite_bundled_live.json"
 DEFAULT_OUT_DIR = REPO / "paper"
 DEFAULT_DOCS_DIR = REPO / "docs"
@@ -69,6 +81,22 @@ REFERENCES = [
     ("promptcache2023", "Prompt Cache: Modular Attention Reuse for Low-Latency Inference", "https://arxiv.org/abs/2311.04934"),
     ("kvflow2025", "KVFlow: Efficient Serving for LLM Agent Workflows", "https://arxiv.org/abs/2507.07400"),
     ("agentdiet2025", "AgentDiet: Efficient Context Pruning for LLM Agents", "https://hf.co/papers/2509.23586"),
+    ("slsa", "Supply-chain Levels for Software Artifacts Specification", "https://slsa.dev/spec/"),
+    ("openssfscorecard", "OpenSSF Scorecard", "https://scorecard.dev/"),
+    ("pypitrust", "PyPI Trusted Publishing", "https://docs.pypi.org/trusted-publishers/"),
+    ("pypiattest", "PyPI Digital Attestations", "https://docs.pypi.org/attestations/"),
+    ("intoto", "in-toto Attestations", "https://in-toto.io/"),
+    ("cyclonedx", "CycloneDX Specification", "https://cyclonedx.org/specification/overview/"),
+    ("mlperfpolicies", "MLPerf Policies and Submission Rules", "https://docs.mlcommons.org/inference/policies/"),
+    ("pypasample", "PyPA Sample Project", "https://github.com/pypa/sampleproject"),
+    ("semver", "Semantic Versioning 2.0.0", "https://semver.org/"),
+    ("pyversion", "Python Version Specifiers", "https://packaging.python.org/en/latest/specifications/version-specifiers/"),
+    ("jsonschema2020", "JSON Schema Draft 2020-12", "https://json-schema.org/draft/2020-12"),
+    ("reprobuilds", "Reproducible Builds", "https://reproducible-builds.org/"),
+    ("cargoPublishing", "Cargo Publishing Reference", "https://doc.rust-lang.org/cargo/reference/publishing.html"),
+    ("pypapackaging", "Python Packaging User Guide: Packaging Python Projects", "https://packaging.python.org/tutorials/packaging-projects/"),
+    ("pipinstall", "pip install Command Reference", "https://pip.pypa.io/en/stable/cli/pip_install/"),
+    ("wheelpep", "PEP 427: The Wheel Binary Package Format", "https://peps.python.org/pep-0427/"),
     ("react2022", "ReAct: Synergizing Reasoning and Acting in Language Models", "https://arxiv.org/abs/2210.03629"),
     ("reflexion2023", "Reflexion: Language Agents with Verbal Reinforcement Learning", "https://arxiv.org/abs/2303.11366"),
     ("sweevo2025", "SWE-EVO: Benchmarking Coding Agents in Long-Horizon Software Evolution", "https://arxiv.org/html/2512.18470v6"),
@@ -162,6 +190,18 @@ def _suite_tex_summary(suite: dict | None, missing_text: str) -> str:
     )
 
 
+def _tex(text: str) -> str:
+    return (
+        text.replace("\\", "\\textbackslash{}")
+        .replace("_", "\\_")
+        .replace("%", "\\%")
+        .replace("&", "\\&")
+        .replace("#", "\\#")
+        .replace("{", "\\{")
+        .replace("}", "\\}")
+    )
+
+
 def render_tex(
     rows: list[dict],
     gate: dict,
@@ -169,8 +209,17 @@ def render_tex(
     bundle: dict | None = None,
     broad_suite: dict | None = None,
     broad_bundle: dict | None = None,
+    remote_suite: dict | None = None,
+    remote_bundle: dict | None = None,
+    remote_claim_card: dict | None = None,
     claim_card: dict | None = None,
     readiness_card: dict | None = None,
+    protocol_card: dict | None = None,
+    design_card: dict | None = None,
+    contract_card: dict | None = None,
+    crates_card: dict | None = None,
+    install_card: dict | None = None,
+    research_card: dict | None = None,
 ) -> str:
     avg = mean(r["savings"] for r in rows)
     ci = gate["savings_ci"]
@@ -206,6 +255,26 @@ def render_tex(
         else (
             f"The broad-smoke bundle \\texttt{{{broad_bundle['name']}}} contains "
             f"{broad_bundle['entry_count']} hashed entries."
+        )
+    )
+    remote_suite_text = _suite_tex_summary(remote_suite, "No remote-git smoke suite artifact was available during paper generation.")
+    remote_bundle_text = (
+        "No remote-git smoke bundle artifact was available during paper generation."
+        if remote_bundle is None
+        else (
+            f"The remote-git smoke bundle \\texttt{{{remote_bundle['name']}}} contains "
+            f"{remote_bundle['entry_count']} hashed entries."
+        )
+    )
+    remote_claim_text = (
+        "No remote-git smoke claim card was available during paper generation."
+        if remote_claim_card is None
+        else (
+            f"The remote-git smoke claim card reports claim level "
+            f"\\texttt{{{remote_claim_card['claim_level']}}}, claim allowed "
+            f"{'yes' if remote_claim_card['claim_allowed'] else 'no'}, and determinism score "
+            f"{remote_claim_card['determinism_contract_score']}/100. "
+            "It is a verified smoke artifact, not an S-tier claim."
         )
     )
     source = suite.get("source") if suite else None
@@ -253,8 +322,77 @@ def render_tex(
             "pagedattention2023",
         )
     )
+    protocol_tex = render_protocol_tex(protocol_card) if protocol_card else "\\section{Protocol Lock}\nNo protocol-lock artifact was available during paper generation.\n"
+    design_tex = render_design_tex(design_card) if design_card else "\\section{Statistical Design Card}\nNo design-card artifact was available during paper generation.\n"
     claim_tex = render_claim_card_tex(claim_card) if claim_card else "\\section{Deterministic Claim Card}\nNo claim-card artifact was available during paper generation.\n"
     readiness_tex = render_readiness_tex(readiness_card) if readiness_card else "\\section{Suite Readiness Preflight}\nNo readiness artifact was available during paper generation.\n"
+    contract_tex = render_contract_tex(contract_card) if contract_card else "\\section{Public Contract Card}\nNo contract-card artifact was available during paper generation.\n"
+    install_tex = render_install_tex(install_card) if install_card else "\\section{Installability Card}\nNo installability artifact was available during paper generation.\n"
+    research_tex = render_research_tex(research_card) if research_card else "\\section{Research Card}\nNo research-card artifact was available during paper generation.\n"
+    crates_level_tex = str((crates_card or {}).get("crates_card_level") or "").replace("_", "\\_")
+    reproduction_protocol_tex = (
+        "\\section{Reviewer Reproduction Packet}\n"
+        "TRICE emits a separate reproduction card after the paper manifest is written. "
+        "The card binds readiness, protocol, design, claim, bundle, paper-manifest, "
+        "and paper-result inputs with SHA-256 receipts and lists the exact verifier "
+        "commands a reviewer can run. It is intentionally outside the paper manifest "
+        "to avoid a hash cycle; the final artifact card binds both the paper manifest "
+        "and reproduction card.\n"
+    )
+    release_card_tex = (
+        "\\section{Release Trust Card}\n"
+        "TRICE treats distribution readiness as a separate machine-readable "
+        "contract from benchmark evidence. The release card snapshots "
+        "\\texttt{tracerazor-trice doctor}, binds the artifact, reproduction, "
+        "and contract cards, records package metadata, and refuses \\texttt{public\\_release\\_ready} "
+        "until PyPI, piwheels, crates.io, GitHub tag alignment, GitHub "
+        "Actions, and OpenSSF Scorecard are green. This follows supply-chain guidance that provenance, "
+        "public project health, trusted publishing, attestations, SBOMs, and "
+        "checksums should be release artifacts rather than prose-only claims "
+        "\\cite{slsa,openssfscorecard,pypitrust,pypiattest,intoto,cyclonedx}. "
+        "The separate \\texttt{tracerazor-trice release-evidence} packet binds "
+        "the wheel, source distribution, CLI binary, installability card, proof cards, paper artifacts, "
+        "evidence bundles, SHA-256 checksums, CycloneDX-style Python and Cargo "
+        "SBOMs, and an in-toto/SLSA-shaped provenance statement. The GitHub "
+        "release workflow then generates release-evidence sidecars and hosted "
+        "artifact attestations for release assets produced by Actions. A separate "
+        "\\texttt{tracerazor-trice integrity} card binds offline doctor output, "
+            "proof-card verifiers, release evidence, the crates publish card, "
+            "the research card, the paper manifest, schemas, "
+        "and workflow hooks as one top-level proof graph. The "
+        "contract card follows SemVer, Python package-versioning, JSON Schema, "
+        "and reproducible-input practice by declaring the API boundary before "
+        "release claims \\cite{semver,pyversion,jsonschema2020,reprobuilds}.\n"
+    )
+    crates_card_tex = (
+        "\\section{Crates Publish Card}\n"
+        "No crates publish card was available during paper generation.\n"
+        if crates_card is None
+        else (
+            "\\section{Crates Publish Card}\n"
+            f"The generated crates card reports level \\texttt{{{crates_level_tex}}} "
+            f"and score {crates_card['crates_publish_score']}/100. It binds Cargo manifests, "
+            "local dependency order, crates.io registry status, and README cargo-install honesty. "
+            f"At generation time, \\texttt{{cargo\\_install\\_claim\\_allowed}} was "
+            f"{'true' if crates_card['cargo_install_claim_allowed'] else 'false'}, "
+            "so Rust install claims remain blocked until the final CLI crate is public "
+            "\\cite{cargoPublishing}.\n"
+        )
+    )
+    install_summary_tex = (
+        "\\section{Clean Wheel Installability}\n"
+        "No installability card was available during paper generation.\n"
+        if install_card is None
+        else (
+            "\\section{Clean Wheel Installability}\n"
+            f"The generated installability card reports level \\texttt{{{_tex(str(install_card['install_level']))}}} "
+            f"and score {install_card['install_score']}/100. It creates a clean virtual environment, "
+            "installs the built wheel with \\texttt{pip install --no-deps}, imports packaged TRICE schemas "
+            "and public APIs, and runs the installed \\texttt{tracerazor-trice} console script. "
+            "The full \\texttt{tracerazor} Rust CLI check is kept separate so generic wheels do not overclaim "
+            "platform-bundled binary readiness \\cite{pypapackaging,pipinstall,wheelpep}.\n"
+        )
+    )
     return dedent(
         rf"""
         \documentclass[10pt]{{article}}
@@ -352,15 +490,42 @@ def render_tex(
         {"passed" if gate["smoke_gate_passed"] else "failed"}. Broad claim
         allowed: {"yes" if gate["broad_claim_allowed"] else "no"}.
 
+        {readiness_tex}
+
+        {protocol_tex}
+
+        {design_tex}
+
         {claim_tex}
 
-        {readiness_tex}
+        {reproduction_protocol_tex}
+
+        {contract_tex}
+
+        {install_tex}
+
+        {research_tex}
+
+        {release_card_tex}
+
+        {crates_card_tex}
+
+        {install_summary_tex}
 
         \section{{Replicated Suite Evidence}}
         {suite_text}
 
         \section{{Broad Smoke Evidence}}
         {broad_suite_text} {broad_bundle_text}
+
+        \section{{Remote-Git Smoke Evidence}}
+        {remote_suite_text} {remote_bundle_text} {remote_claim_text}
+        The remote smoke fixture clones the locked public PyPA sample project
+        revision, records the resolved commit and repository tree digest, applies
+        a declarative source-only patch, and verifies the objective behavior.
+        This follows benchmark-submission practice that inputs, revisions, and
+        rules must be fixed before a claim is interpreted
+        \cite{{mlperfpolicies,pypasample}}.
 
         \section{{Portable Artifact Bundle}}
         {bundle_text}
@@ -455,8 +620,17 @@ def build_pdf(
     bundle: dict | None = None,
     broad_suite: dict | None = None,
     broad_bundle: dict | None = None,
+    remote_suite: dict | None = None,
+    remote_bundle: dict | None = None,
+    remote_claim_card: dict | None = None,
     claim_card: dict | None = None,
     readiness_card: dict | None = None,
+    protocol_card: dict | None = None,
+    design_card: dict | None = None,
+    contract_card: dict | None = None,
+    crates_card: dict | None = None,
+    install_card: dict | None = None,
+    research_card: dict | None = None,
 ) -> None:
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="Small", parent=styles["BodyText"], fontSize=8.5, leading=11))
@@ -526,6 +700,99 @@ def build_pdf(
             ),
             styles["BodyText"],
         ),
+        Paragraph("Protocol Lock", styles["Heading2"]),
+        Paragraph(
+            "No protocol-lock artifact was available during paper generation."
+            if protocol_card is None
+            else (
+                f"The generated protocol lock reports level {protocol_card['protocol_level']}, "
+                f"claim allowed by protocol {'yes' if protocol_card['claim_allowed_by_protocol'] else 'no'}, "
+                f"and protocol score {protocol_card['protocol_score']}/100. It pre-registers the primary metric, "
+                "pass-preservation guardrail, clustered confidence rule, required task clusters, replicates, "
+                "locked sources, adapter profiles, receipts, claim card, and artifact card before outcome evidence."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph("Statistical Design Card", styles["Heading2"]),
+        Paragraph(
+            "No design-card artifact was available during paper generation."
+            if design_card is None
+            else (
+                f"The generated design card reports level {design_card['design_level']}, "
+                f"claim-design ready {'yes' if design_card['claim_design_ready'] else 'no'}, "
+                f"and design score {design_card['design_score']}/100. It uses task-cluster means to project "
+                "whether the locked claim sample size would clear the savings target while preserving the "
+                "non-claim boundary when held-out design requirements are missing."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph("Reviewer Reproduction Packet", styles["Heading2"]),
+        Paragraph(
+            "TRICE emits a separate reproduction card after the paper manifest is written. "
+            "The card binds readiness, protocol, design, claim, bundle, paper-manifest, and paper-result inputs "
+            "with SHA-256 receipts and lists exact verifier commands. It is intentionally outside the paper manifest "
+            "to avoid a hash cycle; the final artifact card binds both the paper manifest and reproduction card.",
+            styles["BodyText"],
+        ),
+        Paragraph("Public Contract Card", styles["Heading2"]),
+        Paragraph(
+            "No contract-card artifact was available during paper generation."
+            if contract_card is None
+            else (
+                f"The generated contract card reports level {contract_card['contract_level']} "
+                f"and score {contract_card['contract_score']}/100. It binds SemVer, public imports, "
+                "tracerazor-trice commands, shipped schemas, examples, docs, and package metadata so release "
+                "compatibility claims have a declared API boundary."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph("Release Trust Card", styles["Heading2"]),
+        Paragraph(
+            "TRICE treats distribution readiness as a separate machine-readable contract from benchmark evidence. "
+            "The release card snapshots tracerazor-trice doctor, binds the artifact, reproduction, and contract cards, records package metadata, "
+            "and refuses public_release_ready until PyPI, piwheels, crates.io, GitHub tag alignment, GitHub Actions, and OpenSSF Scorecard are green. "
+            "This follows supply-chain guidance that provenance, public project health, trusted publishing, attestations, SBOMs, and checksums should be release artifacts rather than prose-only claims. "
+            "The separate tracerazor-trice release-evidence packet binds the wheel, source distribution, CLI binary, installability card, proof cards, paper artifacts, evidence bundles, SHA-256 checksums, CycloneDX-style Python and Cargo SBOMs, and an in-toto/SLSA-shaped provenance statement. The GitHub release workflow then generates release-evidence sidecars and hosted artifact attestations for release assets produced by Actions. A separate tracerazor-trice integrity card binds offline doctor output, proof-card verifiers, release evidence, the crates publish card, installability card, research card, the paper manifest, schemas, and workflow hooks as one top-level proof graph.",
+            styles["BodyText"],
+        ),
+        Paragraph("Clean Wheel Installability", styles["Heading2"]),
+        Paragraph(
+            "No installability card was available during paper generation."
+            if install_card is None
+            else (
+                f"The generated installability card reports level {install_card['install_level']} "
+                f"and score {install_card['install_score']}/100. It creates a clean virtual environment, installs the built wheel with pip install --no-deps, "
+                "imports packaged schemas and public APIs, and runs the installed tracerazor-trice console script. "
+                "The full tracerazor Rust CLI check remains separate so generic wheels do not overclaim platform-bundled binary readiness."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph("Research Card", styles["Heading2"]),
+        Paragraph(
+            "No research-card artifact was available during paper generation."
+            if research_card is None
+            else (
+                f"The generated research card reports level {research_card['research_level']} "
+                f"and score {research_card['research_score']}/100. It binds "
+                f"{research_card['source_count']} ledgered sources, {research_card['unique_source_count']} unique URLs, "
+                "category coverage, row hashes, and the source ledger hash. This proves the paper basis is reviewable, "
+                "not that the held-out S-tier outcome gate has passed."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph("Crates Publish Card", styles["Heading2"]),
+        Paragraph(
+            "No crates publish card was available during paper generation."
+            if crates_card is None
+            else (
+                f"The generated crates card reports level {crates_card['crates_card_level']} "
+                f"and score {crates_card['crates_publish_score']}/100. It binds Cargo manifests, "
+                "local dependency order, crates.io registry status, and README cargo-install honesty. "
+                f"cargo_install_claim_allowed is {str(bool(crates_card['cargo_install_claim_allowed'])).lower()}, "
+                "so Rust install wording remains blocked until the final CLI crate is public."
+            ),
+            styles["BodyText"],
+        ),
         Paragraph("Replicated Suite Evidence", styles["Heading2"]),
         Paragraph(
             "No suite artifact was available during paper generation."
@@ -571,6 +838,37 @@ def build_pdf(
             else f"The broad-smoke bundle {broad_bundle['name']} contains {broad_bundle['entry_count']} hashed entries.",
             styles["BodyText"],
         ),
+        Paragraph("Remote-Git Smoke Evidence", styles["Heading2"]),
+        Paragraph(
+            "No remote-git smoke suite artifact was available during paper generation."
+            if remote_suite is None
+            else (
+                f"The remote-git smoke suite {remote_suite['name']} contains {remote_suite['run_count']} live run(s) "
+                f"across {remote_suite['task_clusters']} locked public Git task cluster(s). Mean input-token savings is "
+                f"{100*remote_suite['mean_savings']:.1f}% with clustered-by-task 95% CI "
+                f"{100*remote_suite['cluster_low']:.1f}% to {100*remote_suite['cluster_high']:.1f}%; "
+                f"pass regressions {remote_suite['pass_regressions']}. "
+                f"S-tier gate: {'passed' if (remote_suite.get('s_tier_gate') or {}).get('passed') else 'not passed'}."
+            ),
+            styles["BodyText"],
+        ),
+        Paragraph(
+            "No remote-git smoke bundle artifact was available during paper generation."
+            if remote_bundle is None
+            else f"The remote-git smoke bundle {remote_bundle['name']} contains {remote_bundle['entry_count']} hashed entries.",
+            styles["BodyText"],
+        ),
+        Paragraph(
+            "No remote-git smoke claim card was available during paper generation."
+            if remote_claim_card is None
+            else (
+                f"The remote-git smoke claim card reports level {remote_claim_card['claim_level']}, "
+                f"claim allowed {'yes' if remote_claim_card['claim_allowed'] else 'no'}, "
+                f"and determinism score {remote_claim_card['determinism_contract_score']}/100. "
+                "It is a verified smoke artifact, not an S-tier claim."
+            ),
+            styles["BodyText"],
+        ),
         Paragraph("Source Provenance", styles["Heading2"]),
         Paragraph(
             "No source fingerprint artifact was available during paper generation."
@@ -611,6 +909,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--broad-suite-results", type=Path, default=DEFAULT_BROAD_SUITE_RESULTS)
     ap.add_argument("--broad-suite-manifest", type=Path, default=DEFAULT_BROAD_SUITE_MANIFEST)
     ap.add_argument("--broad-suite-bundle", type=Path, default=DEFAULT_BROAD_SUITE_BUNDLE)
+    ap.add_argument("--remote-suite-results", type=Path, default=DEFAULT_REMOTE_SUITE_RESULTS)
+    ap.add_argument("--remote-suite-manifest", type=Path, default=DEFAULT_REMOTE_SUITE_MANIFEST)
+    ap.add_argument("--remote-suite-bundle", type=Path, default=DEFAULT_REMOTE_SUITE_BUNDLE)
     ap.add_argument("--readiness-manifest", type=Path, default=DEFAULT_READINESS_MANIFEST)
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--docs-dir", type=Path, default=DEFAULT_DOCS_DIR)
@@ -622,8 +923,24 @@ def main(argv: list[str] | None = None) -> int:
     bundle = load_bundle_summary(args.suite_bundle)
     broad_suite = load_suite_summary(args.broad_suite_results)
     broad_bundle = load_bundle_summary(args.broad_suite_bundle)
+    remote_suite = load_suite_summary(args.remote_suite_results)
+    remote_bundle = load_bundle_summary(args.remote_suite_bundle)
     claim_card = build_claim_card(args.broad_suite_results, manifest_path=args.broad_suite_manifest)
+    remote_claim_card = (
+        build_claim_card(
+            args.remote_suite_results,
+            manifest_path=args.remote_suite_manifest,
+            scope="remote-git smoke path on one locked public Python repository",
+        )
+        if args.remote_suite_results.is_file()
+        else None
+    )
     readiness_card = build_suite_readiness(args.readiness_manifest)
+    protocol_card = build_protocol_lock(args.readiness_manifest)
+    contract_card = build_contract_card()
+    crates_card = build_crates_card()
+    install_card = build_install_card()
+    research_card = build_research_card()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     args.docs_dir.mkdir(parents=True, exist_ok=True)
     tex_path = args.out_dir / "trice_v3_research_paper.tex"
@@ -635,29 +952,116 @@ def main(argv: list[str] | None = None) -> int:
     paper_broad_bundle_path = args.out_dir / "trice_broad_smoke_evidence.trice.zip"
     paper_claim_path = args.out_dir / "trice_claim_card.json"
     docs_claim_path = args.docs_dir / "trice_claim_card.json"
+    paper_remote_claim_path = args.out_dir / "trice_remote_smoke_claim_card.json"
+    docs_remote_claim_path = args.docs_dir / "trice_remote_smoke_claim_card.json"
     paper_readiness_path = args.out_dir / "trice_suite_readiness.json"
     docs_readiness_path = args.docs_dir / "trice_suite_readiness.json"
+    paper_protocol_path = args.out_dir / "trice_protocol_lock.json"
+    docs_protocol_path = args.docs_dir / "trice_protocol_lock.json"
+    paper_design_path = args.out_dir / "trice_design_card.json"
+    docs_design_path = args.docs_dir / "trice_design_card.json"
+    paper_reproduction_path = args.out_dir / "trice_reproduction_card.json"
+    docs_reproduction_path = args.docs_dir / "trice_reproduction_card.json"
+    paper_contract_path = args.out_dir / "trice_contract_card.json"
+    docs_contract_path = args.docs_dir / "trice_contract_card.json"
+    paper_artifact_path = args.out_dir / "trice_artifact_card.json"
+    docs_artifact_path = args.docs_dir / "trice_artifact_card.json"
+    paper_release_evidence_path = args.out_dir / "trice_release_evidence.json"
+    docs_release_evidence_path = args.docs_dir / "trice_release_evidence.json"
+    paper_crates_path = args.out_dir / "trice_crates_card.json"
+    docs_crates_path = args.docs_dir / "trice_crates_card.json"
+    paper_install_path = args.out_dir / "trice_install_card.json"
+    docs_install_path = args.docs_dir / "trice_install_card.json"
+    paper_research_path = args.out_dir / "trice_research_card.json"
+    docs_research_path = args.docs_dir / "trice_research_card.json"
     manifest_path = args.out_dir / "trice_v3_research_manifest.json"
 
-    tex_path.write_text(render_tex(rows, gate, suite, bundle, broad_suite, broad_bundle, claim_card, readiness_card), encoding="utf-8")
+    paper_protocol_outputs = write_protocol_outputs(protocol_card, paper_protocol_path)
+    write_protocol_outputs(protocol_card, docs_protocol_path)
+    design_card = build_design_card(docs_protocol_path, suite_result_path=args.broad_suite_results)
+    tex_path.write_text(
+        render_tex(
+            rows,
+            gate,
+            suite,
+            bundle,
+            broad_suite,
+            broad_bundle,
+            remote_suite,
+            remote_bundle,
+            remote_claim_card,
+            claim_card,
+            readiness_card,
+            protocol_card,
+            design_card,
+            contract_card,
+            crates_card,
+            install_card,
+            research_card,
+        ),
+        encoding="utf-8",
+    )
     bib_path.write_text(render_bib(), encoding="utf-8")
     svg = render_svg(rows, gate)
     docs_svg_path.write_text(svg, encoding="utf-8")
     paper_svg_path.write_text(svg, encoding="utf-8")
-    build_pdf(rows, gate, pdf_path, suite, bundle, broad_suite, broad_bundle, claim_card, readiness_card)
+    build_pdf(
+        rows,
+        gate,
+        pdf_path,
+        suite,
+        bundle,
+        broad_suite,
+        broad_bundle,
+        remote_suite,
+        remote_bundle,
+        remote_claim_card,
+        claim_card,
+        readiness_card,
+        protocol_card,
+        design_card,
+        contract_card,
+        crates_card,
+        install_card,
+        research_card,
+    )
     artifact_paths = [tex_path, bib_path, pdf_path, paper_svg_path]
     paper_claim_outputs = write_claim_outputs(claim_card, paper_claim_path)
     write_claim_outputs(claim_card, docs_claim_path)
     artifact_paths.extend([Path(path) for path in paper_claim_outputs.values()])
+    if remote_claim_card is not None:
+        paper_remote_claim_outputs = write_claim_outputs(remote_claim_card, paper_remote_claim_path)
+        write_claim_outputs(remote_claim_card, docs_remote_claim_path)
+        artifact_paths.extend([Path(path) for path in paper_remote_claim_outputs.values()])
     paper_readiness_outputs = write_readiness_outputs(readiness_card, paper_readiness_path)
     write_readiness_outputs(readiness_card, docs_readiness_path)
     artifact_paths.extend([Path(path) for path in paper_readiness_outputs.values()])
+    artifact_paths.extend([Path(path) for path in paper_protocol_outputs.values()])
+    paper_design_outputs = write_design_outputs(design_card, paper_design_path)
+    write_design_outputs(design_card, docs_design_path)
+    artifact_paths.extend([Path(path) for path in paper_design_outputs.values()])
+    paper_contract_outputs = write_contract_outputs(contract_card, paper_contract_path)
+    write_contract_outputs(contract_card, docs_contract_path)
+    artifact_paths.extend([Path(path) for path in paper_contract_outputs.values()])
+    paper_crates_outputs = write_crates_outputs(crates_card, paper_crates_path)
+    write_crates_outputs(crates_card, docs_crates_path)
+    artifact_paths.extend([Path(path) for path in paper_crates_outputs.values()])
+    paper_install_outputs = write_install_outputs(install_card, paper_install_path)
+    write_install_outputs(install_card, docs_install_path)
+    artifact_paths.extend([Path(path) for path in paper_install_outputs.values()])
+    paper_research_outputs = write_research_outputs(research_card, paper_research_path)
+    write_research_outputs(research_card, docs_research_path)
+    artifact_paths.extend([Path(path) for path in paper_research_outputs.values()])
     if args.suite_bundle.is_file():
         shutil.copy2(args.suite_bundle, paper_bundle_path)
         artifact_paths.append(paper_bundle_path)
     if args.broad_suite_bundle.is_file():
         shutil.copy2(args.broad_suite_bundle, paper_broad_bundle_path)
         artifact_paths.append(paper_broad_bundle_path)
+    paper_remote_bundle_path = args.out_dir / "trice_remote_smoke_evidence.trice.zip"
+    if args.remote_suite_bundle.is_file():
+        shutil.copy2(args.remote_suite_bundle, paper_remote_bundle_path)
+        artifact_paths.append(paper_remote_bundle_path)
 
     manifest = build_manifest(
         json.loads(args.results.read_text(encoding="utf-8")),
@@ -668,6 +1072,26 @@ def main(argv: list[str] | None = None) -> int:
         base_dir=args.out_dir,
     )
     write_manifest(manifest, manifest_path)
+    reproduction_card = build_reproduction_card(
+        readiness_path=docs_readiness_path,
+        suite_manifest_path=args.readiness_manifest,
+        protocol_path=docs_protocol_path,
+        design_path=docs_design_path,
+        broad_result_path=args.broad_suite_results,
+        broad_manifest_path=args.broad_suite_manifest,
+        broad_bundle_path=args.broad_suite_bundle,
+        claim_path=docs_claim_path,
+        paper_manifest_path=manifest_path,
+        paper_result_path=args.results,
+    )
+    write_reproduction_outputs(reproduction_card, paper_reproduction_path)
+    write_reproduction_outputs(reproduction_card, docs_reproduction_path)
+    artifact_card = build_artifact_card(reproduction_path=docs_reproduction_path, contract_path=docs_contract_path)
+    write_artifact_outputs(artifact_card, paper_artifact_path)
+    write_artifact_outputs(artifact_card, docs_artifact_path)
+    release_evidence_card = build_release_evidence_card(sidecar_stem=docs_release_evidence_path.stem)
+    write_release_evidence_outputs(release_evidence_card, paper_release_evidence_path)
+    write_release_evidence_outputs(release_evidence_card, docs_release_evidence_path)
     print(f"tex: {tex_path}")
     print(f"pdf: {pdf_path}")
     print(f"svg: {docs_svg_path}")

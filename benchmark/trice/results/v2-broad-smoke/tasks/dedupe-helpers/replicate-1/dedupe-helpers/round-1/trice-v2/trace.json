@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "trice-v2",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "2b4a68feef2836896070eb2792c738eac59edfda5db04eb70c2509b5e5a25f7e",
+    "run_receipt_sha256": "5fe1d44b103664a68f37d444cbf927c7ee1874b27051a7f7e0d0e84da57079d4",
     "task": "Deduplicate helper logic without editing tests.",
     "task_id": "dedupe-helpers"
   },

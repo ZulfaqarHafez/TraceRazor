@@ -1,0 +1,16 @@
+{
+  "allow_test_edits": false,
+  "budget_ratio": 0.4,
+  "lessons": [
+    "user requires live rollout evidence, not replay-only acceptance",
+    "replay is allowed only as a preflight, not as final proof",
+    "round 1: accepted 83% savings with pass preservation"
+  ],
+  "max_rounds": 3,
+  "pass_noninferiority_margin_pp": -2.0,
+  "prefer_receipts": true,
+  "require_live_rollout": true,
+  "rounds_seen": 1,
+  "target_savings": 0.6,
+  "user_id": "local"
+}

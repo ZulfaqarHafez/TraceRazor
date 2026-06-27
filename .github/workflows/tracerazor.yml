@@ -210,6 +210,61 @@ jobs:
           pip install pip-audit --quiet
           pip-audit || true   # advisory only until baseline is clean
 
+  trice-integrity:
+    name: TRICE integrity gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build release subjects
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install build
+          cargo build --release -p tracerazor
+          python -m build --sdist --wheel --no-isolation
+
+      - name: Generate runtime release evidence
+        run: |
+          python -m tracerazor.trice crates \
+            --offline \
+            --out docs/trice_crates_card.json \
+            --format tex
+          python -m tracerazor.trice verify-crates docs/trice_crates_card.json
+          python -m tracerazor.trice install \
+            --out docs/trice_install_card.json \
+            --dist-dir dist \
+            --format tex
+          python -m tracerazor.trice verify-install docs/trice_install_card.json
+          python -m tracerazor.trice research \
+            --out docs/trice_research_card.json \
+            --format tex
+          python -m tracerazor.trice verify-research docs/trice_research_card.json
+          python -m tracerazor.trice release-evidence \
+            --out /tmp/trice_release_evidence.json \
+            --dist-dir dist \
+            --cli-binary target/release/tracerazor \
+            --format tex
+          python -m tracerazor.trice verify-release-evidence /tmp/trice_release_evidence.json
+
+      - name: Verify TRICE proof graph integrity
+        run: |
+          python -m tracerazor.trice integrity \
+            --release-evidence /tmp/trice_release_evidence.json \
+            --crates docs/trice_crates_card.json \
+            --install docs/trice_install_card.json \
+            --research docs/trice_research_card.json \
+            --out /tmp/trice_integrity_card.json \
+            --format tex
+          python -m tracerazor.trice verify-integrity /tmp/trice_integrity_card.json
+
   # ── Version consistency: Cargo.toml vs pyproject.toml vs README ──────────────
   version-consistency:
     name: Version consistency

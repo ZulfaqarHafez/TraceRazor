@@ -1,0 +1,56 @@
+{
+  "adapter_name": "trice-remote-smoke-sample-add-two",
+  "adapter_type": "json_patch",
+  "agent_reported": null,
+  "allow_test_edits": false,
+  "changed_file_count": 1,
+  "changed_files": [
+    "src/sample/simple.py"
+  ],
+  "edit_count": 1,
+  "metadata": {
+    "claim_scope": "remote-git smoke evidence, not S-tier evidence",
+    "source_repo": "https://github.com/pypa/sampleproject",
+    "task_kind": "objective source repair on locked public Git checkout"
+  },
+  "prompt_sha256": "914c8932466e3dceb57725d15d3017a9b7909e38e394d3dbde58059639015515",
+  "schema_version": "trice-run-receipt/v1",
+  "task_id": "pypa-sampleproject-add-two",
+  "trice_context": {
+    "baseline_input_tokens": 1761,
+    "budget_exceeded": false,
+    "budget_ratio": 1.0,
+    "budget_tokens": null,
+    "compressed_context_path": null,
+    "compressed_context_sha256": null,
+    "condition": "baseline-full-context",
+    "context_mode": "full_context",
+    "decision_trace_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\baseline-full-context\\decision_trace.json",
+    "decision_trace_sha256": "2a26a656574f3d0471a7ae0aed5ada2a2e66c3080afee3c3b8f7decf66451e02",
+    "evidence_recall": {
+      "evidence_recall": 1.0,
+      "missing": [],
+      "obligation_count": 0,
+      "obligation_tokens": 0,
+      "passed": true,
+      "recalled_count": 0,
+      "recalled_tokens": 0,
+      "required_min": 0.95,
+      "schema_version": "trice-evidence-recall/v1"
+    },
+    "input_tokens": 1761,
+    "policy_action_counts": {},
+    "policy_path": null,
+    "policy_sha256": null,
+    "policy_tokens": null,
+    "projected_input_savings_pct": 0.0,
+    "realized_budget_ratio": 1.0,
+    "schema_version": "trice-context-envelope/v1",
+    "trace_path": "benchmark\\trice\\results\\v2-remote-smoke\\tasks\\pypa-sampleproject-add-two\\replicate-1\\pypa-sampleproject-add-two\\round-1\\baseline-full-context\\decision_trace.json",
+    "verify_cmd": [
+      "python",
+      "-c",
+      "import sys; sys.path.insert(0, 'src'); from sample.simple import add_one; assert add_one(1) == 3"
+    ]
+  }
+}

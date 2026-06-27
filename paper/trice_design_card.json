@@ -1,0 +1,146 @@
+{
+  "checks": [
+    {
+      "name": "protocol_verifies",
+      "observed": "smoke_protocol_locked",
+      "passed": true,
+      "required": "protocol lock verifies"
+    },
+    {
+      "name": "suite_result_schema",
+      "observed": "trice-suite-result/v1",
+      "passed": true,
+      "required": "trice-suite-result/v1"
+    },
+    {
+      "name": "primary_metric_locked",
+      "observed": "input_token_savings",
+      "passed": true,
+      "required": "input_token_savings"
+    },
+    {
+      "name": "observed_mean_above_target",
+      "observed": 0.81489,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "observed_clustered_ci_above_target",
+      "observed": 0.789866,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "zero_pass_regressions",
+      "observed": 0,
+      "passed": true,
+      "required": "0"
+    },
+    {
+      "name": "all_runs_accepted",
+      "observed": "6/6",
+      "passed": true,
+      "required": "all runs accepted"
+    },
+    {
+      "name": "pilot_task_clusters",
+      "observed": 6,
+      "passed": false,
+      "required": ">= 10"
+    },
+    {
+      "name": "claim_task_clusters",
+      "observed": 6,
+      "passed": false,
+      "required": ">= 50"
+    },
+    {
+      "name": "claim_replicates",
+      "observed": {
+        "csv-filter": 1,
+        "dedupe-helpers": 1,
+        "fix-imports": 1,
+        "fix-offby-one": 1,
+        "implement-median": 1,
+        "rename-api": 1
+      },
+      "passed": false,
+      "required": "each task >= 3"
+    },
+    {
+      "name": "projected_claim_ci_above_target",
+      "observed": 0.806114,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "protocol_claim_ready",
+      "observed": "smoke_protocol_locked",
+      "passed": false,
+      "required": "claim_protocol_ready"
+    }
+  ],
+  "claim_design_ready": false,
+  "design_card_sha256": "6ca949615d1ae14f31382719f3774a85ca93a13892728b965eb490abb15b0b25",
+  "design_level": "smoke_design_observed",
+  "design_score": 65,
+  "input_sha256": {
+    "protocol_lock": "877f06f9d5c312f5d9396fcc2bb3001122d27c91bdeb575236361c5d4c841d05",
+    "suite_result": "1622ffb36464e6e41cbadecd1c5ed6cceb678af89a2a5a5a3c999258559c3f2d"
+  },
+  "next_actions": [
+    "Run or curate at least 10 task clusters before interpreting pilot design.",
+    "Scale the claim suite to at least 50 held-out task clusters.",
+    "Run at least 3 replicates per task cluster for the claim suite.",
+    "Regenerate a claim-ready protocol lock with held-out remote Git commits and adapter profiles."
+  ],
+  "non_claims": [
+    "Design card is not outcome evidence and does not claim S-tier performance.",
+    "The protocol is not claim-ready, so statistical signal cannot override missing held-out design requirements.",
+    "The observed suite does not have enough task clusters or replicates for the S-tier claim design."
+  ],
+  "observed": {
+    "accepted_rounds": 6,
+    "cluster_means": {
+      "csv-filter": 0.801422,
+      "dedupe-helpers": 0.841954,
+      "fix-imports": 0.841954,
+      "fix-offby-one": 0.766397,
+      "implement-median": 0.796629,
+      "rename-api": 0.840987
+    },
+    "cluster_sample_sd": 0.031662,
+    "clustered_ci_high": 0.835037,
+    "clustered_ci_low": 0.789866,
+    "mean_input_token_savings": 0.81489,
+    "pass_regressions": 0,
+    "replicate_count": 6,
+    "task_clusters": 6,
+    "total_rounds": 6,
+    "total_runs": 6
+  },
+  "projection": {
+    "effective_required_task_clusters": 50,
+    "method": "normal approximation over observed task-cluster means",
+    "observed_margin_to_target": 0.21489,
+    "projected_ci_low_at_claim_n": 0.806114,
+    "projected_ci_passes_target": true,
+    "projected_clusters_for_target": 1,
+    "protocol_min_task_clusters": 50,
+    "target": 0.6,
+    "z": 1.959963984540054
+  },
+  "research_basis": [
+    "Claim design must be separated from outcome scoring to avoid post-hoc metric selection.",
+    "Clustered task-level uncertainty is the relevant unit when repeated runs share a repository/task.",
+    "A positive smoke mean is not enough; the projected claim-run lower bound must clear the target.",
+    "Statistical readiness does not override external-validity requirements such as held-out remote commits."
+  ],
+  "schema_version": "trice-design-card/v1",
+  "source": {
+    "protocol_id": "bundled-live-six-task-suite:fd4335bea5164e4e",
+    "protocol_lock_path": "docs/trice_protocol_lock.json",
+    "suite_name": "bundled-live-six-task-suite",
+    "suite_result_path": "benchmark/trice/results/v2-broad-smoke/trice_suite_results.json"
+  }
+}

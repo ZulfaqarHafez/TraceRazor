@@ -1,0 +1,219 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "name": "tracerazor",
+      "purl": "pkg:pypi/tracerazor@1.0.3",
+      "type": "application",
+      "version": "1.0.3"
+    },
+    {
+      "name": "anthropic",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/anthropic",
+      "type": "library",
+      "version": ">=0.30"
+    },
+    {
+      "name": "anyio",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "dev"
+        }
+      ],
+      "purl": "pkg:pypi/anyio",
+      "type": "library",
+      "version": "[trio]"
+    },
+    {
+      "name": "crewai",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/crewai",
+      "type": "library",
+      "version": ">=0.28"
+    },
+    {
+      "name": "langchain-core",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/langchain-core",
+      "type": "library",
+      "version": ">=0.2"
+    },
+    {
+      "name": "langgraph",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/langgraph",
+      "type": "library",
+      "version": ">=0.2"
+    },
+    {
+      "name": "numpy",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/numpy",
+      "type": "library",
+      "version": ">=1.24"
+    },
+    {
+      "name": "openai",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/openai",
+      "type": "library",
+      "version": ">=1.0"
+    },
+    {
+      "name": "openai-agents",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "agents"
+        }
+      ],
+      "purl": "pkg:pypi/openai-agents",
+      "type": "library",
+      "version": ">=0.0.3"
+    },
+    {
+      "name": "pandas",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/pandas",
+      "type": "library",
+      "version": ">=2.0"
+    },
+    {
+      "name": "pytest",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "dev"
+        }
+      ],
+      "purl": "pkg:pypi/pytest",
+      "type": "library",
+      "version": ">=8"
+    },
+    {
+      "name": "pytest-asyncio",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "dev"
+        }
+      ],
+      "purl": "pkg:pypi/pytest-asyncio",
+      "type": "library",
+      "version": ">=0.23"
+    },
+    {
+      "name": "reportlab",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/reportlab",
+      "type": "library",
+      "version": ">=4"
+    },
+    {
+      "name": "requests",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/requests",
+      "type": "library",
+      "version": ">=2.28"
+    },
+    {
+      "name": "scikit-learn",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/scikit-learn",
+      "type": "library",
+      "version": ">=1.4"
+    },
+    {
+      "name": "scipy",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/scipy",
+      "type": "library",
+      "version": ">=1.10"
+    },
+    {
+      "name": "sentence-transformers",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/sentence-transformers",
+      "type": "library",
+      "version": ">=2.7"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "name": "tracerazor",
+      "type": "application",
+      "version": "1.0.3"
+    },
+    "tools": [
+      {
+        "name": "tracerazor-trice release-evidence",
+        "vendor": "TraceRazor"
+      }
+    ]
+  },
+  "serialNumber": "urn:uuid:eeb03cab-6c11-c3c7-5a6c-4ae618ecfb33",
+  "specVersion": "1.6",
+  "version": 1
+}

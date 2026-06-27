@@ -1,0 +1,122 @@
+{
+  "claim_allowed": false,
+  "claim_card_sha256": "a00a66f27f85f397e8c25bef28d651cad3f128cd039e0110b4659dc7a2cfbe98",
+  "claim_level": "smoke",
+  "determinism_contract_score": 100,
+  "input_sha256": {
+    "suite_manifest": "f8128784fee5d095855fa5cff8db4c83b7fea9f7218f1327ad030adc48f7c220",
+    "suite_result": "a3d099d31dca99057da805dedf01a1a0a3dc70e0c74bc8b33d6bec4862272ff5"
+  },
+  "metrics": {
+    "accepted_rounds": 1,
+    "clustered_savings_ci_high": 0.831914,
+    "clustered_savings_ci_low": 0.831914,
+    "evidence_recall_failures": 0,
+    "evidence_recall_minimum": 1.0,
+    "evidence_recall_required": 0.95,
+    "mean_input_token_savings": 0.831914,
+    "pass_regressions": 0,
+    "replicate_count": 1,
+    "target_savings": 0.6,
+    "task_cluster_count": 1,
+    "total_rounds": 1,
+    "trice_pass_rate": 1.0
+  },
+  "non_claims": [
+    "Not an S-tier claim; missing task_clusters, replicates_per_task.",
+    "Does not claim universal all-language or all-agent performance.",
+    "Does not certify replay-only savings as live savings."
+  ],
+  "requirements": [
+    {
+      "name": "accepted_runs",
+      "observed": 0,
+      "passed": true,
+      "required": "0 unaccepted runs"
+    },
+    {
+      "name": "adapter_profiles",
+      "observed": [
+        null
+      ],
+      "passed": true,
+      "required": "not required"
+    },
+    {
+      "name": "clustered_savings_ci_low",
+      "observed": 0.831914,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "evidence_recall",
+      "observed": {
+        "failures": 0,
+        "minimum": 1.0
+      },
+      "passed": true,
+      "required": ">= 0.950 on every accepted optimized run"
+    },
+    {
+      "name": "locked_git_sources",
+      "observed": [
+        "git"
+      ],
+      "passed": true,
+      "required": "all tasks use locked git sources"
+    },
+    {
+      "name": "mean_savings",
+      "observed": 0.831914,
+      "passed": true,
+      "required": ">= 0.600"
+    },
+    {
+      "name": "pass_regressions",
+      "observed": 0,
+      "passed": true,
+      "required": "<= 0"
+    },
+    {
+      "name": "receipt_validation",
+      "observed": "enabled",
+      "passed": true,
+      "required": "enabled"
+    },
+    {
+      "name": "remote_git_sources",
+      "observed": [
+        "https://github.com/pypa/sampleproject.git"
+      ],
+      "passed": true,
+      "required": "all tasks use remote Git URLs"
+    },
+    {
+      "name": "replicates_per_task",
+      "observed": {
+        "pypa-sampleproject-add-two": 1
+      },
+      "passed": false,
+      "required": "each task >= 3"
+    },
+    {
+      "name": "task_clusters",
+      "observed": 1,
+      "passed": false,
+      "required": ">= 50"
+    }
+  ],
+  "schema_version": "trice-claim-card/v1",
+  "scope": "remote-git smoke path on one locked public Python repository",
+  "source": {
+    "algorithm": "trice-v2-suite-live-user-conditioned-rollout",
+    "suite_manifest_path": "benchmark/trice/results/v2-remote-smoke/trice_suite_evidence_manifest.json",
+    "suite_name": "trice-remote-smoke",
+    "suite_result_path": "benchmark/trice/results/v2-remote-smoke/trice_suite_results.json"
+  },
+  "verification": {
+    "error_count": 0,
+    "errors": [],
+    "ok": true
+  }
+}

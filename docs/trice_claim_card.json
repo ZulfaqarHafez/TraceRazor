@@ -1,16 +1,19 @@
 {
   "claim_allowed": false,
-  "claim_card_sha256": "4b8ac48b6d982a500bf0012cf31cc212194f0174c6193215c5534c6a5b754d86",
+  "claim_card_sha256": "6f20ecbd0a990960b4d6295f820dba886836661e51c7cf9ebd0541637783fa72",
   "claim_level": "smoke",
-  "determinism_contract_score": 84,
+  "determinism_contract_score": 100,
   "input_sha256": {
-    "suite_manifest": "b43e7b0e11912909928ced531a3429b778b05674935e97d227fb5ac25766d2a8",
-    "suite_result": "db2b55255c76f4cdf8216a1eb7cb996fd7b569e3ae17940e2105e924080b6eec"
+    "suite_manifest": "1d05fcbdb173da8629910545191ec55e3144743a8ded98f687d66d4df8f1d46b",
+    "suite_result": "1622ffb36464e6e41cbadecd1c5ed6cceb678af89a2a5a5a3c999258559c3f2d"
   },
   "metrics": {
     "accepted_rounds": 6,
     "clustered_savings_ci_high": 0.835037,
     "clustered_savings_ci_low": 0.789866,
+    "evidence_recall_failures": 0,
+    "evidence_recall_minimum": 1.0,
+    "evidence_recall_required": 0.95,
     "mean_input_token_savings": 0.81489,
     "pass_regressions": 0,
     "replicate_count": 6,
@@ -49,6 +52,15 @@
       "observed": 0.789866,
       "passed": true,
       "required": ">= 0.600"
+    },
+    {
+      "name": "evidence_recall",
+      "observed": {
+        "failures": 0,
+        "minimum": 1.0
+      },
+      "passed": true,
+      "required": ">= 0.950 on every accepted optimized run"
     },
     {
       "name": "locked_git_sources",

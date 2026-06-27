@@ -1,0 +1,677 @@
+{
+  "cargo_install_claim_allowed": false,
+  "checks": [
+    {
+      "name": "workspace_manifest_present",
+      "observed": "Cargo.toml",
+      "passed": true,
+      "required": "workspace Cargo.toml is present"
+    },
+    {
+      "name": "crate_manifests_present",
+      "observed": "6/6",
+      "passed": true,
+      "required": "all publish crate manifests are present"
+    },
+    {
+      "name": "version_alignment",
+      "observed": {
+        "packages": {
+          "tracerazor": "1.0.3",
+          "tracerazor-core": "1.0.3",
+          "tracerazor-ingest": "1.0.3",
+          "tracerazor-semantic": "1.0.3",
+          "tracerazor-server": "1.0.3",
+          "tracerazor-store": "1.0.3"
+        },
+        "workspace": "1.0.3"
+      },
+      "passed": true,
+      "required": "workspace and crate package versions match"
+    },
+    {
+      "name": "publish_order_topological",
+      "observed": {
+        "tracerazor": [
+          "tracerazor-core",
+          "tracerazor-ingest",
+          "tracerazor-semantic",
+          "tracerazor-server",
+          "tracerazor-store"
+        ],
+        "tracerazor-core": [],
+        "tracerazor-ingest": [
+          "tracerazor-core"
+        ],
+        "tracerazor-semantic": [],
+        "tracerazor-server": [
+          "tracerazor-core",
+          "tracerazor-ingest",
+          "tracerazor-semantic",
+          "tracerazor-store"
+        ],
+        "tracerazor-store": [
+          "tracerazor-core"
+        ]
+      },
+      "passed": true,
+      "required": "each local dependency appears earlier in the publish order"
+    },
+    {
+      "name": "dependency_versions_pinned",
+      "observed": {
+        "tracerazor": {
+          "tracerazor-core": "1.0.3",
+          "tracerazor-ingest": "1.0.3",
+          "tracerazor-semantic": "1.0.3",
+          "tracerazor-server": "1.0.3",
+          "tracerazor-store": "1.0.3"
+        },
+        "tracerazor-core": {},
+        "tracerazor-ingest": {
+          "tracerazor-core": "1.0.3"
+        },
+        "tracerazor-semantic": {},
+        "tracerazor-server": {
+          "tracerazor-core": "1.0.3",
+          "tracerazor-ingest": "1.0.3",
+          "tracerazor-semantic": "1.0.3",
+          "tracerazor-store": "1.0.3"
+        },
+        "tracerazor-store": {
+          "tracerazor-core": "1.0.3"
+        }
+      },
+      "passed": true,
+      "required": "all local crate dependencies pin the workspace version"
+    },
+    {
+      "name": "metadata_complete",
+      "observed": {
+        "tracerazor": [],
+        "tracerazor-core": [],
+        "tracerazor-ingest": [],
+        "tracerazor-semantic": [],
+        "tracerazor-server": [],
+        "tracerazor-store": []
+      },
+      "passed": true,
+      "required": "description, license, repository, readme, keywords, and categories are present"
+    },
+    {
+      "name": "stage_one_publishable",
+      "observed": {
+        "tracerazor-core": true,
+        "tracerazor-semantic": true
+      },
+      "passed": true,
+      "required": "first-stage crates have no unpublished local dependencies"
+    },
+    {
+      "name": "readme_install_honesty",
+      "observed": "contains_cargo_install=False; missing: target=1.0.3 latest=none",
+      "passed": true,
+      "required": "README does not claim cargo install until tracerazor is live on crates.io"
+    },
+    {
+      "name": "public_crates_live",
+      "observed": {
+        "tracerazor": "missing",
+        "tracerazor-core": "missing",
+        "tracerazor-ingest": "missing",
+        "tracerazor-semantic": "missing",
+        "tracerazor-server": "missing",
+        "tracerazor-store": "missing"
+      },
+      "passed": false,
+      "required": "all six crates are published at the local version"
+    },
+    {
+      "name": "cargo_install_truth",
+      "observed": "missing: target=1.0.3 latest=none",
+      "passed": false,
+      "required": "cargo install tracerazor is true for the local version"
+    }
+  ],
+  "crates_card_level": "publish_plan_locked",
+  "crates_card_sha256": "ee61306c7dbc2566c0be2de4e5db3fd101ced780725c78cea483440ca127b7ea",
+  "crates_publish_score": 80,
+  "inputs": {
+    "readme": {
+      "bytes": 84701,
+      "name": "README.md",
+      "path": "README.md",
+      "present": true,
+      "sha256": "61cb955903b1ef2a0c3684407111a836b8a130c8d6f36f1280bdd2994fbe478b"
+    },
+    "tracerazor": {
+      "bytes": 1218,
+      "name": "Cargo.toml",
+      "path": "crates/tracerazor-cli/Cargo.toml",
+      "present": true,
+      "sha256": "ff349a311b723710b517cd636d95df892aa046249aee92be258e420e58e61de2"
+    },
+    "tracerazor-core": {
+      "bytes": 853,
+      "name": "Cargo.toml",
+      "path": "crates/tracerazor-core/Cargo.toml",
+      "present": true,
+      "sha256": "9f970622363b61be3eda2fea9c8f646c7469bcaa6cf15522f4e0c421ded2e4a2"
+    },
+    "tracerazor-ingest": {
+      "bytes": 593,
+      "name": "Cargo.toml",
+      "path": "crates/tracerazor-ingest/Cargo.toml",
+      "present": true,
+      "sha256": "5222b34bae2a51b8b6b5a3f3d6fadd74f0c755f4735944b07ec775647c577321"
+    },
+    "tracerazor-semantic": {
+      "bytes": 731,
+      "name": "Cargo.toml",
+      "path": "crates/tracerazor-semantic/Cargo.toml",
+      "present": true,
+      "sha256": "a8470e4a0328aa881239803a30c3e44113c9866135f596d427971f29e873c7b9"
+    },
+    "tracerazor-server": {
+      "bytes": 1167,
+      "name": "Cargo.toml",
+      "path": "crates/tracerazor-server/Cargo.toml",
+      "present": true,
+      "sha256": "51b6c49ec9751ec569a8a973147e97c62a4ff42e4a11a65682110ce328446fa6"
+    },
+    "tracerazor-store": {
+      "bytes": 960,
+      "name": "Cargo.toml",
+      "path": "crates/tracerazor-store/Cargo.toml",
+      "present": true,
+      "sha256": "15abb9ac3bb62fb10cf5428951834428d29ebf661623194bae540f0ee991f482"
+    },
+    "workspace": {
+      "bytes": 1536,
+      "name": "Cargo.toml",
+      "path": "Cargo.toml",
+      "present": true,
+      "sha256": "228b572a7781c7ea21e56a57805e70698fbadae231ffa7357cbf5118e941a103"
+    }
+  },
+  "local_publish_plan_locked": true,
+  "next_actions": [
+    "Publish stage-ready crates for 1.0.3: tracerazor-core, tracerazor-semantic.",
+    "Regenerate this crates card after crates.io indexes each published crate.",
+    "Continue stage by stage until the final `tracerazor` crate is live, then verify `cargo install tracerazor --locked`."
+  ],
+  "packages": [
+    {
+      "currently_publishable": true,
+      "local_dependencies": [],
+      "local_dependency_specs": [],
+      "manifest": {
+        "bytes": 853,
+        "name": "Cargo.toml",
+        "path": "crates/tracerazor-core/Cargo.toml",
+        "present": true,
+        "sha256": "9f970622363b61be3eda2fea9c8f646c7469bcaa6cf15522f4e0c421ded2e4a2"
+      },
+      "metadata": {
+        "categories": [
+          "development-tools::profiling",
+          "command-line-utilities"
+        ],
+        "description": "Core graph engine, metrics, and scoring for TraceRazor",
+        "homepage": "https://github.com/ZulfaqarHafez/tracerazor",
+        "keywords": [
+          "llm",
+          "agents",
+          "observability",
+          "tokens",
+          "lighthouse"
+        ],
+        "license": "MIT",
+        "readme": "README.md",
+        "repository": "https://github.com/ZulfaqarHafez/tracerazor"
+      },
+      "name": "tracerazor-core",
+      "registry": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "target_version": "1.0.3",
+        "url": "https://crates.io/api/v1/crates/tracerazor-core",
+        "version_published": false
+      },
+      "stage": 1,
+      "version": "1.0.3"
+    },
+    {
+      "currently_publishable": true,
+      "local_dependencies": [],
+      "local_dependency_specs": [],
+      "manifest": {
+        "bytes": 731,
+        "name": "Cargo.toml",
+        "path": "crates/tracerazor-semantic/Cargo.toml",
+        "present": true,
+        "sha256": "a8470e4a0328aa881239803a30c3e44113c9866135f596d427971f29e873c7b9"
+      },
+      "metadata": {
+        "categories": [
+          "development-tools::profiling",
+          "command-line-utilities"
+        ],
+        "description": "Semantic similarity engine for TraceRazor (TF cosine similarity, ONNX embedding upgrade path)",
+        "homepage": "https://github.com/ZulfaqarHafez/tracerazor",
+        "keywords": [
+          "llm",
+          "agents",
+          "observability",
+          "tokens",
+          "lighthouse"
+        ],
+        "license": "MIT",
+        "readme": "README.md",
+        "repository": "https://github.com/ZulfaqarHafez/tracerazor"
+      },
+      "name": "tracerazor-semantic",
+      "registry": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "target_version": "1.0.3",
+        "url": "https://crates.io/api/v1/crates/tracerazor-semantic",
+        "version_published": false
+      },
+      "stage": 1,
+      "version": "1.0.3"
+    },
+    {
+      "currently_publishable": false,
+      "local_dependencies": [
+        "tracerazor-core"
+      ],
+      "local_dependency_specs": [
+        {
+          "name": "tracerazor-core",
+          "path": "../tracerazor-core",
+          "version": "1.0.3"
+        }
+      ],
+      "manifest": {
+        "bytes": 593,
+        "name": "Cargo.toml",
+        "path": "crates/tracerazor-ingest/Cargo.toml",
+        "present": true,
+        "sha256": "5222b34bae2a51b8b6b5a3f3d6fadd74f0c755f4735944b07ec775647c577321"
+      },
+      "metadata": {
+        "categories": [
+          "development-tools::profiling",
+          "command-line-utilities"
+        ],
+        "description": "Trace format parsers for TraceRazor (raw JSON, LangSmith, OTEL, Claude Code, Langfuse)",
+        "homepage": "https://github.com/ZulfaqarHafez/tracerazor",
+        "keywords": [
+          "llm",
+          "agents",
+          "observability",
+          "tokens",
+          "lighthouse"
+        ],
+        "license": "MIT",
+        "readme": "README.md",
+        "repository": "https://github.com/ZulfaqarHafez/tracerazor"
+      },
+      "name": "tracerazor-ingest",
+      "registry": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "target_version": "1.0.3",
+        "url": "https://crates.io/api/v1/crates/tracerazor-ingest",
+        "version_published": false
+      },
+      "stage": 2,
+      "version": "1.0.3"
+    },
+    {
+      "currently_publishable": false,
+      "local_dependencies": [
+        "tracerazor-core"
+      ],
+      "local_dependency_specs": [
+        {
+          "name": "tracerazor-core",
+          "path": "../tracerazor-core",
+          "version": "1.0.3"
+        }
+      ],
+      "manifest": {
+        "bytes": 960,
+        "name": "Cargo.toml",
+        "path": "crates/tracerazor-store/Cargo.toml",
+        "present": true,
+        "sha256": "15abb9ac3bb62fb10cf5428951834428d29ebf661623194bae540f0ee991f482"
+      },
+      "metadata": {
+        "categories": [
+          "development-tools::profiling",
+          "command-line-utilities"
+        ],
+        "description": "Persistent trace storage for TraceRazor (SQLite via tokio-rusqlite)",
+        "homepage": "https://github.com/ZulfaqarHafez/tracerazor",
+        "keywords": [
+          "llm",
+          "agents",
+          "observability",
+          "tokens",
+          "lighthouse"
+        ],
+        "license": "MIT",
+        "readme": "README.md",
+        "repository": "https://github.com/ZulfaqarHafez/tracerazor"
+      },
+      "name": "tracerazor-store",
+      "registry": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "target_version": "1.0.3",
+        "url": "https://crates.io/api/v1/crates/tracerazor-store",
+        "version_published": false
+      },
+      "stage": 2,
+      "version": "1.0.3"
+    },
+    {
+      "currently_publishable": false,
+      "local_dependencies": [
+        "tracerazor-core",
+        "tracerazor-ingest",
+        "tracerazor-semantic",
+        "tracerazor-store"
+      ],
+      "local_dependency_specs": [
+        {
+          "name": "tracerazor-core",
+          "path": "../tracerazor-core",
+          "version": "1.0.3"
+        },
+        {
+          "name": "tracerazor-ingest",
+          "path": "../tracerazor-ingest",
+          "version": "1.0.3"
+        },
+        {
+          "name": "tracerazor-semantic",
+          "path": "../tracerazor-semantic",
+          "version": "1.0.3"
+        },
+        {
+          "name": "tracerazor-store",
+          "path": "../tracerazor-store",
+          "version": "1.0.3"
+        }
+      ],
+      "manifest": {
+        "bytes": 1167,
+        "name": "Cargo.toml",
+        "path": "crates/tracerazor-server/Cargo.toml",
+        "present": true,
+        "sha256": "51b6c49ec9751ec569a8a973147e97c62a4ff42e4a11a65682110ce328446fa6"
+      },
+      "metadata": {
+        "categories": [
+          "development-tools::profiling",
+          "command-line-utilities"
+        ],
+        "description": "TraceRazor Axum HTTP server - REST API and WebSocket for the dashboard",
+        "homepage": "https://github.com/ZulfaqarHafez/tracerazor",
+        "keywords": [
+          "llm",
+          "agents",
+          "observability",
+          "tokens",
+          "lighthouse"
+        ],
+        "license": "MIT",
+        "readme": "README.md",
+        "repository": "https://github.com/ZulfaqarHafez/tracerazor"
+      },
+      "name": "tracerazor-server",
+      "registry": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "target_version": "1.0.3",
+        "url": "https://crates.io/api/v1/crates/tracerazor-server",
+        "version_published": false
+      },
+      "stage": 3,
+      "version": "1.0.3"
+    },
+    {
+      "currently_publishable": false,
+      "local_dependencies": [
+        "tracerazor-core",
+        "tracerazor-ingest",
+        "tracerazor-semantic",
+        "tracerazor-server",
+        "tracerazor-store"
+      ],
+      "local_dependency_specs": [
+        {
+          "name": "tracerazor-core",
+          "path": "../tracerazor-core",
+          "version": "1.0.3"
+        },
+        {
+          "name": "tracerazor-ingest",
+          "path": "../tracerazor-ingest",
+          "version": "1.0.3"
+        },
+        {
+          "name": "tracerazor-semantic",
+          "path": "../tracerazor-semantic",
+          "version": "1.0.3"
+        },
+        {
+          "name": "tracerazor-server",
+          "path": "../tracerazor-server",
+          "version": "1.0.3"
+        },
+        {
+          "name": "tracerazor-store",
+          "path": "../tracerazor-store",
+          "version": "1.0.3"
+        }
+      ],
+      "manifest": {
+        "bytes": 1218,
+        "name": "Cargo.toml",
+        "path": "crates/tracerazor-cli/Cargo.toml",
+        "present": true,
+        "sha256": "ff349a311b723710b517cd636d95df892aa046249aee92be258e420e58e61de2"
+      },
+      "metadata": {
+        "categories": [
+          "development-tools::profiling",
+          "command-line-utilities"
+        ],
+        "description": "TraceRazor CLI - Agentic Reasoning Path Efficiency Auditor",
+        "homepage": "https://github.com/ZulfaqarHafez/tracerazor",
+        "keywords": [
+          "llm",
+          "agents",
+          "observability",
+          "tokens",
+          "lighthouse"
+        ],
+        "license": "MIT",
+        "readme": "README.md",
+        "repository": "https://github.com/ZulfaqarHafez/tracerazor"
+      },
+      "name": "tracerazor",
+      "registry": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "target_version": "1.0.3",
+        "url": "https://crates.io/api/v1/crates/tracerazor",
+        "version_published": false
+      },
+      "stage": 4,
+      "version": "1.0.3"
+    }
+  ],
+  "public_crates_live": false,
+  "publish_commands": [
+    {
+      "command": "cargo package -p tracerazor-core --allow-dirty",
+      "name": "package-tracerazor-core",
+      "sha256": "0f8f193b8c7197e7a2edc162a48f528c0b8bdbb63b081303b6e52af9bbb6fd54",
+      "stage": 1
+    },
+    {
+      "command": "cargo publish -p tracerazor-core",
+      "name": "publish-tracerazor-core",
+      "sha256": "fd218e5c3831ca46cb47ba6b04c6c4fd563228328a8e826a4be9adcaa087cdae",
+      "stage": 1
+    },
+    {
+      "command": "cargo package -p tracerazor-semantic --allow-dirty",
+      "name": "package-tracerazor-semantic",
+      "sha256": "189c04023002846ead2412a0ba8efdcd04bb3b0904ac804fe5dc46fd3efd4e02",
+      "stage": 1
+    },
+    {
+      "command": "cargo publish -p tracerazor-semantic",
+      "name": "publish-tracerazor-semantic",
+      "sha256": "13d01855336f80d2a21519d35970dd5373e4893fc4133e132fae5eb8ee933dc7",
+      "stage": 1
+    },
+    {
+      "command": "cargo package -p tracerazor-ingest --allow-dirty",
+      "name": "package-tracerazor-ingest",
+      "sha256": "6bbf02bca2489080ee35f4cdbf50d7410cf3aba0ef72fa308b691b79525a6bd0",
+      "stage": 2
+    },
+    {
+      "command": "cargo publish -p tracerazor-ingest",
+      "name": "publish-tracerazor-ingest",
+      "sha256": "170a8e043dbf2cb0dd91250ff72980e28b1f729fab5c851ce59c48c972301150",
+      "stage": 2
+    },
+    {
+      "command": "cargo package -p tracerazor-store --allow-dirty",
+      "name": "package-tracerazor-store",
+      "sha256": "f89a140e117d241a34dee0c0518c665f47001da5c8e6b03545237eb9c0b5884b",
+      "stage": 2
+    },
+    {
+      "command": "cargo publish -p tracerazor-store",
+      "name": "publish-tracerazor-store",
+      "sha256": "96d782e62eb36c3ee69bf49ebfba32906656fc2509cf615408c9135d3b09167a",
+      "stage": 2
+    },
+    {
+      "command": "cargo package -p tracerazor-server --allow-dirty",
+      "name": "package-tracerazor-server",
+      "sha256": "f4ad789ab39c959adb7779eeab72ebdc69580e6ecf67a341e265cfbe09d7db33",
+      "stage": 3
+    },
+    {
+      "command": "cargo publish -p tracerazor-server",
+      "name": "publish-tracerazor-server",
+      "sha256": "65e45706079a8efb40a621e6528e78de9b98c2ab6302de6162078d3b76514e91",
+      "stage": 3
+    },
+    {
+      "command": "cargo package -p tracerazor --allow-dirty",
+      "name": "package-tracerazor",
+      "sha256": "ef92148c80315c27a41a671a4d174812509790d1235bab077985edd2518fbcff",
+      "stage": 4
+    },
+    {
+      "command": "cargo publish -p tracerazor",
+      "name": "publish-tracerazor",
+      "sha256": "f905fd82abb0a9421c9223709a772bf00c7ce989ff72c8a95382296c502e0266",
+      "stage": 4
+    },
+    {
+      "command": "cargo install tracerazor --locked",
+      "name": "install-verify",
+      "sha256": "eedf141063f715d668027d03c44cbf8c85fff5fe331d404c94772e151a028a95",
+      "stage": 5
+    }
+  ],
+  "research_basis": [
+    "Cargo packaging verifies the tarball that will be uploaded; downstream workspace crates still require upstream crates to exist in the registry.",
+    "Registry publication is an external public fact, so cargo-install documentation must be gated on crates.io visibility rather than repository intent.",
+    "Staged release plans need a topological dependency order, pinned local dependency versions, and a clear distinction between package-ready and published.",
+    "TRICE proof cards turn release checklists into machine-verifiable evidence that can be bound by the release and integrity cards."
+  ],
+  "schema_version": "trice-crates-card/v1",
+  "scope": "TraceRazor crates.io staged publication",
+  "status_snapshot": {
+    "crates": {
+      "tracerazor": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "url": "https://crates.io/api/v1/crates/tracerazor",
+        "version_published": false
+      },
+      "tracerazor-core": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "url": "https://crates.io/api/v1/crates/tracerazor-core",
+        "version_published": false
+      },
+      "tracerazor-ingest": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "url": "https://crates.io/api/v1/crates/tracerazor-ingest",
+        "version_published": false
+      },
+      "tracerazor-semantic": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "url": "https://crates.io/api/v1/crates/tracerazor-semantic",
+        "version_published": false
+      },
+      "tracerazor-server": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "url": "https://crates.io/api/v1/crates/tracerazor-server",
+        "version_published": false
+      },
+      "tracerazor-store": {
+        "detail": "crate is not published",
+        "latest_version": null,
+        "published": false,
+        "status": "missing",
+        "url": "https://crates.io/api/v1/crates/tracerazor-store",
+        "version_published": false
+      }
+    },
+    "offline": false,
+    "source": "crates.io",
+    "url_template": "https://crates.io/api/v1/crates/{name}"
+  },
+  "status_snapshot_sha256": "b08d76128939208912273727e29700ef18ebfad596824d1a26359a30c67d2338",
+  "workspace_version": "1.0.3"
+}

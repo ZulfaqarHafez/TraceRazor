@@ -52,14 +52,18 @@
     "TRICE_COMPRESSED_CONTEXT_SHA256",
     "TRICE_CONDITION",
     "TRICE_CONTEXT_MODE",
+    "TRICE_CONTEXT_PATH",
     "TRICE_INPUT_TOKENS",
     "TRICE_POLICY_ACTION_COUNTS_JSON",
+    "TRICE_POLICY_PATH",
     "TRICE_POLICY_SHA256",
     "TRICE_POLICY_TOKENS",
     "TRICE_PROJECTED_INPUT_SAVINGS_PCT",
     "TRICE_PROMPT",
     "TRICE_REALIZED_BUDGET_RATIO",
     "TRICE_TASK_ID",
+    "TRICE_TRACE_PATH",
+    "TRICE_VERIFY_CMD_JSON",
     "TRICE_WORKSPACE"
   ],
   "schema_version": "trice-run-receipt/v1",
@@ -78,6 +82,19 @@
     "compressed_context_sha256": "7ca32c41fb9cfcb413ee367b395de32db41fd455467a3d0769d40926a4bd9f2d",
     "condition": "trice-v2",
     "context_mode": "trice_policy",
+    "decision_trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\decision_trace.json",
+    "decision_trace_sha256": "5b332c0d713e5009dd5910836d9f7d7e7f4bc63e135405e4955ccae1e1197a59",
+    "evidence_recall": {
+      "evidence_recall": 1.0,
+      "missing": [],
+      "obligation_count": 3,
+      "obligation_tokens": 170,
+      "passed": true,
+      "recalled_count": 3,
+      "recalled_tokens": 170,
+      "required_min": 0.95,
+      "schema_version": "trice-evidence-recall/v1"
+    },
     "input_tokens": 277,
     "policy_action_counts": {
       "anchor_prefix": 2,
@@ -89,7 +106,15 @@
     "policy_tokens": 277,
     "projected_input_savings_pct": 84.1,
     "realized_budget_ratio": 0.159013,
-    "schema_version": "trice-context-envelope/v1"
+    "schema_version": "trice-context-envelope/v1",
+    "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\decision_trace.json",
+    "verify_cmd": [
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "--tb=short"
+    ]
   },
   "workspace_after_sha256": "a1fa9c2adaa18195570b59c5bc4a7207a3c29a23bd19bf3093478e30173a32db",
   "workspace_before_sha256": "87e9fa2f36f3143e4265d3a49ce2d9ec9b93e23cf93ccba3a39559b56c1effca"

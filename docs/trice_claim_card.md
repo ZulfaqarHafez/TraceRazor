@@ -3,10 +3,12 @@
 - Scope: `python software-repair/context-control tasks on held-out Git repositories`
 - Claim level: `smoke`
 - Claim allowed: `false`
-- Determinism contract score: **84/100**
+- Determinism contract score: **100/100**
 - Mean input-token savings: **81.5%**
 - Clustered CI lower bound: **79.0%**
 - Pass regressions: **0**
+- Evidence recall minimum: **100.0%**
+- Evidence recall failures: **0**
 - Accepted runs: **6/6**
 - Evidence verification: **ok**
 
@@ -17,6 +19,7 @@
 | accepted_runs | yes | 0 | 0 unaccepted runs |
 | adapter_profiles | yes | ["trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json", "trice_adapter_profile_bundled_tasks.json"] | all tasks use adapter_profile |
 | clustered_savings_ci_low | yes | 0.789866 | >= 0.600 |
+| evidence_recall | yes | {"failures": 0, "minimum": 1.0} | >= 0.950 on every accepted optimized run |
 | locked_git_sources | no | ["local", "local", "local", "local", "local", "local"] | all tasks use locked git sources |
 | mean_savings | yes | 0.81489 | >= 0.600 |
 | pass_regressions | yes | 0 | <= 0 |
@@ -33,6 +36,6 @@
 
 ## Hashes
 
-- suite result: `db2b55255c76f4cdf8216a1eb7cb996fd7b569e3ae17940e2105e924080b6eec`
-- suite manifest: `b43e7b0e11912909928ced531a3429b778b05674935e97d227fb5ac25766d2a8`
-- claim card: `4b8ac48b6d982a500bf0012cf31cc212194f0174c6193215c5534c6a5b754d86`
+- suite result: `1622ffb36464e6e41cbadecd1c5ed6cceb678af89a2a5a5a3c999258559c3f2d`
+- suite manifest: `1d05fcbdb173da8629910545191ec55e3144743a8ded98f687d66d4df8f1d46b`
+- claim card: `6f20ecbd0a990960b4d6295f820dba886836661e51c7cf9ebd0541637783fa72`

@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "baseline-full-context",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "5419d17d32b1db1647c8742bb8a5865449485b7db5b25c64bf66e4f48577084c",
+    "run_receipt_sha256": "07add6597a26cbf8ed4a046721d4c333dbd9873fa4ebdb00c58c7137dd2a88b7",
     "task": "Deduplicate helper logic without editing tests.",
     "task_id": "dedupe-helpers"
   },

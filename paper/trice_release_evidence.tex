@@ -1,0 +1,18 @@
+\section{Release Evidence}
+Release evidence level: \texttt{release\_evidence\_ready}; score: 100/100.
+
+\begin{tabular}{lll}
+Check & Pass & Required \\
+\hline
+wheel\_present & yes & at least one wheel artifact \\
+sdist\_present & yes & one source distribution artifact \\
+cli\_binary\_present & yes & one built CLI binary \\
+proof\_cards\_present & yes & contract, artifact, reproduction, crates, installability, and research cards \\
+evidence\_bundles\_present & yes & broad and remote smoke evidence bundles \\
+paper\_artifacts\_present & yes & paper PDF and paper manifest \\
+artifact\_hashes\_present & yes & every present artifact has a SHA-256 digest \\
+python\_sbom\_generated & yes & CycloneDX-style Python SBOM \\
+cargo\_sbom\_generated & yes & CycloneDX-style Cargo SBOM \\
+provenance\_statement\_generated & yes & in-toto/SLSA-shaped provenance statement \\
+sidecars\_hashed & yes & checksums, SBOMs, and provenance sidecars have hashes \\
+\end{tabular}

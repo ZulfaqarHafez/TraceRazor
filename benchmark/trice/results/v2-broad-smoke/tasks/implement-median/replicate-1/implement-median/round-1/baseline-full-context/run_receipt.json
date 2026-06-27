@@ -52,6 +52,8 @@
     "TRICE_PROMPT",
     "TRICE_REALIZED_BUDGET_RATIO",
     "TRICE_TASK_ID",
+    "TRICE_TRACE_PATH",
+    "TRICE_VERIFY_CMD_JSON",
     "TRICE_WORKSPACE"
   ],
   "schema_version": "trice-run-receipt/v1",
@@ -70,6 +72,19 @@
     "compressed_context_sha256": null,
     "condition": "baseline-full-context",
     "context_mode": "full_context",
+    "decision_trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\implement-median\\replicate-1\\implement-median\\round-1\\baseline-full-context\\decision_trace.json",
+    "decision_trace_sha256": "087f675777428ec597dbb7762fe20595fae3d1f79266133e6384cd8354fa090c",
+    "evidence_recall": {
+      "evidence_recall": 1.0,
+      "missing": [],
+      "obligation_count": 0,
+      "obligation_tokens": 0,
+      "passed": true,
+      "recalled_count": 0,
+      "recalled_tokens": 0,
+      "required_min": 0.95,
+      "schema_version": "trice-evidence-recall/v1"
+    },
     "input_tokens": 1839,
     "policy_action_counts": {},
     "policy_path": null,
@@ -77,7 +92,15 @@
     "policy_tokens": null,
     "projected_input_savings_pct": 0.0,
     "realized_budget_ratio": 1.0,
-    "schema_version": "trice-context-envelope/v1"
+    "schema_version": "trice-context-envelope/v1",
+    "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\implement-median\\replicate-1\\implement-median\\round-1\\baseline-full-context\\decision_trace.json",
+    "verify_cmd": [
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "--tb=short"
+    ]
   },
   "workspace_after_sha256": "3c17813b2413d41bec2ccfa95a1b25ed61cd5dd8163976c303bb70025b63c40e",
   "workspace_before_sha256": "f1d61ceb7c9e989e7e7d3559e40b729f2817648ecd687031b9a42f9f88902f74"

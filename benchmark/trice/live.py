@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import shlex
 import shutil
@@ -28,6 +29,7 @@ from .adapters import CommandRepairAdapter, JsonPatchAdapter, RepairAdapter
 from .evidence import build_manifest, verify_manifest, write_manifest
 from .learn import LearningWeights, update_weights
 from .policy import ContextPolicy, solve_policy
+from .recall import evidence_recall_from_policy
 from .render import render_context, render_policy_json
 from .segment import segments_from_trace
 from .stats import claim_gate_from_rounds
@@ -106,6 +108,9 @@ class ConditionRun:
     policy_path: str | None = None
     context_path: str | None = None
     policy: dict[str, Any] | None = None
+    evidence_recall: float | None = None
+    evidence_recall_passed: bool | None = None
+    evidence_recall_report: dict[str, Any] | None = None
 
 
 @dataclass
@@ -260,7 +265,7 @@ def run_live_learning_loop(
             savings = _safe_ratio(baseline.input_tokens - optimized.input_tokens, baseline.input_tokens)
             quality_delta = (1.0 if optimized.passed else 0.0) - (1.0 if baseline.passed else 0.0)
             pass_noninferior = (not baseline.passed) or optimized.passed
-            accepted = pass_noninferior and savings + 1e-9 >= profile.target_savings
+            accepted = optimized.passed and pass_noninferior and savings + 1e-9 >= profile.target_savings
             update = update_weights(
                 weights,
                 features=(
@@ -457,6 +462,7 @@ def _run_condition(
         decision_trace_path=str(decision_trace_path),
         verify_cmd=task.verify_cmd,
     )
+    evidence_recall_report = trice_context.get("evidence_recall") if isinstance(trice_context.get("evidence_recall"), dict) else None
     adapter_task = AdapterTaskContext(
         task_id=task.task_id,
         prompt=task.prompt,
@@ -470,6 +476,7 @@ def _run_condition(
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
     receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     receipt_sha = _sha256_file(receipt_path)
+    _clear_python_bytecode(workspace)
     verify = _run_verify(task.verify_cmd, workspace)
     trace["trace_id"] = f"{task.task_id}.{condition}"
     trace["agent_name"] = adapter.name
@@ -511,6 +518,9 @@ def _run_condition(
         policy_path=policy_path,
         context_path=context_path,
         policy=policy.to_dict() if policy is not None else None,
+        evidence_recall=float(evidence_recall_report.get("evidence_recall")) if evidence_recall_report else None,
+        evidence_recall_passed=bool(evidence_recall_report.get("passed")) if evidence_recall_report else None,
+        evidence_recall_report=evidence_recall_report,
     )
 
 
@@ -550,7 +560,24 @@ def _trice_context_for_condition(
         "decision_trace_sha256": _sha256_file(Path(decision_trace_path)),
         "verify_cmd": list(verify_cmd),
         "policy_action_counts": action_counts,
+        "evidence_recall": _evidence_recall_for_context(policy),
     }
+
+
+def _evidence_recall_for_context(policy: ContextPolicy | None) -> dict[str, Any]:
+    if policy is None:
+        return {
+            "schema_version": "trice-evidence-recall/v1",
+            "evidence_recall": 1.0,
+            "required_min": 0.95,
+            "passed": True,
+            "obligation_count": 0,
+            "obligation_tokens": 0,
+            "recalled_count": 0,
+            "recalled_tokens": 0,
+            "missing": [],
+        }
+    return evidence_recall_from_policy(policy).to_dict()
 
 
 def _policy_for_task(task: LiveTask, round_dir: Path, budget_ratio: float) -> ContextPolicy:
@@ -650,9 +677,22 @@ def _read_project_files(workspace: Path) -> dict[str, str]:
 
 
 def _run_verify(cmd: tuple[str, ...], cwd: Path) -> dict[str, Any]:
-    proc = subprocess.run(list(cmd), cwd=cwd, capture_output=True, text=True, timeout=120)
+    env = os.environ.copy()
+    env["PYTHONDONTWRITEBYTECODE"] = "1"
+    proc = subprocess.run(list(cmd), cwd=cwd, capture_output=True, text=True, timeout=120, env=env)
     output = _normalize_verify_output((proc.stdout + "\n" + proc.stderr).strip())
     return {"passed": proc.returncode == 0, "exit_code": proc.returncode, "output": output}
+
+
+def _clear_python_bytecode(workspace: Path) -> None:
+    """Avoid stale same-size .pyc files after deterministic source edits."""
+
+    for cache_dir in workspace.rglob("__pycache__"):
+        if cache_dir.is_dir():
+            shutil.rmtree(cache_dir)
+    for pyc in workspace.rglob("*.pyc"):
+        if pyc.is_file():
+            pyc.unlink()
 
 
 def _receipt_for_condition(adapter: RepairAdapter, task: LiveTask, workspace: Path, modified: list[str]) -> dict[str, Any]:
