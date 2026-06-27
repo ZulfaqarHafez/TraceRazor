@@ -2,24 +2,24 @@
   "algorithm": "trice-v2-live-user-conditioned-rollout",
   "artifacts": [
     {
-      "bytes": 1746,
+      "bytes": 1677,
       "path": "trice_v2_live_report.md",
-      "sha256": "a89520e397444e1896dc95412cede16ae30f0915c91d384f7231bf34e659c2f9"
+      "sha256": "13862f82e09f3ad498618a794d294f335113c7cc43925cc03bc999d92156b403"
     },
     {
-      "bytes": 697,
+      "bytes": 595,
       "path": "user_profile.json",
-      "sha256": "0a56b6f2f7100e30c212f7525a0c0b35c701f1c03b3a6e2e2cdf84380eaa0f2b"
+      "sha256": "8ee64e7a94f726b6c0a92ca926c680b992de56c3020f384b522c0991cb36155f"
     },
     {
-      "bytes": 11853,
+      "bytes": 11936,
       "path": "implement-median/round-1/baseline-full-context/trace.json",
-      "sha256": "fdfe007862c2bfbf5e4ecc7bfb2d11964ae0dc263aa138a1a7954fe5fc9739fb"
+      "sha256": "99d84415be983edfd3470d33115c62c9df2f11d5169c9e932433869f07214eb2"
     },
     {
-      "bytes": 11826,
+      "bytes": 11909,
       "path": "implement-median/round-1/trice-v2/trace.json",
-      "sha256": "ea114f53b19f88855222dc32b628a336afff88d3b116a7d8bf885e698031ed76"
+      "sha256": "49ff82c133ed84dae106b074402e925e519e8770a80fdc98051ea3a7b222ade3"
     },
     {
       "bytes": 3470,
@@ -32,17 +32,17 @@
       "sha256": "7612e8863f273be4fd5701efa5a03ceb9c5946b153dc9e44123e8eb35472098b"
     },
     {
-      "bytes": 2634,
+      "bytes": 3644,
       "path": "implement-median/round-1/baseline-full-context/run_receipt.json",
-      "sha256": "bfb388f15c2ba13689752f3473e4dd606cc2c82d76ec4b661f63e798e2e4d4ae"
+      "sha256": "f1dd9391434a22bee74199ef32e407fa42cb68bc647062fa6fc42c8b2f067964"
     },
     {
-      "bytes": 3210,
+      "bytes": 4259,
       "path": "implement-median/round-1/trice-v2/run_receipt.json",
-      "sha256": "5acd5a0366bd7ae8f28524c0e662bba8ee1cc36dbb326f93247e8b910e9a7e21"
+      "sha256": "362ef7b2c813ed611c41a8f5e2649e4b149b4ee23854001aae3407d23be19332"
     }
   ],
-  "canonical_result_sha256": "7a03085f58fa90c944851ef5d6bf6a9829a1427b1f719ebfbfe162a5ddbf9f20",
+  "canonical_result_sha256": "aa20f0cf66b8e0f43638b13f21317822deb211dd51421dc616fe4f79151af4c0",
   "created_by": "TraceRazor TRICE",
   "notes": [
     "Fresh workspace per condition",
@@ -55,6 +55,6 @@
   ],
   "platform": "Windows-10-10.0.26200-SP0",
   "python_version": "3.11.6",
-  "result_sha256": "707a150eab7f2175b5e0f7967dc9c81206f32623bc841357eb321cef61c8a567",
+  "result_sha256": "a330f690eb5ce2742ebfc3f527600358cafb24f73af6728e7a3faf54516e554d",
   "schema_version": "trice-evidence-manifest/v1"
 }
