@@ -96,10 +96,10 @@
       "sha256": "a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564"
     },
     "broad_suite_manifest": {
-      "bytes": 2491,
+      "bytes": 2428,
       "path": "benchmark/trice/results/v2-broad-smoke/trice_suite_evidence_manifest.json",
       "present": true,
-      "sha256": "1d05fcbdb173da8629910545191ec55e3144743a8ded98f687d66d4df8f1d46b"
+      "sha256": "52a8c1d9f25ccba7af642cf461c0b77b382cc107a880df9213a121296a2b235a"
     },
     "broad_suite_result": {
       "bytes": 17161,
@@ -108,40 +108,40 @@
       "sha256": "1622ffb36464e6e41cbadecd1c5ed6cceb678af89a2a5a5a3c999258559c3f2d"
     },
     "claim_card": {
-      "bytes": 4003,
+      "bytes": 3861,
       "path": "docs/trice_claim_card.json",
       "present": true,
-      "sha256": "c255524ca8674f1aaa1ae047f379589bab2ce9d538f29c90b249c18aca278761"
+      "sha256": "43fbd6d1329da52fb78239ace0037f0cfb1a460ab3a281ebaff1f4dc99f7d4c6"
     },
     "design_card": {
-      "bytes": 4751,
+      "bytes": 4605,
       "path": "docs/trice_design_card.json",
       "present": true,
-      "sha256": "a9568aa5b32a54c99ab36bec232132c1a7f7ff7a25427353f0df1ef6f10140f2"
+      "sha256": "cbdbb49b901d8c51e6e76504cc7f664b86177dc84f1ee7879345bf8d98261a0b"
     },
     "paper_manifest": {
-      "bytes": 7591,
+      "bytes": 7362,
       "path": "paper/trice_v3_research_manifest.json",
       "present": true,
-      "sha256": "c381bf08088c8c4d1227ee3b3d0f92439860f00195b362a01c7b2956ffee94d6"
+      "sha256": "cc0ed7cdf452a6fe10d378b21a41992ef32c6ff33cd568ad78b80d424e73ee81"
     },
     "paper_result": {
-      "bytes": 46879,
+      "bytes": 45736,
       "path": "benchmark/trice/results/v2-smoke/trice_v2_live_results.json",
       "present": true,
-      "sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8"
+      "sha256": "edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a"
     },
     "protocol_lock": {
-      "bytes": 7447,
+      "bytes": 7194,
       "path": "docs/trice_protocol_lock.json",
       "present": true,
-      "sha256": "877f06f9d5c312f5d9396fcc2bb3001122d27c91bdeb575236361c5d4c841d05"
+      "sha256": "3e71413180ad94f43be0b6a35717ced48359b75ea382035c524a9b91e5e8296e"
     },
     "readiness": {
-      "bytes": 6132,
+      "bytes": 5903,
       "path": "docs/trice_suite_readiness.json",
       "present": true,
-      "sha256": "30a32533b71a878abb81be23e241617550a94ebfd1df4f23dcec5a68d59bf9a4"
+      "sha256": "f98e2481ce47a262e618f0adee5481ee7227347e900613bfc68115cc420be1d7"
     },
     "suite_manifest": {
       "bytes": 2066,
@@ -156,7 +156,7 @@
     "Do not claim S-tier until held-out claim evidence and claim card pass."
   ],
   "python_executable": "python",
-  "reproduction_card_sha256": "93b72e49bf920f91a6a5c024cf74669d448c1dc1afed7ad6d5dab742fd747ec0",
+  "reproduction_card_sha256": "620e78496b2071b9139fa0b55df908c0cbd7d1b13798907e285753da664d90cd",
   "reproduction_level": "reviewer_replay_ready_smoke",
   "reproduction_score": 100,
   "research_basis": [

@@ -94,7 +94,6 @@ def build_install_card(
         "inputs": {
             "dist_dir": _dir_row(dist),
             "pyproject": _artifact_row("pyproject", pyproject_path),
-            "wheel": _artifact_row("wheel", wheel),
         },
         "checks": checks,
         "commands": commands,

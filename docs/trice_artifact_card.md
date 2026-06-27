@@ -32,22 +32,22 @@
 
 | Artifact | Present | Path | SHA-256 |
 |---|---:|---|---|
-| readiness | yes | `docs/trice_suite_readiness.json` | `30a32533b71a878abb81be23e241617550a94ebfd1df4f23dcec5a68d59bf9a4` |
-| protocol_lock | yes | `docs/trice_protocol_lock.json` | `877f06f9d5c312f5d9396fcc2bb3001122d27c91bdeb575236361c5d4c841d05` |
-| design_card | yes | `docs/trice_design_card.json` | `a9568aa5b32a54c99ab36bec232132c1a7f7ff7a25427353f0df1ef6f10140f2` |
-| reproduction_card | yes | `docs/trice_reproduction_card.json` | `579d3b8898f6bdb7ab8b20aa1e58dc6f5118923f3d12a09b8d512fc9fe26eb84` |
-| contract_card | yes | `docs/trice_contract_card.json` | `9d2cb75affbee6676d7e9a00949f41ca5995202b14f9fc0b7a18240f461e0b5c` |
-| install_card | yes | `docs/trice_install_card.json` | `b019465c0cc37cf4af4ef6a2e8d9f5574cdf1ecc539a802ec7bf4ff59b9935a7` |
-| research_card | yes | `docs/trice_research_card.json` | `2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1` |
-| claim | yes | `docs/trice_claim_card.json` | `c255524ca8674f1aaa1ae047f379589bab2ce9d538f29c90b249c18aca278761` |
-| remote_smoke_claim | yes | `docs/trice_remote_smoke_claim_card.json` | `528f1f9e24d0497aff6b1302cb9fc66e05f2c63495d7bfb708f5748af4de9fc7` |
+| readiness | yes | `docs/trice_suite_readiness.json` | `f98e2481ce47a262e618f0adee5481ee7227347e900613bfc68115cc420be1d7` |
+| protocol_lock | yes | `docs/trice_protocol_lock.json` | `3e71413180ad94f43be0b6a35717ced48359b75ea382035c524a9b91e5e8296e` |
+| design_card | yes | `docs/trice_design_card.json` | `cbdbb49b901d8c51e6e76504cc7f664b86177dc84f1ee7879345bf8d98261a0b` |
+| reproduction_card | yes | `docs/trice_reproduction_card.json` | `89820ed6ab230c9114a86b1aa7b4a987ec5d0d33938208b799f4d2ef78673ecd` |
+| contract_card | yes | `docs/trice_contract_card.json` | `013b9902508491740ab317f15de37a5d8b82dab2bf16d27e798d9fc506d40491` |
+| install_card | yes | `docs/trice_install_card.json` | `e8bc7be728b9f61af4b1988428c6b82c7b2055fe6916284895f4ea20a8850dc8` |
+| research_card | yes | `docs/trice_research_card.json` | `2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18` |
+| claim | yes | `docs/trice_claim_card.json` | `43fbd6d1329da52fb78239ace0037f0cfb1a460ab3a281ebaff1f4dc99f7d4c6` |
+| remote_smoke_claim | yes | `docs/trice_remote_smoke_claim_card.json` | `e296651963ef02ccfde115ab59f0cc87e5d938548878ed63ef8f8660113da641` |
 | evidence_bundle | yes | `benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip` | `a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564` |
 | remote_smoke_bundle | yes | `benchmark/trice/results/v2-remote-smoke/trice_remote_smoke_evidence.trice.zip` | `93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d` |
-| paper_manifest | yes | `paper/trice_v3_research_manifest.json` | `c381bf08088c8c4d1227ee3b3d0f92439860f00195b362a01c7b2956ffee94d6` |
-| paper_result | yes | `benchmark/trice/results/v2-smoke/trice_v2_live_results.json` | `f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8` |
-| paper_tex | yes | `paper/trice_v3_research_paper.tex` | `6bd869c5a86dc37f1a67dace1b78b37c89ca29239decc6edd3be6c5bf65da532` |
+| paper_manifest | yes | `paper/trice_v3_research_manifest.json` | `cc0ed7cdf452a6fe10d378b21a41992ef32c6ff33cd568ad78b80d424e73ee81` |
+| paper_result | yes | `benchmark/trice/results/v2-smoke/trice_v2_live_results.json` | `edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a` |
+| paper_tex | yes | `paper/trice_v3_research_paper.tex` | `8f5db5311aca8061917e8dd2c972aa2696611f1404eb4d5c63623ed137b233d8` |
 | paper_pdf | yes | `paper/trice_v3_research_paper.pdf` | `e989dc19be087a9991ff05424457fd9aeef541056a30472add2e2a1db24b597d` |
-| readme | yes | `README.md` | `61cb955903b1ef2a0c3684407111a836b8a130c8d6f36f1280bdd2994fbe478b` |
+| readme | yes | `README.md` | `bca276ad2145f0861fd0c444bda5258f83e3096a518df9a762739d19b099242e` |
 | library_doc | yes | `docs/trice_library.md` | `a256eb788c0dc9c04a976e19e1ca0f8a788c2c5b03e2b8433f3114cff55524bf` |
 
 ## Next Actions
@@ -58,4 +58,4 @@
 
 ## Hash
 
-- artifact card: `85fb7edb838235f8b37ad1a77f0c0b777f018d5d2168f6c28324f8181530abfd`
+- artifact card: `5420f1a644c47dca33624ce0d0382213c4f7ae8dc6bedbe1a827efe09cc18f02`

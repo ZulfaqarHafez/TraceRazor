@@ -1,10 +1,10 @@
 {
   "claim_allowed": false,
-  "claim_card_sha256": "6f20ecbd0a990960b4d6295f820dba886836661e51c7cf9ebd0541637783fa72",
+  "claim_card_sha256": "b31ff9db85c3fb8a139761cd46293de9c082400e6954652998ca0971242f4f88",
   "claim_level": "smoke",
   "determinism_contract_score": 100,
   "input_sha256": {
-    "suite_manifest": "1d05fcbdb173da8629910545191ec55e3144743a8ded98f687d66d4df8f1d46b",
+    "suite_manifest": "52a8c1d9f25ccba7af642cf461c0b77b382cc107a880df9213a121296a2b235a",
     "suite_result": "1622ffb36464e6e41cbadecd1c5ed6cceb678af89a2a5a5a3c999258559c3f2d"
   },
   "metrics": {

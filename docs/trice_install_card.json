@@ -120,23 +120,15 @@
       "present": true
     },
     "pyproject": {
-      "bytes": 5850,
+      "bytes": 5771,
       "kind": "file",
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "a59e14dfdd4c752e93403818f1a4b32c2ccb1bae577132d7f6e6aef53865d1a3"
-    },
-    "wheel": {
-      "bytes": 607154,
-      "kind": "file",
-      "name": "wheel",
-      "path": "dist/tracerazor-1.0.3-py3-none-any.whl",
-      "present": true,
-      "sha256": "2698409bb78759f6e661ad5dd1097815bb5ea1d27ce8445fbe8692acc13f3712"
+      "sha256": "7e9268692d0e1c938f4c47c5e344f2641b46ba003802dd5425cc94ccbbfa2af7"
     }
   },
-  "install_card_sha256": "92178fae37b672209b77ddab02d548a5ef1f69a4b35a29b78a09567a51005844",
+  "install_card_sha256": "b60412863ebbfac950a48253fba98a5b75bb0554455bee7a5818655e8e920ed0",
   "install_level": "python_trice_install_ready",
   "install_score": 90,
   "next_actions": [

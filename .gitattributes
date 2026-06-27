@@ -9,3 +9,8 @@
 # sha256/byte-size checks fail. `-text` makes git store and check out the
 # bytes verbatim on Windows, macOS, and Linux alike.
 benchmark/trice/results/** -text
+
+# TRICE proof-graph cards (docs/) and research packet (paper/) are also
+# content-addressed: their bound hashes must be byte-identical cross-platform.
+paper/** -text
+docs/trice_* -text
