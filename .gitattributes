@@ -1,2 +1,11 @@
 *.pdf binary
 *.trice.zip binary
+
+# TRICE evidence is content-addressed: manifests record the exact sha256 and
+# byte-size of every artifact (see benchmark/trice/evidence.py). Those files
+# must therefore be byte-identical on every platform. Disable all EOL
+# conversion (autocrlf) for the evidence tree -- otherwise a Windows CRLF
+# checkout no longer matches the LF bytes that Linux/CI verifies, and the
+# sha256/byte-size checks fail. `-text` makes git store and check out the
+# bytes verbatim on Windows, macOS, and Linux alike.
+benchmark/trice/results/** -text
