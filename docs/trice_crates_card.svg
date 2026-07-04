@@ -17,5 +17,5 @@
 <rect x="772" y="96" width="138" height="58" rx="8" fill="#e5e7eb"/>
 <text x="841" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#374151">install</text>
 <text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Currently publishable: tracerazor-core, tracerazor-semantic</text>
-<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Cargo install claim allowed: false | hash ee61306c7dbc2566...</text>
+<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Cargo install claim allowed: false | hash 85d86cf7f693cdfe...</text>
 </svg>

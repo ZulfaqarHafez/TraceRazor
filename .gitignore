@@ -24,8 +24,9 @@ build/
 # Build / run logs
 *.log
 
-# Claude local settings
-.claude/
+# Claude local settings (but the checked-in project skill stays tracked)
+.claude/*
+!.claude/skills/
 
 # Benchmark result JSONs — ignore intermediates, keep canonical 50-task runs
 v2/results/*.json

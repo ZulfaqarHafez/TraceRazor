@@ -120,15 +120,15 @@
       "present": true
     },
     "pyproject": {
-      "bytes": 5850,
+      "bytes": 6067,
       "kind": "file",
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "a59e14dfdd4c752e93403818f1a4b32c2ccb1bae577132d7f6e6aef53865d1a3"
+      "sha256": "b1c21d1c0681f219454047b0900d44a15ea6921eece2d986e0a269cccf3e9f93"
     }
   },
-  "install_card_sha256": "a6e0770ea6e5dd0ad0eeb2bda6abb9f4222eb504bf44f2a3237b6dc1bfcb91ac",
+  "install_card_sha256": "fec3eb86291021441e1a3f610183c5ba2d57ebbeae885e09473e7782fd41d448",
   "install_level": "full_cli_install_ready",
   "install_score": 100,
   "next_actions": [
@@ -155,11 +155,11 @@
   "schema_version": "trice-install-card/v1",
   "scope": "TraceRazor wheel installability",
   "wheel": {
-    "bytes": 607460,
+    "bytes": 612372,
     "kind": "file",
     "name": "wheel",
     "path": "dist/tracerazor-1.0.3-py3-none-any.whl",
     "present": true,
-    "sha256": "bda47590b13ab949078d45f866ff2ae61ae2f736f2211945a66cba098facad36"
+    "sha256": "14d9b19c3abc3ac132edbfe3709d8bc673a397dd25fa671742da9b2dd3e58368"
   }
 }

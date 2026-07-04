@@ -1,5 +1,5 @@
 \section{Release Card}
-Release level: \texttt{local\_release\_candidate}; score: 65/100; public release ready: no.
+Release level: \texttt{local\_release\_candidate}; score: 78/100; public release ready: no.
 
 \begin{table}[h]
 \centering
@@ -15,8 +15,8 @@ reproduction\_card\_verifies & yes & reproduction card verifies \\
 contract\_card\_verifies & yes & public API/CLI/schema contract card verifies \\
 install\_card\_verifies & yes & clean-wheel installability card verifies \\
 release\_docs\_present & yes & README, trust matrix, release checklist, pyproject, contract card, and install card present \\
-pypi & no & PyPI latest version matches local version \\
-piwheels & no & piwheels exposes the local version file \\
+pypi & yes & PyPI latest version matches local version \\
+piwheels & yes & piwheels exposes the local version file \\
 crates\_io & no & crates.io package is published \\
 github\_tag & no & local version tag points at current commit locally and remotely \\
 github\_actions & no & required public workflows are green \\
@@ -31,8 +31,6 @@ sbom\_plan\_documented & yes & SBOM and checksum release assets documented \\
 
 \noindent Next actions:
 \begin{itemize}
-\item Publish 1.0.3 to PyPI or lower the local version until it matches the public registry.
-\item Wait for piwheels to expose the 1.0.3 file after PyPI publish.
 \item Publish the Rust crates or keep cargo-install claims out of the README.
 \item Create and push the v1.0.3 tag only after local gates pass.
 \item Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.

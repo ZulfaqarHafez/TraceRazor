@@ -359,6 +359,7 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
         trace.steps.len()
     );
     TraceReport {
+        schema_version: crate::report::REPORT_SCHEMA_VERSION.to_string(),
         trace_id: trace.trace_id.clone(),
         agent_name: trace.agent_name.clone(),
         framework: trace.framework.clone(),

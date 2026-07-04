@@ -50,7 +50,12 @@ async fn open_store() -> TraceStore {
     name = "tracerazor",
     version,
     author = "Zulfaqar Hafez",
-    about = "Lighthouse score for AI agents. Audit reasoning traces and eliminate token waste."
+    about = "Lighthouse score for AI agents. Audit reasoning traces and eliminate token waste.",
+    long_about = "Lighthouse score for AI agents. Audit reasoning traces and eliminate token waste.\n\n\
+        Exit codes:\n  \
+        0  success — the command ran (an audit completed; any gate that was set passed)\n  \
+        1  gate failure — an explicit gate failed: audit/compare --threshold, compare regression, or verify tamper/mismatch\n  \
+        2  error — bad input, IO, or parse failure (distinct from a failed gate)"
 )]
 struct Cli {
     #[command(subcommand)]
@@ -60,6 +65,11 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Audit a trace file and produce an efficiency report.
+    ///
+    /// Gate semantics: without --threshold a low score is reported but still
+    /// exits 0; --threshold N exits 1 when TAS < N (batch mode gates the mean
+    /// TAS). A bad/unparseable trace exits 2, keeping "inefficient" distinct
+    /// from "broken input".
     Audit {
         /// Trace file(s) or directories (JSON). A directory or multiple
         /// files switches to batch mode: every trace is audited hermetically
@@ -150,6 +160,9 @@ enum Commands {
     ///
     /// For evidence bundles (zip files produced by `export --bundle`), the
     /// trace argument is optional — the bundle contains the trace internally.
+    ///
+    /// Gate semantics: exit 0 = verified; exit 1 = tamper/mismatch (signature
+    /// invalid, trace-hash mismatch, or re-score divergence); exit 2 = error.
     Verify {
         /// The report JSON produced by `audit --format json`, or an evidence
         /// bundle zip produced by `export --bundle`.
@@ -159,6 +172,11 @@ enum Commands {
         /// Not required when REPORT is an evidence bundle (.zip).
         #[arg(value_name = "TRACE")]
         trace: Option<PathBuf>,
+        /// Output format. `text` (default) prints the human-readable audit
+        /// trail byte-for-byte; `json` prints a single machine-readable verdict
+        /// object. Exit codes are identical in both modes.
+        #[arg(short, long, default_value = "text")]
+        format: VerifyFormat,
     },
 
     /// List all stored traces in the current session.
@@ -166,6 +184,9 @@ enum Commands {
         /// Filter by agent name.
         #[arg(short, long)]
         agent: Option<String>,
+        /// Output format.
+        #[arg(short, long, default_value = "markdown")]
+        format: OutputFormat,
     },
 
     /// Compare two trace files: TAS delta, per-metric breakdown, regression detection.
@@ -382,7 +403,7 @@ enum Commands {
 
 #[derive(Subcommand)]
 enum ClaudeCommand {
-    /// Install the Claude Code SessionEnd hook.
+    /// Install the Claude Code SessionEnd + SessionStart TraceRazor hooks.
     Install {
         /// Settings scope to modify. Defaults to per-project local settings.
         #[arg(long, default_value = "local")]
@@ -390,12 +411,18 @@ enum ClaudeCommand {
         /// Hook behavior. Coach mode still never auto-edits prompts/settings.
         #[arg(long, default_value = "coach")]
         mode: ClaudeMode,
+        /// Also install the packaged `tracerazor` skill into the same scope.
+        #[arg(long)]
+        with_skill: bool,
     },
-    /// Remove the TraceRazor Claude Code hook from settings.
+    /// Remove the TraceRazor Claude Code hooks from settings.
     Uninstall {
         /// Settings scope to modify. Defaults to per-project local settings.
         #[arg(long, default_value = "local")]
         scope: ClaudeScope,
+        /// Also remove the packaged `tracerazor` skill from the same scope.
+        #[arg(long)]
+        with_skill: bool,
     },
     /// Convert a Claude Code transcript JSONL into a TraceRazor trace.
     Convert {
@@ -422,6 +449,13 @@ enum ClaudeHookCommand {
         #[arg(long, default_value = "coach")]
         mode: ClaudeMode,
     },
+    /// Handle a Claude Code SessionStart hook event from stdin.
+    ///
+    /// Reads the SessionStart payload on stdin and, when the previous audited
+    /// session is fresh and actionable, prints a compact coach advisory to
+    /// STDOUT (Claude Code injects plain stdout into the new session's context).
+    #[command(name = "session-start")]
+    SessionStart,
 }
 
 #[derive(ValueEnum, Clone, Debug, Serialize, Deserialize)]
@@ -442,6 +476,13 @@ enum ClaudeMode {
 #[derive(ValueEnum, Clone, Debug)]
 enum OutputFormat {
     Markdown,
+    Json,
+}
+
+/// Output format for `verify`: prose audit trail vs machine-readable verdict.
+#[derive(ValueEnum, Clone, Debug, PartialEq)]
+enum VerifyFormat {
+    Text,
     Json,
 }
 
@@ -563,11 +604,15 @@ async fn run() -> Result<()> {
         } => {
             cmd_import(inputs, source_format, out, audit).await?;
         }
-        Commands::Verify { report, trace } => {
-            cmd_verify(report, trace)?;
+        Commands::Verify {
+            report,
+            trace,
+            format,
+        } => {
+            cmd_verify(report, trace, format)?;
         }
-        Commands::List { agent } => {
-            cmd_list(agent).await?;
+        Commands::List { agent, format } => {
+            cmd_list(agent, format).await?;
         }
         Commands::Compare {
             baseline,
@@ -705,13 +750,30 @@ async fn cmd_audit(
     // user opts in explicitly (most real ReAct task runs are 3–4 steps).
     let min_steps = min_steps.max(2);
     if trace.steps.len() < min_steps {
-        eprintln!(
-            "Notice: Trace '{}' has {} steps (minimum {} required). \
-             Use --min-steps to audit short traces.",
-            trace.trace_id,
-            trace.steps.len(),
-            min_steps
-        );
+        match format {
+            // A machine consumer needs a stable, parseable skip record on
+            // stdout — not a prose notice on stderr — so batch drivers can tell
+            // "skipped (too short)" apart from "audited". Exit stays 0.
+            OutputFormat::Json => {
+                let skip = json!({
+                    "status": "skipped",
+                    "reason": "below_min_steps",
+                    "steps_found": trace.steps.len(),
+                    "min_steps": min_steps,
+                    "trace": file.display().to_string(),
+                });
+                println!("{}", serde_json::to_string_pretty(&skip)?);
+            }
+            OutputFormat::Markdown => {
+                eprintln!(
+                    "Notice: Trace '{}' has {} steps (minimum {} required). \
+                     Use --min-steps to audit short traces.",
+                    trace.trace_id,
+                    trace.steps.len(),
+                    min_steps
+                );
+            }
+        }
         return Ok(());
     }
 
@@ -880,12 +942,19 @@ fn expand_trace_paths(inputs: &[PathBuf]) -> Result<Vec<PathBuf>> {
 
 async fn cmd_claude(command: ClaudeCommand) -> Result<()> {
     match command {
-        ClaudeCommand::Install { scope, mode } => cmd_claude_install(scope, mode),
-        ClaudeCommand::Uninstall { scope } => cmd_claude_uninstall(scope),
+        ClaudeCommand::Install {
+            scope,
+            mode,
+            with_skill,
+        } => cmd_claude_install(scope, mode, with_skill),
+        ClaudeCommand::Uninstall { scope, with_skill } => cmd_claude_uninstall(scope, with_skill),
         ClaudeCommand::Convert { transcript, out } => cmd_claude_convert(transcript, out),
         ClaudeCommand::Hook {
             command: ClaudeHookCommand::SessionEnd { mode },
         } => cmd_claude_hook_session_end(mode).await,
+        ClaudeCommand::Hook {
+            command: ClaudeHookCommand::SessionStart,
+        } => cmd_claude_hook_session_start().await,
     }
 }
 
@@ -920,31 +989,41 @@ fn cmd_claude_convert(transcript: PathBuf, out: Option<PathBuf>) -> Result<()> {
     Ok(())
 }
 
-fn cmd_claude_install(scope: ClaudeScope, mode: ClaudeMode) -> Result<()> {
+fn cmd_claude_install(scope: ClaudeScope, mode: ClaudeMode, with_skill: bool) -> Result<()> {
     let path = claude_settings_path(&scope)?;
     let mut settings = read_settings_recovering(&path)?;
     remove_tracerazor_hook(&mut settings);
     install_tracerazor_hook(&mut settings, &mode);
     write_settings_with_backup(&path, &settings)?;
     println!(
-        "Installed TraceRazor Claude Code hook in {} ({:?} mode).",
+        "Installed TraceRazor Claude Code hooks (SessionEnd + SessionStart) in {} ({:?} mode).",
         path.display(),
         mode
     );
     println!("Reports will be written under .tracerazor/claude-code/<session-id>/");
+    if with_skill {
+        let skill_path = install_tracerazor_skill(&scope)?;
+        println!("Installed TraceRazor skill at {}", skill_path.display());
+    }
     Ok(())
 }
 
-fn cmd_claude_uninstall(scope: ClaudeScope) -> Result<()> {
+fn cmd_claude_uninstall(scope: ClaudeScope, with_skill: bool) -> Result<()> {
     let path = claude_settings_path(&scope)?;
     let mut settings = read_settings_recovering(&path)?;
     let removed = remove_tracerazor_hook(&mut settings);
     write_settings_with_backup(&path, &settings)?;
     println!(
-        "{} TraceRazor Claude Code hook in {}.",
+        "{} TraceRazor Claude Code hooks in {}.",
         if removed { "Removed" } else { "No" },
         path.display()
     );
+    if with_skill {
+        match remove_tracerazor_skill(&scope)? {
+            Some(p) => println!("Removed TraceRazor skill at {}", p.display()),
+            None => println!("No TraceRazor skill to remove."),
+        }
+    }
     Ok(())
 }
 
@@ -1022,6 +1101,141 @@ async fn run_claude_hook_session_end(mode: ClaudeMode) -> Result<()> {
         coach_path.display()
     );
     Ok(())
+}
+
+async fn cmd_claude_hook_session_start() -> Result<()> {
+    // Never break session start: any failure degrades to a stderr warning and an
+    // empty stdout so Claude Code injects nothing.
+    if let Err(e) = run_claude_hook_session_start() {
+        eprintln!("TraceRazor Claude coach warning: {e:#}");
+    }
+    Ok(())
+}
+
+fn run_claude_hook_session_start() -> Result<()> {
+    let mut input = String::new();
+    std::io::stdin().read_to_string(&mut input)?;
+    let event: ClaudeSessionStartInput =
+        serde_json::from_str(&input).context("Claude Code SessionStart input was not valid JSON")?;
+    // A compaction restart already carries the prior context forward; injecting
+    // the advisory again would be noise.
+    if event.source.as_deref() == Some("compact") {
+        return Ok(());
+    }
+    let cwd = event
+        .cwd
+        .as_ref()
+        .map(PathBuf::from)
+        .unwrap_or(std::env::current_dir()?);
+    let index_path = cwd
+        .join(".tracerazor")
+        .join("claude-code")
+        .join("index.json");
+    if !index_path.exists() {
+        return Ok(());
+    }
+    let index: Vec<serde_json::Value> =
+        serde_json::from_str(&std::fs::read_to_string(&index_path)?).unwrap_or_default();
+    let Some(entry) = index.into_iter().next() else {
+        return Ok(());
+    };
+    if let Some(advisory) = build_coach_advisory(&cwd, &entry) {
+        // Plain STDOUT is injected verbatim into the new session's context.
+        println!("{advisory}");
+    }
+    Ok(())
+}
+
+/// Build the compact SessionStart advisory from the newest index entry, or
+/// `None` when the artifacts are missing, stale (> 7 days), or not actionable.
+fn build_coach_advisory(cwd: &Path, entry: &serde_json::Value) -> Option<String> {
+    let trace_id = entry.get("trace_id").and_then(serde_json::Value::as_str)?;
+    let out_dir = cwd
+        .join(".tracerazor")
+        .join("claude-code")
+        .join(sanitize_path_segment(trace_id));
+    let summary_path = out_dir.join("summary.json");
+    // Artifacts must exist: load the on-disk summary rather than trusting the
+    // index copy alone.
+    let summary: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&summary_path).ok()?).ok()?;
+
+    // Freshness: prefer the index timestamp, fall back to summary.json mtime.
+    let age = index_entry_age(entry, &summary_path)?;
+    if age > chrono::Duration::days(7) {
+        return None;
+    }
+
+    let tas = summary.get("tas_score").and_then(serde_json::Value::as_f64)?;
+    let fix_count = summary
+        .get("fix_count")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0);
+    // Only surface when there is something to act on.
+    if fix_count < 1 && tas >= 85.0 {
+        return None;
+    }
+
+    let grade = summary
+        .get("grade")
+        .and_then(serde_json::Value::as_str)
+        .unwrap_or("?");
+    let est_saved = summary
+        .get("estimated_tokens_saved")
+        .and_then(serde_json::Value::as_u64)
+        .unwrap_or(0);
+    let short_id: String = trace_id.chars().take(8).collect();
+
+    // Top fixes (up to 3) with their review risk, read from fixes.json.
+    let top_fixes = std::fs::read_to_string(out_dir.join("fixes.json"))
+        .ok()
+        .and_then(|s| serde_json::from_str::<Vec<serde_json::Value>>(&s).ok())
+        .map(|fixes| {
+            fixes
+                .iter()
+                .take(3)
+                .map(|f| {
+                    let ty = f
+                        .get("fix_type")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("fix");
+                    let risk = f
+                        .get("risk")
+                        .and_then(serde_json::Value::as_str)
+                        .unwrap_or("needs_review");
+                    format!("{ty} ({risk})")
+                })
+                .collect::<Vec<_>>()
+                .join(", ")
+        })
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "none".to_string());
+
+    // Forward-slash relative paths so the shell commands are copy-pasteable and
+    // platform-neutral.
+    let sid = sanitize_path_segment(trace_id);
+    let coach_rel = format!(".tracerazor/claude-code/{sid}/coach.md");
+    let fixes_rel = format!(".tracerazor/claude-code/{sid}/fixes.json");
+
+    Some(format!(
+        "TraceRazor coach — last session {short_id} scored TAS {tas:.0}/100 ({grade}), \
+~{est_saved} est. recoverable tokens/run (projection, not measured). \
+Top fixes: {top_fixes}. Details: {coach_rel}. \
+Apply safe prompt fixes: tracerazor apply {fixes_rel} --to CLAUDE.md --dry-run. \
+Validate savings with: tracerazor bench."
+    ))
+}
+
+/// Age of the newest audit: the index `indexed_at` timestamp when present and
+/// parseable, otherwise the `summary.json` file mtime. `None` if neither works.
+fn index_entry_age(entry: &serde_json::Value, summary_path: &Path) -> Option<chrono::Duration> {
+    if let Some(ts) = entry.get("indexed_at").and_then(serde_json::Value::as_str) {
+        if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(ts) {
+            return Some(chrono::Utc::now().signed_duration_since(dt.with_timezone(&chrono::Utc)));
+        }
+    }
+    let modified = std::fs::metadata(summary_path).ok()?.modified().ok()?;
+    chrono::Duration::from_std(modified.elapsed().ok()?).ok()
 }
 
 async fn cmd_import(
@@ -1158,6 +1372,76 @@ struct ClaudeSessionEndInput {
     session_id_camel: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+struct ClaudeSessionStartInput {
+    /// startup | resume | clear | compact (unknown values tolerated).
+    #[serde(default)]
+    source: Option<String>,
+    #[serde(default)]
+    cwd: Option<String>,
+}
+
+/// Compile-time-embedded canonical skill.
+///
+/// NOTE: this path is repo-relative (`crates/tracerazor-cli` -> `<repo>/skills`).
+/// It works from the source tree but MUST become a packaged crate asset (copied
+/// under the crate and referenced without `../..`) before this crate is
+/// published to crates.io, or the published tarball will fail to build.
+const TRACERAZOR_SKILL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../skills/tracerazor/SKILL.md"
+));
+
+fn claude_skill_path(scope: &ClaudeScope) -> Result<PathBuf> {
+    let base = match scope {
+        ClaudeScope::User => {
+            let home = std::env::var("HOME")
+                .or_else(|_| std::env::var("USERPROFILE"))
+                .context("HOME/USERPROFILE is not set")?;
+            PathBuf::from(home).join(".claude")
+        }
+        ClaudeScope::Project | ClaudeScope::Local => PathBuf::from(".claude"),
+    };
+    Ok(base.join("skills").join("tracerazor").join("SKILL.md"))
+}
+
+fn install_tracerazor_skill(scope: &ClaudeScope) -> Result<PathBuf> {
+    let path = claude_skill_path(scope)?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    if path.exists() {
+        let existing = std::fs::read_to_string(&path).unwrap_or_default();
+        if existing == TRACERAZOR_SKILL {
+            return Ok(path);
+        }
+        // Never clobber a different SKILL.md silently: back it up first.
+        let backup = backup_path(&path, "bak");
+        std::fs::copy(&path, &backup)?;
+        eprintln!("Backed up existing SKILL.md to {}", backup.display());
+    }
+    std::fs::write(&path, TRACERAZOR_SKILL)?;
+    Ok(path)
+}
+
+fn remove_tracerazor_skill(scope: &ClaudeScope) -> Result<Option<PathBuf>> {
+    let path = claude_skill_path(scope)?;
+    if !path.exists() {
+        return Ok(None);
+    }
+    // Only remove a skill we own; leave a user-authored SKILL.md untouched.
+    let existing = std::fs::read_to_string(&path).unwrap_or_default();
+    if existing != TRACERAZOR_SKILL {
+        eprintln!(
+            "Left non-TraceRazor SKILL.md in place at {}",
+            path.display()
+        );
+        return Ok(None);
+    }
+    std::fs::remove_file(&path)?;
+    Ok(Some(path))
+}
+
 fn claude_settings_path(scope: &ClaudeScope) -> Result<PathBuf> {
     match scope {
         ClaudeScope::Local => Ok(PathBuf::from(".claude").join("settings.local.json")),
@@ -1228,33 +1512,50 @@ fn install_tracerazor_hook(settings: &mut serde_json::Value, mode: &ClaudeMode) 
             "statusMessage": "TraceRazor auditing Claude Code session"
         }]
     }));
+    let session_start = ensure_child_array(hooks, "SessionStart");
+    session_start.push(json!({
+        "hooks": [{
+            "type": "command",
+            "command": "tracerazor",
+            "args": ["claude", "hook", "session-start"],
+            "timeout": 10,
+            "statusMessage": "TraceRazor coach context"
+        }]
+    }));
 }
 
 fn remove_tracerazor_hook(settings: &mut serde_json::Value) -> bool {
     let mut removed = false;
-    let Some(groups) = settings
+    // Prune TraceRazor handlers from every hook-event array so both the current
+    // SessionEnd + SessionStart entries and legacy session-end-only installs are
+    // cleaned up.
+    let Some(events) = settings
         .get_mut("hooks")
-        .and_then(|h| h.get_mut("SessionEnd"))
-        .and_then(serde_json::Value::as_array_mut)
+        .and_then(serde_json::Value::as_object_mut)
     else {
         return false;
     };
-    for group in groups.iter_mut() {
-        if let Some(hooks) = group
-            .get_mut("hooks")
-            .and_then(serde_json::Value::as_array_mut)
-        {
-            let before = hooks.len();
-            hooks.retain(|hook| !is_tracerazor_hook_handler(hook));
-            removed |= hooks.len() != before;
+    for group_array in events.values_mut() {
+        let Some(groups) = group_array.as_array_mut() else {
+            continue;
+        };
+        for group in groups.iter_mut() {
+            if let Some(hooks) = group
+                .get_mut("hooks")
+                .and_then(serde_json::Value::as_array_mut)
+            {
+                let before = hooks.len();
+                hooks.retain(|hook| !is_tracerazor_hook_handler(hook));
+                removed |= hooks.len() != before;
+            }
         }
+        groups.retain(|group| {
+            group
+                .get("hooks")
+                .and_then(serde_json::Value::as_array)
+                .is_some_and(|hooks| !hooks.is_empty())
+        });
     }
-    groups.retain(|group| {
-        group
-            .get("hooks")
-            .and_then(serde_json::Value::as_array)
-            .is_some_and(|hooks| !hooks.is_empty())
-    });
     removed
 }
 
@@ -1268,10 +1569,11 @@ fn is_tracerazor_hook_handler(hook: &serde_json::Value) -> bool {
                     .iter()
                     .filter_map(serde_json::Value::as_str)
                     .collect::<Vec<_>>();
-                args.starts_with(&["claude", "hook", "session-end"])
-                    || args
-                        .windows(3)
-                        .any(|w| w == ["claude", "hook", "session-end"])
+                // Match any TraceRazor `claude hook <event>` handler (session-end,
+                // session-start, and older session-end-only installs). The args
+                // may or may not be prefixed with the binary name.
+                args.starts_with(&["claude", "hook"])
+                    || args.windows(2).any(|w| w == ["claude", "hook"])
             })
 }
 
@@ -1435,7 +1737,13 @@ fn update_claude_session_index(cwd: &Path, summary: serde_json::Value) -> Result
     };
     let trace_id = summary.get("trace_id").cloned();
     index.retain(|entry| entry.get("trace_id").cloned() != trace_id);
-    index.insert(0, summary);
+    // Stamp the index entry so the SessionStart coach can judge freshness without
+    // depending on filesystem mtimes surviving copies/syncs.
+    let mut entry = summary;
+    if let Some(obj) = entry.as_object_mut() {
+        obj.insert("indexed_at".into(), json!(chrono::Utc::now().to_rfc3339()));
+    }
+    index.insert(0, entry);
     index.truncate(100);
     std::fs::write(index_path, serde_json::to_string_pretty(&index)?)?;
     Ok(())
@@ -1548,13 +1856,26 @@ fn cmd_audit_batch(
 
     let min_steps = min_steps.max(2);
     let mut rows: Vec<(String, f64, String, usize, u32)> = Vec::new(); // file, tas, grade, fixes, est tokens
-    let mut skipped = 0usize;
+    // Skipped files carry a status object mirroring the single-file skip shape
+    // so JSON consumers see every input accounted for in `per_file`.
+    let mut skipped_entries: Vec<serde_json::Value> = Vec::new();
     for f in &files {
+        let file_name = f
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or("?")
+            .to_string();
         let data = match std::fs::read_to_string(f) {
             Ok(d) => d,
             Err(e) => {
                 eprintln!("skip {}: {e}", f.display());
-                skipped += 1;
+                skipped_entries.push(json!({
+                    "file": file_name,
+                    "status": "skipped",
+                    "reason": "read_error",
+                    "trace": f.display().to_string(),
+                    "error": e.to_string(),
+                }));
                 continue;
             }
         };
@@ -1562,12 +1883,25 @@ fn cmd_audit_batch(
             Ok(t) => t,
             Err(e) => {
                 eprintln!("skip {}: parse failed: {e:#}", f.display());
-                skipped += 1;
+                skipped_entries.push(json!({
+                    "file": file_name,
+                    "status": "skipped",
+                    "reason": "parse_error",
+                    "trace": f.display().to_string(),
+                    "error": format!("{e:#}"),
+                }));
                 continue;
             }
         };
         if trace.steps.len() < min_steps {
-            skipped += 1;
+            skipped_entries.push(json!({
+                "file": file_name,
+                "status": "skipped",
+                "reason": "below_min_steps",
+                "steps_found": trace.steps.len(),
+                "min_steps": min_steps,
+                "trace": f.display().to_string(),
+            }));
             continue;
         }
         let report = tracerazor_core::analyse(&mut trace, default_similarity_fn(), &config)?;
@@ -1582,6 +1916,7 @@ fn cmd_audit_batch(
             report.savings.tokens_saved,
         ));
     }
+    let skipped = skipped_entries.len();
     if rows.is_empty() {
         anyhow::bail!("no analysable traces in batch ({} skipped)", skipped);
     }
@@ -1597,12 +1932,13 @@ fn cmd_audit_batch(
 
     match format {
         OutputFormat::Json => {
-            let per_file: Vec<serde_json::Value> = rows
+            let mut per_file: Vec<serde_json::Value> = rows
                 .iter()
                 .map(|(f, t, g, x, s)| {
-                    serde_json::json!({"file": f, "tas": t, "grade": g, "fixes": x, "est_tokens_saved": s})
+                    serde_json::json!({"file": f, "status": "audited", "tas": t, "grade": g, "fixes": x, "est_tokens_saved": s})
                 })
                 .collect();
+            per_file.extend(skipped_entries.iter().cloned());
             let out = serde_json::json!({
                 "mode": "batch",
                 "hermetic": true,
@@ -1867,10 +2203,14 @@ fn verify_from_bytes(report_raw: &str, trace_bytes: &[u8]) -> Result<()> {
     }
 }
 
-fn cmd_verify(report_path: PathBuf, trace_path: Option<PathBuf>) -> Result<()> {
+fn cmd_verify(
+    report_path: PathBuf,
+    trace_path: Option<PathBuf>,
+    format: VerifyFormat,
+) -> Result<()> {
     // Accept a zip bundle as the first argument (Phase 3.3); trace is optional.
     if report_path.extension().is_some_and(|e| e == "zip") {
-        return cmd_verify_bundle(report_path);
+        return cmd_verify_bundle(report_path, format);
     }
 
     let trace_path = trace_path.ok_or_else(|| {
@@ -1884,11 +2224,164 @@ fn cmd_verify(report_path: PathBuf, trace_path: Option<PathBuf>) -> Result<()> {
     let trace_bytes = std::fs::read(&trace_path)
         .with_context(|| format!("Cannot read trace: {}", trace_path.display()))?;
 
-    verify_from_bytes(&report_raw, &trace_bytes)
+    match format {
+        VerifyFormat::Text => verify_from_bytes(&report_raw, &trace_bytes),
+        VerifyFormat::Json => verify_json_from_bytes(
+            &report_raw,
+            &trace_bytes,
+            &report_path.display().to_string(),
+            &trace_path.display().to_string(),
+        ),
+    }
+}
+
+/// JSON counterpart of [`verify_from_bytes`]: mirrors the same
+/// `verify_report` decision points but emits a single machine-readable verdict
+/// object to stdout. Exit codes are identical to the text path (0 verified,
+/// 1 tamper/mismatch, 2 error).
+fn verify_json_from_bytes(
+    report_raw: &str,
+    trace_bytes: &[u8],
+    report_path: &str,
+    trace_path: &str,
+) -> Result<()> {
+    use tracerazor_core::provenance::{verify_report, RescoreStatus, VerifyError};
+
+    let this_version = env!("CARGO_PKG_VERSION");
+    let outcome = verify_report(
+        report_raw,
+        trace_bytes,
+        this_version,
+        tracerazor_semantic::BOW_BACKEND_ID,
+        |s| ingest_parse(s, tracerazor_ingest::TraceFormat::Auto),
+        default_similarity_fn(),
+    );
+
+    let sig_str = |signed: bool| if signed { "ok" } else { "missing" };
+
+    let (mut obj, exit_code) = match outcome {
+        Ok(v) => match v.rescore {
+            RescoreStatus::Reproduced { tas } => (
+                json!({
+                    "status": "verified",
+                    "level": if v.signed { "full" } else { "rescore-only (unsigned)" },
+                    "signature": sig_str(v.signed),
+                    "trace_hash": "ok",
+                    "rescore": "ok",
+                    "tas": tas,
+                    "mismatches": [],
+                }),
+                0,
+            ),
+            RescoreStatus::SkippedVersionMismatch { report_version } => (
+                json!({
+                    "status": "verified",
+                    "level": if v.signed { "signature + hash" } else { "hash-only (unsigned)" },
+                    "signature": sig_str(v.signed),
+                    "trace_hash": "ok",
+                    "rescore": "skipped",
+                    "reason": format!("report version {report_version} != current {this_version}"),
+                    "mismatches": [],
+                }),
+                0,
+            ),
+            RescoreStatus::SkippedEmbeddingBackend { backend } => (
+                json!({
+                    "status": "verified",
+                    "level": if v.signed { "signature-only" } else { "hash-only (unsigned)" },
+                    "signature": sig_str(v.signed),
+                    "trace_hash": "ok",
+                    "rescore": "skipped",
+                    "reason": format!("embedding backend {backend} is not locally reproducible"),
+                    "mismatches": [],
+                }),
+                0,
+            ),
+            RescoreStatus::SkippedStoreInfluenced {
+                baseline_tokens,
+                historical_median_steps,
+                n_historical_sequences,
+            } => (
+                json!({
+                    "status": "verified",
+                    "level": if v.signed { "signature-only" } else { "hash-only (unsigned)" },
+                    "signature": sig_str(v.signed),
+                    "trace_hash": "ok",
+                    "rescore": "skipped",
+                    "reason": "run used local store baselines; exact re-score requires that state",
+                    "store": {
+                        "baseline_tokens": baseline_tokens,
+                        "historical_median_steps": historical_median_steps,
+                        "n_historical_sequences": n_historical_sequences,
+                    },
+                    "mismatches": [],
+                }),
+                0,
+            ),
+        },
+        Err(VerifyError::SignatureInvalid) => (
+            json!({
+                "status": "tampered",
+                "level": "tampered",
+                "signature": "invalid",
+                "trace_hash": "unchecked",
+                "rescore": "skipped",
+                "mismatches": ["Ed25519 signature verification failed; report modified after signing"],
+            }),
+            1,
+        ),
+        Err(VerifyError::TraceHashMismatch {
+            signed,
+            manifest,
+            actual,
+        }) => (
+            json!({
+                "status": "tampered",
+                "level": "tampered",
+                "signature": sig_str(signed),
+                "trace_hash": "mismatch",
+                "rescore": "skipped",
+                "mismatches": [format!("trace hash: manifest {manifest} != on-disk {actual}")],
+            }),
+            1,
+        ),
+        Err(VerifyError::RescoreMismatch {
+            signed, mismatches, ..
+        }) => (
+            json!({
+                "status": "mismatch",
+                "level": "rescore-mismatch",
+                "signature": sig_str(signed),
+                "trace_hash": "ok",
+                "rescore": "mismatch",
+                "mismatches": mismatches,
+            }),
+            1,
+        ),
+        Err(e) => (
+            json!({
+                "status": "error",
+                "level": "error",
+                "signature": "unchecked",
+                "trace_hash": "unchecked",
+                "rescore": "skipped",
+                "mismatches": [e.to_string()],
+            }),
+            2,
+        ),
+    };
+
+    obj["report_path"] = json!(report_path);
+    obj["trace_path"] = json!(trace_path);
+    println!("{}", serde_json::to_string_pretty(&obj)?);
+    if exit_code != 0 {
+        std::process::exit(exit_code);
+    }
+    Ok(())
 }
 
 /// Verify an evidence bundle (zip produced by `export --bundle`).
-fn cmd_verify_bundle(bundle_path: PathBuf) -> Result<()> {
+fn cmd_verify_bundle(bundle_path: PathBuf, format: VerifyFormat) -> Result<()> {
     use std::io::Read;
 
     let file = std::fs::File::open(&bundle_path)
@@ -1931,29 +2424,50 @@ fn cmd_verify_bundle(bundle_path: PathBuf) -> Result<()> {
         .unwrap_or("");
     let actual_report_sha = sha256_hex(&report_bytes);
     if !expected_report_sha.is_empty() && actual_report_sha != expected_report_sha {
+        if format == VerifyFormat::Json {
+            let obj = json!({
+                "status": "tampered",
+                "level": "tampered",
+                "signature": "unchecked",
+                "trace_hash": "unchecked",
+                "rescore": "skipped",
+                "bundle_integrity": "mismatch",
+                "mismatches": [format!(
+                    "report.json SHA256: SHA256SUMS {expected_report_sha} != actual {actual_report_sha}"
+                )],
+                "report_path": bundle_path.display().to_string(),
+                "trace_path": "(bundle)",
+            });
+            println!("{}", serde_json::to_string_pretty(&obj)?);
+            std::process::exit(1);
+        }
         eprintln!("TAMPERED: report.json SHA256 does not match SHA256SUMS in bundle.");
         eprintln!("  expected : {expected_report_sha}");
         eprintln!("  actual   : {actual_report_sha}");
         std::process::exit(1);
     }
-    println!("bundle integrity: OK (SHA256SUMS verified)");
 
     let report_raw =
         std::str::from_utf8(&report_bytes).context("report.json is not valid UTF-8")?;
-    verify_from_bytes(report_raw, &trace_bytes)
+    match format {
+        VerifyFormat::Text => {
+            println!("bundle integrity: OK (SHA256SUMS verified)");
+            verify_from_bytes(report_raw, &trace_bytes)
+        }
+        VerifyFormat::Json => verify_json_from_bytes(
+            report_raw,
+            &trace_bytes,
+            &bundle_path.display().to_string(),
+            "(bundle)",
+        ),
+    }
 }
 
 // ── list ──────────────────────────────────────────────────────────────────────
 
-async fn cmd_list(agent_filter: Option<String>) -> Result<()> {
+async fn cmd_list(agent_filter: Option<String>, format: OutputFormat) -> Result<()> {
     let store = open_store().await;
     let summaries = store.list_traces().await?;
-
-    if summaries.is_empty() {
-        println!("No traces stored in this session.");
-        println!("Run `tracerazor audit <file>` to analyse and store a trace.");
-        return Ok(());
-    }
 
     let summaries: Vec<_> = summaries
         .into_iter()
@@ -1964,6 +2478,32 @@ async fn cmd_list(agent_filter: Option<String>) -> Result<()> {
                 .unwrap_or(true)
         })
         .collect();
+
+    if let OutputFormat::Json = format {
+        // Array of stored-trace summaries mirroring the table columns. Empty
+        // store yields `[]` (a valid, scriptable result) rather than prose.
+        let arr: Vec<serde_json::Value> = summaries
+            .iter()
+            .map(|s| {
+                json!({
+                    "trace_id": s.trace_id,
+                    "agent": s.agent_name,
+                    "framework": s.framework,
+                    "steps": s.total_steps,
+                    "tas": s.tas_score,
+                    "grade": s.grade,
+                })
+            })
+            .collect();
+        println!("{}", serde_json::to_string_pretty(&arr)?);
+        return Ok(());
+    }
+
+    if summaries.is_empty() {
+        println!("No traces stored in this session.");
+        println!("Run `tracerazor audit <file>` to analyse and store a trace.");
+        return Ok(());
+    }
 
     println!(
         "{:<36} {:<22} {:<10} {:<8} TAS",

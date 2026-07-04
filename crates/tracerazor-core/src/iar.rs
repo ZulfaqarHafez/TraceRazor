@@ -295,6 +295,7 @@ mod tests {
         };
 
         TraceReport {
+            schema_version: crate::report::REPORT_SCHEMA_VERSION.to_string(),
             trace_id: "test".into(),
             agent_name: "test".into(),
             framework: "test".into(),

@@ -42,6 +42,28 @@ Coach mode is advisory: it never edits `CLAUDE.md`, prompts, settings, or tools.
 
 ---
 
+## For AI agents
+
+TraceRazor is built to be driven by coding agents: point it at a trace and it returns a
+scored, decomposed, machine-applicable audit — offline, deterministic, no API keys.
+
+- **Skill:** after publishing, `npx skills add ZulfaqarHafez/tracerazor`; or copy
+  [`skills/tracerazor`](skills/tracerazor) into `~/.claude/skills/` (or your agent's
+  skill dir).
+- **Conventions:** [`AGENTS.md`](AGENTS.md) (command reference + exit-code contract +
+  honesty rules) and [`llms.txt`](llms.txt) (doc index) are in the repo root; the
+  end-to-end recipe is [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
+- **Claude Code coach:** `tracerazor claude install --scope local --mode coach` audits
+  every session into `.tracerazor/claude-code/<session-id>/` (add `--with-skill` to also
+  drop the skill into the project).
+- **MCP:** `pip install "tracerazor[mcp]"` then run `tracerazor-mcp` to expose auditing
+  over the Model Context Protocol — see [`docs/MCP.md`](docs/MCP.md).
+
+For machine runs always use `--hermetic --format json`; exit code `1` means only an
+explicit gate failed, never a low score.
+
+---
+
 ## What TraceRazor Does
 
 TraceRazor v1.0.3 closes a full loop: **audit** a trace offline, **apply** the

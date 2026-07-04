@@ -102,6 +102,17 @@ fn huggingface_agentinstruct_audit_statistics() {
         let output = out.stdout;
 
         match serde_json::from_slice::<Value>(&output) {
+            // Sub-floor traces (< MIN_TRACE_STEPS) now emit a machine-readable
+            // skip object on stdout (exit 0) instead of empty output, so a JSON
+            // consumer can tell "skipped (too short)" apart from "audited".
+            Ok(report) if report["status"] == "skipped" => {
+                skipped += 1;
+                assert_eq!(
+                    report["reason"], "below_min_steps",
+                    "sub-floor skip for {:?} must report below_min_steps, got: {report}",
+                    f.file_name().unwrap()
+                );
+            }
             Ok(report) => {
                 analysable += 1;
                 let score = &report["score"];

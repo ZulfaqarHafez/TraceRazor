@@ -72,9 +72,30 @@ pub struct AgentBreakdown {
     pub grade: Option<String>,
 }
 
+/// Stable identifier for the report JSON contract (see `schemas/report.schema.json`).
+///
+/// Bumped only on a *breaking* shape change (a field removed or its meaning /
+/// type changed). Purely additive fields keep the same value, since consumers
+/// are expected to ignore unknown keys.
+pub const REPORT_SCHEMA_VERSION: &str = "tracerazor-report/v1";
+
+/// serde `default` for [`TraceReport::schema_version`]: reports serialized
+/// before this field existed deserialize to the v1 contract.
+fn default_schema_version() -> String {
+    REPORT_SCHEMA_VERSION.to_string()
+}
+
 /// A complete TraceRazor report.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TraceReport {
+    /// Machine-readable contract version for this report's JSON shape.
+    ///
+    /// Additive fields keep this value; a breaking shape change bumps it.
+    /// `#[serde(default)]` lets reports serialized before this field was
+    /// introduced deserialize cleanly (they receive the v1 default), so the
+    /// addition never breaks re-loading historical reports.
+    #[serde(default = "default_schema_version")]
+    pub schema_version: String,
     pub trace_id: String,
     pub agent_name: String,
     pub framework: String,
@@ -324,8 +345,22 @@ impl TraceReport {
     /// `analysis_duration_ms` is zeroed (non-deterministic wall-clock field);
     /// `manifest.signature` and `manifest.signing_key_pub` are excluded (the
     /// signature cannot sign itself). Every other field — including
-    /// `manifest.similarity_backend`, `agf`, `savings`, `fixes`, `summary` —
-    /// is included, so any edit to any field invalidates the signature.
+    /// `schema_version`, `manifest.similarity_backend`, `agf`, `savings`,
+    /// `fixes`, `summary` — is included, so any edit to any field invalidates
+    /// the signature.
+    ///
+    /// `schema_version` (added in the v1 contract) is signed like any other
+    /// field rather than excluded. Rationale: signing and verification are
+    /// symmetric — both call `canonical_bytes` on the *deserialized* struct, so
+    /// the field flows identically into both. Excluding it via
+    /// `skip_serializing_if` would drop it from the emitted report JSON too
+    /// (defeating the machine-readable contract), and routing canonicalisation
+    /// through a `serde_json::Value` to strip one key would re-sort every key
+    /// (serde_json's default `Map` is a `BTreeMap`) and invalidate *all*
+    /// existing signatures. Any report predating the field deserializes to the
+    /// v1 default, so a re-signed report stays stable; there are no committed
+    /// pre-schema signed reports to re-verify (all shipped reports are
+    /// unsigned, and the signing tests self-sign within one binary).
     pub fn canonical_bytes(&self) -> Result<Vec<u8>, serde_json::Error> {
         let mut r = self.clone();
         r.analysis_duration_ms = 0;

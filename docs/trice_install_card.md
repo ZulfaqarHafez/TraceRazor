@@ -35,4 +35,4 @@
 
 ## Hash
 
-- install card: `a6e0770ea6e5dd0ad0eeb2bda6abb9f4222eb504bf44f2a3237b6dc1bfcb91ac`
+- install card: `fec3eb86291021441e1a3f610183c5ba2d57ebbeae885e09473e7782fd41d448`

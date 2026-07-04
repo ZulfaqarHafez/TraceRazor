@@ -2,7 +2,7 @@
   "checks": [
     {
       "name": "offline_doctor_core",
-      "observed": "local_package=installed; bundled_cli=source-build; schemas=available",
+      "observed": "local_package=installed; bundled_cli=on-path; schemas=available",
       "passed": true,
       "required": "local package, CLI, and schemas pass offline doctor"
     },
@@ -44,7 +44,7 @@
     },
     {
       "name": "install_card_verifies",
-      "observed": "python_trice_install_ready",
+      "observed": "full_cli_install_ready",
       "passed": true,
       "required": "clean-wheel installability card verifies"
     },
@@ -82,9 +82,9 @@
   "doctor_snapshot": {
     "checks": {
       "bundled_cli": {
-        "detail": "C:\\Users\\zulfa\\TraceRazor\\target\\release\\tracerazor.exe; binary=1.0.3",
+        "detail": "C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.0.3",
         "ok": true,
-        "status": "source-build"
+        "status": "on-path"
       },
       "crates_io": {
         "detail": "offline mode",
@@ -97,7 +97,7 @@
         "status": "skipped"
       },
       "github_tag": {
-        "detail": "head=ada742be30bb local_tag=False remote_tag=False",
+        "detail": "head=e986ec0a19a3 local_tag=False remote_tag=False",
         "ok": false,
         "status": "pending"
       },
@@ -147,42 +147,42 @@
       ]
     }
   },
-  "doctor_snapshot_sha256": "ca464424d939fda60146e0a651034b3d72344d98100b16d29eb4c1202984155b",
+  "doctor_snapshot_sha256": "9800baf4bb23c268205b4cc7b874e7e194484851e973929c64f2f75cf3a8146e",
   "inputs": {
     "artifact_card": {
-      "bytes": 16660,
+      "bytes": 16653,
       "name": "trice_artifact_card.json",
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "8e6f523699b23b264876f48d41b042c5e74b3b30ba8381ef605bdc1f710f0b8f"
+      "sha256": "e624a39cb688bd22bbd568374d334bc8bfbd75fbf1f8fe96e4a3452669febc40"
     },
     "contract_card": {
       "bytes": 19671,
       "name": "trice_contract_card.json",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "9d2cb75affbee6676d7e9a00949f41ca5995202b14f9fc0b7a18240f461e0b5c"
+      "sha256": "547ec54d1fe6a0e8f10ffe27bcf49fc30b3ac6aa44c5b97c97ad7d8a96fcad7c"
     },
     "crates_card": {
       "bytes": 22152,
       "name": "trice_crates_card.json",
       "path": "docs/trice_crates_card.json",
       "present": true,
-      "sha256": "f16c2a70c6b97b0bb311b5dc1cc4398eeb2d7a974f0e00255bda33a122fb16cf"
+      "sha256": "3ae2ba5b02bfa9348bdd7666e43d4e2e925c82fb00c27f45a4e94cec7f828c4e"
     },
     "install_card": {
-      "bytes": 8219,
+      "bytes": 7300,
       "name": "trice_install_card.json",
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "b019465c0cc37cf4af4ef6a2e8d9f5574cdf1ecc539a802ec7bf4ff59b9935a7"
+      "sha256": "8fec158d6bf7c73d084419e2b5737c53228c77a7746d532000d1db2998ba5191"
     },
     "paper_manifest": {
       "bytes": 7591,
       "name": "trice_v3_research_manifest.json",
       "path": "paper/trice_v3_research_manifest.json",
       "present": true,
-      "sha256": "c381bf08088c8c4d1227ee3b3d0f92439860f00195b362a01c7b2956ffee94d6"
+      "sha256": "b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e"
     },
     "paper_result": {
       "bytes": 46879,
@@ -192,25 +192,25 @@
       "sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8"
     },
     "release_card": {
-      "bytes": 11790,
+      "bytes": 11689,
       "name": "trice_release_card.json",
       "path": "docs/trice_release_card.json",
       "present": true,
-      "sha256": "e4e279efae522767d31c1db17318ea4855f1301b3b396dc02c104e9830bc00bc"
+      "sha256": "878fda974aece62094c02e0c7b286ae364e7f4accbbdcad2a97f666621c3c6bd"
     },
     "release_evidence": {
-      "bytes": 144833,
+      "bytes": 145113,
       "name": "trice_release_evidence.json",
       "path": "docs/trice_release_evidence.json",
       "present": true,
-      "sha256": "7b6cc9eff38d73afcecbfcaf8f0d51884a60f9ca7b0946ac837e3270e772363a"
+      "sha256": "a8607e311eb86fffd99b14940a0b9e27d618e5fd874d0848eae44ae48525c8f5"
     },
     "reproduction_card": {
       "bytes": 7494,
       "name": "trice_reproduction_card.json",
       "path": "docs/trice_reproduction_card.json",
       "present": true,
-      "sha256": "579d3b8898f6bdb7ab8b20aa1e58dc6f5118923f3d12a09b8d512fc9fe26eb84"
+      "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
     },
     "research_card": {
       "bytes": 71467,
@@ -220,7 +220,7 @@
       "sha256": "2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1"
     }
   },
-  "integrity_card_sha256": "ddf9175c68c721053dc61356d43e0b651a18f2976c8e62428fe9a9a58b7b66ca",
+  "integrity_card_sha256": "1c271b25769d773e70a9d1c60ac50e589c7588113afea0fad24a8b74e687c1e1",
   "integrity_level": "proof_graph_integrity_locked",
   "integrity_score": 100,
   "next_actions": [
@@ -396,8 +396,8 @@
     },
     "install_card": {
       "errors": [],
-      "install_level": "python_trice_install_ready",
-      "install_score": 90,
+      "install_level": "full_cli_install_ready",
+      "install_score": 100,
       "ok": true
     },
     "paper_manifest": {
@@ -409,7 +409,7 @@
       "ok": true,
       "public_release_ready": false,
       "release_level": "local_release_candidate",
-      "release_score": 65
+      "release_score": 78
     },
     "release_evidence": {
       "errors": [],

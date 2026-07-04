@@ -4,6 +4,36 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+Agent-native surface: make TraceRazor discoverable and drivable by coding agents
+(Claude Code, Codex, Cursor, Gemini CLI, Copilot, MCP clients) without new claims
+about the auditor's accuracy.
+
+### Added
+- Add a distributable Claude Code skill pack at `skills/tracerazor/SKILL.md` (and the
+  active copy under `.claude/skills/tracerazor/`) with trigger phrases, the audit
+  workflow, and the honesty rules.
+- Add the cross-agent guidance file set: root `AGENTS.md` (when-to-use, command
+  reference, exit-code contract, honesty rules), root `CLAUDE.md` (in-repo dev context),
+  root `llms.txt` (llms.txt-spec doc index over the raw GitHub docs), and
+  `docs/AGENT_GUIDE.md` (the single end-to-end machine recipe with field-by-field report
+  interpretation and exact failure-mode stderr).
+- Add a "For AI agents" section to `README.md` pointing at the skill, `AGENTS.md`,
+  `llms.txt`, the Claude Code coach, and the MCP server.
+- Add a SessionStart Claude Code coach hook and a `tracerazor claude install --with-skill`
+  flag that also drops the skill into the project.
+- Add `schemas/report.schema.json` and a `schema_version` field to the audit report so
+  the JSON output is machine-validatable and versioned.
+- Add JSON output to `verify` and `list` (`--format json`) and a machine-readable
+  skip-status JSON for below-min-steps audits in `--format json` mode.
+- Add an MCP server (`tracerazor-mcp`) and a `tracerazor[mcp]` install extra exposing
+  auditing over the Model Context Protocol; document it in `docs/MCP.md`.
+- Teach the Python launcher to emit actionable errors when the native auditor binary is
+  missing (build/`TRACERAZOR_BIN`/container guidance).
+
+### Fixed
+- Fix the launcher/action code path on Windows.
+- Fix the Docker Compose image tag.
+
 ## [1.0.3] - 2026-06-21
 
 ### Added

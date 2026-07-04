@@ -68,6 +68,18 @@
       "version": ">=0.2"
     },
     {
+      "name": "mcp",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/mcp",
+      "type": "library",
+      "version": ">=1.0"
+    },
+    {
       "name": "numpy",
       "properties": [
         {
@@ -213,7 +225,7 @@
       }
     ]
   },
-  "serialNumber": "urn:uuid:eeb03cab-6c11-c3c7-5a6c-4ae618ecfb33",
+  "serialNumber": "urn:uuid:23d45016-dd67-a391-6d23-4478c285ed69",
   "specVersion": "1.6",
   "version": 1
 }
