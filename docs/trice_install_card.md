@@ -9,7 +9,7 @@
 
 | Check | Passed | Observed | Required |
 |---|---:|---|---|
-| wheel_present | yes | dist/tracerazor-1.0.3-py3-none-any.whl | built wheel exists |
+| wheel_present | yes | tracerazor-1.0.3-py3-none-any.whl | built wheel exists |
 | venv_created | yes | 0 | clean virtual environment can be created |
 | wheel_installs | yes | 0 | wheel installs with pip --no-deps |
 | version_matches | yes | 1.0.3 | 1.0.3 |
@@ -35,4 +35,4 @@
 
 ## Hash
 
-- install card: `fec3eb86291021441e1a3f610183c5ba2d57ebbeae885e09473e7782fd41d448`
+- install card: `fdf749019fe2c5edb246d04be81e99ac6542501c76c71b649f9d7a35f0ea7165`

@@ -65,6 +65,13 @@ def sha256_file(path: str | Path) -> str:
     return h.hexdigest()
 
 
+def write_text_lf(path: str | Path, text: str) -> None:
+    """Write UTF-8 text with LF newlines on every platform."""
+
+    with Path(path).open("w", encoding="utf-8", newline="\n") as fh:
+        fh.write(text)
+
+
 def build_manifest(
     result: dict[str, Any],
     result_path: str | Path,

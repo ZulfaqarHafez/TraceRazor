@@ -3,6 +3,8 @@
 
 # Database files
 *.db
+tracerazor.db/
+.tracerazor/
 
 # Secrets
 .env

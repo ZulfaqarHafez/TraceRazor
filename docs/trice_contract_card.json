@@ -9,7 +9,7 @@
     {
       "name": "top_level_api",
       "observed": {
-        "count": 20,
+        "count": 25,
         "missing": []
       },
       "passed": true,
@@ -171,10 +171,10 @@
       "validate-receipt",
       "validate-suite"
     ],
-    "sha256": "8fd82b16299fb1eef8dc6138d0e8f68031bb7a8fe9f6edd880ab0d969fac7ccb",
+    "sha256": "9c6efa67e57069208d5436b7ae808188b412f49a71d3d9ef32800a3e384a18a1",
     "source": "tracerazor/trice/cli.py"
   },
-  "contract_card_sha256": "d7ae87724ce16d388f09102469d3cb51e253ad262b01d741389770dea3bbe5d4",
+  "contract_card_sha256": "892e149df4cb422ee1c6891ffad47092379b92daa421c2305993d767dc17e08e",
   "contract_level": "library_contract_locked",
   "contract_score": 100,
   "examples": [
@@ -258,11 +258,11 @@
       "sha256": "c5b0b5173a8efbe35ce1526401a5a6b88c0813d92d6625eac7d3055813b614b5"
     },
     "pyproject": {
-      "bytes": 6067,
+      "bytes": 6601,
       "name": "pyproject.toml",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "b1c21d1c0681f219454047b0900d44a15ea6921eece2d986e0a269cccf3e9f93"
+      "sha256": "5cb1a63ea8dda672c1809415f8b8db40458cdfde621b2ef92e18b54937dd93fa"
     },
     "readme": {
       "bytes": 86248,
@@ -287,12 +287,17 @@
   "package": "tracerazor",
   "public_api": {
     "tracerazor": {
-      "count": 20,
+      "count": 25,
       "exports": [
         "Tracer",
         "TraceRazorClient",
         "TraceRazorReport",
         "TraceStep",
+        "TraceRazorError",
+        "BinaryNotFoundError",
+        "AuditError",
+        "BelowMinStepsError",
+        "VerificationError",
         "AdaptiveKNode",
         "ExactMatchConsensus",
         "ConsensusReport",

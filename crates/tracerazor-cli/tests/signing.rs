@@ -81,11 +81,17 @@ fn signed_report_round_trip_ok() {
     let report_path = write_report(&dir, &report);
 
     cli(&home)
-        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .args([
+            "verify",
+            report_path.to_str().unwrap(),
+            trace.to_str().unwrap(),
+        ])
         .assert()
         .success()
         .stdout(predicates::str::contains("signature       : OK (Ed25519)"))
-        .stdout(predicates::str::contains("verified        : full (Ed25519-authenticated"));
+        .stdout(predicates::str::contains(
+            "verified        : full (Ed25519-authenticated",
+        ));
 }
 
 // ── 2. Attack 1 — TAS edit ────────────────────────────────────────────────────
@@ -103,7 +109,11 @@ fn attack_tas_edit_exits_1() {
     let report_path = write_report(&dir, &report);
 
     cli(&home)
-        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .args([
+            "verify",
+            report_path.to_str().unwrap(),
+            trace.to_str().unwrap(),
+        ])
         .assert()
         .failure()
         .code(1)
@@ -126,7 +136,11 @@ fn attack_backend_flip_exits_1() {
     let report_path = write_report(&dir, &report);
 
     cli(&home)
-        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .args([
+            "verify",
+            report_path.to_str().unwrap(),
+            trace.to_str().unwrap(),
+        ])
         .assert()
         .failure()
         .code(1)
@@ -156,7 +170,11 @@ fn attack_agf_edit_exits_1() {
     let report_path = write_report(&dir, &report);
 
     cli(&home)
-        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .args([
+            "verify",
+            report_path.to_str().unwrap(),
+            trace.to_str().unwrap(),
+        ])
         .assert()
         .failure()
         .code(1)
@@ -179,7 +197,11 @@ fn attack_savings_edit_exits_1() {
     let report_path = write_report(&dir, &report);
 
     cli(&home)
-        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .args([
+            "verify",
+            report_path.to_str().unwrap(),
+            trace.to_str().unwrap(),
+        ])
         .assert()
         .failure()
         .code(1)
@@ -216,7 +238,11 @@ fn unsigned_report_never_says_full() {
     let report_path = write_report(&dir, &report);
 
     let verify_out = cli(&home)
-        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .args([
+            "verify",
+            report_path.to_str().unwrap(),
+            trace.to_str().unwrap(),
+        ])
         .assert()
         .success()
         .get_output()
@@ -266,7 +292,10 @@ fn bundle_round_trip_verify_ok() {
         .assert()
         .success();
 
-    assert!(bundle_path.exists(), "export --bundle must create the zip file");
+    assert!(
+        bundle_path.exists(),
+        "export --bundle must create the zip file"
+    );
 
     // Verify the bundle
     cli(&home)
@@ -293,7 +322,11 @@ fn attack_strip_signature_exits_1() {
     let report_path = write_report(&dir, &report);
 
     cli(&home)
-        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .args([
+            "verify",
+            report_path.to_str().unwrap(),
+            trace.to_str().unwrap(),
+        ])
         .assert()
         .failure()
         .code(1)
@@ -314,7 +347,11 @@ fn attack_strip_pubkey_exits_1() {
     let report_path = write_report(&dir, &report);
 
     cli(&home)
-        .args(["verify", report_path.to_str().unwrap(), trace.to_str().unwrap()])
+        .args([
+            "verify",
+            report_path.to_str().unwrap(),
+            trace.to_str().unwrap(),
+        ])
         .assert()
         .failure()
         .code(1)

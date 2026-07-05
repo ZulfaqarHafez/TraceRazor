@@ -1,16 +1,17 @@
-//! Scoring engine: composites all fourteen metrics into the TraceRazor Score
-//! (TAS) and computes the Value-Adjusted Efficiency (VAE) multiplier.
+//! Scoring engine: computes 14 metrics, composites the 8 weighted signals into
+//! the TraceRazor Score (TAS), and applies the Value-Adjusted Efficiency (VAE)
+//! multiplier.
 //!
-//! All fourteen metrics are always computed (no API key required). RDA and DBO
-//! use local heuristics / historical data; ISR/GAR/CSD use the BoW similarity
-//! backend.
+//! All 14 metrics are always computed (no API key required): 8 carry composite
+//! weight, and 6 are diagnostics. RDA uses local heuristics / historical data;
+//! ISR uses the BoW similarity backend.
 
 use serde::{Deserialize, Serialize};
 
 use crate::metrics::{
     dbo::{DboResult, HistoricalSequence},
-    CceResult, CcrResult, CsdResult, GarResult, IsrResult, LdiResult, RdaResult, ShlResult, SrrResult,
-    TcaResult, TurResult, VdiResult,
+    CceResult, CcrResult, CsdResult, GarResult, IsrResult, LdiResult, RdaResult, ShlResult,
+    SrrResult, TcaResult, TurResult, VdiResult,
 };
 
 /// Serde default helper returning 1.0 (used for backward-compat deserialization
@@ -180,7 +181,7 @@ impl Weights {
 }
 
 /// The composite TraceRazor Score and all component results.
-/// All thirteen metrics are always present — no Option wrappers.
+/// All 14 computed metrics are always present: 8 weighted, 6 diagnostic.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TasScore {
     /// Composite score (0–100), **after** the Task Value Integration multiplier.
@@ -267,7 +268,8 @@ impl Default for ScoringConfig {
     }
 }
 
-/// Compute the composite TAS score from all thirteen metrics.
+/// Compute the composite TAS score from the 8 weighted metrics while retaining
+/// all 14 computed metric results in the report.
 #[allow(clippy::too_many_arguments)]
 pub fn compute(
     srr: SrrResult,
@@ -352,8 +354,7 @@ pub fn compute(
     // vdi_waste = 1 - vdi density (higher = more filler)
     // shl.score = fraction of sycophantic/hedged sentences (higher = more hedging)
     // ccr.score = compression ratio waste (higher = more compressible)
-    let avs = ((1.0 - vdi_n) * 0.45 + shl.score * 0.30 + ccr.score * 0.25)
-        .clamp(0.0, 1.0);
+    let avs = ((1.0 - vdi_n) * 0.45 + shl.score * 0.30 + ccr.score * 0.25).clamp(0.0, 1.0);
     let avs = (avs * 1000.0).round() / 1000.0;
 
     // Grade is based on the TVI-adjusted score so quality gating is reflected.

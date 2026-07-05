@@ -26,6 +26,6 @@
 <circle cx="752" cy="120" r="9" fill="#16a34a"/>
 <text x="770" y="124" font-family="Inter,Segoe UI,Arial" font-size="14" fill="#111827">docs</text>
 <text x="746" y="148" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">locked</text>
-<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">API exports 20+139 | CLI commands 36 | schemas 19</text>
+<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">API exports 25+139 | CLI commands 36 | schemas 19</text>
 <text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Contract card only: SemVer promises are credible only for this declared public surface.</text>
 </svg>

@@ -1,6 +1,6 @@
 {
   "schema_version": "1",
-  "tracerazor_version": "1.1.0",
+  "tracerazor_version": "1.0.3",
   "generated_date": "2026-06-20",
   "figures": {
     "sample_trace_tas": 83,

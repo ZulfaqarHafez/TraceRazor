@@ -1,8 +1,8 @@
-import json
+﻿import json
 
 import pytest
 
-from benchmark.trice import (
+from tracerazor.trice import (
     LearningWeights,
     evaluate_policy,
     render_context,
@@ -11,7 +11,7 @@ from benchmark.trice import (
     solve_policy,
     update_weights,
 )
-from benchmark.trice.render import policy_from_dict
+from tracerazor.trice.render import policy_from_dict
 
 
 def _trace():

@@ -78,7 +78,7 @@ A machine-readable JSON Schema lives at
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `id` | integer ≥ 1 | **yes** | Unique within the trace (duplicates are rejected). |
-| `type` | string | no (default `"unknown"`) | One of `reasoning`, `tool_call`, `handoff`, `unknown`. |
+| `type` | string | **yes** | One of `reasoning`, `tool_call`, `handoff`, `unknown`. Invalid values are validation failures and the CLI exits `2`. |
 | `content` | string | **yes** | The step's text. Steps whose content is empty or a bare tool name degrade content-derived metrics — the audit warns when > 50% of steps look like placeholders. |
 | `tokens` | integer | **yes** | Input + output tokens for the step. Use real provider counts when you have them; `0` on many steps triggers the degraded-ingest warning. |
 | `tool_name` | string | tool calls | |
@@ -93,5 +93,10 @@ A machine-readable JSON Schema lives at
 
 - `trace_id` non-empty; at least one step.
 - Step `id`s are ≥ 1 and unique (metrics resolve steps by id).
+- Every step must include `type`; values outside `reasoning`, `tool_call`,
+  `handoff`, or `unknown` are rejected.
+- Audits need at least five steps by default. Shorter traces parse, print a
+  notice, emit no report body in text mode, and exit `0`; pass `--min-steps`
+  (clamped to at least `2`) for deliberately short smoke traces.
 - Exit codes: parse/validation failures exit `2`; only an explicit
   `--threshold` can produce exit `1`.

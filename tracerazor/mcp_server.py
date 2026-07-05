@@ -19,12 +19,8 @@ import os
 import subprocess
 import sys
 
+from tracerazor.errors import BinaryNotFoundError
 from tracerazor._launcher import find_binary, recovery_message
-
-
-class BinaryNotFoundError(RuntimeError):
-    """Raised when no auditor binary is available. Its message is the exact,
-    copy-pasteable recovery text from the launcher."""
 
 
 def _resolve_binary() -> str:

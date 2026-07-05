@@ -23,6 +23,8 @@ import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from .errors import AuditError, BelowMinStepsError, BinaryNotFoundError
+
 
 @dataclass
 class TraceRazorReport:
@@ -37,7 +39,7 @@ class TraceRazorReport:
         total_tokens: Total token count across all steps.
         tas_score:    Token Adequacy Score, 0-100. Higher is more efficient.
         grade:        Letter grade: Excellent / Good / Fair / Poor.
-        passes:       True if tas_score >= threshold.
+        passes:       True if the analyzer's pass/gate verdict passed.
         threshold:    The minimum score used for pass/fail.
         metrics:      Raw per-metric scores dict (srr, ldi, tca, ...).
         savings:      Estimated token and cost savings if fixes are applied.
@@ -140,6 +142,11 @@ class TraceRazorClient:
         server:    Base URL of a running tracerazor-server, e.g.
                    "http://localhost:8080". Activates HTTP mode.
         threshold: Minimum TAS score for assert_passes() (default 70).
+        hermetic:  Default CLI/server audit mode. True means score as a pure
+                   function of trace, config, and version.
+        min_steps: Optional audit floor to pass through to the CLI.
+        api_token: Optional bearer token for HTTP mode. Defaults to
+                   TRACERAZOR_API_TOKEN when set.
     """
 
     def __init__(
@@ -147,18 +154,48 @@ class TraceRazorClient:
         bin_path: Optional[str] = None,
         server: Optional[str] = None,
         threshold: float = 70.0,
+        min_steps: Optional[int] = None,
+        hermetic: bool = True,
+        weights: Optional[str | os.PathLike[str]] = None,
+        enhanced: bool = False,
+        store: Optional[bool] = None,
+        api_token: Optional[str] = None,
+        timeout_s: float = 60.0,
     ):
         self._server = server.rstrip("/") if server else None
-        self._bin = None if self._server else (bin_path or self._find_binary())
+        self._bin = None if self._server else bin_path
         self._threshold = threshold
+        self._min_steps = min_steps
+        self._hermetic = hermetic
+        self._weights = os.fspath(weights) if weights is not None else None
+        self._enhanced = enhanced
+        self._store = store
+        self._api_token = api_token if api_token is not None else os.environ.get("TRACERAZOR_API_TOKEN")
+        self._timeout_s = timeout_s
 
-    def analyse(self, trace: Dict[str, Any]) -> TraceRazorReport:
+    def analyse(
+        self,
+        trace: Dict[str, Any],
+        *,
+        min_steps: Optional[int] = None,
+        hermetic: Optional[bool] = None,
+        weights: Optional[str | os.PathLike[str]] = None,
+        enhanced: Optional[bool] = None,
+        store: Optional[bool] = None,
+    ) -> TraceRazorReport:
         """Submit the trace dict and return a TraceRazorReport."""
+        options = {
+            "min_steps": self._min_steps if min_steps is None else min_steps,
+            "hermetic": self._hermetic if hermetic is None else hermetic,
+            "weights": self._weights if weights is None else os.fspath(weights),
+            "enhanced": self._enhanced if enhanced is None else enhanced,
+            "store": self._store if store is None else store,
+        }
         if self._server:
-            return self._analyse_http(trace)
-        return self._analyse_cli(trace)
+            return self._analyse_http(trace, options)
+        return self._analyse_cli(trace, options)
 
-    def _analyse_cli(self, trace: Dict[str, Any]) -> TraceRazorReport:
+    def _analyse_cli(self, trace: Dict[str, Any], options: Dict[str, Any]) -> TraceRazorReport:
         with tempfile.NamedTemporaryFile(
             mode="w", suffix=".json", delete=False, encoding="utf-8"
         ) as f:
@@ -166,48 +203,66 @@ class TraceRazorClient:
             tmp_path = f.name
 
         try:
-            result = subprocess.run(
-                [
-                    self._bin,
+            try:
+                binary = self._bin or self._find_binary()
+                cmd = [
+                    binary,
                     "audit",
                     tmp_path,
-                    "--format", "json",
-                    "--threshold", str(self._threshold),
-                ],
-                capture_output=True,
-                text=True,
-                timeout=60,
-            )
-        except subprocess.TimeoutExpired:
-            raise RuntimeError(
-                "tracerazor audit timed out after 60 s. "
-                "The trace may be unusually large; try reducing it or increasing the timeout."
-            )
-        try:
+                    "--format",
+                    "json",
+                    "--threshold",
+                    str(self._threshold),
+                ]
+                if options["hermetic"]:
+                    cmd.append("--hermetic")
+                if options["min_steps"] is not None:
+                    cmd += ["--min-steps", str(options["min_steps"])]
+                if options["weights"] is not None:
+                    cmd += ["--weights", str(options["weights"])]
+                if options["enhanced"]:
+                    cmd.append("--enhanced")
+                if options["store"] is not None:
+                    cmd += ["--store", "true" if options["store"] else "false"]
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=self._timeout_s,
+                )
+            except FileNotFoundError as exc:
+                raise BinaryNotFoundError(f"tracerazor binary not found: {self._bin}") from exc
+            except subprocess.TimeoutExpired as exc:
+                raise AuditError(
+                    f"tracerazor audit timed out after {self._timeout_s:g} s. "
+                    "The trace may be unusually large; try reducing it or increasing the timeout."
+                ) from exc
+
             # Exit code 1 means below threshold but output is still valid JSON.
             if result.returncode not in (0, 1):
-                raise RuntimeError(
+                raise AuditError(
                     f"tracerazor exited with code {result.returncode}:\n{result.stderr}"
                 )
             stdout = result.stdout.strip()
             if not stdout:
                 # CLI emitted a notice (e.g. too few steps) but no JSON.
-                # The binary requires at least 5 steps to compute metrics.
                 notice = result.stderr.strip() or "tracerazor returned no output"
-                raise RuntimeError(
+                raise BelowMinStepsError(
                     f"tracerazor produced no JSON output.\n"
-                    f"Note: traces need at least 5 steps to be analysed.\n"
+                    f"Note: traces need at least {options['min_steps'] or 5} steps to be analysed.\n"
                     f"Binary message: {notice}"
                 )
             data = json.loads(stdout)
-            return self._parse_cli_report(data)
+            if data.get("status") == "skipped" or data.get("audited") is False:
+                raise BelowMinStepsError(str(data.get("message") or "trace below audit step floor"))
+            return self._parse_cli_report(data, passed=result.returncode == 0)
         finally:
             try:
                 os.unlink(tmp_path)
             except OSError:
                 pass
 
-    def _parse_cli_report(self, data: Dict[str, Any]) -> TraceRazorReport:
+    def _parse_cli_report(self, data: Dict[str, Any], *, passed: Optional[bool] = None) -> TraceRazorReport:
         score = data.get("score", {})
         tas = score.get("score", 0.0)
         return TraceRazorReport(
@@ -218,7 +273,7 @@ class TraceRazorClient:
             total_tokens=data.get("total_tokens", 0),
             tas_score=tas,
             grade=str(score.get("grade", "Unknown")),
-            passes=tas >= self._threshold,
+            passes=bool(data.get("passed", passed if passed is not None else tas >= self._threshold)),
             threshold=self._threshold,
             metrics=score,
             savings=data.get("savings", {}),
@@ -227,7 +282,7 @@ class TraceRazorClient:
             raw=data,
         )
 
-    def _analyse_http(self, trace: Dict[str, Any]) -> TraceRazorReport:
+    def _analyse_http(self, trace: Dict[str, Any], options: Dict[str, Any]) -> TraceRazorReport:
         try:
             import requests
         except ImportError:
@@ -236,10 +291,14 @@ class TraceRazorClient:
                 "Install with: pip install tracerazor[http]"
             )
 
+        headers = {}
+        if self._api_token:
+            headers["Authorization"] = f"Bearer {self._api_token}"
         resp = requests.post(
             f"{self._server}/api/audit",
-            json={"trace": trace},
-            timeout=60,
+            json={"trace": trace, "hermetic": bool(options["hermetic"])},
+            headers=headers,
+            timeout=self._timeout_s,
         )
         resp.raise_for_status()
         data = resp.json()
@@ -247,14 +306,16 @@ class TraceRazorClient:
 
     def _parse_http_report(self, data: Dict[str, Any]) -> TraceRazorReport:
         tas = data.get("tas_score", 0.0)
-        # Map the full server AuditResponse so HTTP mode is on par with CLI mode
-        # (fixes/savings/markdown were previously discarded).
-        savings: Dict[str, Any] = {}
+        savings: Dict[str, Any] = dict(data.get("savings") or {})
         if "tokens_saved" in data:
             savings["tokens_saved"] = data.get("tokens_saved", 0)
         metrics: Dict[str, Any] = {}
         if data.get("avs") is not None:
             metrics["avs"] = data["avs"]
+        if "score" in data and isinstance(data["score"], dict):
+            metrics.update(data["score"])
+        if "manifest" in data:
+            metrics["manifest"] = data["manifest"]
         return TraceRazorReport(
             trace_id=data.get("trace_id", ""),
             agent_name=data.get("agent_name", ""),
@@ -263,7 +324,7 @@ class TraceRazorClient:
             total_tokens=data.get("total_tokens", 0),
             tas_score=tas,
             grade=data.get("grade", "Unknown"),
-            passes=tas >= self._threshold,
+            passes=bool(data.get("passed", tas >= self._threshold)),
             threshold=self._threshold,
             metrics=metrics,
             savings=savings,
@@ -282,8 +343,14 @@ class TraceRazorClient:
                 return bundled
 
         env_path = os.environ.get("TRACERAZOR_BIN")
-        if env_path and os.path.isfile(env_path):
-            return env_path
+        if env_path:
+            if os.path.isfile(env_path):
+                return env_path
+            raise BinaryNotFoundError(
+                "TRACERAZOR_BIN is set but does not point to a file:\n"
+                f"  {env_path}\n"
+                "Set it to an existing tracerazor binary or unset it to use auto-discovery."
+            )
 
         found = shutil.which("tracerazor") or shutil.which("tracerazor.exe")
         if found:
@@ -302,7 +369,7 @@ class TraceRazorClient:
             if os.path.isfile(candidate):
                 return candidate
 
-        raise FileNotFoundError(
+        raise BinaryNotFoundError(
             "tracerazor binary not found.\n"
             "Options:\n"
             "  1. Set TRACERAZOR_BIN=/path/to/tracerazor\n"

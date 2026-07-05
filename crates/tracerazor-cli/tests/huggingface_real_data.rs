@@ -108,7 +108,8 @@ fn huggingface_agentinstruct_audit_statistics() {
             Ok(report) if report["status"] == "skipped" => {
                 skipped += 1;
                 assert_eq!(
-                    report["reason"], "below_min_steps",
+                    report["reason"],
+                    "below_min_steps",
                     "sub-floor skip for {:?} must report below_min_steps, got: {report}",
                     f.file_name().unwrap()
                 );
@@ -116,7 +117,9 @@ fn huggingface_agentinstruct_audit_statistics() {
             Ok(report) => {
                 analysable += 1;
                 let score = &report["score"];
-                let t = score["score"].as_f64().expect("score.score must be a number");
+                let t = score["score"]
+                    .as_f64()
+                    .expect("score.score must be a number");
                 assert!(
                     (0.0..=100.0).contains(&t),
                     "TAS for {:?} out of range: {t}",
@@ -264,6 +267,9 @@ fn huggingface_agentinstruct_audit_statistics() {
     println!("mean OBS (norm)   : {:.3}", mean(&obs));
     println!("mean MVTG         : {:.3}", mean(&mvtg));
     println!("fix patches (sum) : {total_fixes}");
-    println!("full-corpus audit : {short_audited}/{} with --min-steps 2", files.len());
+    println!(
+        "full-corpus audit : {short_audited}/{} with --min-steps 2",
+        files.len()
+    );
     println!("====================================================\n");
 }

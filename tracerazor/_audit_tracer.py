@@ -46,6 +46,8 @@ class Tracer:
                            Auto-detected from PATH and TRACERAZOR_BIN if None.
         server:            URL of a running tracerazor-server (HTTP mode).
                            When set, bin_path is ignored.
+        min_steps:         Optional audit floor passed through to the CLI.
+        hermetic:          Run audit as a pure function of trace/config/version.
     """
 
     def __init__(
@@ -56,6 +58,8 @@ class Tracer:
         task_value_score: float = 1.0,
         bin_path: Optional[str] = None,
         server: Optional[str] = None,
+        min_steps: Optional[int] = None,
+        hermetic: bool = True,
     ):
         self._trace = _Trace(
             agent_name=agent_name,
@@ -66,6 +70,8 @@ class Tracer:
             bin_path=bin_path,
             server=server,
             threshold=threshold,
+            min_steps=min_steps,
+            hermetic=hermetic,
         )
         self._report: Optional[TraceRazorReport] = None
 

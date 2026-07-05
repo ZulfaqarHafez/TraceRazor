@@ -142,7 +142,13 @@ fn exit_code_contract() {
     // No --threshold: a low score is information, not a failure (exit 0).
     let home = TempDir::new().unwrap();
     cli(&home)
-        .args(["audit", trace.to_str().unwrap(), "--format", "json", "--hermetic"])
+        .args([
+            "audit",
+            trace.to_str().unwrap(),
+            "--format",
+            "json",
+            "--hermetic",
+        ])
         .assert()
         .success();
 

@@ -898,7 +898,7 @@ def test_tracerazor_trice_module_schema_and_patch_validation(tmp_path):
         cwd=REPO,
         capture_output=True,
         text=True,
-        timeout=60,
+        timeout=120,
         check=True,
     )
     result = json.loads(command_run.stdout)

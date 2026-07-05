@@ -1,6 +1,14 @@
 *.pdf binary
 *.trice.zip binary
 
+# Text inputs bound by TRICE cards must have stable worktree bytes on Windows,
+# macOS, and Linux.
+README.md text eol=lf
+pyproject.toml text eol=lf
+Cargo.toml text eol=lf
+Cargo.lock text eol=lf
+schemas/*.json text eol=lf
+
 # TRICE evidence is content-addressed: manifests record the exact sha256 and
 # byte-size of every artifact (see benchmark/trice/evidence.py). Those files
 # must therefore be byte-identical on every platform. Disable all EOL

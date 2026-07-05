@@ -1,5 +1,10 @@
 # TraceRazor on Real Hugging Face Agent Trajectories
 
+> Point-in-time generated snapshot: these numbers were produced with the
+> TraceRazor v0.5.0 9-signal scorer, not the current v1.0.3 8-composite /
+> 6-diagnostic model. Treat the tables below as reproducible historical
+> evidence, not as current product benchmarks unless regenerated.
+
 > Provenance: numbers regenerated under the 9-signal composite — GAR, CSD,
 > DBO, VDI and SHL are now weight-0 diagnostics (see
 > `docs/metric_effectiveness.md`). They still compute and appear in the

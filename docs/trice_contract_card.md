@@ -10,7 +10,7 @@
 | Check | Pass | Observed | Required |
 |---|---:|---|---|
 | semver_version | yes | 1.0.3 | MAJOR.MINOR.PATCH |
-| top_level_api | yes | {"count": 20, "missing": []} | tracerazor.__all__ resolves |
+| top_level_api | yes | {"count": 25, "missing": []} | tracerazor.__all__ resolves |
 | trice_api | yes | {"count": 139, "missing": []} | tracerazor.trice.__all__ resolves |
 | cli_contract | yes | ["artifact", "bundle", "claim", "contract", "crates", "design", "doctor", "install", "integrity", "protocol", "release", "release-evidence", "reproduction", "research", "run", "schema", "suite", "validate-adapter", "validate-patch", "validate-receipt", "validate-suite", "verify", "verify-artifact", "verify-bundle", "verify-claim", "verify-contract", "verify-crates", "verify-design", "verify-install", "verify-integrity", "verify-protocol", "verify-release", "verify-release-evidence", "verify-reproduction", "verify-research", "verify-suite"] | all documented tracerazor-trice commands exist |
 | schemas_shipped | yes | 19/19 | all TRICE JSON Schemas are present |
@@ -20,7 +20,7 @@
 
 ## Public API
 
-- `tracerazor`: 20 exported names
+- `tracerazor`: 25 exported names
 - `tracerazor.trice`: 139 exported names
 - `tracerazor-trice`: 36 subcommands
 - Schemas: 19/19
@@ -45,4 +45,4 @@
 
 ## Hash
 
-- contract card: `d7ae87724ce16d388f09102469d3cb51e253ad262b01d741389770dea3bbe5d4`
+- contract card: `892e149df4cb422ee1c6891ffad47092379b92daa421c2305993d767dc17e08e`

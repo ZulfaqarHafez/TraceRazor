@@ -11,7 +11,8 @@ from .receipt import validate_run_receipt, validate_run_receipt_file
 from .suite import validate_suite_manifest_file as _validate_suite_manifest_file
 
 REPO = Path(__file__).resolve().parents[2]
-SCHEMA_DIR = REPO / "schemas"
+SOURCE_SCHEMA_DIR = REPO / "schemas"
+PACKAGE_SCHEMA_DIR = Path(__file__).resolve().parent / "schemas"
 PATCH_SPEC_SCHEMA = "trice_patch_spec.schema.json"
 EVIDENCE_MANIFEST_SCHEMA = "trice_evidence_manifest.schema.json"
 SUITE_MANIFEST_SCHEMA = "trice_suite_manifest.schema.json"
@@ -138,7 +139,9 @@ def schema_path(name: str) -> Path:
     filename = aliases.get(name)
     if not filename:
         raise ValueError(f"unknown TRICE schema: {name}")
-    path = SCHEMA_DIR / filename
+    path = SOURCE_SCHEMA_DIR / filename
+    if not path.is_file():
+        path = PACKAGE_SCHEMA_DIR / filename
     if not path.is_file():
         raise FileNotFoundError(f"TRICE schema not found: {path}")
     return path

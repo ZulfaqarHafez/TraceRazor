@@ -1,10 +1,11 @@
-"""Deterministic installability cards for built TraceRazor distributions."""
+﻿"""Deterministic installability cards for built TraceRazor distributions."""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -13,7 +14,7 @@ from pathlib import Path
 from typing import Any
 import tomllib
 
-from .evidence import canonical_json, sha256_file
+from .evidence import canonical_json, sha256_file, write_text_lf
 
 INSTALL_CARD_SCHEMA_VERSION = "trice-install-card/v1"
 REPO = Path(__file__).resolve().parents[2]
@@ -39,18 +40,21 @@ def build_install_card(
     probe: dict[str, Any] = {}
     with tempfile.TemporaryDirectory(prefix="trice-install-card-") as tmp:
         tmp_path = Path(tmp)
+        scrub_roots = [tmp_path]
+        if wheel is not None:
+            scrub_roots.append(wheel.parent)
         venv_dir = tmp_path / "venv"
         py = _venv_python(venv_dir)
         scripts = _venv_scripts(venv_dir)
-        commands["create_venv"] = _run([str(python_executable), "-m", "venv", str(venv_dir)], cwd=tmp_path, timeout_s=timeout_s, scrub_root=tmp_path)
+        commands["create_venv"] = _run([str(python_executable), "-m", "venv", str(venv_dir)], cwd=tmp_path, timeout_s=timeout_s, scrub_roots=scrub_roots)
         if commands["create_venv"]["ok"] and wheel is not None:
-            commands["install_wheel"] = _run([str(py), "-m", "pip", "install", "--no-deps", str(wheel)], cwd=tmp_path, timeout_s=timeout_s, scrub_root=tmp_path)
+            commands["install_wheel"] = _run([str(py), "-m", "pip", "install", "--no-deps", str(wheel)], cwd=tmp_path, timeout_s=timeout_s, scrub_roots=scrub_roots)
         else:
             commands["install_wheel"] = _skipped("venv creation failed or wheel missing")
         if commands["install_wheel"]["ok"]:
             import_code = (
                 "import json, tracerazor, tracerazor.trice as trice\n"
-                "from benchmark.trice.schemas import load_schema\n"
+                "from tracerazor.trice.schemas import load_schema\n"
                 "payload = {\n"
                 "  'version': tracerazor.__version__,\n"
                 "  'install_schema_title': load_schema('install-card')['title'],\n"
@@ -64,10 +68,10 @@ def build_install_card(
                 "}\n"
                 "print(json.dumps(payload, sort_keys=True))\n"
             )
-            commands["import_probe"] = _run([str(py), "-c", import_code], cwd=tmp_path, timeout_s=timeout_s, scrub_root=tmp_path)
+            commands["import_probe"] = _run([str(py), "-c", import_code], cwd=tmp_path, timeout_s=timeout_s, scrub_roots=scrub_roots)
             probe = _parse_probe(commands["import_probe"])
-            commands["trice_console"] = _run([str(_console_script(scripts, "tracerazor-trice")), "schema", "install-card"], cwd=tmp_path, timeout_s=timeout_s, scrub_root=tmp_path)
-            commands["rust_console"] = _run([str(_console_script(scripts, "tracerazor")), "--version"], cwd=tmp_path, timeout_s=timeout_s, scrub_root=tmp_path)
+            commands["trice_console"] = _run([str(_console_script(scripts, "tracerazor-trice")), "schema", "install-card"], cwd=tmp_path, timeout_s=timeout_s, scrub_roots=scrub_roots)
+            commands["rust_console"] = _run([str(_console_script(scripts, "tracerazor")), "--version"], cwd=tmp_path, timeout_s=timeout_s, scrub_roots=scrub_roots)
         else:
             commands["import_probe"] = _skipped("wheel install failed")
             commands["trice_console"] = _skipped("wheel install failed")
@@ -89,7 +93,7 @@ def build_install_card(
         "install_level": _install_level(checks),
         "install_score": _install_score(checks),
         "expected_version": expected_version,
-        "python_executable": str(python_executable),
+        "python_executable": Path(python_executable).name,
         "wheel": _artifact_row("wheel", wheel),
         "inputs": {
             "dist_dir": _dir_row(dist),
@@ -223,13 +227,13 @@ def render_install_svg(card: dict[str, Any]) -> str:
 
 def write_install_outputs(card: dict[str, Any], out: Path) -> dict[str, str]:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(card, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(card, indent=2, sort_keys=True) + "\n")
     md = out.with_suffix(".md")
     tex = out.with_suffix(".tex")
     svg = out.with_suffix(".svg")
-    md.write_text(render_install_markdown(card), encoding="utf-8")
-    tex.write_text(render_install_tex(card), encoding="utf-8")
-    svg.write_text(render_install_svg(card), encoding="utf-8")
+    write_text_lf(md, render_install_markdown(card))
+    write_text_lf(tex, render_install_tex(card))
+    write_text_lf(svg, render_install_svg(card))
     return {"json": str(out), "markdown": str(md), "tex": str(tex), "svg": str(svg)}
 
 
@@ -267,8 +271,8 @@ def _find_wheel(dist: Path, version: str) -> Path | None:
     return wheels[0] if wheels else None
 
 
-def _run(cmd: list[str], *, cwd: Path, timeout_s: float, scrub_root: Path) -> dict[str, Any]:
-    scrubbed_command = " ".join(_scrub(part, scrub_root) for part in cmd)
+def _run(cmd: list[str], *, cwd: Path, timeout_s: float, scrub_roots: list[Path]) -> dict[str, Any]:
+    scrubbed_command = " ".join(_scrub(part, scrub_roots) for part in cmd)
     try:
         proc = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout_s, check=False)
     except Exception as exc:
@@ -277,10 +281,10 @@ def _run(cmd: list[str], *, cwd: Path, timeout_s: float, scrub_root: Path) -> di
             "status": "error",
             "exit_code": -1,
             "command_sha256": hashlib.sha256(scrubbed_command.encode("utf-8")).hexdigest(),
-            "detail": _scrub(str(exc), scrub_root),
+            "detail": _scrub(str(exc), scrub_roots),
         }
-    stdout = _scrub(proc.stdout or "", scrub_root)
-    stderr = _scrub(proc.stderr or "", scrub_root)
+    stdout = _scrub(proc.stdout or "", scrub_roots)
+    stderr = _scrub(proc.stderr or "", scrub_roots)
     return {
         "ok": proc.returncode == 0,
         "status": "ok" if proc.returncode == 0 else "failed",
@@ -418,11 +422,17 @@ def _display_path(path: Path | None) -> str | None:
     try:
         return path.resolve().relative_to(REPO.resolve()).as_posix()
     except ValueError:
-        return path.as_posix()
+        return path.name
 
 
-def _scrub(text: str, scrub_root: Path) -> str:
-    return text.replace(str(scrub_root), "<tmp>").replace(str(REPO), "<repo>")
+def _scrub(text: str, scrub_roots: list[Path]) -> str:
+    out = text.replace(str(REPO), "<repo>")
+    for idx, root in enumerate(scrub_roots):
+        label = "<tmp>" if idx == 0 else f"<artifact-dir-{idx}>"
+        patterns = [str(root), root.as_posix()]
+        for pattern in patterns:
+            out = re.sub(re.escape(pattern), label, out, flags=re.IGNORECASE)
+    return out
 
 
 def _md(value: Any) -> str:

@@ -1,4 +1,4 @@
-"""Public TRICE command-line entrypoint."""
+﻿"""Public TRICE command-line entrypoint."""
 
 from __future__ import annotations
 
@@ -6,25 +6,25 @@ import argparse
 import json
 from pathlib import Path
 
-from benchmark.trice.artifact import main as artifact_main, verify_artifact_card_file
-from benchmark.trice.bundle import main as bundle_main
-from benchmark.trice.claim import main as claim_main, verify_claim_card_file
-from benchmark.trice.contract import main as contract_main, verify_contract_card_file
-from benchmark.trice.crates import main as crates_main, verify_crates_card_file
-from benchmark.trice.design import main as design_main, verify_design_card_file
-from benchmark.trice.doctor import main as doctor_main
-from benchmark.trice.evidence import verify_manifest
-from benchmark.trice.integrity import main as integrity_main, verify_integrity_card_file
-from benchmark.trice.install import main as install_main, verify_install_card_file
-from benchmark.trice.live import main as live_main
-from benchmark.trice.protocol import main as protocol_main, verify_protocol_lock_file
-from benchmark.trice.receipt import validate_run_receipt_file
-from benchmark.trice.release import main as release_main, verify_release_card_file
-from benchmark.trice.release_evidence import main as release_evidence_main, verify_release_evidence_file
-from benchmark.trice.reproduction import main as reproduction_main, verify_reproduction_card_file
-from benchmark.trice.research import main as research_main, verify_research_card_file
-from benchmark.trice.schemas import load_schema, validate_adapter_profile_file, validate_patch_spec_file, validate_suite_manifest_file
-from benchmark.trice.suite import main as suite_main
+from tracerazor._trice.artifact import main as artifact_main, verify_artifact_card_file
+from tracerazor._trice.bundle import main as bundle_main
+from tracerazor._trice.claim import main as claim_main, verify_claim_card_file
+from tracerazor._trice.contract import main as contract_main, verify_contract_card_file
+from tracerazor._trice.crates import main as crates_main, verify_crates_card_file
+from tracerazor._trice.design import main as design_main, verify_design_card_file
+from tracerazor._trice.doctor import main as doctor_main
+from tracerazor._trice.evidence import verify_manifest
+from tracerazor._trice.integrity import main as integrity_main, verify_integrity_card_file
+from tracerazor._trice.install import main as install_main, verify_install_card_file
+from tracerazor._trice.live import main as live_main
+from tracerazor._trice.protocol import main as protocol_main, verify_protocol_lock_file
+from tracerazor._trice.receipt import validate_run_receipt_file
+from tracerazor._trice.release import main as release_main, verify_release_card_file
+from tracerazor._trice.release_evidence import main as release_evidence_main, verify_release_evidence_file
+from tracerazor._trice.reproduction import main as reproduction_main, verify_reproduction_card_file
+from tracerazor._trice.research import main as research_main, verify_research_card_file
+from tracerazor._trice.schemas import load_schema, validate_adapter_profile_file, validate_patch_spec_file, validate_suite_manifest_file
+from tracerazor._trice.suite import main as suite_main
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -74,7 +74,21 @@ def main(argv: list[str] | None = None) -> int:
 
     artifact = sub.add_parser("artifact", help="Generate a deterministic public artifact review card.")
     artifact.add_argument("--out", type=Path, default=Path("trice_artifact_card.json"))
+    artifact.add_argument("--readiness", type=Path, default=Path("docs/trice_suite_readiness.json"))
+    artifact.add_argument("--protocol", type=Path, default=Path("docs/trice_protocol_lock.json"))
+    artifact.add_argument("--design", type=Path, default=Path("docs/trice_design_card.json"))
+    artifact.add_argument("--reproduction", type=Path, default=Path("docs/trice_reproduction_card.json"))
+    artifact.add_argument("--contract", type=Path, default=Path("docs/trice_contract_card.json"))
     artifact.add_argument("--install", type=Path, default=Path("docs/trice_install_card.json"))
+    artifact.add_argument("--research", type=Path, default=Path("docs/trice_research_card.json"))
+    artifact.add_argument("--claim", type=Path, default=Path("docs/trice_claim_card.json"))
+    artifact.add_argument("--bundle", type=Path, default=Path("benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip"))
+    artifact.add_argument("--paper-manifest", type=Path, default=Path("paper/trice_v3_research_manifest.json"))
+    artifact.add_argument("--paper-result", type=Path, default=Path("benchmark/trice/results/v2-smoke/trice_v2_live_results.json"))
+    artifact.add_argument("--paper-tex", type=Path, default=Path("paper/trice_v3_research_paper.tex"))
+    artifact.add_argument("--paper-pdf", type=Path, default=Path("paper/trice_v3_research_paper.pdf"))
+    artifact.add_argument("--readme", type=Path, default=Path("README.md"))
+    artifact.add_argument("--library-doc", type=Path, default=Path("docs/trice_library.md"))
     artifact.add_argument("--format", choices=["json", "markdown", "tex"], default="json")
 
     verify_artifact = sub.add_parser("verify-artifact", help="Verify a deterministic public artifact review card.")
@@ -234,7 +248,43 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(verdict, indent=2, sort_keys=True))
         return 0 if verdict["ok"] else 1
     if args.command == "artifact":
-        return artifact_main(["--out", str(args.out), "--install", str(args.install), "--format", args.format])
+        forwarded = [
+            "--out",
+            str(args.out),
+            "--readiness",
+            str(args.readiness),
+            "--protocol",
+            str(args.protocol),
+            "--design",
+            str(args.design),
+            "--reproduction",
+            str(args.reproduction),
+            "--contract",
+            str(args.contract),
+            "--install",
+            str(args.install),
+            "--research",
+            str(args.research),
+            "--claim",
+            str(args.claim),
+            "--bundle",
+            str(args.bundle),
+            "--paper-manifest",
+            str(args.paper_manifest),
+            "--paper-result",
+            str(args.paper_result),
+            "--paper-tex",
+            str(args.paper_tex),
+            "--paper-pdf",
+            str(args.paper_pdf),
+            "--readme",
+            str(args.readme),
+            "--library-doc",
+            str(args.library_doc),
+            "--format",
+            args.format,
+        ]
+        return artifact_main(forwarded)
     if args.command == "verify-artifact":
         verdict = verify_artifact_card_file(args.artifact_card)
         print(json.dumps(verdict, indent=2, sort_keys=True))

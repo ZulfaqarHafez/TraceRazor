@@ -10,10 +10,11 @@ import re
 from pathlib import Path
 from typing import Any
 
-from .evidence import canonical_json, sha256_file
+from .evidence import canonical_json, sha256_file, write_text_lf
 
 CONTRACT_CARD_SCHEMA_VERSION = "trice-contract-card/v1"
 REPO = Path(__file__).resolve().parents[2]
+PACKAGE_DATA_DIR = Path(__file__).resolve().parent
 DEFAULT_OUT = REPO / "docs" / "trice_contract_card.json"
 
 REQUIRED_TRICE_COMMANDS = [
@@ -268,13 +269,13 @@ def render_contract_svg(card: dict[str, Any]) -> str:
 
 def write_contract_outputs(card: dict[str, Any], out: Path) -> dict[str, str]:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(card, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(card, indent=2, sort_keys=True) + "\n")
     md = out.with_suffix(".md")
     tex = out.with_suffix(".tex")
     svg = out.with_suffix(".svg")
-    md.write_text(render_contract_markdown(card), encoding="utf-8")
-    tex.write_text(render_contract_tex(card), encoding="utf-8")
-    svg.write_text(render_contract_svg(card), encoding="utf-8")
+    write_text_lf(md, render_contract_markdown(card))
+    write_text_lf(tex, render_contract_tex(card))
+    write_text_lf(svg, render_contract_svg(card))
     return {"json": str(out), "markdown": str(md), "tex": str(tex), "svg": str(svg)}
 
 
@@ -332,15 +333,20 @@ def _cli_commands() -> dict[str, Any]:
 
 
 def _schema_rows() -> list[dict[str, Any]]:
-    schema_dir = REPO / "schemas"
+    schema_dir = _data_dir("schemas")
     names = sorted(path.name for path in schema_dir.glob("trice_*.schema.json"))
     return [_availability_row(name, schema_dir / name) for name in names]
 
 
 def _example_rows() -> list[dict[str, Any]]:
-    examples_dir = REPO / "examples"
+    examples_dir = _data_dir("examples")
     names = sorted(path.name for path in examples_dir.glob("trice_*") if path.is_file())
     return [_availability_row(name, examples_dir / name) for name in names]
+
+
+def _data_dir(name: str) -> Path:
+    source_dir = REPO / name
+    return source_dir if source_dir.is_dir() else PACKAGE_DATA_DIR / name
 
 
 def _availability_row(name: str, path: Path) -> dict[str, Any]:
@@ -381,7 +387,20 @@ def _check_bound_file(row: dict[str, Any], errors: list[str], checked_inputs: li
 
 def _resolve_path(raw: str) -> Path:
     path = Path(raw)
-    return path if path.is_absolute() else REPO / path
+    if path.is_absolute():
+        return path
+    repo_path = REPO / path
+    if repo_path.is_file():
+        return repo_path
+    package_path = PACKAGE_DATA_DIR / path
+    if package_path.is_file():
+        return package_path
+    parts = path.parts
+    if parts and parts[0] in {"schemas", "examples"}:
+        package_data_path = PACKAGE_DATA_DIR.joinpath(*parts)
+        if package_data_path.is_file():
+            return package_data_path
+    return repo_path
 
 
 def _display_path(path: Path) -> str:

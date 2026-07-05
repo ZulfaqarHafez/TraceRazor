@@ -95,6 +95,7 @@ SCResult         Result of a SelfConsistencyBaseline run.
 from ._audit_tracer import Tracer
 from ._audit_client import TraceRazorClient, TraceRazorReport
 from ._audit_trace import TraceStep
+from .errors import AuditError, BelowMinStepsError, BinaryNotFoundError, TraceRazorError, VerificationError
 
 # Sampling
 from ._adaptive_k import AdaptiveKNode
@@ -116,6 +117,11 @@ __all__ = [
     "TraceRazorClient",
     "TraceRazorReport",
     "TraceStep",
+    "TraceRazorError",
+    "BinaryNotFoundError",
+    "AuditError",
+    "BelowMinStepsError",
+    "VerificationError",
     # Sampling
     "AdaptiveKNode",
     "ExactMatchConsensus",

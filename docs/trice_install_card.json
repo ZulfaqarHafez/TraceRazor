@@ -2,7 +2,7 @@
   "checks": [
     {
       "name": "wheel_present",
-      "observed": "dist/tracerazor-1.0.3-py3-none-any.whl",
+      "observed": "tracerazor-1.0.3-py3-none-any.whl",
       "passed": true,
       "required": "built wheel exists"
     },
@@ -71,7 +71,7 @@
       "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "import_probe": {
-      "command_sha256": "28b972af38d4c813521ad03e03f0a4601f9e6eb1040708670c79e6c234f7e075",
+      "command_sha256": "20a997caacfeaf959466a4adadd46922fe10359989e956d9a3ea5e7f90892b17",
       "exit_code": 0,
       "ok": true,
       "status": "ok",
@@ -81,14 +81,14 @@
       "stdout_sha256": "7f87ec0acdb92e9ca5a639eada5cd69d8c2f16186dd90dd45ed359f4f1973d94"
     },
     "install_wheel": {
-      "command_sha256": "6e07be580df95ebb90b479e794d61eb93a8b9661abc79812f19c31932fc14750",
+      "command_sha256": "170c64f5adaf909271e4ec727c07437a132400616b8bbb011af009d746ce4876",
       "exit_code": 0,
       "ok": true,
       "status": "ok",
       "stderr_excerpt": "\n[notice] A new release of pip is available: 23.2.1 -> 26.1.2\n[notice] To update, run: <tmp>\\venv\\Scripts\\python.exe -m pip install --upgrade pip\n",
       "stderr_sha256": "8eb0c7312275437de5456b0c117ca7ac2340f7bf88b143c4f8f5fc14da97db21",
-      "stdout_excerpt": "Processing c:\\users\\zulfa\\tracerazor\\dist\\tracerazor-1.0.3-py3-none-any.whl\nInstalling collected packages: tracerazor\nSuccessfully installed tracerazor-1.0.3\n",
-      "stdout_sha256": "8ff08175107caaae6e46768a6f24b068e1806d7672dfeaed292caff8a4bb37f7"
+      "stdout_excerpt": "Processing <artifact-dir-1>\\tracerazor-1.0.3-py3-none-any.whl\nInstalling collected packages: tracerazor\nSuccessfully installed tracerazor-1.0.3\n",
+      "stdout_sha256": "23121d510df7859973b362dcc90e2c9be2443e069c32dd021c364c85a32d1b24"
     },
     "rust_console": {
       "command_sha256": "a0f3538f834bcc53bc23b77f1b5f10e4a1bdd191cfd6594077462e0fb0c58f32",
@@ -120,15 +120,15 @@
       "present": true
     },
     "pyproject": {
-      "bytes": 6067,
+      "bytes": 6601,
       "kind": "file",
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "b1c21d1c0681f219454047b0900d44a15ea6921eece2d986e0a269cccf3e9f93"
+      "sha256": "5cb1a63ea8dda672c1809415f8b8db40458cdfde621b2ef92e18b54937dd93fa"
     }
   },
-  "install_card_sha256": "fec3eb86291021441e1a3f610183c5ba2d57ebbeae885e09473e7782fd41d448",
+  "install_card_sha256": "fdf749019fe2c5edb246d04be81e99ac6542501c76c71b649f9d7a35f0ea7165",
   "install_level": "full_cli_install_ready",
   "install_score": 100,
   "next_actions": [
@@ -145,7 +145,7 @@
     "verify_research_card_file": true,
     "version": "1.0.3"
   },
-  "python_executable": "C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  "python_executable": "python.exe",
   "research_basis": [
     "PyPA packaging guidance distinguishes building a distribution from installing and using it in a clean environment.",
     "Wheel artifacts are user-facing contracts: import surfaces, console scripts, and packaged data must be verified after installation, not only hashed before upload.",
@@ -155,11 +155,11 @@
   "schema_version": "trice-install-card/v1",
   "scope": "TraceRazor wheel installability",
   "wheel": {
-    "bytes": 612372,
+    "bytes": 286525,
     "kind": "file",
     "name": "wheel",
-    "path": "dist/tracerazor-1.0.3-py3-none-any.whl",
+    "path": "tracerazor-1.0.3-py3-none-any.whl",
     "present": true,
-    "sha256": "14d9b19c3abc3ac132edbfe3709d8bc673a397dd25fa671742da9b2dd3e58368"
+    "sha256": "6eb624d2fc9df2f266f63a67b49decbd8025f252ba0f103a3d30b84de5fe02ad"
   }
 }

@@ -70,7 +70,8 @@ fn verify_json_verified_object() {
         .success()
         .get_output()
         .clone();
-    let v: Value = serde_json::from_slice(&out.stdout).expect("verify --format json must emit JSON");
+    let v: Value =
+        serde_json::from_slice(&out.stdout).expect("verify --format json must emit JSON");
     assert_eq!(v["status"], "verified");
     assert_eq!(v["trace_hash"], "ok");
     assert_eq!(v["rescore"], "ok");
@@ -114,7 +115,8 @@ fn verify_json_tampered_exits_1() {
         .code(1)
         .get_output()
         .clone();
-    let v: Value = serde_json::from_slice(&out.stdout).expect("tampered verify must still emit JSON");
+    let v: Value =
+        serde_json::from_slice(&out.stdout).expect("tampered verify must still emit JSON");
     assert_eq!(v["status"], "tampered");
     assert_eq!(v["trace_hash"], "mismatch");
     assert!(!v["mismatches"].as_array().unwrap().is_empty());
@@ -138,7 +140,12 @@ fn list_json_empty_and_populated() {
 
     // Store a trace (non-hermetic audit persists to the store by default).
     cli(&home)
-        .args(["audit", fixture_path().to_str().unwrap(), "--format", "json"])
+        .args([
+            "audit",
+            fixture_path().to_str().unwrap(),
+            "--format",
+            "json",
+        ])
         .assert()
         .success();
 
@@ -175,7 +182,13 @@ fn audit_json_skip_status_below_min_steps() {
     .unwrap();
 
     let out = cli(&home)
-        .args(["audit", short.to_str().unwrap(), "--format", "json", "--hermetic"])
+        .args([
+            "audit",
+            short.to_str().unwrap(),
+            "--format",
+            "json",
+            "--hermetic",
+        ])
         .assert()
         .success() // skip is not an error — exit 0
         .get_output()

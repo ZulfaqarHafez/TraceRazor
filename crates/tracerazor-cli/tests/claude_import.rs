@@ -87,12 +87,12 @@ fn claude_install_is_idempotent_and_uninstall_removes_hook() {
         .map(|g| g["hooks"].as_array().map(|h| h.len()).unwrap_or(0))
         .sum();
     assert_eq!(hook_count, 1);
-    assert!(settings_path.parent().unwrap().read_dir().unwrap().any(|e| {
-        e.unwrap()
-            .file_name()
-            .to_string_lossy()
-            .contains(".bak.")
-    }));
+    assert!(settings_path
+        .parent()
+        .unwrap()
+        .read_dir()
+        .unwrap()
+        .any(|e| { e.unwrap().file_name().to_string_lossy().contains(".bak.") }));
 
     cli(&home)
         .current_dir(project.path())

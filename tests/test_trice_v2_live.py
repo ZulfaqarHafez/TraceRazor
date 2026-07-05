@@ -1,4 +1,4 @@
-import hashlib
+﻿import hashlib
 import json
 import shutil
 import subprocess
@@ -7,29 +7,29 @@ from pathlib import Path
 
 import pytest
 
-from benchmark.trice.adapters import CommandRepairAdapter, JsonPatchAdapter
-from benchmark.trice.bundle import export_evidence_bundle, verify_evidence_bundle
-from benchmark.trice.claim import build_claim_card, render_claim_card_markdown, render_claim_ladder_svg
-from benchmark.trice.artifact import build_artifact_card, render_artifact_markdown, render_artifact_svg
-from benchmark.trice.contract import build_contract_card, render_contract_markdown, render_contract_svg, verify_contract_card_file
-from benchmark.trice.crates import build_crates_card, render_crates_markdown, render_crates_svg, verify_crates_card_file
-from benchmark.trice.design import build_design_card, render_design_markdown, render_design_svg, verify_design_card_file
-from benchmark.trice.integrity import build_integrity_card, render_integrity_markdown, render_integrity_svg, verify_integrity_card_file, write_integrity_outputs
-from benchmark.trice.install import render_install_markdown, render_install_svg, verify_install_card_file
-from benchmark.trice.protocol import build_protocol_lock, render_protocol_markdown, render_protocol_svg, verify_protocol_lock_file
-from benchmark.trice.readiness import build_suite_readiness, render_readiness_markdown, render_readiness_svg, verify_readiness_file
-from benchmark.trice.release import build_release_card, render_release_markdown, render_release_svg, verify_release_card_file
-from benchmark.trice.release_evidence import build_release_evidence_card, render_release_evidence_markdown, render_release_evidence_svg, verify_release_evidence_file, write_release_evidence_outputs
-from benchmark.trice.reproduction import build_reproduction_card, render_reproduction_markdown, render_reproduction_svg, verify_reproduction_card_file
-from benchmark.trice.research import build_research_card, render_research_markdown, render_research_svg, verify_research_card_file
-from benchmark.trice.evidence import canonical_json, verify_manifest
-from benchmark.trice.live import LiveTask, run_live_learning_loop
-from benchmark.trice.recall import evidence_recall_from_policy
-from benchmark.trice.receipt import validate_run_receipt_file
-from benchmark.trice.schemas import load_schema, schema_path, validate_adapter_profile_file, validate_patch_spec_file, validate_suite_manifest_file
-from benchmark.trice.stats import bootstrap_mean_ci, claim_gate_from_rounds, clustered_bootstrap_mean_ci, wilson_ci
-from benchmark.trice.suite import run_suite_manifest, scaffold_suite_manifest, verify_suite_evidence
-from benchmark.trice.user import UserPreferenceProfile
+from tracerazor.trice.adapters import CommandRepairAdapter, JsonPatchAdapter
+from tracerazor.trice.bundle import export_evidence_bundle, verify_evidence_bundle
+from tracerazor.trice.claim import build_claim_card, render_claim_card_markdown, render_claim_ladder_svg
+from tracerazor.trice.artifact import build_artifact_card, render_artifact_markdown, render_artifact_svg
+from tracerazor.trice.contract import build_contract_card, render_contract_markdown, render_contract_svg, verify_contract_card_file
+from tracerazor.trice.crates import build_crates_card, render_crates_markdown, render_crates_svg, verify_crates_card_file
+from tracerazor.trice.design import build_design_card, render_design_markdown, render_design_svg, verify_design_card_file
+from tracerazor.trice.integrity import build_integrity_card, render_integrity_markdown, render_integrity_svg, verify_integrity_card_file, write_integrity_outputs
+from tracerazor.trice.install import render_install_markdown, render_install_svg, verify_install_card_file
+from tracerazor.trice.protocol import build_protocol_lock, render_protocol_markdown, render_protocol_svg, verify_protocol_lock_file
+from tracerazor.trice.readiness import build_suite_readiness, render_readiness_markdown, render_readiness_svg, verify_readiness_file
+from tracerazor.trice.release import build_release_card, render_release_markdown, render_release_svg, verify_release_card_file
+from tracerazor.trice.release_evidence import build_release_evidence_card, render_release_evidence_markdown, render_release_evidence_svg, verify_release_evidence_file, write_release_evidence_outputs
+from tracerazor.trice.reproduction import build_reproduction_card, render_reproduction_markdown, render_reproduction_svg, verify_reproduction_card_file
+from tracerazor.trice.research import build_research_card, render_research_markdown, render_research_svg, verify_research_card_file
+from tracerazor.trice.evidence import canonical_json, verify_manifest
+from tracerazor.trice.live import LiveTask, run_live_learning_loop
+from tracerazor.trice.recall import evidence_recall_from_policy
+from tracerazor.trice.receipt import validate_run_receipt_file
+from tracerazor.trice.schemas import load_schema, schema_path, validate_adapter_profile_file, validate_patch_spec_file, validate_suite_manifest_file
+from tracerazor.trice.stats import bootstrap_mean_ci, claim_gate_from_rounds, clustered_bootstrap_mean_ci, wilson_ci
+from tracerazor.trice.suite import run_suite_manifest, scaffold_suite_manifest, verify_suite_evidence
+from tracerazor.trice.user import UserPreferenceProfile
 
 
 REPO = Path(__file__).resolve().parents[1]
