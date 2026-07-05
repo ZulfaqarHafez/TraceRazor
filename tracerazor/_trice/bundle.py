@@ -3,18 +3,25 @@
 from __future__ import annotations
 
 import argparse
+import os
 import json
+import shutil
+import stat
 import tempfile
 import zipfile
 from dataclasses import asdict, dataclass
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
-from .evidence import load_manifest, sha256_file, verify_manifest
+from .evidence import load_manifest, resolve_contained_path, sha256_file, verify_manifest
 from .suite import verify_suite_evidence
 
 BUNDLE_SCHEMA_VERSION = "trice-evidence-bundle/v1"
 FIXED_ZIP_DATE = (1980, 1, 1, 0, 0, 0)
+MAX_BUNDLE_MEMBERS = 2048
+MAX_BUNDLE_MEMBER_BYTES = 50 * 1024 * 1024
+MAX_BUNDLE_TOTAL_BYTES = 250 * 1024 * 1024
+MAX_BUNDLE_COMPRESSION_RATIO = 100
 
 
 @dataclass(frozen=True)
@@ -79,15 +86,20 @@ def verify_evidence_bundle(bundle_path: str | Path) -> dict[str, Any]:
         with tempfile.TemporaryDirectory(prefix="trice-bundle-") as td:
             root = Path(td)
             with zipfile.ZipFile(bundle, "r") as zf:
-                names = zf.namelist()
-                for name in names:
+                infos = zf.infolist()
+                try:
+                    _validate_zip_infos(infos)
+                except ValueError as exc:
+                    errors.append(str(exc))
+                for info in infos:
                     try:
-                        _validate_bundle_member(name)
+                        _validate_bundle_member(info.filename)
                     except ValueError as exc:
                         errors.append(str(exc))
                 if errors:
                     return {"ok": False, "errors": errors, "bundle": str(bundle)}
-                zf.extractall(root)
+                for info in infos:
+                    _extract_member(zf, info, root)
 
             manifest_path = root / "trice_bundle_manifest.json"
             if not manifest_path.is_file():
@@ -111,8 +123,14 @@ def verify_evidence_bundle(bundle_path: str | Path) -> dict[str, Any]:
                 if sha256_file(p) != entry.get("sha256"):
                     errors.append(f"sha256 mismatch: {rel}")
 
-            root_manifest = root / str(data.get("root_manifest", ""))
-            root_result = root / str(data.get("root_result", ""))
+            try:
+                root_manifest = resolve_contained_path(root, str(data.get("root_manifest", "")), "root_manifest")
+                root_result = resolve_contained_path(root, str(data.get("root_result", "")), "root_result")
+            except ValueError as exc:
+                errors.append(str(exc))
+                root_verdict = {"ok": False, "errors": [str(exc)]}
+                root_manifest = root / "__invalid__"
+                root_result = root / "__invalid__"
             if not root_manifest.is_file():
                 errors.append("missing root manifest")
                 root_verdict = {"ok": False, "errors": ["missing root manifest"]}
@@ -167,11 +185,7 @@ def _default_result_for_manifest(manifest_path: Path) -> Path:
 
 
 def _resolve_bundle_path(base: Path, rel: str) -> Path:
-    _validate_bundle_member(rel)
-    resolved = (base / rel).resolve()
-    if base != resolved and base not in resolved.parents:
-        raise ValueError(f"bundle artifact escapes root: {rel}")
-    return resolved
+    return resolve_contained_path(base, rel, "bundle artifact")
 
 
 def _rel(path: Path, base: Path) -> str:
@@ -179,9 +193,37 @@ def _rel(path: Path, base: Path) -> str:
 
 
 def _validate_bundle_member(path: str) -> None:
-    p = Path(path)
-    if not path or p.is_absolute() or ".." in p.parts:
+    if "\\" in path:
         raise ValueError(f"unsafe bundle path: {path}")
+    p = PurePosixPath(path)
+    if not path or p.is_absolute() or ".." in p.parts or "." in p.parts:
+        raise ValueError(f"unsafe bundle path: {path}")
+
+
+def _validate_zip_infos(infos: list[zipfile.ZipInfo]) -> None:
+    if len(infos) > MAX_BUNDLE_MEMBERS:
+        raise ValueError(f"bundle has too many members: {len(infos)} > {MAX_BUNDLE_MEMBERS}")
+    total = 0
+    for info in infos:
+        mode = (info.external_attr >> 16) & 0o777777
+        if stat.S_ISLNK(mode):
+            raise ValueError(f"bundle member is a symlink: {info.filename}")
+        if info.file_size > MAX_BUNDLE_MEMBER_BYTES:
+            raise ValueError(f"bundle member too large: {info.filename}")
+        total += info.file_size
+        if total > MAX_BUNDLE_TOTAL_BYTES:
+            raise ValueError("bundle uncompressed size exceeds verifier budget")
+        if info.compress_size and info.file_size / max(1, info.compress_size) > MAX_BUNDLE_COMPRESSION_RATIO:
+            raise ValueError(f"bundle member compression ratio too high: {info.filename}")
+
+
+def _extract_member(zf: zipfile.ZipFile, info: zipfile.ZipInfo, root: Path) -> None:
+    target = resolve_contained_path(root, info.filename, "bundle member")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with zf.open(info, "r") as src, target.open("wb") as dst:
+        shutil.copyfileobj(src, dst, length=1024 * 1024)
+    if os.name != "nt":
+        os.chmod(target, 0o600)
 
 
 def _write_file_deterministic(zf: zipfile.ZipFile, path: Path, arcname: str) -> None:

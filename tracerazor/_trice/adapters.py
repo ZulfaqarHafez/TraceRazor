@@ -5,11 +5,18 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import shlex
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
+
+
+DEFAULT_FORBIDDEN_PREFIXES = ("tests/", "test/")
+SECRET_VALUE_RE = re.compile(
+    r"(?i)(api[_-]?key|secret|token|password|passwd|authorization|bearer)\s*[:=]\s*([^\s\"']+)"
+)
 
 
 class RepairAdapter(Protocol):
@@ -45,7 +52,7 @@ class JsonPatchAdapter:
     edits: list[PatchEdit]
     name: str = "json-patch-adapter"
     allow_test_edits: bool = False
-    forbidden_prefixes: tuple[str, ...] = ("tests/", "test/")
+    forbidden_prefixes: tuple[str, ...] = DEFAULT_FORBIDDEN_PREFIXES
     applied_empty_ok: bool = False
     metadata: dict[str, Any] = field(default_factory=dict)
 
@@ -70,7 +77,7 @@ class JsonPatchAdapter:
             edits=edits,
             name=str(data.get("name") or "json-patch-adapter"),
             allow_test_edits=bool(data.get("allow_test_edits", False)),
-            forbidden_prefixes=tuple(data.get("forbidden_prefixes") or ("tests/", "test/")),
+            forbidden_prefixes=_effective_forbidden_prefixes(data.get("forbidden_prefixes")),
             applied_empty_ok=bool(data.get("applied_empty_ok", False)),
             metadata=dict(data.get("metadata") or {}),
         )
@@ -121,7 +128,7 @@ class CommandRepairAdapter:
     name: str = "command-repair-adapter"
     timeout_s: int = 600
     allow_test_edits: bool = False
-    forbidden_prefixes: tuple[str, ...] = ("tests/", "test/")
+    forbidden_prefixes: tuple[str, ...] = DEFAULT_FORBIDDEN_PREFIXES
     expected_exit_codes: tuple[int, ...] = (0,)
     applied_empty_ok: bool = False
     env: dict[str, str] = field(default_factory=dict)
@@ -142,7 +149,7 @@ class CommandRepairAdapter:
             name=str(data.get("name") or "command-repair-adapter"),
             timeout_s=int(data.get("timeout_s") or data.get("repair_timeout_s") or 600),
             allow_test_edits=bool(data.get("allow_test_edits", False)),
-            forbidden_prefixes=tuple(data.get("forbidden_prefixes") or ("tests/", "test/")),
+            forbidden_prefixes=_effective_forbidden_prefixes(data.get("forbidden_prefixes")),
             expected_exit_codes=tuple(int(c) for c in data.get("expected_exit_codes", [0])),
             applied_empty_ok=bool(data.get("applied_empty_ok", False)),
             env={str(k): str(v) for k, v in dict(data.get("env") or {}).items()},
@@ -177,10 +184,12 @@ class CommandRepairAdapter:
             text=True,
             timeout=max(1, int(self.timeout_s)),
         )
+        redacted_stdout = _redact_secrets(proc.stdout, proc_env)
+        redacted_stderr = _redact_secrets(proc.stderr, proc_env)
         if proc.returncode not in self.expected_exit_codes:
             raise RuntimeError(
                 "repair command failed with exit code "
-                f"{proc.returncode}: {_excerpt((proc.stdout + chr(10) + proc.stderr).strip())}"
+                f"{proc.returncode}: {_excerpt((redacted_stdout + chr(10) + redacted_stderr).strip())}"
             )
         after = _snapshot_workspace(root)
         changed = _changed_paths(before, after)
@@ -203,15 +212,17 @@ class CommandRepairAdapter:
             "changed_file_count": len(changed),
             "forbidden_changed_files": forbidden,
             "allow_test_edits": self.allow_test_edits,
+            "forbidden_prefixes": list(self.forbidden_prefixes),
             "env_keys": sorted(self.env),
             "reserved_env_keys": sorted(reserved_env),
             "agent_receipt_path": self.agent_receipt_path,
             "agent_reported": agent_reported,
             "trice_context": trice_context,
-            "stdout_sha256": _sha256_text(proc.stdout),
-            "stderr_sha256": _sha256_text(proc.stderr),
-            "stdout_excerpt": _excerpt(proc.stdout, 600),
-            "stderr_excerpt": _excerpt(proc.stderr, 600),
+            "stdout_sha256": _sha256_text(redacted_stdout),
+            "stderr_sha256": _sha256_text(redacted_stderr),
+            "stdout_excerpt": _excerpt(redacted_stdout, 600),
+            "stderr_excerpt": _excerpt(redacted_stderr, 600),
+            "output_redacted": redacted_stdout != proc.stdout or redacted_stderr != proc.stderr,
             "metadata": self.metadata,
         }
         if forbidden and not self.allow_test_edits:
@@ -239,6 +250,33 @@ def _resolve_in_workspace(workspace: Path, rel: str) -> Path:
 def _is_forbidden(rel: str, prefixes: tuple[str, ...]) -> bool:
     rel_l = rel.lower().replace("\\", "/")
     return any(rel_l == p.rstrip("/") or rel_l.startswith(p.lower()) for p in prefixes)
+
+
+def _effective_forbidden_prefixes(value: Any) -> tuple[str, ...]:
+    prefixes = list(DEFAULT_FORBIDDEN_PREFIXES)
+    if isinstance(value, (list, tuple)):
+        prefixes.extend(str(item) for item in value if str(item).strip())
+    out: list[str] = []
+    for prefix in prefixes:
+        rel = _clean_rel_path(str(prefix).strip())
+        if not rel.endswith("/"):
+            rel = f"{rel}/"
+        if rel not in out:
+            out.append(rel)
+    return tuple(out)
+
+
+def _redact_secrets(text: str, env: dict[str, str]) -> str:
+    redacted = SECRET_VALUE_RE.sub(lambda m: f"{m.group(1)}=[REDACTED]", text)
+    sensitive_values = {
+        value
+        for key, value in env.items()
+        if len(value) >= 8
+        and any(marker in key.lower() for marker in ("key", "secret", "token", "password", "passwd"))
+    }
+    for value in sorted(sensitive_values, key=len, reverse=True):
+        redacted = redacted.replace(value, "[REDACTED]")
+    return redacted
 
 
 _SNAPSHOT_IGNORES = {

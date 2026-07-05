@@ -18,14 +18,14 @@ pub mod ws;
 use anyhow::Result;
 use axum::{
     extract::{DefaultBodyLimit, Request, State},
-    http::{header, Method, StatusCode},
+    http::{header, HeaderValue, Method, StatusCode},
     middleware::Next,
     response::{IntoResponse, Response},
     routing::get,
     Json, Router,
 };
 use serde_json::json;
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use tower_http::cors::{AllowOrigin, CorsLayer};
 use tower_http::services::ServeDir;
@@ -43,7 +43,13 @@ static DASHBOARD_HTML: &str = include_str!("dashboard.html");
 
 async fn dashboard_handler() -> impl IntoResponse {
     (
-        [(header::CONTENT_TYPE, "text/html; charset=utf-8")],
+        [
+            (header::CONTENT_TYPE, "text/html; charset=utf-8"),
+            (
+                header::CONTENT_SECURITY_POLICY,
+                "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+            ),
+        ],
         DASHBOARD_HTML,
     )
 }
@@ -70,13 +76,40 @@ fn cors_origins() -> AllowOrigin {
                 }
             }
             if origins.is_empty() {
-                AllowOrigin::any()
+                default_cors_origins()
             } else {
                 AllowOrigin::list(origins)
             }
         }
-        _ => AllowOrigin::any(),
+        Ok(val) if val == "*" => {
+            eprintln!(
+                "warning: TRACERAZOR_CORS_ORIGINS='*' allows any browser origin; use an explicit origin list for shared deployments"
+            );
+            AllowOrigin::any()
+        }
+        _ => default_cors_origins(),
     }
+}
+
+fn default_cors_origins() -> AllowOrigin {
+    AllowOrigin::predicate(|origin, _| is_loopback_origin(origin))
+}
+
+fn is_loopback_origin(origin: &HeaderValue) -> bool {
+    let Ok(origin) = origin.to_str() else {
+        return false;
+    };
+    let Ok(url) = reqwest::Url::parse(origin) else {
+        return false;
+    };
+    matches!(url.scheme(), "http" | "https")
+        && url.host_str().is_some_and(|host| {
+            host.eq_ignore_ascii_case("localhost")
+                || host
+                    .trim_matches(['[', ']'])
+                    .parse::<IpAddr>()
+                    .is_ok_and(|ip| ip.is_loopback())
+        })
 }
 
 /// Liveness probe (`GET /healthz`). Reports that the process is up and the
@@ -86,7 +119,9 @@ fn cors_origins() -> AllowOrigin {
 async fn healthz() -> impl IntoResponse {
     (
         StatusCode::OK,
-        Json(json!({ "status": "ok", "service": "tracerazor", "version": env!("CARGO_PKG_VERSION") })),
+        Json(
+            json!({ "status": "ok", "service": "tracerazor", "version": env!("CARGO_PKG_VERSION") }),
+        ),
     )
 }
 
@@ -225,7 +260,22 @@ impl Default for ServeOptions {
 }
 
 fn is_loopback(bind: &str) -> bool {
-    matches!(bind, "127.0.0.1" | "localhost" | "::1" | "[::1]")
+    let bind = bind.trim();
+    if bind.eq_ignore_ascii_case("localhost") {
+        return true;
+    }
+    bind.trim_matches(['[', ']'])
+        .parse::<IpAddr>()
+        .is_ok_and(|ip| ip.is_loopback())
+}
+
+fn validate_bind_auth(bind: &str, authed: bool) -> Result<()> {
+    if !authed && !is_loopback(bind) {
+        return Err(anyhow::anyhow!(
+            "refusing to bind {bind} without TRACERAZOR_API_TOKEN; bind to 127.0.0.1/::1 for tokenless local dev or set a bearer token for shared deployments"
+        ));
+    }
+    Ok(())
 }
 
 /// Start the server and block until it exits. Shared by the
@@ -237,14 +287,7 @@ pub async fn run_server(opts: ServeOptions) -> Result<()> {
         .ok()
         .filter(|t| !t.is_empty());
     let authed = token.is_some();
-    if !authed && !is_loopback(&opts.bind) {
-        eprintln!(
-            "WARNING: binding {} without TRACERAZOR_API_TOKEN — the API is \
-             unauthenticated. Set TRACERAZOR_API_TOKEN to require \
-             `Authorization: Bearer <token>` on /api routes.",
-            opts.bind
-        );
-    }
+    validate_bind_auth(&opts.bind, authed)?;
     let app = build_app_with_token(state, token);
 
     let addr: SocketAddr = format!("{}:{}", opts.bind, opts.port)
@@ -264,7 +307,10 @@ pub async fn run_server(opts: ServeOptions) -> Result<()> {
         "Dashboard (React):  http://localhost:{}/app  (requires: cd dashboard && npm run build)",
         opts.port
     );
-    println!("Metrics:            http://localhost:{}/api/metrics", opts.port);
+    println!(
+        "Metrics:            http://localhost:{}/api/metrics",
+        opts.port
+    );
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
@@ -346,5 +392,33 @@ mod auth_tests {
         assert!(!constant_time_eq(b"abc", b"abd"));
         assert!(!constant_time_eq(b"abc", b"abcd"));
         assert!(constant_time_eq(b"", b""));
+    }
+
+    #[test]
+    fn default_cors_origin_policy_is_loopback_only() {
+        assert!(is_loopback_origin(&HeaderValue::from_static(
+            "http://127.0.0.1:5173"
+        )));
+        assert!(is_loopback_origin(&HeaderValue::from_static(
+            "http://localhost:3000"
+        )));
+        assert!(is_loopback_origin(&HeaderValue::from_static(
+            "http://[::1]:5173"
+        )));
+        assert!(!is_loopback_origin(&HeaderValue::from_static(
+            "https://evil.example"
+        )));
+        assert!(!is_loopback_origin(&HeaderValue::from_static(
+            "not an origin"
+        )));
+    }
+
+    #[test]
+    fn non_loopback_bind_requires_token() {
+        assert!(validate_bind_auth("127.0.0.1", false).is_ok());
+        assert!(validate_bind_auth("[::1]", false).is_ok());
+        assert!(validate_bind_auth("0.0.0.0", false).is_err());
+        assert!(validate_bind_auth("192.168.1.25", false).is_err());
+        assert!(validate_bind_auth("0.0.0.0", true).is_ok());
     }
 }

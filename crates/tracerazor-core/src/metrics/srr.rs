@@ -156,11 +156,9 @@ fn lsh_candidates(steps: &[TraceStep]) -> Vec<Vec<usize>> {
     }
 
     let mut candidates: Vec<Vec<usize>> = vec![Vec::new(); steps.len()];
-    for (a, b) in index.candidate_pairs() {
+    for (a, b) in index.candidate_pairs_with_max_distance(LOOKBACK_WINDOW) {
         // candidate_pairs yields a < b; b is the later (current) step, a the prior.
-        if b - a <= LOOKBACK_WINDOW {
-            candidates[b].push(a);
-        }
+        candidates[b].push(a);
     }
     for c in candidates.iter_mut() {
         c.sort_unstable();
@@ -292,7 +290,11 @@ mod tests {
 
     // Simple exact-match similarity for testing.
     fn exact_sim(a: &str, b: &str) -> f64 {
-        if a == b { 1.0 } else { 0.0 }
+        if a == b {
+            1.0
+        } else {
+            0.0
+        }
     }
 
     #[test]
@@ -334,7 +336,10 @@ mod tests {
             .redundant_steps
             .iter()
             .any(|p| p.step_b == last_id && p.step_a == 1);
-        assert!(!flagged_last, "step 1 should be outside the lookback window of the last step");
+        assert!(
+            !flagged_last,
+            "step 1 should be outside the lookback window of the last step"
+        );
     }
 
     // ── Phase-1 precision rules ───────────────────────────────────────────────
@@ -343,11 +348,20 @@ mod tests {
     fn most_similar_prior_is_flagged_not_first() {
         // Two priors above threshold; the pair must point at the MORE similar
         // one (index 2), not the first/oldest above threshold (index 0).
-        let trace = make_trace(&["alpha beta gamma", "unrelated", "alpha beta gamma delta", "alpha beta gamma delta"]);
+        let trace = make_trace(&[
+            "alpha beta gamma",
+            "unrelated",
+            "alpha beta gamma delta",
+            "alpha beta gamma delta",
+        ]);
         let sim = |a: &str, b: &str| {
-            if a == b { 1.0 }
-            else if a.starts_with("alpha") && b.starts_with("alpha") { 0.7 }
-            else { 0.0 }
+            if a == b {
+                1.0
+            } else if a.starts_with("alpha") && b.starts_with("alpha") {
+                0.7
+            } else {
+                0.0
+            }
         };
         let result = compute(&trace, sim, None);
         let pair = result
@@ -355,7 +369,10 @@ mod tests {
             .iter()
             .find(|p| p.step_b == 4)
             .expect("step 4 should be flagged");
-        assert_eq!(pair.step_a, 3, "must flag the most similar prior, got {pair:?}");
+        assert_eq!(
+            pair.step_a, 3,
+            "must flag the most similar prior, got {pair:?}"
+        );
     }
 
     #[test]
@@ -444,5 +461,4 @@ mod tests {
         let r = compute(&control, exact_sim, None);
         assert!(r.redundant_steps.iter().any(|p| p.step_b == 3));
     }
-
 }

@@ -3,10 +3,12 @@ import json
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 import pytest
 
+from tracerazor._trice import install as install_mod
 from tracerazor.trice.adapters import CommandRepairAdapter, JsonPatchAdapter
 from tracerazor.trice.bundle import export_evidence_bundle, verify_evidence_bundle
 from tracerazor.trice.claim import build_claim_card, render_claim_card_markdown, render_claim_ladder_svg
@@ -28,7 +30,7 @@ from tracerazor.trice.recall import evidence_recall_from_policy
 from tracerazor.trice.receipt import validate_run_receipt_file
 from tracerazor.trice.schemas import load_schema, schema_path, validate_adapter_profile_file, validate_patch_spec_file, validate_suite_manifest_file
 from tracerazor.trice.stats import bootstrap_mean_ci, claim_gate_from_rounds, clustered_bootstrap_mean_ci, wilson_ci
-from tracerazor.trice.suite import run_suite_manifest, scaffold_suite_manifest, verify_suite_evidence
+from tracerazor.trice.suite import run_suite_manifest, scaffold_suite_manifest, suite_task_specs, verify_suite_evidence
 from tracerazor.trice.user import UserPreferenceProfile
 
 
@@ -78,6 +80,25 @@ def test_public_tracerazor_trice_import_surface():
     assert callable(trice.export_evidence_bundle)
     assert callable(trice.verify_evidence_bundle)
     assert trice.load_schema("patch")["title"] == "TRICE deterministic patch spec"
+
+
+def test_install_card_uses_package_metadata_without_pyproject(monkeypatch, tmp_path):
+    def fake_version(name):
+        assert name == "tracerazor"
+        return "9.9.9"
+
+    missing_pyproject = tmp_path / "pyproject.toml"
+    monkeypatch.setattr(install_mod.importlib_metadata, "version", fake_version)
+
+    assert install_mod._expected_version(missing_pyproject) == "9.9.9"
+
+    rows = install_mod._input_rows(tmp_path / "dist", missing_pyproject, "9.9.9")
+    assert rows["package_metadata"] == {
+        "kind": "installed_package_metadata",
+        "name": "tracerazor",
+        "version": "9.9.9",
+    }
+    assert "pyproject" not in rows
 
 
 def test_schema_helpers_validate_example_patch():
@@ -231,6 +252,23 @@ def test_json_patch_adapter_refuses_test_edits_and_path_escape(tmp_path):
         escape.apply_fix(object(), workspace)
 
 
+def test_patch_policy_forbidden_prefixes_cannot_be_weakened(tmp_path):
+    workspace = tmp_path / "repo"
+    (workspace / "tests").mkdir(parents=True)
+    (workspace / "tests" / "test_guard.py").write_text("def test_x():\n    assert False\n", encoding="utf-8")
+    adapter = JsonPatchAdapter.from_dict(
+        {
+            "allow_test_edits": False,
+            "forbidden_prefixes": ["src/"],
+            "edits": [{"op": "write", "path": "tests/test_guard.py", "content": "def test_x():\n    assert True\n"}],
+        }
+    )
+    assert "tests/" in adapter.forbidden_prefixes
+    assert "src/" in adapter.forbidden_prefixes
+    with pytest.raises(ValueError, match="forbidden path"):
+        adapter.apply_fix(object(), workspace)
+
+
 def test_command_repair_adapter_runs_real_command_and_blocks_test_edits(tmp_path):
     workspace = tmp_path / "repo"
     workspace.mkdir()
@@ -304,6 +342,7 @@ def test_command_repair_adapter_runs_real_command_and_blocks_test_edits(tmp_path
     assert "TRICE_TRACE_PATH" in adapter.last_receipt["reserved_env_keys"]
     assert "TRICE_VERIFY_CMD_JSON" in adapter.last_receipt["reserved_env_keys"]
     assert len(adapter.last_receipt["workspace_before_sha256"]) == 64
+    assert "tests/" in adapter.last_receipt["forbidden_prefixes"]
     receipt_path = tmp_path / "receipt.json"
     receipt_path.write_text(json.dumps(adapter.last_receipt, indent=2, sort_keys=True), encoding="utf-8")
     receipt_verdict = validate_run_receipt_file(receipt_path)
@@ -322,6 +361,131 @@ def test_command_repair_adapter_runs_real_command_and_blocks_test_edits(tmp_path
     )
     with pytest.raises(ValueError, match="forbidden path"):
         CommandRepairAdapter(command=(sys.executable, str(bad)), timeout_s=30).apply_fix(object(), bad_workspace)
+
+
+def test_command_receipt_redacts_secret_output(tmp_path):
+    workspace = tmp_path / "repo"
+    workspace.mkdir()
+    (workspace / "app.py").write_text("VALUE = 1\n", encoding="utf-8")
+    repair = tmp_path / "repair_secret.py"
+    repair.write_text(
+        "import os\n"
+        "from pathlib import Path\n"
+        "print('token=' + os.environ['API_TOKEN'])\n"
+        "Path('app.py').write_text('VALUE = 2\\n', encoding='utf-8')\n",
+        encoding="utf-8",
+    )
+    adapter = CommandRepairAdapter(
+        command=(sys.executable, str(repair)),
+        timeout_s=30,
+        env={"API_TOKEN": "super-secret-token-123"},
+    )
+    adapter.apply_fix(type("Task", (), {"task_id": "secret", "prompt": "fix"})(), workspace)
+    assert adapter.last_receipt
+    assert "super-secret-token-123" not in adapter.last_receipt["stdout_excerpt"]
+    assert "[REDACTED]" in adapter.last_receipt["stdout_excerpt"]
+    assert adapter.last_receipt["output_redacted"] is True
+
+
+def test_verify_manifest_rejects_artifact_path_escape(tmp_path):
+    from tracerazor.trice.evidence import sha256_file, sha256_text
+
+    base = tmp_path / "evidence"
+    base.mkdir()
+    result = {"ok": True}
+    result_path = base / "trice_v2_live_results.json"
+    result_path.write_text(json.dumps(result, sort_keys=True) + "\n", encoding="utf-8")
+    outside = tmp_path / "outside.txt"
+    outside.write_text("secret\n", encoding="utf-8")
+    manifest = {
+        "schema_version": "trice-evidence-manifest/v1",
+        "algorithm": "unit",
+        "created_by": "test",
+        "python_version": "3",
+        "platform": "test",
+        "artifacts": [{"path": "../outside.txt", "sha256": sha256_file(outside), "bytes": outside.stat().st_size}],
+        "result_sha256": sha256_file(result_path),
+        "canonical_result_sha256": sha256_text(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=True)),
+        "notes": [],
+    }
+    manifest_path = base / "trice_v2_evidence_manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    verdict = verify_manifest(manifest_path)
+    assert verdict["ok"] is False
+    assert any("escapes evidence root" in err for err in verdict["errors"])
+
+
+def test_verify_evidence_bundle_rejects_root_path_escape(tmp_path):
+    bundle = tmp_path / "escape.trice.zip"
+    with zipfile.ZipFile(bundle, "w") as zf:
+        zf.writestr(
+            "trice_bundle_manifest.json",
+            json.dumps(
+                {
+                    "schema_version": "trice-evidence-bundle/v1",
+                    "root_manifest": "../outside_manifest.json",
+                    "root_result": "trice_v2_live_results.json",
+                    "verifier": "test",
+                    "entries": [],
+                }
+            ),
+        )
+        zf.writestr("trice_v2_live_results.json", "{}")
+    verdict = verify_evidence_bundle(bundle)
+    assert verdict["ok"] is False
+    assert any("root_manifest escapes evidence root" in err for err in verdict["errors"])
+
+
+def test_verify_suite_evidence_rejects_child_manifest_escape(tmp_path):
+    from tracerazor.trice.evidence import sha256_file, sha256_text
+
+    base = tmp_path / "suite"
+    base.mkdir()
+    child = tmp_path / "child_manifest.json"
+    child.write_text("{}", encoding="utf-8")
+    result = {
+        "schema_version": "trice-suite-result/v1",
+        "algorithm": "unit",
+        "suite": {},
+        "tasks": [{"task_id": "escape", "manifest_path": "../child_manifest.json"}],
+    }
+    result_path = base / "trice_suite_results.json"
+    result_path.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    manifest = {
+        "schema_version": "trice-evidence-manifest/v1",
+        "algorithm": "unit",
+        "created_by": "test",
+        "python_version": "3",
+        "platform": "test",
+        "artifacts": [],
+        "result_sha256": sha256_file(result_path),
+        "canonical_result_sha256": sha256_text(json.dumps(result, sort_keys=True, separators=(",", ":"), ensure_ascii=True)),
+        "notes": [],
+    }
+    manifest_path = base / "trice_suite_evidence_manifest.json"
+    manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    verdict = verify_suite_evidence(manifest_path)
+    assert verdict["ok"] is False
+    assert any("suite child manifest escapes evidence root" in err for err in verdict["errors"])
+
+
+def test_suite_task_id_rejects_path_segments(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    patch = tmp_path / "patch.json"
+    patch.write_text(json.dumps({"edits": [{"op": "write", "path": "app.py", "content": "x = 1\n"}]}), encoding="utf-8")
+    manifest = tmp_path / "suite.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": "trice-suite/v1",
+                "tasks": [{"task_id": "..", "repo": str(repo), "patch_spec": str(patch)}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="suite task_id"):
+        suite_task_specs(manifest)
 
 
 def test_trice_v2_live_rollout_edits_real_workspace_and_updates_profile(tmp_path):

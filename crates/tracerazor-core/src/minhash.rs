@@ -70,7 +70,11 @@ pub fn minhash_signature(shingles: &[u64]) -> [u64; NUM_HASHES] {
 
 /// Estimate Jaccard similarity from two MinHash signatures.
 pub fn jaccard_estimate(sig_a: &[u64; NUM_HASHES], sig_b: &[u64; NUM_HASHES]) -> f64 {
-    let matches = sig_a.iter().zip(sig_b.iter()).filter(|(a, b)| a == b).count();
+    let matches = sig_a
+        .iter()
+        .zip(sig_b.iter())
+        .filter(|(a, b)| a == b)
+        .count();
     matches as f64 / NUM_HASHES as f64
 }
 
@@ -116,6 +120,16 @@ impl LshIndex {
     /// Return candidate pairs `(a, b)` with `a < b` and estimated Jaccard
     /// `>= threshold`.
     pub fn candidate_pairs(&self) -> Vec<(usize, usize)> {
+        self.candidate_pairs_inner(None)
+    }
+
+    /// Return candidate pairs within a maximum index distance. This lets SRR
+    /// enforce its lookback budget before materializing all colliding pairs.
+    pub fn candidate_pairs_with_max_distance(&self, max_distance: usize) -> Vec<(usize, usize)> {
+        self.candidate_pairs_inner(Some(max_distance))
+    }
+
+    fn candidate_pairs_inner(&self, max_distance: Option<usize>) -> Vec<(usize, usize)> {
         let mut seen = std::collections::HashSet::new();
         let mut pairs = Vec::new();
         for band_buckets in &self.buckets {
@@ -123,10 +137,26 @@ impl LshIndex {
                 if bucket.len() < 2 {
                     continue;
                 }
-                for i in 0..bucket.len() {
-                    for j in i + 1..bucket.len() {
-                        let a = bucket[i].min(bucket[j]);
-                        let b = bucket[i].max(bucket[j]);
+                let ordered;
+                let bucket = if max_distance.is_some() {
+                    ordered = {
+                        let mut ordered = bucket.clone();
+                        ordered.sort_unstable();
+                        ordered
+                    };
+                    &ordered
+                } else {
+                    bucket
+                };
+                for j in 1..bucket.len() {
+                    let b = bucket[j];
+                    for i in (0..j).rev() {
+                        let a = bucket[i];
+                        if let Some(max_distance) = max_distance {
+                            if b - a > max_distance {
+                                break;
+                            }
+                        }
                         if a != b && seen.insert((a, b)) {
                             let est = jaccard_estimate(&self.signatures[a], &self.signatures[b]);
                             if est >= self.threshold {
@@ -173,6 +203,18 @@ mod tests {
             !pairs.contains(&(0, 1)),
             "unrelated steps should not be a candidate pair, got {pairs:?}"
         );
+    }
+
+    #[test]
+    fn bounded_candidate_pairs_do_not_emit_out_of_window_collisions() {
+        let mut idx = LshIndex::new(0.5);
+        for i in 0..10 {
+            idx.insert(i, "identical repeated step text");
+        }
+        let pairs = idx.candidate_pairs_with_max_distance(2);
+        assert!(!pairs.is_empty());
+        assert!(pairs.iter().all(|(a, b)| b - a <= 2), "{pairs:?}");
+        assert!(!pairs.contains(&(0, 9)));
     }
 
     #[test]

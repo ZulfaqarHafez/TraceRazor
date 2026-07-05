@@ -32,6 +32,14 @@ def hash_file(path: str | Path) -> str:
     return h.hexdigest()
 
 
+def _assert_contained_file(root: Path, path: Path) -> None:
+    base = root.resolve()
+    resolved = path.resolve()
+    if resolved != base and base not in resolved.parents:
+        rel = path.relative_to(root).as_posix()
+        raise ValueError(f"refusing to hash file outside tree: {rel}")
+
+
 def fingerprint_tree(root: str | Path, *, ignored_dirs: Iterable[str] = IGNORED_DIRS) -> TreeFingerprint:
     """Hash a source tree using relative paths plus per-file SHA-256 hashes."""
 
@@ -41,6 +49,7 @@ def fingerprint_tree(root: str | Path, *, ignored_dirs: Iterable[str] = IGNORED_
     count = 0
     total_bytes = 0
     for path in _iter_files(base, ignored):
+        _assert_contained_file(base, path)
         rel = path.relative_to(base).as_posix()
         digest = hash_file(path)
         size = path.stat().st_size

@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shlex
 import shutil
 import stat
@@ -19,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from .adapters import CommandRepairAdapter, JsonPatchAdapter, RepairAdapter
-from .evidence import build_manifest, verify_manifest, write_manifest
+from .evidence import build_manifest, resolve_contained_path, verify_manifest, write_manifest
 from .live import DEFAULT_OUT_DIR, VERIFY_CMD, LiveRolloutResult, LiveTask, run_live_learning_loop
 from .provenance import fingerprint_tree, hash_file
 from .stats import clustered_bootstrap_mean_ci, claim_gate_from_rounds
@@ -27,6 +28,7 @@ from .stats import clustered_bootstrap_mean_ci, claim_gate_from_rounds
 SUITE_SCHEMA_VERSION = "trice-suite/v1"
 SUITE_RESULT_VERSION = "trice-suite-result/v1"
 DEFAULT_SUITE_OUT_DIR = DEFAULT_OUT_DIR.parent / "v2-suite"
+_TASK_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$")
 
 
 @dataclass(frozen=True)
@@ -189,6 +191,7 @@ def suite_task_specs(manifest_path: str | Path, source_root: str | Path | None =
         task_id = str(raw.get("task_id") or "").strip()
         if not task_id:
             raise ValueError("suite task requires task_id")
+        _safe_task_id(task_id)
         repo, repo_ref, source_type, git_source = _resolve_task_repo(base, raw, task_id, source_root_path)
         has_patch = bool(raw.get("patch_spec"))
         has_repair_cmd = bool(raw.get("repair_cmd"))
@@ -272,7 +275,7 @@ def run_suite_manifest(
         source = _source_record(spec)
         source_records.append(source)
         for replicate_index in range(1, replicate_count + 1):
-            task_out = out / "tasks" / spec.task_id / f"replicate-{replicate_index}"
+            task_out = out / "tasks" / _safe_task_id(spec.task_id) / f"replicate-{replicate_index}"
             feedback = user_feedback or spec.user_feedback or manifest.get("user_feedback")
             task = LiveTask.from_repo(
                 spec.repo,
@@ -639,8 +642,13 @@ def verify_suite_evidence(manifest_path: str | Path, result_path: str | Path | N
     if resolved_result.is_file():
         data = json.loads(resolved_result.read_text(encoding="utf-8"))
         for task in data.get("tasks", []):
-            child_manifest = base / str(task.get("manifest_path", ""))
-            verdict = verify_manifest(child_manifest)
+            raw_manifest_path = str(task.get("manifest_path", ""))
+            try:
+                child_manifest = resolve_contained_path(base, raw_manifest_path, "suite child manifest")
+                verdict = verify_manifest(child_manifest)
+            except (ValueError, OSError, json.JSONDecodeError) as exc:
+                child_manifest = base / "__invalid__"
+                verdict = {"ok": False, "errors": [str(exc)]}
             child_verdicts.append(
                 {
                     "task_id": task.get("task_id"),
@@ -804,7 +812,11 @@ def _git(args: list[str], cwd: Path | None) -> str:
 
 
 def _safe_task_id(task_id: str) -> str:
-    return "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in task_id)
+    if not _TASK_ID_RE.fullmatch(task_id):
+        raise ValueError(
+            "suite task_id must start with an ASCII letter or digit and contain only letters, digits, '_' or '-'"
+        )
+    return task_id
 
 
 def _remove_tree(path: Path) -> None:

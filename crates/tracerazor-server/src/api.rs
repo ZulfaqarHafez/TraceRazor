@@ -17,12 +17,12 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::path::PathBuf;
-use tracerazor_core::{analyse, scoring::ScoringConfig};
+use std::{net::SocketAddr, path::PathBuf, time::Duration};
+use tracerazor_core::report::Anomaly;
+use tracerazor_core::{analyse, scoring::ScoringConfig, types::Trace};
 use tracerazor_ingest::{parse, TraceFormat};
 use tracerazor_semantic::{default_similarity_fn, BowSimilarity, Similarity};
-use tracerazor_store::{KGP_CAPTURE_THRESHOLD, build_kb_entry};
-use tracerazor_core::report::Anomaly;
+use tracerazor_store::{build_kb_entry, KGP_CAPTURE_THRESHOLD};
 
 use crate::state::{AppState, WsEvent};
 
@@ -82,6 +82,18 @@ fn default_import_format() -> String {
     "auto".into()
 }
 
+const MAX_TRACE_STEPS: usize = 50_000;
+
+fn validate_trace_budget(trace: &Trace) -> Result<(), AppError> {
+    if trace.steps.len() > MAX_TRACE_STEPS {
+        return Err(AppError::bad_request(format!(
+            "Trace has {} steps; maximum is {MAX_TRACE_STEPS}",
+            trace.steps.len()
+        )));
+    }
+    Ok(())
+}
+
 #[derive(Serialize)]
 pub struct ImportResponse {
     pub trace: tracerazor_core::types::Trace,
@@ -98,9 +110,10 @@ async fn import_trace(Json(req): Json<ImportRequest>) -> Result<impl IntoRespons
         .map_err(|e| AppError::bad_request(format!("Ingest error: {e}")))?;
     let quality = tracerazor_core::report::IngestQuality::assess_with_format(&trace, &req.format);
     let report = if req.audit {
+        validate_trace_budget(&trace)?;
         let config = ScoringConfig::default();
-        let mut report = analyse(&mut trace, default_similarity_fn(), &config)
-            .map_err(AppError::internal)?;
+        let mut report =
+            analyse(&mut trace, default_similarity_fn(), &config).map_err(AppError::internal)?;
         report.manifest = Some(
             tracerazor_core::report::RunManifest::build(
                 tracerazor_core::provenance::sha256_hex(req.data.as_bytes()),
@@ -203,13 +216,7 @@ async fn audit(
 
     // Bound per-request analysis cost. Even with windowed metrics, an enormous
     // step count is a CPU-DoS vector on a public endpoint.
-    const MAX_STEPS: usize = 50_000;
-    if trace.steps.len() > MAX_STEPS {
-        return Err(AppError::bad_request(format!(
-            "Trace has {} steps; maximum is {MAX_STEPS}",
-            trace.steps.len()
-        )));
-    }
+    validate_trace_budget(&trace)?;
 
     // ── Build historical context for local-first RDA/DBO ─────────────────────
     // Skipped entirely for hermetic requests so the score is a pure function
@@ -237,8 +244,7 @@ async fn audit(
         historical_median_steps,
         ..ScoringConfig::default()
     };
-    let mut report = analyse(&mut trace, sim_fn, &config)
-        .map_err(AppError::internal)?;
+    let mut report = analyse(&mut trace, sim_fn, &config).map_err(AppError::internal)?;
 
     // Provenance manifest: binds the score to the server's canonical trace
     // serialisation and records any store influence, so a server-vs-CLI
@@ -291,7 +297,11 @@ async fn audit(
     // ── KB: auto-capture if this trace scores above the threshold ─────────────
     let captured_to_kb = if !req.hermetic && tas_score >= KGP_CAPTURE_THRESHOLD {
         let entry = build_kb_entry(&trace, &report);
-        state.store.save_kb_entry(&entry).await.map_err(AppError::internal)?;
+        state
+            .store
+            .save_kb_entry(&entry)
+            .await
+            .map_err(AppError::internal)?;
         true
     } else {
         false
@@ -339,7 +349,11 @@ async fn find_kb_match(
 ) -> Option<tracerazor_store::KgpMatch> {
     const MATCH_THRESHOLD: f64 = 0.45;
 
-    let kb_entries = state.store.list_kb_for_agent(&trace.agent_name).await.ok()?;
+    let kb_entries = state
+        .store
+        .list_kb_for_agent(&trace.agent_name)
+        .await
+        .ok()?;
     if kb_entries.is_empty() {
         return None;
     }
@@ -369,7 +383,11 @@ async fn find_kb_match(
 
 /// GET /api/traces
 async fn list_traces(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    let traces = state.store.list_traces().await.map_err(AppError::internal)?;
+    let traces = state
+        .store
+        .list_traces()
+        .await
+        .map_err(AppError::internal)?;
     Ok(Json(traces))
 }
 
@@ -378,7 +396,12 @@ async fn get_trace(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    match state.store.get_trace(&id).await.map_err(AppError::internal)? {
+    match state
+        .store
+        .get_trace(&id)
+        .await
+        .map_err(AppError::internal)?
+    {
         Some(stored) => Ok(Json(stored)),
         None => Err(AppError::not_found(format!("Trace '{id}' not found"))),
     }
@@ -435,6 +458,7 @@ async fn get_agent(
 
 // ── Error helper ──────────────────────────────────────────────────────────────
 
+#[derive(Debug)]
 struct AppError {
     status: StatusCode,
     message: String,
@@ -442,10 +466,16 @@ struct AppError {
 
 impl AppError {
     fn bad_request(msg: impl Into<String>) -> Self {
-        AppError { status: StatusCode::BAD_REQUEST, message: msg.into() }
+        AppError {
+            status: StatusCode::BAD_REQUEST,
+            message: msg.into(),
+        }
     }
     fn not_found(msg: impl Into<String>) -> Self {
-        AppError { status: StatusCode::NOT_FOUND, message: msg.into() }
+        AppError {
+            status: StatusCode::NOT_FOUND,
+            message: msg.into(),
+        }
     }
     fn internal(e: impl std::fmt::Display) -> Self {
         AppError {
@@ -468,15 +498,20 @@ impl IntoResponse for AppError {
 /// private, loopback, link-local, or otherwise internal address — preventing
 /// the export endpoints from being abused to reach cloud metadata services
 /// (169.254.169.254) or internal infrastructure (SSRF).
-///
-/// Note: this resolves DNS once for validation; reqwest re-resolves when it
-/// connects, so this is not a hard guarantee against DNS-rebinding. It blocks
-/// the common cases. Treat the export endpoints as privileged regardless.
-fn validate_export_url(raw: &str) -> Result<(), AppError> {
+/// The returned target pins the request client to the validated addresses and
+/// disables redirects, so the network destination cannot drift after preflight.
+#[derive(Clone)]
+struct ValidatedExportTarget {
+    url: reqwest::Url,
+    host: String,
+    addrs: Vec<SocketAddr>,
+}
+
+fn validate_export_url(raw: &str) -> Result<ValidatedExportTarget, AppError> {
     use std::net::ToSocketAddrs;
 
-    let url = reqwest::Url::parse(raw)
-        .map_err(|e| AppError::bad_request(format!("Invalid URL: {e}")))?;
+    let url =
+        reqwest::Url::parse(raw).map_err(|e| AppError::bad_request(format!("Invalid URL: {e}")))?;
 
     match url.scheme() {
         "http" | "https" => {}
@@ -499,7 +534,7 @@ fn validate_export_url(raw: &str) -> Result<(), AppError> {
     }
 
     let port = url.port_or_known_default().unwrap_or(80);
-    let addrs: Vec<std::net::SocketAddr> = (host, port)
+    let addrs: Vec<SocketAddr> = (host, port)
         .to_socket_addrs()
         .map_err(|e| AppError::bad_request(format!("Cannot resolve host '{host}': {e}")))?
         .collect();
@@ -518,7 +553,18 @@ fn validate_export_url(raw: &str) -> Result<(), AppError> {
         }
     }
 
-    Ok(())
+    let host = host.to_string();
+    Ok(ValidatedExportTarget { url, host, addrs })
+}
+
+fn export_client(target: &ValidatedExportTarget) -> Result<reqwest::Client, AppError> {
+    reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .connect_timeout(Duration::from_secs(5))
+        .timeout(Duration::from_secs(10))
+        .resolve_to_addrs(&target.host, &target.addrs)
+        .build()
+        .map_err(AppError::internal)
 }
 
 /// Returns true for IPs that must never be the target of a server-initiated
@@ -552,7 +598,11 @@ fn is_disallowed_ip(ip: &std::net::IpAddr) -> bool {
 
 /// GET /api/kb
 async fn list_kb(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
-    let entries = state.store.list_kb_entries().await.map_err(AppError::internal)?;
+    let entries = state
+        .store
+        .list_kb_entries()
+        .await
+        .map_err(AppError::internal)?;
     Ok(Json(entries))
 }
 
@@ -561,7 +611,12 @@ async fn get_kb_entry(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    match state.store.get_kb_entry(&id).await.map_err(AppError::internal)? {
+    match state
+        .store
+        .get_kb_entry(&id)
+        .await
+        .map_err(AppError::internal)?
+    {
         Some(e) => Ok(Json(e)),
         None => Err(AppError::not_found(format!("KB entry '{id}' not found"))),
     }
@@ -572,7 +627,11 @@ async fn delete_kb_entry(
     Path(id): Path<String>,
     State(state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    state.store.delete_kb_entry(&id).await.map_err(AppError::internal)?;
+    state
+        .store
+        .delete_kb_entry(&id)
+        .await
+        .map_err(AppError::internal)?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -653,7 +712,13 @@ async fn compare(
         d => format!("No significant change ({:+.1} TAS points)", d),
     };
 
-    Ok(Json(CompareResponse { a: sum_a, b: sum_b, tas_diff, tokens_saved_diff, verdict }))
+    Ok(Json(CompareResponse {
+        a: sum_a,
+        b: sum_b,
+        tas_diff,
+        tokens_saved_diff,
+        verdict,
+    }))
 }
 
 // ── Prometheus Metrics ────────────────────────────────────────────────────────
@@ -696,7 +761,10 @@ async fn metrics(State(state): State<AppState>) -> impl IntoResponse {
 
     (
         StatusCode::OK,
-        [(header::CONTENT_TYPE, "text/plain; version=0.0.4; charset=utf-8")],
+        [(
+            header::CONTENT_TYPE,
+            "text/plain; version=0.0.4; charset=utf-8",
+        )],
         out,
     )
 }
@@ -732,7 +800,8 @@ async fn export_otel(
     State(state): State<AppState>,
     Json(req): Json<ExportOtelRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    validate_export_url(&req.endpoint)?;
+    let endpoint_url = format!("{}/v1/traces", req.endpoint.trim_end_matches('/'));
+    let export_target = validate_export_url(&endpoint_url)?;
 
     let stored = state
         .store
@@ -818,10 +887,9 @@ async fn export_otel(
         }]
     });
 
-    let endpoint_url = format!("{}/v1/traces", req.endpoint.trim_end_matches('/'));
-    let client = reqwest::Client::new();
+    let client = export_client(&export_target)?;
     let result = client
-        .post(&endpoint_url)
+        .post(export_target.url.clone())
         .header("Content-Type", "application/json")
         .json(&payload)
         .send()
@@ -830,7 +898,7 @@ async fn export_otel(
     match result {
         Ok(resp) if resp.status().is_success() => Ok(Json(ExportResponse {
             trace_id: req.trace_id,
-            destination: endpoint_url,
+            destination: export_target.url.to_string(),
             success: true,
             message: format!("Exported {} spans to OTEL collector", all_spans.len()),
         })),
@@ -838,14 +906,14 @@ async fn export_otel(
             let status = resp.status().as_u16();
             Ok(Json(ExportResponse {
                 trace_id: req.trace_id,
-                destination: endpoint_url,
+                destination: export_target.url.to_string(),
                 success: false,
                 message: format!("Collector returned HTTP {status}"),
             }))
         }
         Err(e) => Ok(Json(ExportResponse {
             trace_id: req.trace_id,
-            destination: endpoint_url,
+            destination: export_target.url.to_string(),
             success: false,
             message: format!("Export failed: {e}"),
         })),
@@ -857,7 +925,7 @@ async fn export_webhook(
     State(state): State<AppState>,
     Json(req): Json<ExportWebhookRequest>,
 ) -> Result<impl IntoResponse, AppError> {
-    validate_export_url(&req.webhook_url)?;
+    let export_target = validate_export_url(&req.webhook_url)?;
 
     let stored = state
         .store
@@ -887,9 +955,9 @@ async fn export_webhook(
         "source": "tracerazor"
     });
 
-    let client = reqwest::Client::new();
+    let client = export_client(&export_target)?;
     let result = client
-        .post(&req.webhook_url)
+        .post(export_target.url.clone())
         .header("Content-Type", "application/json")
         .json(&summary)
         .send()
@@ -898,7 +966,7 @@ async fn export_webhook(
     match result {
         Ok(resp) if resp.status().is_success() => Ok(Json(ExportResponse {
             trace_id: req.trace_id,
-            destination: req.webhook_url,
+            destination: export_target.url.to_string(),
             success: true,
             message: "Webhook delivered successfully".into(),
         })),
@@ -906,14 +974,14 @@ async fn export_webhook(
             let status = resp.status().as_u16();
             Ok(Json(ExportResponse {
                 trace_id: req.trace_id,
-                destination: req.webhook_url,
+                destination: export_target.url.to_string(),
                 success: false,
                 message: format!("Webhook returned HTTP {status}"),
             }))
         }
         Err(e) => Ok(Json(ExportResponse {
             trace_id: req.trace_id,
-            destination: req.webhook_url,
+            destination: export_target.url.to_string(),
             success: false,
             message: format!("Webhook delivery failed: {e}"),
         })),
@@ -968,7 +1036,10 @@ mod tests {
             ]
         });
 
-        let resp = server.post("/api/audit").json(&json!({"trace": trace})).await;
+        let resp = server
+            .post("/api/audit")
+            .json(&json!({"trace": trace}))
+            .await;
         resp.assert_status_ok();
         let body: serde_json::Value = resp.json();
         assert_eq!(body["trace_id"], "api-test-001");
@@ -1041,15 +1112,23 @@ mod tests {
         let server = test_app().await;
 
         // 1. Audit a trace
-        let resp = server.post("/api/audit").json(&json!({"trace": sample_trace()})).await;
+        let resp = server
+            .post("/api/audit")
+            .json(&json!({"trace": sample_trace()}))
+            .await;
         resp.assert_status_ok();
         let body: serde_json::Value = resp.json();
         assert_eq!(body["trace_id"], "integ-001");
         assert!(body["tas_score"].as_f64().is_some());
         let tas = body["tas_score"].as_f64().unwrap();
-        assert!((0.0..=100.0).contains(&tas), "TAS should be 0-100, got {tas}");
+        assert!(
+            (0.0..=100.0).contains(&tas),
+            "TAS should be 0-100, got {tas}"
+        );
         assert!(body["grade"].as_str().is_some());
-        assert!(body["report_markdown"].as_str().is_some_and(|s| s.contains("TRACERAZOR")));
+        assert!(body["report_markdown"]
+            .as_str()
+            .is_some_and(|s| s.contains("TRACERAZOR")));
 
         // 2. Retrieve the trace by ID
         let resp = server.get("/api/traces/integ-001").await;
@@ -1075,12 +1154,21 @@ mod tests {
     #[tokio::test]
     async fn test_audit_response_contains_avs_and_fixes() {
         let server = test_app().await;
-        let resp = server.post("/api/audit").json(&json!({"trace": sample_trace()})).await;
+        let resp = server
+            .post("/api/audit")
+            .json(&json!({"trace": sample_trace()}))
+            .await;
         resp.assert_status_ok();
         let body: serde_json::Value = resp.json();
 
         // AVS field must be present (P2 addition)
-        assert!(body["avs"].is_number() || body["report_markdown"].as_str().unwrap_or("").contains("AVS"));
+        assert!(
+            body["avs"].is_number()
+                || body["report_markdown"]
+                    .as_str()
+                    .unwrap_or("")
+                    .contains("AVS")
+        );
 
         // fixes array must be present
         assert!(body["fixes"].is_array());
@@ -1099,8 +1187,16 @@ mod tests {
         let mut trace_b = sample_trace();
         trace_b["trace_id"] = json!("cmp-b");
 
-        server.post("/api/audit").json(&json!({"trace": trace_a})).await.assert_status_ok();
-        server.post("/api/audit").json(&json!({"trace": trace_b})).await.assert_status_ok();
+        server
+            .post("/api/audit")
+            .json(&json!({"trace": trace_a}))
+            .await
+            .assert_status_ok();
+        server
+            .post("/api/audit")
+            .json(&json!({"trace": trace_b}))
+            .await
+            .assert_status_ok();
 
         // Compare
         let resp = server.get("/api/compare?a=cmp-a&b=cmp-b").await;
@@ -1118,7 +1214,10 @@ mod tests {
             "framework": "raw",
             "steps": []
         });
-        let resp = server.post("/api/audit").json(&json!({"trace": bad_trace})).await;
+        let resp = server
+            .post("/api/audit")
+            .json(&json!({"trace": bad_trace}))
+            .await;
         // Should return 400 or 422, not panic
         let status = resp.status_code();
         assert!(
@@ -1134,7 +1233,11 @@ mod tests {
         let server = test_app().await;
 
         // Seed a trace
-        server.post("/api/audit").json(&json!({"trace": sample_trace()})).await.assert_status_ok();
+        server
+            .post("/api/audit")
+            .json(&json!({"trace": sample_trace()}))
+            .await
+            .assert_status_ok();
 
         // Agent stats
         let resp = server.get("/api/agents").await;
@@ -1188,6 +1291,53 @@ mod tests {
         assert!(validate_export_url("http://[::1]:4318").is_err());
         // Garbage
         assert!(validate_export_url("not a url").is_err());
+    }
+
+    #[test]
+    fn test_validate_export_url_returns_pinned_target_for_public_literal() {
+        let target = validate_export_url("http://93.184.216.34/hook").unwrap();
+        assert_eq!(target.host, "93.184.216.34");
+        assert_eq!(target.url.as_str(), "http://93.184.216.34/hook");
+        assert!(!target.addrs.is_empty());
+        assert!(target
+            .addrs
+            .iter()
+            .all(|addr| !is_disallowed_ip(&addr.ip())));
+    }
+
+    #[test]
+    fn test_trace_budget_is_shared_for_import_and_audit() {
+        use std::collections::HashMap;
+        use tracerazor_core::types::{StepType, TraceStep};
+
+        let mut trace = tracerazor_core::types::Trace {
+            trace_id: "oversized".into(),
+            agent_name: "agent".into(),
+            framework: "raw".into(),
+            steps: (0..=MAX_TRACE_STEPS)
+                .map(|idx| TraceStep {
+                    id: (idx + 1) as u32,
+                    step_type: StepType::Reasoning,
+                    content: "repeat".into(),
+                    tokens: 1,
+                    tool_name: None,
+                    tool_params: None,
+                    tool_success: None,
+                    tool_error: None,
+                    agent_id: None,
+                    input_context: None,
+                    output: None,
+                    flags: vec![],
+                    flag_details: vec![],
+                })
+                .collect(),
+            total_tokens: 0,
+            task_value_score: 1.0,
+            metadata: HashMap::new(),
+        };
+        assert!(validate_trace_budget(&trace).is_err());
+        trace.steps.truncate(MAX_TRACE_STEPS);
+        assert!(validate_trace_budget(&trace).is_ok());
     }
 
     #[tokio::test]

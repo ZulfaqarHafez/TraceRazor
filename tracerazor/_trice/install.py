@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+from importlib import metadata as importlib_metadata
 import json
 import re
 import shutil
@@ -17,9 +18,44 @@ import tomllib
 from .evidence import canonical_json, sha256_file, write_text_lf
 
 INSTALL_CARD_SCHEMA_VERSION = "trice-install-card/v1"
-REPO = Path(__file__).resolve().parents[2]
+PACKAGE_NAME = "tracerazor"
+
+
+def _default_root() -> Path:
+    """Return the checkout root when present, otherwise the caller's cwd."""
+
+    for parent in Path(__file__).resolve().parents:
+        if (parent / "pyproject.toml").is_file() and (parent / "tracerazor").is_dir():
+            return parent
+    return Path.cwd()
+
+
+REPO = _default_root()
 DEFAULT_OUT = REPO / "docs" / "trice_install_card.json"
 DEFAULT_DIST = REPO / "dist"
+
+
+def _expected_version(pyproject_path: Path) -> str:
+    if pyproject_path.is_file():
+        pyproject = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
+        return str((pyproject.get("project") or {}).get("version") or "")
+    try:
+        return importlib_metadata.version(PACKAGE_NAME)
+    except importlib_metadata.PackageNotFoundError:
+        return ""
+
+
+def _input_rows(dist: Path, pyproject_path: Path, expected_version: str) -> dict[str, Any]:
+    rows: dict[str, Any] = {"dist_dir": _dir_row(dist)}
+    if pyproject_path.is_file():
+        rows["pyproject"] = _artifact_row("pyproject", pyproject_path)
+    else:
+        rows["package_metadata"] = {
+            "kind": "installed_package_metadata",
+            "name": PACKAGE_NAME,
+            "version": expected_version,
+        }
+    return rows
 
 
 def build_install_card(
@@ -33,8 +69,7 @@ def build_install_card(
 
     dist = Path(dist_dir).resolve()
     pyproject_path = REPO / "pyproject.toml"
-    pyproject = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
-    expected_version = str((pyproject.get("project") or {}).get("version") or "")
+    expected_version = _expected_version(pyproject_path)
     wheel = Path(wheel_path).resolve() if wheel_path is not None else _find_wheel(dist, expected_version)
     commands: dict[str, Any] = {}
     probe: dict[str, Any] = {}
@@ -95,10 +130,7 @@ def build_install_card(
         "expected_version": expected_version,
         "python_executable": Path(python_executable).name,
         "wheel": _artifact_row("wheel", wheel),
-        "inputs": {
-            "dist_dir": _dir_row(dist),
-            "pyproject": _artifact_row("pyproject", pyproject_path),
-        },
+        "inputs": _input_rows(dist, pyproject_path, expected_version),
         "checks": checks,
         "commands": commands,
         "probe": probe,

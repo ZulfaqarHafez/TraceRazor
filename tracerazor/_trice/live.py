@@ -433,7 +433,8 @@ def _run_condition(
     if workspace.exists():
         shutil.rmtree(workspace)
     workspace.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(task.seed_dir, workspace)
+    _assert_no_external_symlinks(task.seed_dir)
+    shutil.copytree(task.seed_dir, workspace, symlinks=True)
 
     trace = _decision_trace(task, workspace)
     decision_trace_path = round_dir / condition / "decision_trace.json"
@@ -585,7 +586,8 @@ def _policy_for_task(task: LiveTask, round_dir: Path, budget_ratio: float) -> Co
     if workspace.exists():
         shutil.rmtree(workspace)
     workspace.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(task.seed_dir, workspace)
+    _assert_no_external_symlinks(task.seed_dir)
+    shutil.copytree(task.seed_dir, workspace, symlinks=True)
     trace = _decision_trace(task, workspace)
     return solve_policy(segments_from_trace(trace), budget_ratio=budget_ratio)
 
@@ -667,6 +669,7 @@ def _read_project_files(workspace: Path) -> dict[str, str]:
     editable: list[str] = []
     tests: list[str] = []
     for path in sorted(workspace.rglob("*.py")):
+        _assert_contained_file(workspace, path)
         rel = path.relative_to(workspace).as_posix()
         block = f"### {rel}\n{path.read_text(encoding='utf-8')}"
         if rel.startswith("tests/") or "/tests/" in rel:
@@ -674,6 +677,24 @@ def _read_project_files(workspace: Path) -> dict[str, str]:
         else:
             editable.append(block)
     return {"editable": "\n\n".join(editable), "tests": "\n\n".join(tests)}
+
+
+def _assert_no_external_symlinks(root: Path) -> None:
+    base = root.resolve()
+    for path in root.rglob("*"):
+        if path.is_symlink():
+            resolved = path.resolve()
+            if resolved != base and base not in resolved.parents:
+                rel = path.relative_to(root).as_posix()
+                raise ValueError(f"refusing external symlink in task repo: {rel}")
+
+
+def _assert_contained_file(root: Path, path: Path) -> None:
+    base = root.resolve()
+    resolved = path.resolve()
+    if resolved != base and base not in resolved.parents:
+        rel = path.relative_to(root).as_posix()
+        raise ValueError(f"refusing to read file outside workspace: {rel}")
 
 
 def _run_verify(cmd: tuple[str, ...], cwd: Path) -> dict[str, Any]:
@@ -718,6 +739,7 @@ def _receipt_for_condition(adapter: RepairAdapter, task: LiveTask, workspace: Pa
             "changed_file_count": len(modified),
             "edit_count": len(adapter.edits),
             "allow_test_edits": adapter.allow_test_edits,
+            "forbidden_prefixes": list(adapter.forbidden_prefixes),
             "metadata": adapter.metadata,
             "agent_reported": None,
             "trice_context": trice_context,

@@ -13,7 +13,7 @@ import os
 import platform
 import sys
 from dataclasses import asdict, dataclass, field
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .receipt import validate_run_receipt_file
@@ -63,6 +63,25 @@ def sha256_file(path: str | Path) -> str:
         for chunk in iter(lambda: fh.read(1024 * 1024), b""):
             h.update(chunk)
     return h.hexdigest()
+
+
+def resolve_contained_path(base: str | Path, value: str | Path, label: str = "path") -> Path:
+    base_path = Path(base).resolve()
+    if isinstance(value, Path) and value.is_absolute():
+        resolved = value.resolve()
+        if resolved != base_path and base_path not in resolved.parents:
+            raise ValueError(f"{label} escapes evidence root: {value}")
+        return resolved
+    raw = str(value)
+    if "\\" in raw:
+        raise ValueError(f"{label} must use POSIX separators: {value}")
+    posix = PurePosixPath(raw)
+    if not raw or posix.is_absolute() or ".." in posix.parts:
+        raise ValueError(f"{label} escapes evidence root: {value}")
+    resolved = (base_path / posix.as_posix()).resolve()
+    if resolved != base_path and base_path not in resolved.parents:
+        raise ValueError(f"{label} escapes evidence root: {value}")
+    return resolved
 
 
 def write_text_lf(path: str | Path, text: str) -> None:
@@ -122,8 +141,10 @@ def verify_manifest(manifest_path: str | Path, result_path: str | Path | None = 
     base = Path(manifest_path).parent
     errors: list[str] = []
 
-    resolved_result = Path(result_path) if result_path else _default_result_path(base)
-    if not resolved_result.is_file():
+    resolved_result = Path(result_path).resolve() if result_path else _default_result_path(base)
+    if resolved_result is None:
+        pass
+    elif not resolved_result.is_file():
         errors.append(f"missing result file: {resolved_result}")
     else:
         file_hash = sha256_file(resolved_result)
@@ -135,7 +156,11 @@ def verify_manifest(manifest_path: str | Path, result_path: str | Path | None = 
             errors.append("canonical_result_sha256 mismatch")
 
     for artifact in manifest.artifacts:
-        p = base / artifact.path
+        try:
+            p = resolve_contained_path(base, artifact.path, f"artifact {artifact.path}")
+        except ValueError as exc:
+            errors.append(str(exc))
+            continue
         if not p.is_file():
             errors.append(f"missing artifact: {artifact.path}")
             continue
@@ -158,8 +183,12 @@ def verify_manifest(manifest_path: str | Path, result_path: str | Path | None = 
 
 def _artifact_hash(path: str | Path, base: Path) -> ArtifactHash:
     p = Path(path)
-    rel = Path(os.path.relpath(p, base)).as_posix()
-    return ArtifactHash(path=rel, sha256=sha256_file(p), bytes=p.stat().st_size)
+    resolved = p.resolve()
+    base = base.resolve()
+    if resolved != base and base not in resolved.parents:
+        raise ValueError(f"artifact path escapes evidence root: {path}")
+    rel = Path(os.path.relpath(resolved, base)).as_posix()
+    return ArtifactHash(path=rel, sha256=sha256_file(resolved), bytes=resolved.stat().st_size)
 
 
 def _default_result_path(base: Path) -> Path:
