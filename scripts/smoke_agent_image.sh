@@ -22,6 +22,10 @@ cleanup() {
   if [[ -n "$probe_container" ]]; then
     docker rm -f "$probe_container" >/dev/null 2>&1 || true
   fi
+  # Docker's classic image store cannot retain two platform variants under
+  # the same manifest-list digest. Each invocation must release its pulled
+  # platform before the next architecture smoke uses the identical digest.
+  docker image rm --force "$IMAGE_REF" >/dev/null 2>&1 || true
   rm -rf "$tmp_dir"
 }
 trap cleanup EXIT

@@ -168,6 +168,7 @@ def test_agent_image_smoke_is_digest_pinned_offline_and_read_only():
     )
 
     assert 'if [[ "$IMAGE_REF" != *@sha256:* ]]' in smoke
+    assert 'docker image rm --force "$IMAGE_REF"' in smoke
     assert '--network none' in smoke
     assert '--read-only' in smoke
     assert '--cap-drop ALL' in smoke
