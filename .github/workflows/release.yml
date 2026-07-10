@@ -124,8 +124,12 @@ jobs:
             wheel-platform: manylinux_2_39_aarch64
           - os: macos-latest
             artifact: macos-arm64
+            deployment-target: "11.0"
+            macos-wheel-platform: macosx_11_0_arm64
           - os: macos-15-intel
             artifact: macos-x64
+            deployment-target: "11.0"
+            macos-wheel-platform: macosx_11_0_x86_64
           - os: windows-latest
             artifact: windows-x64
     runs-on: ${{ matrix.os }}
@@ -140,9 +144,20 @@ jobs:
       - name: Build platform wheel with bundled CLI (Unix)
         if: runner.os != 'Windows'
         env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
           TRACERAZOR_EXPECTED_GLIBC: ${{ matrix.glibc }}
           TRACERAZOR_EXPECTED_WHEEL_PLATFORM: ${{ matrix.wheel-platform }}
         run: bash scripts/build_platform_wheel.sh
+      - name: Retag single-architecture macOS wheel
+        if: runner.os == 'macOS'
+        run: |
+          set -euo pipefail
+          WHEEL=$(find dist -maxdepth 1 -type f -name 'tracerazor-*.whl' -print -quit)
+          test -n "$WHEEL"
+          python -m wheel tags \
+            --platform-tag "${{ matrix.macos-wheel-platform }}" \
+            --remove "$WHEEL"
+          test "$(find dist -maxdepth 1 -type f -name 'tracerazor-*.whl' | wc -l)" -eq 1
       - name: Build platform wheel with bundled CLI (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -217,9 +232,11 @@ jobs:
           - os: macos-latest
             target: aarch64-apple-darwin
             ext: ""
+            deployment-target: "11.0"
           - os: macos-15-intel
             target: x86_64-apple-darwin
             ext: ""
+            deployment-target: "11.0"
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             ext: ".exe"
@@ -232,6 +249,8 @@ jobs:
         with:
           targets: ${{ matrix.target }}
       - name: Build CLI
+        env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deployment-target }}
         run: cargo build --release -p tracerazor --target ${{ matrix.target }}
       - name: Verify standalone GLIBC baseline
         if: runner.os == 'Linux'
@@ -274,6 +293,8 @@ jobs:
     needs: [tag, quality, wheels, binaries, release-evidence, agent-image]
     runs-on: ubuntu-latest
     environment: pypi
+    env:
+      PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
     permissions:
       contents: read
       id-token: write
@@ -283,7 +304,16 @@ jobs:
           pattern: wheel-*
           merge-multiple: true
           path: dist
-      - uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Publish to PyPI with temporary API-token fallback
+        if: env.PYPI_API_TOKEN != ''
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist
+          password: ${{ env.PYPI_API_TOKEN }}
+          attestations: false
+      - name: Publish to PyPI with Trusted Publishing
+        if: env.PYPI_API_TOKEN == ''
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
 

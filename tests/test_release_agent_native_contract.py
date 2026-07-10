@@ -318,6 +318,12 @@ def test_release_keeps_all_five_native_platform_wheels():
     assert wheels.count("          - os:") == 5
     assert "macos-13" not in workflow
     assert workflow.count("          - os: macos-15-intel") == 2
+    assert workflow.count('deployment-target: "11.0"') == 4
+    assert "macos-wheel-platform: macosx_11_0_arm64" in wheels
+    assert "macos-wheel-platform: macosx_11_0_x86_64" in wheels
+    assert "Retag single-architecture macOS wheel" in wheels
+    assert '--platform-tag "${{ matrix.macos-wheel-platform }}"' in wheels
+    assert "universal2" not in workflow
     assert 'glibc: "2.35"' in wheels
     assert "wheel-platform: manylinux_2_35_x86_64" in wheels
     assert 'glibc: "2.39"' in wheels
@@ -394,6 +400,13 @@ def test_release_fails_on_existing_pypi_files_and_evidence_uses_downloaded_cli()
         encoding="utf-8"
     )
     assert "skip-existing: true" not in workflow
+    pypi = workflow.split("  pypi:\n", 1)[1].split("\n  agent-image:\n", 1)[0]
+    assert "PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}" in pypi
+    assert "if: env.PYPI_API_TOKEN != ''" in pypi
+    assert "password: ${{ env.PYPI_API_TOKEN }}" in pypi
+    assert "attestations: false" in pypi
+    assert "if: env.PYPI_API_TOKEN == ''" in pypi
+    assert "Publish to PyPI with Trusted Publishing" in pypi
 
     evidence = workflow.split("  release-evidence:\n", 1)[1].split(
         "\n  # Attach wheels", 1
