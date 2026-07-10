@@ -383,60 +383,71 @@ impl TraceReport {
             // completed, whatever its lexical similarity to earlier steps.
             let protected = step.is_mutating() && step.tool_success != Some(false);
 
-            let (action, justification, tokens_suggested) = if protected
-                && (has_flag(&StepFlag::Redundant) || has_flag(&StepFlag::Loop))
-            {
-                (
-                    DiffAction::Keep,
-                    Some("Successful state-changing call (kept; not deletable)".into()),
-                    None,
-                )
-            } else if has_flag(&StepFlag::Redundant) {
-                let detail = step.flag_details.first().cloned().unwrap_or_default();
-                (DiffAction::Delete, Some(format!("Redundant: {}", detail)), Some(0))
-            } else if has_flag(&StepFlag::Loop) {
-                let detail = step.flag_details.first().cloned().unwrap_or("loop".into());
-                (DiffAction::Delete, Some(format!("Loop: {}", detail)), Some(0))
-            } else if has_flag(&StepFlag::LoopStart) {
-                let detail = step
-                    .flag_details
-                    .first()
-                    .cloned()
-                    .unwrap_or("loop start".into());
-                (
-                    DiffAction::Keep,
-                    Some(format!("Loop start (keep first): {}", detail)),
-                    None,
-                )
-            } else if has_flag(&StepFlag::Misfire) {
-                let detail = step.flag_details.first().cloned().unwrap_or_default();
-                (DiffAction::Delete, Some(format!("Misfired: {}", detail)), Some(0))
-            } else if has_flag(&StepFlag::OverDepth) {
-                let trimmed = (step.tokens / 4).max(100);
-                (
-                    DiffAction::Trim,
-                    Some("Reduce reasoning depth (simple task)".into()),
-                    Some(trimmed),
-                )
-            } else if has_flag(&StepFlag::ContextBloat) {
-                let detail = step.flag_details.first().cloned().unwrap_or_default();
-                let kept = (step.tokens as f64 * 0.44) as u32;
-                (
-                    DiffAction::Trim,
-                    Some(format!("Compress context: {}", detail)),
-                    Some(kept),
-                )
-            } else if has_flag(&StepFlag::Reformulation) {
-                let detail = step.flag_details.first().cloned().unwrap_or_default();
-                let trimmed = (step.tokens * 2 / 3).max(50);
-                (
-                    DiffAction::Trim,
-                    Some(format!("Reformulation: {}", detail)),
-                    Some(trimmed),
-                )
-            } else {
-                (DiffAction::Keep, None, None)
-            };
+            let (action, justification, tokens_suggested) =
+                if protected && (has_flag(&StepFlag::Redundant) || has_flag(&StepFlag::Loop)) {
+                    (
+                        DiffAction::Keep,
+                        Some("Successful state-changing call (kept; not deletable)".into()),
+                        None,
+                    )
+                } else if has_flag(&StepFlag::Redundant) {
+                    let detail = step.flag_details.first().cloned().unwrap_or_default();
+                    (
+                        DiffAction::Delete,
+                        Some(format!("Redundant: {}", detail)),
+                        Some(0),
+                    )
+                } else if has_flag(&StepFlag::Loop) {
+                    let detail = step.flag_details.first().cloned().unwrap_or("loop".into());
+                    (
+                        DiffAction::Delete,
+                        Some(format!("Loop: {}", detail)),
+                        Some(0),
+                    )
+                } else if has_flag(&StepFlag::LoopStart) {
+                    let detail = step
+                        .flag_details
+                        .first()
+                        .cloned()
+                        .unwrap_or("loop start".into());
+                    (
+                        DiffAction::Keep,
+                        Some(format!("Loop start (keep first): {}", detail)),
+                        None,
+                    )
+                } else if has_flag(&StepFlag::Misfire) {
+                    let detail = step.flag_details.first().cloned().unwrap_or_default();
+                    (
+                        DiffAction::Delete,
+                        Some(format!("Misfired: {}", detail)),
+                        Some(0),
+                    )
+                } else if has_flag(&StepFlag::OverDepth) {
+                    let trimmed = (step.tokens / 4).max(100);
+                    (
+                        DiffAction::Trim,
+                        Some("Reduce reasoning depth (simple task)".into()),
+                        Some(trimmed),
+                    )
+                } else if has_flag(&StepFlag::ContextBloat) {
+                    let detail = step.flag_details.first().cloned().unwrap_or_default();
+                    let kept = (step.tokens as f64 * 0.44) as u32;
+                    (
+                        DiffAction::Trim,
+                        Some(format!("Compress context: {}", detail)),
+                        Some(kept),
+                    )
+                } else if has_flag(&StepFlag::Reformulation) {
+                    let detail = step.flag_details.first().cloned().unwrap_or_default();
+                    let trimmed = (step.tokens * 2 / 3).max(50);
+                    (
+                        DiffAction::Trim,
+                        Some(format!("Reformulation: {}", detail)),
+                        Some(trimmed),
+                    )
+                } else {
+                    (DiffAction::Keep, None, None)
+                };
 
             diff.push(DiffLine {
                 action,
@@ -505,7 +516,9 @@ impl TraceReport {
              Note: TAS is an *ordinal* heuristic score — compare runs within one\n\
              project over time, not as an absolute efficiency percentage.\n\
              {sep}\n",
-            s.score, s.grade, tvi_note,
+            s.score,
+            s.grade,
+            tvi_note,
             s.vae,
             self.mvtg * 100.0,
             self.mvtg * 100.0,
@@ -525,10 +538,8 @@ impl TraceReport {
                 .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
                 .map(|(name, _)| *name)
                 .unwrap_or("VDI");
-            let estimated_verbose_tokens = ((s.avs
-                * self.total_tokens as f64)
-                .round() as u32)
-                .min(self.total_tokens);
+            let estimated_verbose_tokens =
+                ((s.avs * self.total_tokens as f64).round() as u32).min(self.total_tokens);
             out += &format!(
                 "!! VERBOSITY ALERT  AVS: {:.3}  Primary driver: {}  \
                  Est. verbose tokens: {}\n\
@@ -545,7 +556,11 @@ impl TraceReport {
         );
 
         fn pass_str(pass: bool) -> &'static str {
-            if pass { "PASS" } else { "FAIL" }
+            if pass {
+                "PASS"
+            } else {
+                "FAIL"
+            }
         }
 
         out += &format!(
@@ -579,7 +594,11 @@ impl TraceReport {
             format!("{:.3}", s.rda.score),
             ">0.75",
             pass_str(s.rda.pass),
-            if s.rda.uses_historical_baseline { " [hist]" } else { "" }
+            if s.rda.uses_historical_baseline {
+                " [hist]"
+            } else {
+                ""
+            }
         );
         out += &format!(
             "{:<6} {:<30} {:<8} {:<8} {}\n",
@@ -615,7 +634,8 @@ impl TraceReport {
         );
         out += &format!(
             "{:<6} {:<30} {:<8} {:<8} {}\n",
-            "OBS", "Observation Token Share",
+            "OBS",
+            "Observation Token Share",
             format!("{:.3}", s.obs.score),
             "≥0.30",
             pass_str(s.obs.pass),
@@ -676,7 +696,10 @@ impl TraceReport {
             "≥0.40",
             pass_str(s.gar.pass),
             gar_note,
-            s.gar.goal_step_id.map(|id| id.to_string()).unwrap_or_else(|| "—".into()),
+            s.gar
+                .goal_step_id
+                .map(|id| id.to_string())
+                .unwrap_or_else(|| "—".into()),
         );
 
         let csd_drift_note = if s.csd.high_drift_pairs.is_empty() {
@@ -684,7 +707,9 @@ impl TraceReport {
         } else {
             format!(
                 "  [drifting pairs: {}]",
-                s.csd.high_drift_pairs.iter()
+                s.csd
+                    .high_drift_pairs
+                    .iter()
                     .map(|(a, b)| format!("{a}→{b}"))
                     .collect::<Vec<_>>()
                     .join(", ")
@@ -692,7 +717,8 @@ impl TraceReport {
         };
         out += &format!(
             "{:<6} {:<30} {:<8} {:<8} {}{}\n",
-            "CSD", "Cross-Step Semantic Drift",
+            "CSD",
+            "Cross-Step Semantic Drift",
             format!("{:.3}", s.csd.score),
             "≥0.60",
             pass_str(s.csd.pass),
@@ -714,11 +740,7 @@ impl TraceReport {
         out += &format!("{:>3}  {:<12} {:<8}  {}\n", "#", "Type", "Tokens", "Flags");
 
         for line in &self.diff {
-            let flags_str = line
-                .justification
-                .as_deref()
-                .unwrap_or("-")
-                .to_string();
+            let flags_str = line.justification.as_deref().unwrap_or("-").to_string();
             out += &format!(
                 "{:>3}  {:<12} {:>8}  {}\n",
                 line.step_id, line.step_type, line.tokens_actual, flags_str
@@ -779,7 +801,11 @@ impl TraceReport {
         if !self.anomalies.is_empty() {
             out += "ANOMALY ALERTS\n";
             for a in &self.anomalies {
-                let direction = if a.z_score < 0.0 { "REGRESSION" } else { "IMPROVEMENT" };
+                let direction = if a.z_score < 0.0 {
+                    "REGRESSION"
+                } else {
+                    "IMPROVEMENT"
+                };
                 out += &format!(
                     "  [{}] {}: {:.1} (baseline {:.1} ± {:.1}, z={:.1})\n",
                     direction, a.metric, a.value, a.baseline_mean, a.baseline_std, a.z_score
@@ -853,7 +879,10 @@ impl TraceReport {
                 pass_str(iar.pass),
             );
             if !iar.fix_adherence.is_empty() {
-                out += &format!("       {}/{} addressed fix types improved:\n", iar.improved_count, iar.addressed_count);
+                out += &format!(
+                    "       {}/{} addressed fix types improved:\n",
+                    iar.improved_count, iar.addressed_count
+                );
                 for adherence in &iar.fix_adherence {
                     let status = if adherence.improved { "✓" } else { "✗" };
                     out += &format!(
@@ -943,8 +972,7 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
     let (worst_name, worst_val) = worst_metric(score);
     let worst_sentence = format!(
         "The biggest efficiency gap is {} (score {:.2}/1.0).",
-        worst_name,
-        worst_val
+        worst_name, worst_val
     );
 
     // Build specific issue sentences.
@@ -975,8 +1003,7 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
             .sum();
         issues.push(format!(
             "{:.0}% of steps are redundant ({} tokens wasted)",
-            score.srr.score,
-            redundant_tokens
+            score.srr.score, redundant_tokens
         ));
     }
     if !score.tca.pass {
@@ -999,9 +1026,11 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
             .bloated_steps
             .iter()
             .filter_map(|b| {
-                trace.steps.iter().find(|s| s.id == b.step_id).map(|s| {
-                    (s.tokens as f64 * b.duplicate_pct / 100.0) as u32
-                })
+                trace
+                    .steps
+                    .iter()
+                    .find(|s| s.id == b.step_id)
+                    .map(|s| (s.tokens as f64 * b.duplicate_pct / 100.0) as u32)
             })
             .sum();
         issues.push(format!(
@@ -1040,9 +1069,7 @@ pub fn generate_summary(trace: &Trace, score: &TasScore, savings: &SavingsEstima
             " Applying the recommended fixes is estimated to save ~{} tokens per run \
              (${:.4}/run; ~${:.0}/month projected at {runs_label} — a heuristic estimate, \
              not a measured re-run).",
-            savings.tokens_saved,
-            savings.cost_saved_per_run_usd,
-            savings.monthly_savings_usd
+            savings.tokens_saved, savings.cost_saved_per_run_usd, savings.monthly_savings_usd
         )
     } else {
         String::new()
@@ -1079,11 +1106,7 @@ pub fn generate_oneliner(trace: &Trace, score: &TasScore, savings: &SavingsEstim
         format!(
             "{} scores {:.0}/100 [{}]. Biggest issue: {}. \
              Est. ~${:.0}/month at {runs_label} (heuristic projection).",
-            trace.agent_name,
-            score.score,
-            score.grade,
-            worst_name,
-            savings.monthly_savings_usd,
+            trace.agent_name, score.score, score.grade, worst_name, savings.monthly_savings_usd,
         )
     } else {
         format!(

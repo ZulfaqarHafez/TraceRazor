@@ -17,9 +17,11 @@ use tracerazor_ingest::{parse as ingest_parse, TraceFormat};
 use tracerazor_semantic::{default_similarity_fn, LlmConfig};
 use tracerazor_store::TraceStore;
 
+mod agent;
 mod commands;
 mod trice_cmd;
 
+use agent::{cmd_agent, AgentCommand};
 use commands::{
     cmd_apply, cmd_audit, cmd_audit_batch, cmd_bench, cmd_claude, cmd_compare, cmd_cost,
     cmd_export, cmd_import, cmd_keygen, cmd_list, cmd_optimize, cmd_simulate, cmd_verify,
@@ -136,6 +138,12 @@ enum Commands {
         /// short traces - interpret scores accordingly.
         #[arg(long, value_name = "N", default_value_t = MIN_TRACE_STEPS)]
         min_steps: usize,
+    },
+
+    /// Configure TraceRazor for agent hosts and run child agents with trace context.
+    Agent {
+        #[command(subcommand)]
+        command: AgentCommand,
     },
 
     /// Install and run the Claude Code TraceRazor coach hooks.
@@ -392,10 +400,11 @@ enum Commands {
 
     /// Start the TraceRazor HTTP server (REST API + dashboard).
     ///
-    /// Alias for the `tracerazor-server` binary. POST a trace to
-    /// /api/audit as {"trace": <trace JSON>}. Set TRACERAZOR_API_TOKEN to
-    /// require `Authorization: Bearer <token>` on all /api routes -
-    /// mandatory before exposing a non-loopback bind address.
+    /// Alias for the `tracerazor-server` binary. POST a native trace to
+    /// /api/audit or OTLP/HTTP JSON to /v1/traces. Set TRACERAZOR_API_TOKEN to
+    /// require `Authorization: Bearer <token>` on protected routes - mandatory
+    /// before exposing a non-loopback bind address. TRACERAZOR_OTLP_SPOOL_DIR
+    /// selects the durable local-redacted OTLP receipt directory.
     Serve {
         /// Port to listen on.
         #[arg(long, default_value_t = 8080)]
@@ -604,6 +613,11 @@ async fn run() -> Result<()> {
         }
         Commands::Claude { command } => {
             cmd_claude(command).await?;
+        }
+        Commands::Agent { command } => {
+            if let Some(code) = cmd_agent(command)? {
+                std::process::exit(code);
+            }
         }
         Commands::ImportTrace {
             inputs,

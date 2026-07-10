@@ -84,7 +84,10 @@ impl TraceStore {
         let id = id.to_string();
         self.conn
             .call(move |c| {
-                c.execute("DELETE FROM kb_entries WHERE id = ?1", rusqlite::params![id])?;
+                c.execute(
+                    "DELETE FROM kb_entries WHERE id = ?1",
+                    rusqlite::params![id],
+                )?;
                 Ok(())
             })
             .await
@@ -115,7 +118,10 @@ impl TraceStore {
     /// List KB entries for a specific agent.
     pub async fn list_kb_for_agent(&self, agent_name: &str) -> Result<Vec<KgpEntry>> {
         let all = self.list_kb_entries().await?;
-        Ok(all.into_iter().filter(|e| e.agent_name == agent_name).collect())
+        Ok(all
+            .into_iter()
+            .filter(|e| e.agent_name == agent_name)
+            .collect())
     }
 
     /// Get a single KB entry by its UUID.

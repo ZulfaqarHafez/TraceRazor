@@ -52,11 +52,7 @@ pub fn compute(trace: &Trace) -> CceResult {
     // Collect the input text for each step.
     let texts: Vec<String> = steps
         .iter()
-        .map(|s| {
-            s.input_context
-                .clone()
-                .unwrap_or_else(|| s.content.clone())
-        })
+        .map(|s| s.input_context.clone().unwrap_or_else(|| s.content.clone()))
         .collect();
 
     let total_input_tokens: u32 = steps.iter().map(|s| s.tokens).sum();
@@ -94,11 +90,9 @@ pub fn compute(trace: &Trace) -> CceResult {
             // Mirror extract_ngrams' short-reference behaviour: the whole
             // prior text (< N words) acts as one "short-gram".
             let ref_single = tail.join(" ");
-            cur_ngrams.iter().filter(|g| **g == ref_single).count() as f64
-                / cur_ngrams.len() as f64
+            cur_ngrams.iter().filter(|g| **g == ref_single).count() as f64 / cur_ngrams.len() as f64
         } else {
-            cur_ngrams.iter().filter(|g| seen.contains(*g)).count() as f64
-                / cur_ngrams.len() as f64
+            cur_ngrams.iter().filter(|g| seen.contains(*g)).count() as f64 / cur_ngrams.len() as f64
         };
 
         if overlap > 0.40 {
@@ -139,9 +133,8 @@ fn ngram_overlap_ratio(text: &str, reference: &str, n: usize) -> f64 {
     if text_ngrams.is_empty() {
         return 0.0;
     }
-    let ref_ngrams: std::collections::HashSet<_> = extract_ngrams(reference, n)
-        .into_iter()
-        .collect();
+    let ref_ngrams: std::collections::HashSet<_> =
+        extract_ngrams(reference, n).into_iter().collect();
 
     let overlap = text_ngrams
         .iter()
@@ -157,10 +150,7 @@ fn extract_ngrams(text: &str, n: usize) -> Vec<String> {
     if words.len() < n {
         return vec![words.join(" ")];
     }
-    words
-        .windows(n)
-        .map(|w| w.join(" "))
-        .collect()
+    words.windows(n).map(|w| w.join(" ")).collect()
 }
 
 /// Apply CCE flags to trace steps.
@@ -261,7 +251,12 @@ mod tests {
             // short reference + exact short repeat
             vec!["hello world", "hello world", "now a much longer step text"],
             // empties and tiny texts
-            vec!["", "one", "one two three four five", "one two three four five"],
+            vec![
+                "",
+                "one",
+                "one two three four five",
+                "one two three four five",
+            ],
         ];
         for texts_src in corpora {
             let trace = make_trace_with_contexts(&texts_src);

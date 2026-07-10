@@ -60,7 +60,11 @@ pub async fn embed_batch(texts: &[String], api_key: &str, model: &str) -> Result
         .await
         .context("Failed to parse OpenAI embeddings response")?;
 
-    Ok(embed_response.data.into_iter().map(|d| d.embedding).collect())
+    Ok(embed_response
+        .data
+        .into_iter()
+        .map(|d| d.embedding)
+        .collect())
 }
 
 /// Cosine similarity between two float vectors.

@@ -3,7 +3,7 @@
 The single machine-oriented walkthrough for driving TraceRazor from an agent: get
 the tool, get a trace, audit it, read every field of the report, act on the fixes,
 and (only then) claim savings. Every command here was run against the shipped binary
-(`tracerazor 1.0.3`). Numbers shift between scorer versions — the field *shape* is the
+(`tracerazor 1.1.0`). Numbers shift between scorer versions — the field *shape* is the
 contract, not the exact value.
 
 For the short convention see [../AGENTS.md](../AGENTS.md); for the Claude Code skill
@@ -23,7 +23,7 @@ see [../skills/tracerazor/SKILL.md](../skills/tracerazor/SKILL.md).
 ## 0. Resolve the binary
 
 ```bash
-tracerazor --version            # -> "tracerazor 1.0.3" if the native binary is present
+tracerazor --version            # -> "tracerazor 1.1.0" if the native binary is present
 ```
 
 If that errors, or `audit` exits 2 with a missing-binary message, the wheel shipped
@@ -32,8 +32,13 @@ without the native auditor. Fix it one of three ways:
 ```bash
 cargo build --release -p tracerazor      # binary at target/release/tracerazor[.exe]
 export TRACERAZOR_BIN=/abs/path/to/tracerazor   # or reuse an existing binary
-docker compose up                        # or run the REST API + dashboard on :8080
+docker compose up                        # local HTTPS dashboard; see container.md
 ```
+
+Compose requires a random `TRACERAZOR_API_TOKEN` in `.env` and serves through
+the loopback-only Caddy TLS gateway. Follow [container.md](container.md) to
+provision and trust its local CA. A bare `docker run -p` remains intentionally
+unreachable because the standalone image keeps the backend on loopback.
 
 On Windows PowerShell, put cargo on PATH first:
 `$env:PATH = "$env:USERPROFILE\.cargo\bin;$env:PATH"`.
@@ -127,8 +132,11 @@ tracerazor audit trace.json --hermetic --format json
 # Short real-world trajectory (ReAct runs are often 3–4 steps)
 tracerazor audit trace.json --hermetic --format json --min-steps 2
 
-# CI gate — exit 1 if TAS < 75
+# Optional project-local floor — use only when the project explicitly declares it
 tracerazor audit trace.json --hermetic --threshold 75
+
+# Preferred CI gate — same workload against its declared baseline
+tracerazor compare baseline.json candidate.json --format json --regression-threshold 10
 
 # Force a source format, override cost model
 tracerazor audit export.json --hermetic --format json -F langsmith --cost-per-million 3.0

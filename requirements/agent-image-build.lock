@@ -1,0 +1,10 @@
+# Exact Python 3.12 build environment for Dockerfile.agent.
+# Install with --no-deps; pip check fails if this closure becomes incomplete.
+build==1.4.0
+hatchling==1.28.0
+packaging==26.2
+pathspec==1.1.1
+pluggy==1.6.0
+pyproject-hooks==1.2.0
+trove-classifiers==2026.6.1.19
+wheel==0.46.3

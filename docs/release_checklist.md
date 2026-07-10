@@ -1,242 +1,190 @@
-# TraceRazor Release Checklist
+# TraceRazor 1.1 release checklist
 
-Use this checklist for 1.0.3 and later. Do not mutate an already published PyPI
-release; cut a follow-up version instead.
+TraceRazor 1.1 is a platform-wheel, standalone-binary, and OCI-image release.
+Do not mutate an existing tag or reuse a published version.
 
-## 1. Local Gates
+## 1. Local quality gates
+
+Run from a clean checkout with the Rust toolchain on `PATH`:
 
 ```bash
-cargo check --workspace
+cargo fmt --all -- --check
 cargo test --workspace
-cargo clippy --workspace -- -D warnings
+cargo clippy --workspace --all-targets -- -D warnings
 cargo audit
-cargo deny check
 python -m pip_audit --progress-spinner off .
-python -m pytest
-python -m build --sdist --wheel
-python -m twine check dist/*
-tracerazor-trice crates --out docs/trice_crates_card.json --timeout-s 10
-tracerazor-trice verify-crates docs/trice_crates_card.json
-tracerazor-trice install --out docs/trice_install_card.json --dist-dir dist
+python -m pytest -q
+git diff --check
+```
+
+Validate the agent-native contracts separately:
+
+```bash
+cargo test -p tracerazor --test agent_bootstrap
+python -m pytest -q \
+  tests/test_skill_pack.py \
+  tests/test_codex_plugin.py \
+  tests/test_runtime_api.py \
+  tests/test_runtime_events.py \
+  tests/test_runtime_persistence.py \
+  tests/test_runtime_guardrails.py \
+  tests/test_mcp_server.py \
+  tests/test_mcp_guardrails.py
+python -m pytest -q benchmark/agent_native/tests
+```
+
+The synthetic evaluation tests validate the evaluator, not TraceRazor's
+efficacy. Never quote them as a measured product result.
+
+## 2. Distribution contract
+
+Build one native wheel on each supported runner:
+
+- Linux x86-64 at glibc 2.35 (`manylinux_2_35_x86_64`);
+- Linux ARM64 at glibc 2.39 (`manylinux_2_39_aarch64`);
+- macOS x86-64 and ARM64;
+- Windows x86-64.
+
+These are the actual 1.1 Linux compatibility floors, not aliases for older
+manylinux releases. The build fails if the runner's glibc changes or the ELF
+binary imports a GLIBC symbol above its declared floor, and the clean-machine
+smoke runs on that same oldest-supported native runner. Supporting older Linux
+distributions requires a future dedicated manylinux builder and smoke matrix.
+Alpine/musl is unsupported in 1.1. Do not publish a source distribution: a
+source-only install does not satisfy the bundled-auditor contract. crates.io is
+also outside the 1.1 GA contract until TraceRazor intentionally exposes a
+stable public Rust API.
+
+Each clean-machine wheel job must run outside the checkout with
+`TRACERAZOR_BIN`, `PYTHONPATH`, `PYTHONHOME`, and ambient launcher paths
+removed. It must prove:
+
+```text
+tracerazor --version
+tracerazor agent doctor --format json
+python -m tracerazor.mcp_server --selftest
+tracerazor audit <sample> --hermetic --format json
+```
+
+The installed distribution must resolve its own native binary and contain the
+event schema, canonical Agent Skill, Codex plugin, Claude plugin, Gemini
+extension, policy template, and MCP catalog.
+
+Generate the install receipt against the Linux x86-64 wheel explicitly; never
+let an alphabetical wheel selection choose a foreign platform wheel:
+
+```bash
+tracerazor-trice install \
+  --wheel dist/<linux-x86_64-wheel>.whl \
+  --dist-dir dist \
+  --out docs/trice_install_card.json
 tracerazor-trice verify-install docs/trice_install_card.json
-tracerazor-trice research --out docs/trice_research_card.json
-tracerazor-trice verify-research docs/trice_research_card.json
-tracerazor-trice release-evidence --out docs/trice_release_evidence.json --dist-dir dist
-tracerazor-trice verify-release-evidence docs/trice_release_evidence.json
-tracerazor-trice integrity --out docs/trice_integrity_card.json
-tracerazor-trice verify-integrity docs/trice_integrity_card.json
-scorecard --repo=github.com/ZulfaqarHafez/TraceRazor
 ```
 
-Then test a clean wheel install:
+## 3. Release workflow
+
+The tag must be exactly `v<pyproject version>`, and that version must match the
+Cargo workspace and `tracerazor.__version__`. The release workflow runs Python
+3.10 and 3.12 tests, Rust format/test/clippy, `pip-audit`, and `cargo audit`
+before any public upload.
+
+Publish only after the release evidence packet passes. Required public
+artifacts are:
+
+- five platform wheels;
+- five matching standalone archives;
+- `SHA256SUMS` covering every wheel, archive, and evidence file;
+- CycloneDX SBOMs plus SHA-256 checksums for the staged release artifacts;
+- GitHub artifact attestations;
+- the agent OCI image for linux/amd64 and linux/arm64;
+- install, run/comparison where applicable, research, and release receipts.
+
+Existing release assets are immutable. A rerun may skip a byte-identical asset,
+but must fail if an asset with the same name has different bytes.
+
+PyPI trusted publishing uses GitHub OIDC and fails if the version already exists; it never
+silently accepts an existing file without proving byte identity. Release
+evidence extracts its CLI subject from the downloaded standalone archive built
+by the binary matrix, rather than compiling a replacement in the evidence job.
+The composite GitHub Action defaults to the
+immutable `v1.1.0` archive and verifies it against the release checksum. The
+mutable `latest` alias is an explicit caller opt-in.
+
+### Agent OCI image gate
+
+The release workflow first pushes the multi-architecture image under the
+unpromoted `build-<commit>` tag. It then addresses that image by digest and
+runs `scripts/smoke_agent_image.sh` for both `linux/amd64` and `linux/arm64`.
+Each smoke runs as the image's numeric `10001:10001` user with networking and
+Linux capabilities removed, `no-new-privileges` enabled, and a read-only root
+filesystem. It proves:
+
+- the default command is the JSON agent doctor;
+- the image policy is local-redacted coach mode with enforcement disabled;
+- a mounted `/workspace/tracerazor.toml` overrides the image fallback policy;
+- the image-scope installation and ownership ledger are healthy;
+- the provisioning receipts are present;
+- the packaged MCP catalog self-test succeeds; and
+- a hermetic sample audit succeeds without a checkout or writable store.
+
+The image's Python build and runtime dependency closures are exact-version
+locks installed with `--no-deps` and checked with `pip check`; MCP is fixed to
+one version. `SOURCE_DATE_EPOCH` comes from the tagged commit and normalizes
+wheel timestamps plus the image provisioning ledger and receipts. This removes
+known wall-clock and dependency-resolution drift. It does **not** establish a
+bit-for-bit reproducible OCI digest by itself: the Rust and Python multi-arch
+base indexes are digest-pinned, but platform-specific package artifacts may
+differ and BuildKit SBOM/provenance attestations can carry builder metadata.
+CI must prove repeat builds before making a reproducibility claim. The
+immutable version-tag check fails closed if a rebuild produces a different
+digest.
+
+The manifest must contain exactly the supported real platforms
+`linux/amd64` and `linux/arm64` (BuildKit attestation descriptors may appear as
+`unknown/unknown`). BuildKit emits per-platform SBOM and maximum-mode
+provenance attestations. GitHub then signs the tested index digest with
+`actions/attest`, pushes that attestation to GHCR, and verifies it with
+`gh attestation verify`. The deterministic `agent-image-release.json` receipt
+is generated and uploaded before promotion; it records the tested digest,
+platforms, fixed source epoch, source revision, and trust event and is later
+included in `SHA256SUMS` and the GitHub release asset attestation.
+
+GHCR package visibility is a one-time manual prerequisite: the
+`zulfaqarhafez/tracerazor-agent` package must already exist and be set to
+**Public** in GitHub package settings. Before promotion, the workflow logs out
+and anonymously inspects and pulls the exact staging digest; a private package
+fails the release. It then restores publisher authentication. Promotion of the
+immutable `v<version>` and mutable `latest` tags is the job's final registry
+mutation. The preflight tag lookup treats only HTTP 404 as absent; auth,
+rate-limit, and network failures stop the release rather than overwriting.
+
+Consumers requiring a durable trust decision should use the version tag plus
+attestation verification, or pin the reported `sha256:` digest. The local
+Docker daemon is not a release gate; these two architecture smokes must pass
+on GitHub-hosted release infrastructure.
+
+## 4. Claims and efficacy gate
+
+The preregistered study machinery lives in `benchmark/agent_native/`:
 
 ```bash
-python -m venv .venv-release-check
-.venv-release-check\Scripts\python -m pip install --upgrade pip
-.venv-release-check\Scripts\python -m pip install dist\tracerazor-1.0.3-py3-none-any.whl
-.venv-release-check\Scripts\tracerazor-trice doctor --format json --offline
+python -m benchmark.agent_native.evaluate --print-protocol-sha256
+python -m benchmark.agent_native.evaluate \
+  --input <held-out-results.jsonl> \
+  --output <evaluation-report.json>
 ```
 
-The generated installability card is the canonical clean-wheel proof. The
-manual virtualenv smoke above is a human sanity check, while
-`tracerazor-trice install` records the wheel hash, packaged schema/API import
-surface, console-script result, and bundled Rust CLI status.
+Exit `0` is required before making efficacy claims. Exit `1` means a complete
+study failed one or more gates. Exit `2` means malformed or incomplete
+evidence. Estimated or missing token counts are excluded from efficacy.
 
-The generated research card is the canonical paper-basis proof. It records the
-research ledger hash, row hashes, source counts, category coverage, and
-non-claim boundary so paper and README claims cannot drift from their cited
-source base.
+The locked product gates include 100% clean-machine installation, activation
+precision/recall, provider-token agreement, parent/child linkage, runtime
+overhead, measured token reduction with a positive confidence-interval lower
+bound, task-success non-inferiority, recommendation precision, sandbox
+containment, and secret-redaction safety.
 
-## 2. Rust Crate Publish Order
-
-Generate and verify the staged publish card before any upload:
-
-```bash
-tracerazor-trice crates --out docs/trice_crates_card.json --timeout-s 10
-tracerazor-trice verify-crates docs/trice_crates_card.json
-```
-
-The card must report `local_publish_plan_locked = true`. It may still report
-`public_crates_live = false` before publication; that is expected and keeps the
-README cargo-install claim blocked.
-
-Publish only after local Rust gates pass. `cargo package` for a dependent
-workspace crate requires its internal dependencies to already exist on
-crates.io, so package verification is staged and cannot all happen before the
-first internal crate publish:
-
-```bash
-cargo package -p tracerazor-core --allow-dirty
-cargo package -p tracerazor-semantic --allow-dirty
-```
-
-Actual publish order is dependency order. After each publish is visible in the
-index, rerun `cargo package` without `--no-verify` for the next dependent crate
-before publishing it:
-
-```bash
-cargo publish -p tracerazor-core
-cargo package -p tracerazor-ingest --allow-dirty
-cargo package -p tracerazor-store --allow-dirty
-cargo publish -p tracerazor-semantic
-cargo publish -p tracerazor-ingest
-cargo publish -p tracerazor-store
-cargo package -p tracerazor-server --allow-dirty
-cargo publish -p tracerazor-server
-cargo package -p tracerazor --allow-dirty
-cargo publish -p tracerazor
-```
-
-If `CARGO_REGISTRY_TOKEN` is unavailable, do not publish and do not add
-`cargo install tracerazor` back to README.
-
-## 3. Python Publish
-
-Build and check:
-
-```bash
-Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue
-python -m build --sdist --wheel
-python -m twine check dist/*
-```
-
-Preferred release path is PyPI trusted publishing from GitHub Actions using
-OIDC, so releases do not depend on long-lived upload tokens. Manual Twine
-upload is a fallback:
-
-```bash
-python -m twine upload dist/*
-```
-
-After PyPI publish, wait for piwheels to build and verify:
-
-```bash
-tracerazor-trice doctor --format json
-```
-
-PyPI Trusted Publishing should emit registry-side digital attestations for the
-uploaded distributions. Do not fall back to manual Twine upload unless the
-trusted publishing path is unavailable and the reason is documented in the
-release notes.
-
-## 4. Public Health And Attestations
-
-The OpenSSF Scorecard workflow must complete and publish a score before the
-release card can be public-ready. The release gate treats a missing Scorecard
-or a score below 7.0 as a public trust blocker.
-
-The release workflow must attach GitHub artifact attestations for release
-assets generated in Actions. The expected release asset set is:
-
-## 5. GitHub Release Assets
-
-Attach:
-
-- Wheels and sdist.
-- Platform CLI binaries.
-- SHA-256 checksums.
-- CycloneDX SBOM for Python dependencies.
-- CycloneDX SBOM for Cargo dependencies.
-- TRICE evidence bundle for any published proof claim.
-- Machine-verifiable suite manifest and result JSON.
-- TRICE suite readiness JSON, Markdown, LaTeX, and SVG.
-- TRICE protocol lock JSON, Markdown, LaTeX, and SVG.
-- TRICE design card JSON, Markdown, LaTeX, and SVG.
-- TRICE claim card JSON, Markdown, LaTeX, and SVG.
-- TRICE reproduction card JSON, Markdown, LaTeX, and SVG.
-- TRICE artifact card JSON, Markdown, LaTeX, and SVG.
-- TRICE installability card JSON, Markdown, LaTeX, and SVG.
-- TRICE release evidence JSON, Markdown, LaTeX, SVG, checksums, Python SBOM,
-  Cargo SBOM, and in-toto/SLSA-shaped provenance statement.
-- TRICE release card JSON, Markdown, LaTeX, and SVG.
-- TRICE crates publish card JSON, Markdown, LaTeX, and SVG.
-- TRICE integrity card JSON, Markdown, LaTeX, and SVG.
-
-## 6. S-Tier Evidence Gate
-
-Pilot:
-
-- 10 remote Git task clusters.
-- 2 replicates per cluster.
-- Locked commits.
-- Adapter profiles, not ad hoc commands.
-- Zero pass regressions.
-- Valid receipts.
-
-Preflight:
-
-```bash
-tracerazor-trice suite readiness suite.json --out docs/trice_suite_readiness.json
-tracerazor-trice suite verify-readiness docs/trice_suite_readiness.json --manifest suite.json
-tracerazor-trice protocol --manifest suite.json --out docs/trice_protocol_lock.json
-tracerazor-trice verify-protocol docs/trice_protocol_lock.json --manifest suite.json
-```
-
-The pilot suite should report `pilot_execution_ready = true` and
-`pilot_protocol_ready`; the claim suite should report
-`claim_execution_ready = true` and `claim_protocol_ready` before live execution.
-After execution, the generated design card should report
-`claim_design_ready = true`.
-
-Claim run:
-
-- 50 remote Git task clusters.
-- 3 replicates per cluster.
-- Mean input-token savings >= 60%.
-- Clustered CI lower bound >= 60%.
-- Zero pass regressions.
-- Evidence recall >= 95% on solved traces.
-- Every child evidence manifest verifies.
-
-README can claim S-tier only if the generated result says:
-
-```json
-{
-  "s_tier_gate": {
-    "passed": true
-  }
-}
-```
-
-Also regenerate and inspect the claim card:
-
-```bash
-tracerazor-trice design \
-  --protocol docs/trice_protocol_lock.json \
-  --suite-result benchmark/trice/results/heldout-claim/trice_suite_results.json \
-  --out docs/trice_design_card.json
-tracerazor-trice verify-design docs/trice_design_card.json
-tracerazor-trice claim \
-  --suite-result benchmark/trice/results/heldout-claim/trice_suite_results.json \
-  --manifest benchmark/trice/results/heldout-claim/trice_suite_evidence_manifest.json \
-  --out docs/trice_claim_card.json
-tracerazor-trice verify-claim docs/trice_claim_card.json
-tracerazor-trice reproduction --out docs/trice_reproduction_card.json
-tracerazor-trice verify-reproduction docs/trice_reproduction_card.json
-tracerazor-trice install --out docs/trice_install_card.json --dist-dir dist
-tracerazor-trice verify-install docs/trice_install_card.json
-tracerazor-trice research --out docs/trice_research_card.json
-tracerazor-trice verify-research docs/trice_research_card.json
-tracerazor-trice artifact --out docs/trice_artifact_card.json
-tracerazor-trice verify-artifact docs/trice_artifact_card.json
-tracerazor-trice release-evidence --out docs/trice_release_evidence.json --dist-dir dist
-tracerazor-trice verify-release-evidence docs/trice_release_evidence.json
-tracerazor-trice release --out docs/trice_release_card.json --timeout-s 10
-tracerazor-trice verify-release docs/trice_release_card.json
-tracerazor-trice crates --out docs/trice_crates_card.json --timeout-s 10
-tracerazor-trice verify-crates docs/trice_crates_card.json
-tracerazor-trice integrity --out docs/trice_integrity_card.json
-tracerazor-trice verify-integrity docs/trice_integrity_card.json
-```
-
-## References
-
-- Python Packaging User Guide: https://packaging.python.org/tutorials/packaging-projects/
-- Twine documentation: https://twine.readthedocs.io/
-- piwheels FAQ: https://www.piwheels.org/faq.html
-- SLSA specification: https://slsa.dev/spec/
-- in-toto attestations: https://in-toto.io/
-- CycloneDX specification: https://cyclonedx.org/specification/overview/
-- PyPI trusted publishing: https://docs.pypi.org/trusted-publishers/
-- PyPI digital attestations: https://docs.pypi.org/attestations/
-- Cargo publishing: https://doc.rust-lang.org/cargo/reference/publishing.html
+Until real held-out results pass, describe TraceRazor as an efficiency
+supervisor and regression diagnostic. Keep autonomous optimization and TRICE
+as Labs surfaces; do not market measured savings from synthetic fixtures or
+heuristic report estimates.

@@ -3,15 +3,22 @@ services:
     build: .
     # Pin to an explicit version rather than :latest so deployments are
     # reproducible and don't silently pick up an unvetted rebuild.
-    image: tracerazor:1.0.3
-    ports:
-      - "${PORT:-8080}:8080"
+    image: tracerazor:1.1.0
+    # The backend is reachable only by the TLS gateway on this Compose network.
+    # No backend port is published to the host.
+    expose:
+      - "8080"
     volumes:
       # Persistent database — survives container restarts.
       - tracerazor-data:/app/data
     environment:
       TRACERAZOR_DB_PATH: /app/data/tracerazor.db
       PORT: 8080
+      TRACERAZOR_BIND_ADDR: 0.0.0.0
+      TRACERAZOR_API_TOKEN: "${TRACERAZOR_API_TOKEN:?Set a long random TRACERAZOR_API_TOKEN in .env before starting Compose}"
+      # This assertion is truthful only because the Caddy service below
+      # terminates HTTPS and the plaintext backend has no host publication.
+      TRACERAZOR_TLS_TERMINATED: "true"
     env_file:
       # Loads OPENAI_API_KEY and other secrets from .env if it exists.
       - path: .env
@@ -25,6 +32,26 @@ services:
       retries: 3
       start_period: 15s
 
+  gateway:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    depends_on:
+      tracerazor:
+        condition: service_healthy
+    ports:
+      # The only host publication is HTTPS on IPv4 loopback.
+      - "127.0.0.1:${PORT:-8080}:8443"
+    environment:
+      TRACERAZOR_API_TOKEN: "${TRACERAZOR_API_TOKEN:?Set a long random TRACERAZOR_API_TOKEN in .env before starting Compose}"
+    volumes:
+      - ./Caddyfile.compose:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
 volumes:
   tracerazor-data:
+    driver: local
+  caddy-data:
+    driver: local
+  caddy-config:
     driver: local

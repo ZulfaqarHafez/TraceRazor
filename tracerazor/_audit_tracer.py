@@ -18,7 +18,7 @@ Example:
 
     report = t.analyse()
     print(report.summary())
-    report.assert_passes()   # raises AssertionError in CI if TAS < threshold
+    # Prefer a same-workload `tracerazor compare` gate in CI.
 """
 
 from __future__ import annotations
@@ -37,8 +37,10 @@ class Tracer:
         agent_name:        Name of the agent. Appears in all reports.
         framework:         Framework identifier, e.g. "openai", "anthropic",
                            "langgraph", "crewai", or "custom".
-        threshold:         Minimum TAS score (0-100) for assert_passes().
-                           Default is 70.
+        threshold:         Explicit project-local TAS floor (0-100) used only
+                           by the legacy assert_passes() helper. Default 70 is
+                           retained for 1.x compatibility; it is not a
+                           universal agent-quality threshold.
         task_value_score:  Quality of the final answer on a 0.0-1.0 scale.
                            Update with set_task_value() after validation.
                            1.0 means the agent produced a correct answer.
@@ -165,7 +167,7 @@ class Tracer:
         return self._report
 
     def assert_passes(self) -> None:
-        """Analyse (if not already done) and raise AssertionError if TAS < threshold."""
+        """Apply the explicitly accepted project-local legacy TAS floor."""
         if self._report is None:
             self.analyse()
         assert self._report is not None

@@ -139,10 +139,8 @@ pub fn annotate_steps(steps: &mut [TraceStep], result: &TcaResult) {
         if let Some(retry_id) = misfire.retry_step {
             if let Some(step) = steps.iter_mut().find(|s| s.id == retry_id) {
                 step.flags.push(StepFlag::Retry);
-                step.flag_details.push(format!(
-                    "correction of step {}",
-                    misfire.failed_step
-                ));
+                step.flag_details
+                    .push(format!("correction of step {}", misfire.failed_step));
             }
         }
     }
@@ -263,7 +261,10 @@ mod tests {
         let mut steps = trace.steps.clone();
         let result = compute(&trace);
         assert_eq!(result.misfires.len(), 1);
-        assert_eq!(result.misfires[0].retry_step, None, "pivot misattributed as retry");
+        assert_eq!(
+            result.misfires[0].retry_step, None,
+            "pivot misattributed as retry"
+        );
         assert_eq!(
             result.misfires[0].wasted_tokens, 300,
             "pivot tokens must not be charged to the misfire"

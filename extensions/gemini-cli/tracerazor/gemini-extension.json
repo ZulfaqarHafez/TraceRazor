@@ -1,0 +1,11 @@
+{
+  "name": "tracerazor",
+  "version": "1.1.0",
+  "description": "Local-first efficiency coaching and verified token-waste analysis for Gemini CLI.",
+  "mcpServers": {
+    "tracerazor": {
+      "command": "tracerazor-mcp",
+      "args": []
+    }
+  }
+}

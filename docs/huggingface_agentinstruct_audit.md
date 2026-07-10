@@ -1,7 +1,7 @@
 # TraceRazor on Real Hugging Face Agent Trajectories
 
 > Point-in-time generated snapshot: these numbers were produced with the
-> TraceRazor v0.5.0 9-signal scorer, not the current v1.0.3 8-composite /
+> TraceRazor v0.5.0 9-signal scorer, not the current v1.1.0 8-composite /
 > 6-diagnostic model. Treat the tables below as reproducible historical
 > evidence, not as current product benchmarks unless regenerated.
 

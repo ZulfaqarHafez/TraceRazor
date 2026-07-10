@@ -12,7 +12,7 @@ from typing import Any, Callable
 from .bundle import verify_evidence_bundle
 from .claim import verify_claim_card_file
 from .design import verify_design_card_file
-from .evidence import canonical_json, sha256_file, verify_manifest
+from .evidence import canonical_json, sha256_file, verify_manifest, write_text_lf
 from .protocol import verify_protocol_lock_file
 from .readiness import verify_readiness_file
 
@@ -241,13 +241,13 @@ def render_reproduction_svg(card: dict[str, Any]) -> str:
 
 def write_reproduction_outputs(card: dict[str, Any], out: Path) -> dict[str, str]:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(card, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(card, indent=2, sort_keys=True) + "\n")
     md = out.with_suffix(".md")
     tex = out.with_suffix(".tex")
     svg = out.with_suffix(".svg")
-    md.write_text(render_reproduction_markdown(card), encoding="utf-8")
-    tex.write_text(render_reproduction_tex(card), encoding="utf-8")
-    svg.write_text(render_reproduction_svg(card), encoding="utf-8")
+    write_text_lf(md, render_reproduction_markdown(card))
+    write_text_lf(tex, render_reproduction_tex(card))
+    write_text_lf(svg, render_reproduction_svg(card))
     return {"json": str(out), "markdown": str(md), "tex": str(tex), "svg": str(svg)}
 
 

@@ -1,0 +1,29 @@
+{
+  "name": "tracerazor",
+  "version": "1.1.0",
+  "description": "Local-first efficiency supervision for AI-agent runs.",
+  "author": {
+    "name": "Zulfaqar Hafez",
+    "email": "zulfaqarhafez@gmail.com",
+    "url": "https://github.com/ZulfaqarHafez"
+  },
+  "homepage": "https://github.com/ZulfaqarHafez/TraceRazor",
+  "repository": "https://github.com/ZulfaqarHafez/TraceRazor",
+  "license": "MIT",
+  "keywords": ["agents", "token-efficiency", "offline", "evaluation"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "TraceRazor",
+    "shortDescription": "Audit and improve agent efficiency locally",
+    "longDescription": "Capture agent runs, diagnose structural token waste, preview safe changes, and verify measured improvements without sending traces to a cloud service.",
+    "developerName": "TraceRazor",
+    "category": "Developer Tools",
+    "capabilities": ["Read", "Write"],
+    "websiteURL": "https://github.com/ZulfaqarHafez/TraceRazor",
+    "defaultPrompt": [
+      "Audit the latest agent run and explain the most important waste signals.",
+      "Compare these two runs and verify whether token usage improved without reducing task quality."
+    ],
+    "brandColor": "#0F766E"
+  }
+}

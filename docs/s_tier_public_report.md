@@ -34,10 +34,10 @@ software engineering tasks.
 | Research Card | Added | `tracerazor-trice research` binds the research ledger, 165 source rows, category coverage, row hashes, Markdown/SVG/LaTeX outputs, and non-claim boundary. |
 | Artifact Card | Added | `tracerazor-trice artifact` binds the public README, paper, broad and remote evidence bundles, readiness card, protocol lock, design card, reproduction card, contract card, installability card, research card, claim cards, library doc, and schemas; `tracerazor-trice verify-artifact` checks the card and bound hashes. |
 | Installability Card | Added | `tracerazor-trice install` proves the built wheel in a clean virtual environment, imports packaged schemas/APIs, runs `tracerazor-trice`, and separately checks bundled Rust CLI availability. Current generic-wheel target is Python/TRICE install ready, not full no-Rust-toolchain CLI ready. |
-| Release Evidence | Added | `tracerazor-trice release-evidence` binds wheel, sdist, Rust CLI binary, proof cards including the crates publish card, installability card, and research card, paper artifacts, evidence bundles, checksums, CycloneDX-style SBOMs, and provenance sidecars. This is release-asset evidence, not an S-tier outcome claim. |
+| Release Evidence | Added | `tracerazor-trice release-evidence` binds platform wheels, Rust CLI binaries, proof cards, paper artifacts, evidence bundles, checksums, CycloneDX-style SBOMs, and provenance sidecars. This is release-asset evidence, not an S-tier outcome claim. |
 | Release Card | Added | `tracerazor-trice release` snapshots doctor output, binds proof cards including the contract and installability cards, and keeps public-release readiness false until PyPI, piwheels, crates.io, tag, Actions, and OpenSSF Scorecard are green. |
 | Crates Publish Card | Added | `tracerazor-trice crates` binds workspace Cargo manifests, topological publish order, crates.io status, and README install honesty. Current level is publish-plan locked, not cargo-install live. |
-| GitHub release attestations | Added to workflow | The release workflow now generates deterministic release-evidence assets and runs GitHub artifact attestation over wheels, sdists, binaries, and release-evidence sidecars. |
+| GitHub release attestations | Added to workflow | The release workflow now generates deterministic release-evidence assets and runs GitHub artifact attestation over platform wheels, binaries, checksums, and release-evidence sidecars. |
 | OpenSSF Scorecard | Added to workflow and doctor | `.github/workflows/scorecard.yml` publishes SARIF/Scorecard results; `tracerazor-trice doctor` reports the public Scorecard API and requires score >= 7.0 for release readiness. |
 | Integrity Card | Added | `tracerazor-trice integrity` binds offline doctor output, proof-card verifiers, release evidence, crates publish card, installability card, research card, paper manifest, schemas, and CI/release/Scorecard workflow hooks so the proof graph cannot silently drift. |
 | Held-out 10 x 2 pilot | Pending | Must run before any 50 x 3 claim run. |
@@ -131,8 +131,8 @@ The claim run must satisfy:
 
 - Publish Rust crates or keep the cargo install claim out of public docs.
 - Re-run GitHub CI after local clippy and supply-chain fixes.
-- Publish 1.0.3 to PyPI only after local gates pass.
-- Wait for the piwheels 1.0.3 build and verify visibility.
+- Publish 1.1.0 to PyPI only after local gates pass.
+- Wait for the piwheels 1.1.0 build and verify visibility.
 - Attach SBOMs, checksums, and the verified evidence bundle to the GitHub
   release.
 

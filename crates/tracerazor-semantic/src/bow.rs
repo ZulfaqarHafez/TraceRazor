@@ -20,14 +20,12 @@ use crate::Similarity;
 
 /// Stop words that carry no semantic meaning.
 static STOP_WORDS: &[&str] = &[
-    "a", "an", "the", "is", "it", "in", "on", "at", "to", "for",
-    "of", "and", "or", "but", "with", "from", "by", "this", "that",
-    "was", "are", "be", "been", "has", "have", "had", "do", "does",
-    "did", "will", "would", "could", "should", "may", "might", "must",
-    "can", "not", "no", "so", "if", "then", "when", "where", "which",
-    "who", "how", "what", "as", "about", "into", "through", "during",
-    "its", "their", "our", "your", "my", "his", "her", "we", "they",
-    "i", "you", "he", "she", "all", "also", "just", "after", "before",
+    "a", "an", "the", "is", "it", "in", "on", "at", "to", "for", "of", "and", "or", "but", "with",
+    "from", "by", "this", "that", "was", "are", "be", "been", "has", "have", "had", "do", "does",
+    "did", "will", "would", "could", "should", "may", "might", "must", "can", "not", "no", "so",
+    "if", "then", "when", "where", "which", "who", "how", "what", "as", "about", "into", "through",
+    "during", "its", "their", "our", "your", "my", "his", "her", "we", "they", "i", "you", "he",
+    "she", "all", "also", "just", "after", "before",
 ];
 
 pub struct BowSimilarity {

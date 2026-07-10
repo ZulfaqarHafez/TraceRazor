@@ -1,0 +1,7 @@
+interface:
+  display_name: "TraceRazor"
+  short_description: "Audit and verify AI-agent token efficiency"
+  brand_color: "#0F766E"
+  default_prompt: "Audit the latest agent run, explain the highest-confidence waste signals, and distinguish estimated savings from measured results."
+policy:
+  allow_implicit_invocation: true

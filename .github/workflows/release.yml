@@ -27,6 +27,7 @@ jobs:
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
     steps:
+      - uses: actions/checkout@v4
       - name: Resolve or create tag
         id: resolve
         env:
@@ -42,6 +43,13 @@ jobs:
             TAG="$GITHUB_REF_NAME"   # tag-push event
           fi
           case "$TAG" in v*) ;; *) echo "tag must look like vX.Y.Z, got '$TAG'" >&2; exit 1 ;; esac
+          PY_VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          CARGO_VERSION=$(python3 -c 'import tomllib; print(tomllib.load(open("Cargo.toml", "rb"))["workspace"]["package"]["version"])')
+          INIT_VERSION=$(python3 -c 'import re; text=open("tracerazor/__init__.py", encoding="utf-8").read(); print(re.search(r"__version__\s*=\s*[\"\x27]([^\"\x27]+)", text).group(1))')
+          if [ "$TAG" != "v$PY_VERSION" ] || [ "$PY_VERSION" != "$CARGO_VERSION" ] || [ "$PY_VERSION" != "$INIT_VERSION" ]; then
+            echo "release version mismatch: tag=$TAG pyproject=$PY_VERSION cargo=$CARGO_VERSION python=$INIT_VERSION" >&2
+            exit 1
+          fi
           if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" >/dev/null 2>&1; then
             echo "tag $TAG already exists — releasing it"
           else
@@ -51,15 +59,65 @@ jobs:
           fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
+  quality:
+    name: Release quality (Python ${{ matrix.python-version }})
+    needs: [tag]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: dtolnay/rust-toolchain@stable
+        if: matrix.python-version == '3.12'
+        with:
+          components: rustfmt, clippy
+      - name: Install Python test and audit dependencies
+        run: python -m pip install --upgrade pip '.[dev,mcp]' pip-audit
+      - name: Python tests
+        run: python -m pytest -q
+      - name: Python dependency audit
+        run: python -m pip_audit --progress-spinner off .
+      - name: Rust format, test, and lint
+        if: matrix.python-version == '3.12'
+        run: |
+          cargo fmt --all -- --check
+          cargo test --workspace
+          cargo clippy --workspace --all-targets -- -D warnings
+      - name: Rust dependency audit
+        if: matrix.python-version == '3.12'
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit
+
   wheels:
     name: Platform wheel (${{ matrix.os }})
     needs: [tag]
     strategy:
       matrix:
-        # ubuntu-22.04 (glibc 2.35) keeps the manylinux floor low; macos-latest
-        # covers arm64 and macos-13 covers Intel. windows-latest bundles the
-        # .exe so `pip install tracerazor` works on Windows without Rust.
-        os: [ubuntu-22.04, macos-latest, macos-13, windows-latest]
+        # Native runners keep each bundled binary honest for its wheel tag.
+        # Alpine/musl is intentionally unsupported in 1.1.x.
+        include:
+          - os: ubuntu-22.04
+            artifact: linux-x64
+            glibc: "2.35"
+            wheel-platform: manylinux_2_35_x86_64
+          - os: ubuntu-24.04-arm
+            artifact: linux-arm64
+            glibc: "2.39"
+            wheel-platform: manylinux_2_39_aarch64
+          - os: macos-latest
+            artifact: macos-arm64
+          - os: macos-13
+            artifact: macos-x64
+          - os: windows-latest
+            artifact: windows-x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -71,6 +129,9 @@ jobs:
           python-version: "3.11"
       - name: Build platform wheel with bundled CLI (Unix)
         if: runner.os != 'Windows'
+        env:
+          TRACERAZOR_EXPECTED_GLIBC: ${{ matrix.glibc }}
+          TRACERAZOR_EXPECTED_WHEEL_PLATFORM: ${{ matrix.wheel-platform }}
         run: bash scripts/build_platform_wheel.sh
       - name: Build platform wheel with bundled CLI (Windows)
         if: runner.os == 'Windows'
@@ -78,46 +139,71 @@ jobs:
         run: |
           cargo build --release -p tracerazor
           New-Item -ItemType Directory -Force tracerazor/bin | Out-Null
+          Remove-Item tracerazor/bin/tracerazor,tracerazor/bin/tracerazor.exe -Force -ErrorAction SilentlyContinue
           Copy-Item target/release/tracerazor.exe tracerazor/bin/tracerazor.exe
           python -m pip install --quiet build wheel
           python -m build --wheel
           $wheel = Get-ChildItem dist\tracerazor-*-py3-none-any.whl | Sort-Object LastWriteTime -Descending | Select-Object -First 1
           python -m wheel tags --platform-tag win_amd64 --remove $wheel.FullName
-      - name: Build sdist (once, on the Linux builder)
-        if: startsWith(matrix.os, 'ubuntu')
-        run: |
-          rm -rf tracerazor/bin   # sdist is source-only; no prebuilt binary
-          python -m build --sdist
-      - name: Clean-room smoke test (Unix)
+      - name: Clean-room smoke on declared platform baseline (Unix)
         if: runner.os != 'Windows'
         run: |
-          python -m venv /tmp/v && /tmp/v/bin/pip install dist/tracerazor-*.whl
-          /tmp/v/bin/tracerazor audit traces/support-agent-run-2847.json --hermetic
+          WHEEL=$(python -c 'import glob,os; print(os.path.abspath(glob.glob("dist/tracerazor-*.whl")[0]))')
+          VENV="$RUNNER_TEMP/tracerazor-smoke"
+          python -m venv "$VENV"
+          "$VENV/bin/pip" install "$WHEEL[mcp]"
+          cd "$RUNNER_TEMP"
+          TRACE=$("$VENV/bin/python" -c "from importlib.resources import files; print(files('tracerazor').joinpath('agent_assets/traces/support-agent-run-2847.json'))")
+          env -u TRACERAZOR_BIN "$VENV/bin/tracerazor" --version
+          env -u TRACERAZOR_BIN "$VENV/bin/python" -m tracerazor.mcp_server --selftest
+          env -u TRACERAZOR_BIN "$VENV/bin/tracerazor" audit "$TRACE" --hermetic --format json
+          "$VENV/bin/python" -c "from importlib.resources import files; assert files('tracerazor').joinpath('agent_assets/plugins/tracerazor/.codex-plugin/plugin.json').is_file()"
+          mkdir tracerazor-agent-smoke && cd tracerazor-agent-smoke
+          env -u TRACERAZOR_BIN "$VENV/bin/tracerazor" agent install --host generic --scope project --mode coach
+          env -u TRACERAZOR_BIN "$VENV/bin/tracerazor" agent status --host generic --scope project --format json
+          env -u TRACERAZOR_BIN "$VENV/bin/tracerazor" agent uninstall --host generic --scope project
       - name: Clean-room smoke test (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          python -m venv C:\tmp\v
-          C:\tmp\v\Scripts\pip install (Get-ChildItem dist\*.whl | Select-Object -First 1).FullName
-          C:\tmp\v\Scripts\tracerazor audit traces/support-agent-run-2847.json --hermetic
+          $wheel = (Get-ChildItem dist\*.whl | Select-Object -First 1).FullName
+          $venv = Join-Path $env:RUNNER_TEMP 'tracerazor-smoke'
+          python -m venv $venv
+          & "$venv\Scripts\pip" install "$wheel[mcp]"
+          Remove-Item Env:TRACERAZOR_BIN -ErrorAction SilentlyContinue
+          Set-Location $env:RUNNER_TEMP
+          $trace = & "$venv\Scripts\python" -c "from importlib.resources import files; print(files('tracerazor').joinpath('agent_assets/traces/support-agent-run-2847.json'))"
+          & "$venv\Scripts\tracerazor" --version
+          & "$venv\Scripts\python" -m tracerazor.mcp_server --selftest
+          & "$venv\Scripts\tracerazor" audit $trace --hermetic --format json
+          & "$venv\Scripts\python" -c "from importlib.resources import files; assert files('tracerazor').joinpath('agent_assets/plugins/tracerazor/.codex-plugin/plugin.json').is_file()"
+          New-Item -ItemType Directory -Force tracerazor-agent-smoke | Out-Null
+          Set-Location tracerazor-agent-smoke
+          & "$venv\Scripts\tracerazor" agent install --host generic --scope project --mode coach
+          & "$venv\Scripts\tracerazor" agent status --host generic --scope project --format json
+          & "$venv\Scripts\tracerazor" agent uninstall --host generic --scope project
       - uses: actions/upload-artifact@v4
         with:
-          name: wheel-${{ matrix.os }}
+          name: wheel-${{ matrix.artifact }}
           path: |
             dist/*.whl
-            dist/*.tar.gz
 
   # Standalone CLI binaries — downloaded by the composite GitHub Action
   # (.github/actions/tracerazor) so consumer repos need no Rust toolchain.
   binaries:
     name: Release binary (${{ matrix.target }})
-    needs: [tag]
+    needs: [tag, quality]
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             ext: ""
+            glibc: "2.35"
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-gnu
+            ext: ""
+            glibc: "2.39"
           - os: macos-latest
             target: aarch64-apple-darwin
             ext: ""
@@ -137,6 +223,12 @@ jobs:
           targets: ${{ matrix.target }}
       - name: Build CLI
         run: cargo build --release -p tracerazor --target ${{ matrix.target }}
+      - name: Verify standalone GLIBC baseline
+        if: runner.os == 'Linux'
+        run: >-
+          python scripts/verify_glibc_baseline.py
+          target/${{ matrix.target }}/release/tracerazor
+          ${{ matrix.glibc }}
       - name: Smoke test (Unix)
         if: runner.os != 'Windows'
         run: ./target/${{ matrix.target }}/release/tracerazor audit traces/support-agent-run-2847.json --hermetic
@@ -162,14 +254,14 @@ jobs:
             tracerazor-*.tar.gz
             tracerazor-*.zip
 
-  # Upload wheels + sdist to PyPI via trusted publishing (OIDC — no token
+  # Upload platform wheels to PyPI via trusted publishing (OIDC — no token
   # stored in the repo). One-time setup on pypi.org: project "tracerazor" →
   # Publishing → add GitHub publisher (owner ZulfaqarHafez, repo TraceRazor,
   # workflow release.yml, environment pypi). publish.sh stays as the manual
   # fallback.
   pypi:
     name: Publish to PyPI
-    needs: [tag, wheels]
+    needs: [tag, quality, wheels, binaries, release-evidence, agent-image]
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -184,7 +276,243 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
         with:
           packages-dir: dist
-          skip-existing: true
+
+  # Disposable, pre-provisioned image for spawned agents and CI sandboxes.
+  # This is separate from the dashboard/server image and defaults to a local
+  # doctor command rather than exposing a network listener. The version tag is
+  # created only after the exact multi-architecture digest passes both platform
+  # smokes and receives a verifiable GitHub provenance attestation.
+  agent-image:
+    name: Build, smoke, attest, and publish agent image
+    needs: [tag, quality, release-evidence]
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    env:
+      IMAGE_NAME: ghcr.io/zulfaqarhafez/tracerazor-agent
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.tag.outputs.tag }}
+      - name: Resolve fixed source epoch
+        id: source-date
+        run: |
+          set -euo pipefail
+          epoch=$(git show -s --format=%ct HEAD)
+          if ! [[ "$epoch" =~ ^[0-9]+$ ]] || [ "$epoch" -lt 315532800 ]; then
+            echo "invalid release SOURCE_DATE_EPOCH: $epoch" >&2
+            exit 1
+          fi
+          echo "epoch=$epoch" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push unpromoted multi-architecture digest
+        id: push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.agent
+          platforms: linux/amd64,linux/arm64
+          push: true
+          pull: true
+          tags: ${{ env.IMAGE_NAME }}:build-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          build-args: |
+            TRACERAZOR_VERSION=${{ needs.tag.outputs.tag }}
+            VCS_REF=${{ github.sha }}
+            SOURCE_DATE_EPOCH=${{ steps.source-date.outputs.epoch }}
+          cache-from: type=gha,scope=tracerazor-agent-image
+          cache-to: type=gha,mode=max,scope=tracerazor-agent-image
+          provenance: mode=max
+          sbom: true
+      - name: Verify manifest and smoke the exact digest
+        env:
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          test -n "$IMAGE_DIGEST"
+          docker buildx imagetools inspect --raw \
+            "$IMAGE_NAME@$IMAGE_DIGEST" > "$RUNNER_TEMP/agent-image-manifest.json"
+          python3 - "$RUNNER_TEMP/agent-image-manifest.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert manifest["mediaType"] in {
+              "application/vnd.docker.distribution.manifest.list.v2+json",
+              "application/vnd.oci.image.index.v1+json",
+          }
+          platforms = {
+              (item.get("platform", {}).get("os"), item.get("platform", {}).get("architecture"))
+              for item in manifest.get("manifests", [])
+          }
+          required = {("linux", "amd64"), ("linux", "arm64")}
+          assert required <= platforms, (required, platforms)
+          real_platforms = {item for item in platforms if item[0] not in {None, "unknown"}}
+          assert real_platforms == required, real_platforms
+          PY
+          bash scripts/smoke_agent_image.sh "$IMAGE_NAME@$IMAGE_DIGEST" linux/amd64
+          bash scripts/smoke_agent_image.sh "$IMAGE_NAME@$IMAGE_DIGEST" linux/arm64
+      - name: Sign image provenance
+        id: attest-image
+        uses: actions/attest@v4
+        with:
+          subject-name: ${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+          create-storage-record: false
+      - name: Verify signed provenance at the digest
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          verified=false
+          for attempt in 1 2 3; do
+            if gh attestation verify "oci://$IMAGE_NAME@$IMAGE_DIGEST" \
+                --repo "$GITHUB_REPOSITORY" \
+                --bundle-from-oci \
+                --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml" \
+                --deny-self-hosted-runners; then
+              verified=true
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep 5
+            fi
+          done
+          test "$verified" = true
+      - name: Write deterministic image release receipt
+        env:
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+          RELEASE_TAG: ${{ needs.tag.outputs.tag }}
+          SOURCE_DATE_EPOCH: ${{ steps.source-date.outputs.epoch }}
+        run: |
+          mkdir -p agent-image-release
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+
+          image = os.environ["IMAGE_NAME"]
+          digest = os.environ["IMAGE_DIGEST"]
+          receipt = {
+              "schema_version": "tracerazor-agent-image-release/v1",
+              "image": image,
+              "digest": digest,
+              "immutable_ref": f"{image}@{digest}",
+              "version_tag": os.environ["RELEASE_TAG"],
+              "platforms": ["linux/amd64", "linux/arm64"],
+              "source_repository": os.environ["GITHUB_REPOSITORY"],
+              "source_revision": os.environ["GITHUB_SHA"],
+              "source_date_epoch": int(os.environ["SOURCE_DATE_EPOCH"]),
+              "signer_workflow": ".github/workflows/release.yml",
+              "registry_attestation_verified": True,
+              "trust_event": "image_provisioning",
+          }
+          pathlib.Path("agent-image-release/agent-image-release.json").write_text(
+              json.dumps(receipt, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8",
+          )
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agent-image-release-receipt
+          path: agent-image-release/agent-image-release.json
+          if-no-files-found: error
+      - name: Prove GHCR is publicly readable at the exact digest
+        env:
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+        run: |
+          set -euo pipefail
+          docker logout ghcr.io
+          docker buildx imagetools inspect --raw \
+            "$IMAGE_NAME@$IMAGE_DIGEST" > "$RUNNER_TEMP/anonymous-agent-image.json"
+          docker pull --quiet --platform linux/amd64 "$IMAGE_NAME@$IMAGE_DIGEST"
+      - name: Restore GHCR publisher authentication
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Promote tested digest without replacing an immutable version tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+          RELEASE_TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          release_ref="$IMAGE_NAME:$RELEASE_TAG"
+          package_path=${IMAGE_NAME#ghcr.io/}
+          manifest_url="https://ghcr.io/v2/$package_path/manifests/$RELEASE_TAG"
+          token_json=$(curl --fail-with-body --silent --show-error --location \
+            --user "$GITHUB_ACTOR:$GH_TOKEN" \
+            --get 'https://ghcr.io/token' \
+            --data-urlencode 'service=ghcr.io' \
+            --data-urlencode "scope=repository:$package_path:pull")
+          registry_token=$(python3 -c \
+            'import json,sys; data=json.load(sys.stdin); print(data.get("token") or data.get("access_token") or "")' \
+            <<< "$token_json")
+          test -n "$registry_token"
+          set +e
+          http_code=$(curl --silent --show-error --location \
+            --connect-timeout 15 --max-time 45 \
+            --header "Authorization: Bearer $registry_token" \
+            --header 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json' \
+            --dump-header "$RUNNER_TEMP/existing-agent-image.headers" \
+            --output "$RUNNER_TEMP/existing-agent-image.json" \
+            --write-out '%{http_code}' \
+            "$manifest_url")
+          curl_status=$?
+          set -e
+          if [ "$curl_status" -ne 0 ]; then
+            echo "GHCR version-tag lookup failed before an HTTP response" >&2
+            exit "$curl_status"
+          fi
+          case "$http_code" in
+            200)
+              existing_digest=$(awk -F': ' \
+                'tolower($1) == "docker-content-digest" { gsub("\\r", "", $2); print $2; exit }' \
+                "$RUNNER_TEMP/existing-agent-image.headers")
+              test -n "$existing_digest"
+              if [ "$existing_digest" != "$IMAGE_DIGEST" ]; then
+                echo "refusing to replace changed image $release_ref ($existing_digest != $IMAGE_DIGEST)" >&2
+                exit 1
+              fi
+              ;;
+            404)
+              docker buildx imagetools create \
+                --tag "$release_ref" \
+                --metadata-file "$RUNNER_TEMP/release-image-metadata.json" \
+                "$IMAGE_NAME@$IMAGE_DIGEST"
+              promoted_digest=$(python3 -c \
+                'import json,sys; print(json.load(open(sys.argv[1]))["containerimage.descriptor"]["digest"])' \
+                "$RUNNER_TEMP/release-image-metadata.json")
+              test "$promoted_digest" = "$IMAGE_DIGEST"
+              ;;
+            *)
+              echo "GHCR version-tag lookup returned HTTP $http_code; refusing to treat it as absent" >&2
+              cat "$RUNNER_TEMP/existing-agent-image.json" >&2
+              exit 1
+              ;;
+          esac
+          docker buildx imagetools create \
+            --tag "$IMAGE_NAME:latest" \
+            --metadata-file "$RUNNER_TEMP/latest-image-metadata.json" \
+            "$IMAGE_NAME@$IMAGE_DIGEST"
+          latest_digest=$(python3 -c \
+            'import json,sys; print(json.load(open(sys.argv[1]))["containerimage.descriptor"]["digest"])' \
+            "$RUNNER_TEMP/latest-image-metadata.json")
+          test "$latest_digest" = "$IMAGE_DIGEST"
 
   # Generate deterministic release evidence sidecars from the exact release
   # artifacts staged by the wheel jobs. PyPI Trusted Publishing covers index
@@ -192,7 +520,7 @@ jobs:
   # proof cards, installability, the crates publish card, paper artifacts, and evidence bundles.
   release-evidence:
     name: Release evidence packet
-    needs: [tag, wheels, binaries]
+    needs: [tag, quality, wheels, binaries]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -207,10 +535,25 @@ jobs:
           pattern: wheel-*
           merge-multiple: true
           path: dist
-      - name: Build release CLI for evidence subject
-        run: cargo build --release -p tracerazor
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          merge-multiple: true
+          path: release-binaries
+      - name: Extract downloaded standalone CLI for evidence subject
+        run: |
+          set -euo pipefail
+          archive=$(find release-binaries -type f \
+            -name 'tracerazor-x86_64-unknown-linux-gnu.tar.gz' -print -quit)
+          test -n "$archive"
+          mkdir -p release-cli
+          tar -xzf "$archive" -C release-cli
+          chmod 0755 release-cli/tracerazor
+          release-cli/tracerazor --version
       - name: Generate and verify release evidence
         run: |
+          LINUX_WHEEL=$(find dist -maxdepth 1 -type f -name 'tracerazor-*-manylinux_*_x86_64.whl' -print -quit)
+          test -n "$LINUX_WHEEL"
           python -m tracerazor.trice crates \
             --offline \
             --out docs/trice_crates_card.json \
@@ -219,6 +562,7 @@ jobs:
           python -m tracerazor.trice install \
             --out docs/trice_install_card.json \
             --dist-dir dist \
+            --wheel "$LINUX_WHEEL" \
             --format tex
           python -m tracerazor.trice verify-install docs/trice_install_card.json
           python -m tracerazor.trice research \
@@ -232,10 +576,16 @@ jobs:
           python -m tracerazor.trice release-evidence \
             --out release-assets/trice_release_evidence.json \
             --dist-dir dist \
-            --cli-binary target/release/tracerazor \
+            --cli-binary release-cli/tracerazor \
             --format tex
           python -m tracerazor.trice verify-release-evidence \
             release-assets/trice_release_evidence.json
+          find dist release-binaries release-assets -type f ! -name SHA256SUMS -print0 \
+            | sort -z \
+            | while IFS= read -r -d '' file; do
+                hash=$(sha256sum "$file" | cut -d' ' -f1)
+                printf '%s  %s\n' "$hash" "$(basename "$file")"
+              done > release-assets/SHA256SUMS
       - uses: actions/upload-artifact@v4
         with:
           name: release-evidence
@@ -244,11 +594,12 @@ jobs:
             release-assets/trice_crates_card.*
             release-assets/trice_install_card.*
             release-assets/trice_research_card.*
+            release-assets/SHA256SUMS
 
   # Attach wheels, binaries, and deterministic release evidence to the GitHub release.
   publish-release:
     name: Publish GitHub release
-    needs: [tag, wheels, binaries, release-evidence]
+    needs: [tag, quality, wheels, binaries, release-evidence, agent-image, pypi]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -261,6 +612,17 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+      - name: Bind the image receipt into the release checksum manifest
+        run: |
+          set -euo pipefail
+          checksum_file=$(find artifacts -type f -name SHA256SUMS -print -quit)
+          receipt=$(find artifacts -type f -name agent-image-release.json -print -quit)
+          test -n "$checksum_file"
+          test -n "$receipt"
+          receipt_hash=$(sha256sum "$receipt" | cut -d' ' -f1)
+          printf '%s  %s\n' "$receipt_hash" "$(basename "$receipt")" \
+            >> "$checksum_file"
+          sort -u -o "$checksum_file" "$checksum_file"
       - name: Attest release assets
         uses: actions/attest@v4
         with:
@@ -272,26 +634,45 @@ jobs:
             artifacts/**/trice_install_card.*
             artifacts/**/trice_research_card.*
             artifacts/**/trice_release_evidence.*
+            artifacts/**/agent-image-release.json
+            artifacts/**/SHA256SUMS
       - name: Create release with assets
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ needs.tag.outputs.tag }}
         run: |
           set -euo pipefail
-          ASSETS=$(find artifacts -type f \( \
+          mapfile -t ASSETS < <(find artifacts -type f \( \
             -name '*.whl' -o \
             -name '*.tar.gz' -o \
             -name '*.zip' -o \
             -name 'trice_crates_card.*' -o \
             -name 'trice_install_card.*' -o \
             -name 'trice_research_card.*' -o \
-            -name 'trice_release_evidence.*' \
-          \))
+            -name 'trice_release_evidence.*' -o \
+            -name 'agent-image-release.json' -o \
+            -name 'SHA256SUMS' \
+          \) | sort)
+          test "${#ASSETS[@]}" -gt 0
           if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            # shellcheck disable=SC2086
-            gh release upload "$RELEASE_TAG" $ASSETS --clobber
+            mkdir -p existing-assets
+            UPLOADS=()
+            for asset in "${ASSETS[@]}"; do
+              name=$(basename "$asset")
+              rm -f "existing-assets/$name"
+              if gh release download "$RELEASE_TAG" --pattern "$name" --dir existing-assets >/dev/null 2>&1; then
+                if ! cmp --silent "$asset" "existing-assets/$name"; then
+                  echo "refusing to replace changed asset $name on immutable tag $RELEASE_TAG" >&2
+                  exit 1
+                fi
+              else
+                UPLOADS+=("$asset")
+              fi
+            done
+            if [ "${#UPLOADS[@]}" -gt 0 ]; then
+              gh release upload "$RELEASE_TAG" "${UPLOADS[@]}"
+            fi
           else
-            # shellcheck disable=SC2086
-            gh release create "$RELEASE_TAG" $ASSETS \
+            gh release create "$RELEASE_TAG" "${ASSETS[@]}" \
               --verify-tag --generate-notes --title "TraceRazor $RELEASE_TAG"
           fi

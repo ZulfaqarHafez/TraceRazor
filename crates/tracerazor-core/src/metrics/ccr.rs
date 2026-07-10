@@ -24,8 +24,8 @@
 use std::collections::HashSet;
 use std::io::Write;
 
-use flate2::Compression;
 use flate2::write::GzEncoder;
+use flate2::Compression;
 use serde::{Deserialize, Serialize};
 
 use super::verbosity_data::{FILLER_WORDS, HEDGE_PHRASES, PREAMBLE_PATTERNS};
@@ -200,9 +200,7 @@ pub fn caveman_compress(text: &str) -> String {
             sentence
                 .split_whitespace()
                 .filter(|w| {
-                    let lw = w
-                        .trim_matches(|c: char| !c.is_alphabetic())
-                        .to_lowercase();
+                    let lw = w.trim_matches(|c: char| !c.is_alphabetic()).to_lowercase();
                     // Keep if it is NOT an article, filler word, or single-word hedge.
                     !matches!(lw.as_str(), "a" | "an" | "the")
                         && !FILLER_WORDS.contains(&lw.as_str())

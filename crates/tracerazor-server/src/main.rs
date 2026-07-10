@@ -32,9 +32,14 @@ async fn main() -> Result<()> {
 
     // Bind to loopback by default so the server is not unintentionally exposed
     // on all interfaces. Set TRACERAZOR_BIND_ADDR=0.0.0.0 to expose it
-    // deliberately — and set TRACERAZOR_API_TOKEN when you do.
-    let bind =
-        std::env::var("TRACERAZOR_BIND_ADDR").unwrap_or_else(|_| "127.0.0.1".to_string());
+    // deliberately — and configure both TRACERAZOR_API_TOKEN and a trusted
+    // reverse-proxy TLS boundary (TRACERAZOR_TLS_TERMINATED=true) when you do.
+    let bind = std::env::var("TRACERAZOR_BIND_ADDR").unwrap_or_else(|_| "127.0.0.1".to_string());
 
-    run_server(ServeOptions { port, bind, db_path }).await
+    run_server(ServeOptions {
+        port,
+        bind,
+        db_path,
+    })
+    .await
 }

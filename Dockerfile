@@ -7,7 +7,7 @@ COPY dashboard/ ./
 RUN npm run build
 
 # ── Stage 2: Build Rust binaries ─────────────────────────────────────────────
-FROM rust:1.82-bookworm AS builder
+FROM rust:1.88-bookworm@sha256:af306cfa71d987911a781c37b59d7d67d934f49684058f96cf72079c3626bfe0 AS builder
 
 # Pre-fetch dependencies using a stub workspace (layer cache trick).
 # Only re-runs when Cargo.toml / Cargo.lock changes.
@@ -61,10 +61,11 @@ RUN useradd --system --uid 10001 --user-group --no-create-home appuser \
 
 ENV TRACERAZOR_DB_PATH=/app/data/tracerazor.db
 ENV PORT=8080
-# Inside the container we must listen on all interfaces so the published port
-# is reachable. The application itself defaults to 127.0.0.1; binding 0.0.0.0
-# here is a deliberate, container-scoped exposure.
-ENV TRACERAZOR_BIND_ADDR=0.0.0.0
+# Keep the standalone image on the server's fail-closed loopback default.
+# `docker run -p` therefore does not expose an unauthenticated backend. The
+# default Compose topology explicitly provisions bearer auth and a Caddy TLS
+# boundary before it opts the backend into a private non-loopback listener.
+ENV TRACERAZOR_BIND_ADDR=127.0.0.1
 
 EXPOSE 8080
 

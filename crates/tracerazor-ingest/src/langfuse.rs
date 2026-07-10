@@ -18,12 +18,17 @@ pub fn parse(data: &str) -> Result<Trace> {
 
     let mut obs = observations;
     obs.sort_by(|a, b| {
-        string_field(a, &["startTime", "start_time", "createdAt", "timestamp"])
-            .cmp(&string_field(b, &["startTime", "start_time", "createdAt", "timestamp"]))
+        string_field(a, &["startTime", "start_time", "createdAt", "timestamp"]).cmp(&string_field(
+            b,
+            &["startTime", "start_time", "createdAt", "timestamp"],
+        ))
     });
 
     let trace_id = string_field(&v, &["id", "traceId", "trace_id"])
-        .or_else(|| obs.iter().find_map(|o| string_field(o, &["traceId", "trace_id"])))
+        .or_else(|| {
+            obs.iter()
+                .find_map(|o| string_field(o, &["traceId", "trace_id"]))
+        })
         .unwrap_or_else(|| "langfuse-trace".into());
     let agent_name = string_field(&v, &["name", "sessionId", "userId"])
         .or_else(|| obs.iter().find_map(|o| string_field(o, &["name"])))
@@ -31,7 +36,11 @@ pub fn parse(data: &str) -> Result<Trace> {
 
     let mut steps = Vec::new();
     for item in obs {
-        let step_type = match string_field(&item, &["type"]).unwrap_or_default().to_lowercase().as_str() {
+        let step_type = match string_field(&item, &["type"])
+            .unwrap_or_default()
+            .to_lowercase()
+            .as_str()
+        {
             "generation" | "llm" | "completion" | "chat" => StepType::Reasoning,
             "span" | "tool" | "retriever" => StepType::ToolCall,
             _ => {
@@ -49,11 +58,16 @@ pub fn parse(data: &str) -> Result<Trace> {
             step_type: step_type.clone(),
             content,
             tokens: extract_tokens(&item),
-            tool_name: (step_type == StepType::ToolCall)
-                .then(|| string_field(&item, &["name"]).unwrap_or_else(|| "langfuse_observation".into())),
+            tool_name: (step_type == StepType::ToolCall).then(|| {
+                string_field(&item, &["name"]).unwrap_or_else(|| "langfuse_observation".into())
+            }),
             tool_params: item.get("input").cloned(),
-            tool_success: (step_type == StepType::ToolCall)
-                .then(|| item.get("level").and_then(Value::as_str).unwrap_or("DEFAULT") != "ERROR"),
+            tool_success: (step_type == StepType::ToolCall).then(|| {
+                item.get("level")
+                    .and_then(Value::as_str)
+                    .unwrap_or("DEFAULT")
+                    != "ERROR"
+            }),
             tool_error: item
                 .get("statusMessage")
                 .or_else(|| item.get("error"))
@@ -125,16 +139,30 @@ fn extract_tokens(v: &Value) -> u32 {
         .or_else(|| v.get("usageDetails"))
         .or_else(|| v.get("usage_details"))
         .unwrap_or(v);
-    let total = number(usage, &["total", "totalTokens", "total_tokens", "totalUsage"])
-        .or_else(|| {
-            let input = number(usage, &["input", "inputTokens", "promptTokens", "prompt_tokens"]);
-            let output = number(usage, &["output", "outputTokens", "completionTokens", "completion_tokens"]);
-            match (input, output) {
-                (None, None) => None,
-                (a, b) => Some(a.unwrap_or(0) + b.unwrap_or(0)),
-            }
-        })
-        .unwrap_or(0);
+    let total = number(
+        usage,
+        &["total", "totalTokens", "total_tokens", "totalUsage"],
+    )
+    .or_else(|| {
+        let input = number(
+            usage,
+            &["input", "inputTokens", "promptTokens", "prompt_tokens"],
+        );
+        let output = number(
+            usage,
+            &[
+                "output",
+                "outputTokens",
+                "completionTokens",
+                "completion_tokens",
+            ],
+        );
+        match (input, output) {
+            (None, None) => None,
+            (a, b) => Some(a.unwrap_or(0) + b.unwrap_or(0)),
+        }
+    })
+    .unwrap_or(0);
     u32::try_from(total).unwrap_or(u32::MAX)
 }
 
@@ -156,8 +184,10 @@ fn content_from(v: &Value) -> String {
 
 fn number(v: &Value, keys: &[&str]) -> Option<u64> {
     keys.iter().find_map(|key| {
-        v.get(*key)
-            .and_then(|n| n.as_u64().or_else(|| n.as_str().and_then(|s| s.parse().ok())))
+        v.get(*key).and_then(|n| {
+            n.as_u64()
+                .or_else(|| n.as_str().and_then(|s| s.parse().ok()))
+        })
     })
 }
 
@@ -180,9 +210,11 @@ fn textish(v: Option<&Value>) -> Option<String> {
 
 fn observations_model(data: &str) -> Option<String> {
     let v: Value = serde_json::from_str(data).ok()?;
-    collect_observations(&v)
-        .iter()
-        .find_map(|o| o.get("model").and_then(Value::as_str).map(ToOwned::to_owned))
+    collect_observations(&v).iter().find_map(|o| {
+        o.get("model")
+            .and_then(Value::as_str)
+            .map(ToOwned::to_owned)
+    })
 }
 
 #[cfg(test)]

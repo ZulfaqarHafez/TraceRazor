@@ -4,11 +4,38 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-07-10
+
 Agent-native surface: make TraceRazor discoverable and drivable by coding agents
 (Claude Code, Codex, Cursor, Gemini CLI, Copilot, MCP clients) without new claims
 about the auditor's accuracy.
 
 ### Added
+- Add the universal `tracerazor agent` bootstrap surface with doctor, previewable
+  install, status, ownership-safe uninstall, spawned-command context propagation,
+  and advisory lifecycle hooks for Codex, Claude Code, and Gemini CLI.
+- Add the dependency-free `tracerazor.runtime` package and `tracerazor-event/v1`
+  contract for provenance-aware tokens, W3C parent/child identity, local-redacted
+  run spooling, task verification, partial-run recovery, and guarded enforcement.
+- Add provenance-aware runtime handles for LangGraph and CrewAI plus isolated
+  OpenAI Agents trace processors; missing SDK usage remains degraded rather
+  than being replaced with character-count estimates.
+- Add an authenticated local OTLP/HTTP JSON receiver with gzip limits,
+  multi-trace batch ingestion, atomic local-redacted spooling, and safe
+  loopback-first defaults.
+- Add versioned `tracerazor-mcp/v1` tools for current-run audit, findings,
+  comparisons, signal explanations, dry-run fix previews, validation receipts,
+  policy checks, and evidence verification while preserving the four 1.x shapes.
+- Add distributable Codex, Claude Code, and Gemini CLI bundles plus the canonical
+  `.agents/skills/tracerazor` repository discovery path.
+- Add a separate multi-architecture spawned-agent image and Linux ARM64 wheel/
+  standalone-binary release jobs. The 1.1 Linux floors are glibc 2.35 for x64
+  and glibc 2.39 for ARM64; release CI checks imported GLIBC symbols and runs
+  clean smokes on those native baselines.
+- Pin the agent image's base indexes and Python dependency closures, normalize
+  provisioning receipts to the tagged commit epoch, verify anonymous GHCR
+  access and signed provenance at the exact digest, and promote public tags
+  only as the final fail-closed registry mutation.
 - Add a distributable Claude Code skill pack at `skills/tracerazor/SKILL.md` (and the
   active copy under `.claude/skills/tracerazor/`) with trigger phrases, the audit
   workflow, and the honesty rules.
@@ -31,6 +58,11 @@ about the auditor's accuracy.
   missing (build/`TRACERAZOR_BIN`/container guidance).
 
 ### Fixed
+- Make clean-wheel verification remove ambient `TRACERAZOR_BIN`, Python paths,
+  and global CLI discovery, then prove the resolved auditor and agent assets came
+  from the installed distribution.
+- Standardize TAS as Token Alignment Score and label Python-report token/dollar
+  projections as estimated until verified by a before/after benchmark.
 - Fix the launcher/action code path on Windows.
 - Fix the Docker Compose image tag.
 

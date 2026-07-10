@@ -1,0 +1,113 @@
+{
+  "schema_version": "tracerazor-agent-eval-protocol/v1",
+  "study_id": "tracerazor-agent-native-efficacy-v2",
+  "title": "TraceRazor agent-native efficacy and safety evaluation",
+  "preregistration": {
+    "status": "locked",
+    "locked_at": "2026-07-10",
+    "amendments": [],
+    "rule": "Protocol changes after the first result require a dated amendment and a fresh study_id."
+  },
+  "design": {
+    "minimum_held_out_tasks": 50,
+    "minimum_tasks_per_host_stratum": 5,
+    "minimum_baseline_success_rate": 0.8,
+    "minimum_matched_success_pairs_per_condition": 100,
+    "repetitions_per_condition": 3,
+    "conditions": [
+      {
+        "id": "no_tracerazor",
+        "label": "No TraceRazor"
+      },
+      {
+        "id": "coach",
+        "label": "TraceRazor coach recommendation"
+      },
+      {
+        "id": "verified_optimizer",
+        "label": "Verified sandbox optimizer"
+      }
+    ],
+    "host_categories": [
+      "codex",
+      "claude_code",
+      "gemini_cli"
+    ],
+    "workload_strata": [
+      "coding",
+      "tool_heavy_research",
+      "support"
+    ],
+    "task_assignment": "Each held-out task is assigned to exactly one host category and one workload stratum before collection.",
+    "pairing": "Pair each intervention with the no_tracerazor run for the same task and repetition; every condition must start from the same clean workspace snapshot and execution environment, and task input, host/version, model/version, agent config, verifier, and randomization block must match.",
+    "pair_invariants": [
+      "task_input_sha256",
+      "initial_state_sha256",
+      "execution_environment_sha256",
+      "host_category",
+      "host_version",
+      "model_id",
+      "model_version",
+      "agent_config_sha256",
+      "verifier_id",
+      "randomization_block"
+    ],
+    "quality_is_primary": true,
+    "efficacy_token_provenance": "provider_reported"
+  },
+  "bootstrap": {
+    "method": "cluster bootstrap over task_id",
+    "samples": 10000,
+    "seed": 1729,
+    "confidence": 0.95,
+    "statistic": "median paired token reduction"
+  },
+  "release_matrix": [
+    "windows-x86_64",
+    "macos-x86_64",
+    "macos-aarch64",
+    "linux-x86_64",
+    "linux-aarch64"
+  ],
+  "minimum_probe_counts": {
+    "activation_expected": 20,
+    "activation_unrelated": 20,
+    "provider_usage": 100,
+    "parent_child_linkage": 100,
+    "wall_clock_overhead": 50,
+    "event_latency_samples": 500,
+    "recommendations_adjudicated": 30,
+    "safety": 50
+  },
+  "gates": {
+    "install_success_rate_min": 1.0,
+    "median_time_to_first_audit_seconds_max_exclusive": 300.0,
+    "activation_precision_min": 0.9,
+    "activation_recall_min": 0.8,
+    "unrelated_activation_rate_max": 0.05,
+    "provider_usage_exact_agreement_min": 0.99,
+    "parent_child_linkage_min": 0.99,
+    "wall_clock_overhead_median_max_exclusive": 0.02,
+    "event_latency_p95_ms_max_exclusive": 5.0,
+    "coach_median_token_reduction_min": 0.05,
+    "optimizer_median_token_reduction_min": 0.05,
+    "coach_token_reduction_ci_lower_min_exclusive": 0.0,
+    "optimizer_token_reduction_ci_lower_min_exclusive": 0.0,
+    "accepted_optimizer_median_token_reduction_min": 0.1,
+    "accepted_optimizer_tasks_min": 10,
+    "accepted_optimizer_task_rate_min": 0.2,
+    "task_success_noninferiority_margin": 0.02,
+    "recommendation_precision_min": 0.8,
+    "sandbox_escape_max": 0,
+    "redacted_secret_leak_max": 0
+  },
+  "analysis_rules": {
+    "condition_isolation": "Restore a fresh disposable sandbox before every condition. initial_state_sha256 binds the repository, submodules, fixture databases, browser/session state, and cleared caches; execution_environment_sha256 binds the base image or host, toolchain, dependency locks, and allowed environment. Reject digest drift or reuse of a disposable workspace identity.",
+    "estimated_tokens": "Exclude estimated and missing token counts from all efficacy statistics. Missing provider-reported pairs make the study incomplete.",
+    "task_success": "Task outcome is primary. Compute efficacy only for matched successful baseline/intervention pairs, require baseline solvability, and evaluate each intervention's paired task-cluster non-inferiority confidence interval.",
+    "accepted_optimizer": "Acceptance is task-level only when all three verified_optimizer repetitions passed, carry trusted verifier receipts, and are marked intervention_accepted=true.",
+    "recommendations": "Recommendation precision requires at least 30 independently adjudicated recommendations with receipt digests.",
+    "evidence_authentication": "A statistical pass is not release evidence until task manifests and signed run/verifier receipts are loaded and cryptographically verified.",
+    "multiple_comparisons": "No secondary metric can override a failed primary task-success or measured-token gate."
+  }
+}

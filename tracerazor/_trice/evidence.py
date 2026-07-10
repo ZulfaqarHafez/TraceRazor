@@ -88,7 +88,7 @@ def write_text_lf(path: str | Path, text: str) -> None:
     """Write UTF-8 text with LF newlines on every platform."""
 
     with Path(path).open("w", encoding="utf-8", newline="\n") as fh:
-        fh.write(text)
+        fh.write(text.replace("\r\n", "\n").replace("\r", "\n"))
 
 
 def build_manifest(
@@ -117,7 +117,7 @@ def build_manifest(
 def write_manifest(manifest: EvidenceManifest, path: str | Path) -> None:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(json.dumps(manifest.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(p, json.dumps(manifest.to_dict(), indent=2, sort_keys=True) + "\n")
 
 
 def load_manifest(path: str | Path) -> EvidenceManifest:

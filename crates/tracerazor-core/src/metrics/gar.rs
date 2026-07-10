@@ -133,18 +133,17 @@ pub fn compute_with_goal(
 
     // Resolve the goal text and the set of steps to score against it.
     // External goal → score all reasoning steps; internal proxy → all but last.
-    let (goal_text, goal_step_id, scored): (String, Option<u32>, &[&TraceStep]) =
-        match goal {
-            Some(g) => (g.to_string(), None, &reasoning[..]),
-            None => {
-                let goal_step = *reasoning.last().unwrap();
-                (
-                    reasoning_text(goal_step),
-                    Some(goal_step.id),
-                    &reasoning[..reasoning.len() - 1],
-                )
-            }
-        };
+    let (goal_text, goal_step_id, scored): (String, Option<u32>, &[&TraceStep]) = match goal {
+        Some(g) => (g.to_string(), None, &reasoning[..]),
+        None => {
+            let goal_step = *reasoning.last().unwrap();
+            (
+                reasoning_text(goal_step),
+                Some(goal_step.id),
+                &reasoning[..reasoning.len() - 1],
+            )
+        }
+    };
     let goal_text = goal_text.as_str();
 
     // Score each step against the goal. Similarity sees the step's *thought*
@@ -234,7 +233,11 @@ mod tests {
 
     // Similarity that returns 1.0 for identical strings, 0.0 otherwise.
     fn exact_sim(a: &str, b: &str) -> f64 {
-        if a == b { 1.0 } else { 0.0 }
+        if a == b {
+            1.0
+        } else {
+            0.0
+        }
     }
 
     // Similarity that always returns a fixed value.
@@ -305,26 +308,34 @@ mod tests {
         // sim_fn: step 1 content == goal → 1.0; step 2 content ≠ goal → 0.0.
         let goal = "final answer";
         let trace = make_trace(vec![
-            step(1, goal, 1000),  // heavy, on-topic
-            step(2, "off topic", 10),  // light, off-topic
-            step(3, goal, 50),    // goal proxy
+            step(1, goal, 1000),      // heavy, on-topic
+            step(2, "off topic", 10), // light, off-topic
+            step(3, goal, 50),        // goal proxy
         ]);
         let result = compute(&trace, exact_sim);
         // weighted = (1.0*1000 + 0.0*10) / 1010 ≈ 0.99
-        assert!(result.score > 0.90, "heavy on-topic step should dominate: {}", result.score);
+        assert!(
+            result.score > 0.90,
+            "heavy on-topic step should dominate: {}",
+            result.score
+        );
     }
 
     #[test]
     fn heavier_off_topic_step_lowers_score() {
         let goal = "final answer";
         let trace = make_trace(vec![
-            step(1, goal, 10),       // light, on-topic
+            step(1, goal, 10),          // light, on-topic
             step(2, "off topic", 1000), // heavy, off-topic
-            step(3, goal, 50),       // goal proxy
+            step(3, goal, 50),          // goal proxy
         ]);
         let result = compute(&trace, exact_sim);
         // weighted = (1.0*10 + 0.0*1000) / 1010 ≈ 0.0099
-        assert!(result.score < 0.05, "heavy off-topic step should dominate: {}", result.score);
+        assert!(
+            result.score < 0.05,
+            "heavy off-topic step should dominate: {}",
+            result.score
+        );
         assert!(!result.pass);
     }
 
@@ -367,7 +378,10 @@ mod tests {
         // Only steps 1 and 2 should be in step_results (step 3 is the goal).
         assert_eq!(result.step_results.len(), 2);
         let ids: Vec<u32> = result.step_results.iter().map(|r| r.step_id).collect();
-        assert!(!ids.contains(&3), "goal step must not appear in step_results");
+        assert!(
+            !ids.contains(&3),
+            "goal step must not appear in step_results"
+        );
         assert_eq!(result.goal_step_id, Some(3));
     }
 
@@ -382,7 +396,7 @@ mod tests {
 
         let trace = make_trace(vec![
             step(1, "reasoning one", 100),
-            tool_step,                    // bare invocation → ignored
+            tool_step, // bare invocation → ignored
             step(3, "goal step", 100),
         ]);
         let result = compute(&trace, const_sim(0.5));
@@ -462,7 +476,11 @@ mod tests {
         // Whitespace-normalised exact match: 1.0 only for identical stripped texts.
         let sim = |a: &str, b: &str| {
             let norm = |s: &str| s.split_whitespace().collect::<Vec<_>>().join(" ");
-            if norm(a) == norm(b) { 1.0 } else { 0.0 }
+            if norm(a) == norm(b) {
+                1.0
+            } else {
+                0.0
+            }
         };
         // Internal-proxy mode: s2 is the goal proxy, s1 is scored against it.
         let result = compute(&trace, sim);
@@ -496,6 +514,9 @@ mod tests {
         let trace = make_trace(vec![step(1, "a", 100), step(2, "b", 100)]);
         let result = compute(&trace, const_sim(0.55));
         let n = result.normalised();
-        assert!((n - result.score).abs() < 0.001, "normalised() should equal score for GAR");
+        assert!(
+            (n - result.score).abs() < 0.001,
+            "normalised() should equal score for GAR"
+        );
     }
 }

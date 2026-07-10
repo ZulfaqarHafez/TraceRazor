@@ -107,7 +107,7 @@
           "type": "number",
           "minimum": 0.0,
           "maximum": 100.0,
-          "description": "TAS (Trace Agent Score): ORDINAL heuristic, 0-100. Compare within one project over time; do not read as an absolute efficiency percentage."
+          "description": "TAS (Token Alignment Score): ORDINAL heuristic, 0-100. Compare within one project over time; do not read as an absolute efficiency percentage."
         },
         "raw_tas": { "type": "number", "description": "Structural TAS before the task-value multiplier." },
         "task_value_score": { "type": "number", "minimum": 0.0, "maximum": 1.0, "description": "Task-completion quality; gates the TAS ceiling." },

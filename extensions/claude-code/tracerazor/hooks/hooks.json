@@ -1,0 +1,52 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tracerazor agent hook --host claude --event session-start",
+            "timeout": 10,
+            "statusMessage": "Loading TraceRazor coach context"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tracerazor agent hook --host claude --event session-end",
+            "timeout": 60,
+            "statusMessage": "Finalizing TraceRazor run"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tracerazor agent hook --host claude --event subagent-start",
+            "timeout": 10,
+            "statusMessage": "Linking TraceRazor child run"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "tracerazor agent hook --host claude --event subagent-stop",
+            "timeout": 30,
+            "statusMessage": "Recording TraceRazor child run"
+          }
+        ]
+      }
+    ]
+  }
+}

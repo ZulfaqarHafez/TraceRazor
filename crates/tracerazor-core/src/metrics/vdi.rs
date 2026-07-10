@@ -268,10 +268,7 @@ mod tests {
             "all-filler step should score < 0.50, got {:.2}",
             result.score
         );
-        assert!(
-            !result.pass,
-            "all-filler step should fail target 0.60"
-        );
+        assert!(!result.pass, "all-filler step should fail target 0.60");
         assert_eq!(result.low_density_steps, vec![1]);
     }
 

@@ -1,0 +1,12 @@
+{
+  "name": "tracerazor",
+  "description": "Local-first efficiency coaching and verified token-waste analysis for Claude Code.",
+  "version": "1.1.0",
+  "author": {
+    "name": "Zulfaqar Hafez",
+    "email": "zulfaqarhafez@gmail.com"
+  },
+  "homepage": "https://github.com/ZulfaqarHafez/TraceRazor",
+  "repository": "https://github.com/ZulfaqarHafez/TraceRazor",
+  "license": "MIT"
+}

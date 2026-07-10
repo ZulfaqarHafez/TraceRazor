@@ -41,8 +41,7 @@ pub fn default_similarity_fn() -> impl Fn(&str, &str) -> f64 {
     use std::rc::Rc;
 
     let engine = BowSimilarity::new();
-    let cache: RefCell<HashMap<String, Rc<HashMap<String, f64>>>> =
-        RefCell::new(HashMap::new());
+    let cache: RefCell<HashMap<String, Rc<HashMap<String, f64>>>> = RefCell::new(HashMap::new());
     move |a: &str, b: &str| {
         let get = |s: &str| -> Rc<HashMap<String, f64>> {
             if let Some(v) = cache.borrow().get(s) {
@@ -63,8 +62,7 @@ fn cached_bow_boxed() -> BoxedSimilarityFn {
     use std::sync::{Arc, Mutex};
 
     let engine = BowSimilarity::new();
-    let cache: Mutex<HashMap<String, Arc<HashMap<String, f64>>>> =
-        Mutex::new(HashMap::new());
+    let cache: Mutex<HashMap<String, Arc<HashMap<String, f64>>>> = Mutex::new(HashMap::new());
     Box::new(move |a: &str, b: &str| {
         let get = |s: &str| -> Arc<HashMap<String, f64>> {
             let mut guard = cache.lock().expect("similarity cache poisoned");
@@ -91,9 +89,7 @@ fn cached_bow_boxed() -> BoxedSimilarityFn {
 ///   - no credentials are present,
 ///   - the configured provider has no embeddings API (Anthropic), or
 ///   - the embeddings request fails for any reason.
-pub async fn embedding_similarity_fn(
-    texts: Vec<String>,
-) -> BoxedSimilarityFn {
+pub async fn embedding_similarity_fn(texts: Vec<String>) -> BoxedSimilarityFn {
     embedding_similarity_fn_with_identity(texts).await.0
 }
 
@@ -122,20 +118,18 @@ pub async fn embedding_similarity_fn_with_identity(
             let bow = BowSimilarity::new();
             let identity = format!("embeddings:{embed_model}");
             let f: BoxedSimilarityFn =
-                Box::new(move |a: &str, b: &str| {
-                    match (text_index.get(a), text_index.get(b)) {
+                Box::new(
+                    move |a: &str, b: &str| match (text_index.get(a), text_index.get(b)) {
                         (Some(&i), Some(&j)) => {
                             openai::cosine_similarity(&embeddings[i], &embeddings[j])
                         }
                         _ => bow.similarity(a, b),
-                    }
-                });
+                    },
+                );
             (f, identity)
         }
         Err(e) => {
-            eprintln!(
-                "Warning: embeddings backend failed ({e}); falling back to BoW similarity"
-            );
+            eprintln!("Warning: embeddings backend failed ({e}); falling back to BoW similarity");
             (cached_bow_boxed(), BOW_BACKEND_ID.to_string())
         }
     }

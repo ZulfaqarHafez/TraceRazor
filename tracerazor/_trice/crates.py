@@ -5,13 +5,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - exercised on Python 3.10
+    import tomli as tomllib
 import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
 
-from .evidence import canonical_json, sha256_file
+from .evidence import canonical_json, sha256_file, write_text_lf
 
 CRATES_CARD_SCHEMA_VERSION = "trice-crates-card/v1"
 REPO = Path(__file__).resolve().parents[2]
@@ -230,13 +233,13 @@ def render_crates_svg(card: dict[str, Any]) -> str:
 
 def write_crates_outputs(card: dict[str, Any], out: Path) -> dict[str, str]:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(card, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(card, indent=2, sort_keys=True) + "\n")
     md = out.with_suffix(".md")
     tex = out.with_suffix(".tex")
     svg = out.with_suffix(".svg")
-    md.write_text(render_crates_markdown(card), encoding="utf-8")
-    tex.write_text(render_crates_tex(card), encoding="utf-8")
-    svg.write_text(render_crates_svg(card), encoding="utf-8")
+    write_text_lf(md, render_crates_markdown(card))
+    write_text_lf(tex, render_crates_tex(card))
+    write_text_lf(svg, render_crates_svg(card))
     return {"json": str(out), "markdown": str(md), "tex": str(tex), "svg": str(svg)}
 
 

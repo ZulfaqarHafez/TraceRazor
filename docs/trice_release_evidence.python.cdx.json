@@ -3,9 +3,9 @@
   "components": [
     {
       "name": "tracerazor",
-      "purl": "pkg:pypi/tracerazor@1.0.3",
+      "purl": "pkg:pypi/tracerazor@1.1.0",
       "type": "application",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     {
       "name": "anthropic",
@@ -210,13 +210,19 @@
       "purl": "pkg:pypi/sentence-transformers",
       "type": "library",
       "version": ">=2.7"
+    },
+    {
+      "name": "tomli",
+      "purl": "pkg:pypi/tomli",
+      "type": "library",
+      "version": ">=2; python_version < '3.11'"
     }
   ],
   "metadata": {
     "component": {
       "name": "tracerazor",
       "type": "application",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     "tools": [
       {
@@ -225,7 +231,7 @@
       }
     ]
   },
-  "serialNumber": "urn:uuid:23d45016-dd67-a391-6d23-4478c285ed69",
+  "serialNumber": "urn:uuid:f0e8f13d-b488-0864-1088-0afbda76f4a5",
   "specVersion": "1.6",
   "version": 1
 }

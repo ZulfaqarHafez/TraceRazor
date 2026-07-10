@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tracerazor.dev/schemas/agent-native-task-manifest-v1.json",
+  "title": "TraceRazor agent-native held-out task manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "study_id",
+    "protocol_sha256",
+    "synthetic",
+    "generated_at",
+    "tasks"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "tracerazor-agent-task-manifest/v1"
+    },
+    "study_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "protocol_sha256": {
+      "$ref": "#/$defs/sha256"
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 50,
+      "items": {
+        "$ref": "#/$defs/task"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "content_sha256",
+        "host_category",
+        "workload_stratum",
+        "verifier_id",
+        "randomization"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "host_category": {
+          "enum": [
+            "codex",
+            "claude_code",
+            "gemini_cli"
+          ]
+        },
+        "workload_stratum": {
+          "enum": [
+            "coding",
+            "tool_heavy_research",
+            "support"
+          ]
+        },
+        "verifier_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "randomization": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/randomization"
+          }
+        }
+      }
+    },
+    "randomization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repetition",
+        "block_id",
+        "condition_order"
+      ],
+      "properties": {
+        "repetition": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 3
+        },
+        "block_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "condition_order": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "no_tracerazor",
+              "coach",
+              "verified_optimizer"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,76 @@
+# syntax=docker/dockerfile:1.7
+
+ARG SOURCE_DATE_EPOCH=315532800
+
+FROM rust:1.88-bookworm@sha256:af306cfa71d987911a781c37b59d7d67d934f49684058f96cf72079c3626bfe0 AS native-builder
+ARG SOURCE_DATE_EPOCH
+ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
+WORKDIR /src
+COPY . .
+RUN cargo build --release -p tracerazor
+
+FROM python:3.12-slim-bookworm@sha256:8a7e7cc04fd3e2bd787f7f24e22d5d119aa590d429b50c95dfe12b3abe52f48b AS wheel-builder
+ARG SOURCE_DATE_EPOCH
+ENV SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH}
+WORKDIR /src
+COPY . .
+COPY --from=native-builder /src/target/release/tracerazor /src/tracerazor/bin/tracerazor
+RUN chmod 0755 /src/tracerazor/bin/tracerazor \
+ && python -m pip install --no-cache-dir --no-deps \
+      -r requirements/agent-image-build.lock \
+ && python -m pip check \
+ && python -m build --wheel --no-isolation
+
+FROM python:3.12-slim-bookworm@sha256:8a7e7cc04fd3e2bd787f7f24e22d5d119aa590d429b50c95dfe12b3abe52f48b
+
+ARG TRACERAZOR_VERSION=dev
+ARG VCS_REF=unknown
+ARG SOURCE_DATE_EPOCH
+
+LABEL org.opencontainers.image.title="TraceRazor Agent" \
+      org.opencontainers.image.description="Local-first efficiency supervisor for spawned AI agents" \
+      org.opencontainers.image.source="https://github.com/ZulfaqarHafez/TraceRazor" \
+      org.opencontainers.image.version="${TRACERAZOR_VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}" \
+      org.opencontainers.image.licenses="MIT"
+
+COPY --from=wheel-builder /src/dist/tracerazor-*.whl /tmp/
+COPY scripts/agent_image_entrypoint.sh /usr/local/bin/tracerazor-agent-entrypoint
+COPY scripts/normalize_agent_image_receipts.py /usr/local/libexec/normalize-agent-image-receipts.py
+COPY requirements/agent-image-runtime.lock /tmp/agent-image-runtime.lock
+RUN python -m pip install --no-cache-dir --no-deps \
+      -r /tmp/agent-image-runtime.lock \
+ && python -m pip install --no-cache-dir --no-deps /tmp/tracerazor-*.whl \
+ && python -m pip check \
+ && rm -f /tmp/tracerazor-*.whl /tmp/agent-image-runtime.lock \
+ && chmod 0755 /usr/local/bin/tracerazor-agent-entrypoint \
+ && groupadd --gid 10001 tracerazor \
+ && useradd --uid 10001 --gid 10001 --create-home --shell /usr/sbin/nologin tracerazor \
+ && mkdir -p /workspace /opt/tracerazor-image \
+ && chown -R tracerazor:tracerazor /workspace /opt/tracerazor-image
+
+ENV TRACERAZOR_IMAGE_ROOT=/opt/tracerazor-image \
+    SOURCE_DATE_EPOCH=${SOURCE_DATE_EPOCH} \
+    HOME=/home/tracerazor \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /workspace
+USER 10001:10001
+
+# Image provisioning is the explicit trust event. It establishes state and a
+# policy template but does not install host-specific hooks or enable enforcement.
+RUN tracerazor agent install --host generic --scope image --mode coach --format json \
+      > /opt/tracerazor-image/install-receipt.json \
+ && python /usr/local/libexec/normalize-agent-image-receipts.py \
+      /opt/tracerazor-image/.tracerazor/agent-install.json \
+      /opt/tracerazor-image/install-receipt.json \
+ && tracerazor agent status --host generic --scope image --format json \
+      > /opt/tracerazor-image/status-receipt.json \
+ && python /usr/local/libexec/normalize-agent-image-receipts.py \
+      /opt/tracerazor-image/status-receipt.json \
+ && test -s /opt/tracerazor-image/install-receipt.json \
+ && test -s /opt/tracerazor-image/status-receipt.json
+
+ENTRYPOINT ["tracerazor-agent-entrypoint"]
+CMD ["agent", "doctor", "--format", "json"]

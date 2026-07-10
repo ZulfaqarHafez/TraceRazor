@@ -194,10 +194,11 @@ pub fn project_cost(
         total_saved as f64 / total_tokens as f64 * 100.0
     };
 
-    let worst = per_agent
-        .iter()
-        .enumerate()
-        .max_by(|(_, a), (_, b)| a.waste_pct.partial_cmp(&b.waste_pct).unwrap_or(std::cmp::Ordering::Equal));
+    let worst = per_agent.iter().enumerate().max_by(|(_, a), (_, b)| {
+        a.waste_pct
+            .partial_cmp(&b.waste_pct)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     let worst_offender_index = worst.map(|(i, _)| i);
     let worst_offender_waste_pct = worst.map(|(_, a)| a.waste_pct).unwrap_or(0.0);
 

@@ -14,6 +14,8 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .evidence import write_text_lf
+
 
 @dataclass
 class UserPreferenceProfile:
@@ -39,7 +41,7 @@ class UserPreferenceProfile:
     def save(self, path: str | Path) -> None:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(asdict(self), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        write_text_lf(p, json.dumps(asdict(self), indent=2, sort_keys=True) + "\n")
 
     def ingest_feedback(self, feedback: str | None) -> "UserPreferenceProfile":
         text = (feedback or "").strip()

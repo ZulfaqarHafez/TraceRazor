@@ -30,8 +30,7 @@ use tracerazor_core::types::Trace;
 
 /// Parse a raw JSON string into a Trace.
 pub fn parse(data: &str) -> Result<Trace> {
-    let trace: Trace =
-        serde_json::from_str(data).context("Failed to parse raw JSON trace")?;
+    let trace: Trace = serde_json::from_str(data).context("Failed to parse raw JSON trace")?;
     validate(&trace)?;
     Ok(trace)
 }

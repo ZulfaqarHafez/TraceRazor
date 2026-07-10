@@ -11,6 +11,14 @@ TraceRazor ingests these formats (auto-detected, or forced with `-F`):
 | **Langfuse** trace export | `-F langfuse` | JSON with `observations`, `traces[].observations`, or a bare observation array |
 | **Arize Phoenix** export | `-F phoenix` | Phoenix/OTel-shaped JSON; parsed through the OTel path |
 
+For live local collection, `tracerazor serve` exposes authenticated OTLP/HTTP
+JSON and binary Protobuf at `/v1/traces`, preserves every trace ID in a batch,
+and writes a durable local-redacted receipt before ingestion. Its additive
+`metadata.otlp` ledger preserves span lineage and exact token-category
+provenance; missing/unusable data is explicitly degraded and receives an OTLP
+partial-success warning. OTLP/gRPC is not provided. See
+[`agent-native.md`](agent-native.md#local-otlp-receiver).
+
 The universal importer normalizes these formats and can immediately audit them:
 
 ```bash

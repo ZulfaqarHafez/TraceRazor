@@ -9,6 +9,7 @@
 
 use anyhow::Context;
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
+use serde::{Deserialize, Serialize};
 
 use crate::report::TraceReport;
 use crate::scoring::ScoringConfig;
@@ -130,16 +131,287 @@ pub fn check_signature(report: &TraceReport) -> Result<SignatureStatus, VerifyEr
         Err(_) => return Err(VerifyError::SignatureInvalid),
     };
     let sig = Signature::from_bytes(&sig_bytes);
-    let canonical = report
-        .canonical_bytes()
-        .map_err(|e| VerifyError::Operational(anyhow::Error::new(e).context(
-            "failed to compute canonical bytes for signature check",
-        )))?;
+    let canonical = report.canonical_bytes().map_err(|e| {
+        VerifyError::Operational(
+            anyhow::Error::new(e).context("failed to compute canonical bytes for signature check"),
+        )
+    })?;
 
     match verifying_key.verify(&canonical, &sig) {
         Ok(()) => Ok(SignatureStatus::Valid),
         Err(_) => Err(VerifyError::SignatureInvalid),
     }
+}
+
+/// Stable contract for an offline agent-run receipt.
+///
+/// The declaration order is the canonical JSON field order. The optional
+/// `signature` envelope is deliberately excluded from [`canonical_bytes`],
+/// while `signed` remains covered so stripping the envelope cannot turn an
+/// authenticated receipt into an apparently legitimate unsigned receipt.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RunReceiptV1 {
+    pub schema_version: String,
+    pub run_id: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub trace_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub session_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub agent_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub parent_agent_id: Option<String>,
+    pub created_at: String,
+    pub privacy: String,
+    pub hermetic: bool,
+    pub replayable: bool,
+    pub verification_mode: String,
+    pub audit_trace_sha256: String,
+    pub persisted_trace_sha256: String,
+    pub report_sha256: String,
+    #[serde(default)]
+    pub signed: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub signature: Option<RunReceiptSignature>,
+}
+
+/// Ed25519 authentication envelope for [`RunReceiptV1`].
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RunReceiptSignature {
+    pub algorithm: String,
+    pub public_key: String,
+    pub signature: String,
+}
+
+/// Authentication result for a structurally valid run receipt.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum RunReceiptSignatureStatus {
+    Valid,
+    Unsigned,
+}
+
+/// Receipt verification separates malformed input from authenticated
+/// evidence that failed its signature check. CLI callers map these to exit 2
+/// and exit 1 respectively.
+#[derive(Debug, thiserror::Error)]
+pub enum RunReceiptVerifyError {
+    #[error("malformed run receipt: {0}")]
+    Malformed(String),
+    #[error("run receipt signature is invalid")]
+    Tampered,
+}
+
+impl RunReceiptVerifyError {
+    pub fn is_tamper(&self) -> bool {
+        matches!(self, Self::Tampered)
+    }
+}
+
+impl RunReceiptV1 {
+    pub const SCHEMA_VERSION: &'static str = "tracerazor-run-receipt/v1";
+
+    /// Deterministic JSON bytes covered by the receipt signature.
+    pub fn canonical_bytes(&self) -> anyhow::Result<Vec<u8>> {
+        let mut payload = self.clone();
+        payload.signature = None;
+        serde_json::to_vec(&payload).context("failed to canonicalize run receipt")
+    }
+
+    /// Validate identity and digest fields independently of signature state.
+    pub fn validate_identity(&self) -> Result<(), RunReceiptVerifyError> {
+        if self.schema_version != Self::SCHEMA_VERSION {
+            return Err(RunReceiptVerifyError::Malformed(format!(
+                "unsupported schema_version {:?}",
+                self.schema_version
+            )));
+        }
+        if self.run_id.is_empty()
+            || self.run_id.len() > 128
+            || !self
+                .run_id
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
+        {
+            return Err(RunReceiptVerifyError::Malformed(
+                "run_id must be 1-128 ASCII letters, digits, '-' or '_'".to_string(),
+            ));
+        }
+        for (name, value) in [
+            ("session_id", self.session_id.as_deref()),
+            ("agent_id", self.agent_id.as_deref()),
+            ("parent_agent_id", self.parent_agent_id.as_deref()),
+        ] {
+            if let Some(value) = value {
+                if value.is_empty()
+                    || value.len() > 128
+                    || !value
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-' || byte == b'_')
+                {
+                    return Err(RunReceiptVerifyError::Malformed(format!(
+                        "{name} must be 1-128 ASCII letters, digits, '-' or '_'"
+                    )));
+                }
+            }
+        }
+        if self
+            .trace_id
+            .as_deref()
+            .is_some_and(|value| !is_lower_hex(value, 32) || value.bytes().all(|byte| byte == b'0'))
+        {
+            return Err(RunReceiptVerifyError::Malformed(
+                "trace_id must be 32 lowercase non-zero hex characters".to_string(),
+            ));
+        }
+        chrono::DateTime::parse_from_rfc3339(&self.created_at).map_err(|error| {
+            RunReceiptVerifyError::Malformed(format!("created_at is not RFC 3339: {error}"))
+        })?;
+        if !matches!(self.privacy.as_str(), "local-redacted" | "raw") {
+            return Err(RunReceiptVerifyError::Malformed(format!(
+                "unsupported privacy mode {:?}",
+                self.privacy
+            )));
+        }
+        let expected_mode = if self.replayable {
+            "hermetic_replay"
+        } else {
+            "non_replayable_receipt"
+        };
+        if self.verification_mode != expected_mode {
+            return Err(RunReceiptVerifyError::Malformed(format!(
+                "verification_mode must be {expected_mode:?} when replayable is {}",
+                self.replayable
+            )));
+        }
+        for (name, digest) in [
+            ("audit_trace_sha256", &self.audit_trace_sha256),
+            ("persisted_trace_sha256", &self.persisted_trace_sha256),
+            ("report_sha256", &self.report_sha256),
+        ] {
+            if !is_lower_hex(digest, 64) {
+                return Err(RunReceiptVerifyError::Malformed(format!(
+                    "{name} must be 64 lowercase hex characters"
+                )));
+            }
+        }
+        if self.replayable && self.audit_trace_sha256 != self.persisted_trace_sha256 {
+            return Err(RunReceiptVerifyError::Malformed(
+                "replayable receipt must bind identical audit and persisted trace hashes"
+                    .to_string(),
+            ));
+        }
+        Ok(())
+    }
+}
+
+/// Sign a v1 run receipt using the same 32-byte Ed25519 seed convention as
+/// signed TraceRazor reports.
+pub fn sign_run_receipt(receipt: &mut RunReceiptV1, seed: &[u8; 32]) -> anyhow::Result<()> {
+    receipt
+        .validate_identity()
+        .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+    receipt.signed = true;
+    receipt.signature = None;
+    let canonical = receipt.canonical_bytes()?;
+    let signing_key = SigningKey::from_bytes(seed);
+    let signature: Signature = signing_key.sign(&canonical);
+    receipt.signature = Some(RunReceiptSignature {
+        algorithm: "Ed25519".to_string(),
+        public_key: hex_encode(signing_key.verifying_key().as_bytes()),
+        signature: hex_encode(&signature.to_bytes()),
+    });
+    Ok(())
+}
+
+/// Parse and validate a v1 run receipt without asserting authenticity.
+pub fn parse_run_receipt(raw: &str) -> Result<RunReceiptV1, RunReceiptVerifyError> {
+    let receipt: RunReceiptV1 = serde_json::from_str(raw)
+        .map_err(|error| RunReceiptVerifyError::Malformed(error.to_string()))?;
+    receipt.validate_identity()?;
+    match (receipt.signed, receipt.signature.is_some()) {
+        (false, false) | (true, true) => Ok(receipt),
+        (true, false) => Err(RunReceiptVerifyError::Malformed(
+            "signed receipt is missing its signature envelope".to_string(),
+        )),
+        (false, true) => Err(RunReceiptVerifyError::Malformed(
+            "unsigned receipt must not contain a signature envelope".to_string(),
+        )),
+    }
+}
+
+/// Verify a parsed receipt's Ed25519 envelope, or return explicit unsigned
+/// status for a well-formed legacy/local receipt.
+pub fn verify_run_receipt(
+    receipt: &RunReceiptV1,
+) -> Result<RunReceiptSignatureStatus, RunReceiptVerifyError> {
+    receipt.validate_identity()?;
+    let envelope = match (receipt.signed, receipt.signature.as_ref()) {
+        (false, None) => return Ok(RunReceiptSignatureStatus::Unsigned),
+        (true, Some(envelope)) => envelope,
+        (true, None) => {
+            return Err(RunReceiptVerifyError::Malformed(
+                "signed receipt is missing its signature envelope".to_string(),
+            ))
+        }
+        (false, Some(_)) => {
+            return Err(RunReceiptVerifyError::Malformed(
+                "unsigned receipt must not contain a signature envelope".to_string(),
+            ))
+        }
+    };
+    if envelope.algorithm != "Ed25519" {
+        return Err(RunReceiptVerifyError::Malformed(format!(
+            "unsupported signature algorithm {:?}",
+            envelope.algorithm
+        )));
+    }
+    if !is_lower_hex(&envelope.public_key, 64) {
+        return Err(RunReceiptVerifyError::Malformed(
+            "signature public_key must be 64 lowercase hex characters".to_string(),
+        ));
+    }
+    if !is_lower_hex(&envelope.signature, 128) {
+        return Err(RunReceiptVerifyError::Malformed(
+            "signature value must be 128 lowercase hex characters".to_string(),
+        ));
+    }
+    let public_key = VerifyingKey::from_bytes(
+        &hex_decode_32(&envelope.public_key)
+            .map_err(|error| RunReceiptVerifyError::Malformed(error.to_string()))?,
+    )
+    .map_err(|error| RunReceiptVerifyError::Malformed(error.to_string()))?;
+    let signature = Signature::from_bytes(
+        &hex_decode_64(&envelope.signature)
+            .map_err(|error| RunReceiptVerifyError::Malformed(error.to_string()))?,
+    );
+    public_key
+        .verify(
+            &receipt
+                .canonical_bytes()
+                .map_err(|error| RunReceiptVerifyError::Malformed(error.to_string()))?,
+            &signature,
+        )
+        .map_err(|_| RunReceiptVerifyError::Tampered)?;
+    Ok(RunReceiptSignatureStatus::Valid)
+}
+
+/// Parse and verify a receipt in one call.
+pub fn verify_run_receipt_json(
+    raw: &str,
+) -> Result<(RunReceiptV1, RunReceiptSignatureStatus), RunReceiptVerifyError> {
+    let receipt = parse_run_receipt(raw)?;
+    let status = verify_run_receipt(&receipt)?;
+    Ok((receipt, status))
+}
+
+fn is_lower_hex(value: &str, width: usize) -> bool {
+    value.len() == width
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
 }
 
 /// Why the deterministic re-score step was skipped (the hash/signature
@@ -317,8 +589,8 @@ pub fn verify_report(
         cost_per_million_tokens: manifest.cost_per_million_tokens,
         ..Default::default()
     };
-    let recomputed = crate::analyse(&mut trace, similarity_fn, &config)
-        .map_err(VerifyError::Operational)?;
+    let recomputed =
+        crate::analyse(&mut trace, similarity_fn, &config).map_err(VerifyError::Operational)?;
 
     // ── Compare the WHOLE report — not just TAS + metric_normalised ──────────
     let original_tas = report_value["score"]["score"].as_f64().unwrap_or(f64::NAN);
@@ -327,8 +599,8 @@ pub fn verify_report(
     if (original_tas - recomputed_tas).abs() > 1e-9 {
         mismatches.push(format!("TAS {original_tas} -> {recomputed_tas}"));
     }
-    let recomputed_score_json = serde_json::to_value(&recomputed.score)
-        .map_err(|e| VerifyError::Operational(e.into()))?;
+    let recomputed_score_json =
+        serde_json::to_value(&recomputed.score).map_err(|e| VerifyError::Operational(e.into()))?;
     if let (Some(orig), Some(new)) = (
         report_value["score"]["metric_normalised"].as_object(),
         recomputed_score_json["metric_normalised"].as_object(),
@@ -347,7 +619,9 @@ pub fn verify_report(
         recomputed.agf.as_ref().map(|a| a.score),
     ) {
         if (orig_agf_score - new_agf_score).abs() > 1e-9 {
-            mismatches.push(format!("agf.score {orig_agf_score:.6} -> {new_agf_score:.6}"));
+            mismatches.push(format!(
+                "agf.score {orig_agf_score:.6} -> {new_agf_score:.6}"
+            ));
         }
     }
     // Compare savings.tokens_saved
@@ -358,7 +632,10 @@ pub fn verify_report(
         }
     }
     // Compare fix count
-    let orig_fix_count = report_value["fixes"].as_array().map(|a| a.len()).unwrap_or(0);
+    let orig_fix_count = report_value["fixes"]
+        .as_array()
+        .map(|a| a.len())
+        .unwrap_or(0);
     let new_fix_count = recomputed.fixes.len();
     if orig_fix_count != new_fix_count {
         mismatches.push(format!("fixes count {orig_fix_count} -> {new_fix_count}"));
@@ -374,7 +651,9 @@ pub fn verify_report(
         Ok(Verification {
             signed,
             trace_sha256: actual_sha,
-            rescore: RescoreStatus::Reproduced { tas: recomputed_tas },
+            rescore: RescoreStatus::Reproduced {
+                tas: recomputed_tas,
+            },
         })
     } else {
         Err(VerifyError::RescoreMismatch {
@@ -405,5 +684,72 @@ mod tests {
         assert_eq!(hex_decode(&hex_encode(&bytes)).unwrap(), bytes);
         assert!(hex_decode("abc").is_err()); // odd length
         assert!(hex_decode("zz").is_err()); // invalid chars
+    }
+
+    fn receipt() -> RunReceiptV1 {
+        RunReceiptV1 {
+            schema_version: RunReceiptV1::SCHEMA_VERSION.to_string(),
+            run_id: "run-test".to_string(),
+            trace_id: Some("1".repeat(32)),
+            session_id: Some("session-test".to_string()),
+            agent_id: Some("agent-test".to_string()),
+            parent_agent_id: None,
+            created_at: "2026-01-01T00:00:00Z".to_string(),
+            privacy: "local-redacted".to_string(),
+            hermetic: true,
+            replayable: false,
+            verification_mode: "non_replayable_receipt".to_string(),
+            audit_trace_sha256: "a".repeat(64),
+            persisted_trace_sha256: "b".repeat(64),
+            report_sha256: "c".repeat(64),
+            signed: false,
+            signature: None,
+        }
+    }
+
+    #[test]
+    fn run_receipt_signature_round_trip_and_canonical_bytes() {
+        let seed = [0xaa; 32];
+        let mut value = receipt();
+        sign_run_receipt(&mut value, &seed).unwrap();
+        assert!(value.signed);
+        assert_eq!(value.signature.as_ref().unwrap().algorithm, "Ed25519");
+        assert_eq!(
+            verify_run_receipt(&value).unwrap(),
+            RunReceiptSignatureStatus::Valid
+        );
+        let canonical = value.canonical_bytes().unwrap();
+        assert!(!String::from_utf8(canonical).unwrap().contains("signature"));
+
+        let encoded = serde_json::to_string(&value).unwrap();
+        let (decoded, status) = verify_run_receipt_json(&encoded).unwrap();
+        assert_eq!(decoded, value);
+        assert_eq!(status, RunReceiptSignatureStatus::Valid);
+    }
+
+    #[test]
+    fn run_receipt_tamper_is_distinct_from_malformed() {
+        let mut value = receipt();
+        sign_run_receipt(&mut value, &[0xbb; 32]).unwrap();
+        value.run_id = "run-tampered".to_string();
+        assert!(matches!(
+            verify_run_receipt(&value),
+            Err(RunReceiptVerifyError::Tampered)
+        ));
+
+        let mut malformed = receipt();
+        malformed.report_sha256 = "not-a-digest".to_string();
+        assert!(matches!(
+            verify_run_receipt(&malformed),
+            Err(RunReceiptVerifyError::Malformed(_))
+        ));
+    }
+
+    #[test]
+    fn legacy_unsigned_run_receipt_is_explicit() {
+        assert_eq!(
+            verify_run_receipt(&receipt()).unwrap(),
+            RunReceiptSignatureStatus::Unsigned
+        );
     }
 }

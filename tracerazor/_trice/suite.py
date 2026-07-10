@@ -20,7 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from .adapters import CommandRepairAdapter, JsonPatchAdapter, RepairAdapter
-from .evidence import build_manifest, resolve_contained_path, verify_manifest, write_manifest
+from .evidence import build_manifest, resolve_contained_path, verify_manifest, write_manifest, write_text_lf
 from .live import DEFAULT_OUT_DIR, VERIFY_CMD, LiveRolloutResult, LiveTask, run_live_learning_loop
 from .provenance import fingerprint_tree, hash_file
 from .stats import clustered_bootstrap_mean_ci, claim_gate_from_rounds
@@ -176,7 +176,7 @@ def scaffold_suite_manifest(source_path: str | Path, out_path: str | Path) -> di
 
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     return manifest
 
 
@@ -248,7 +248,7 @@ def run_suite_manifest(
 
     snapshot_path = out / "trice_suite_manifest.snapshot.json"
     sources_path = out / "trice_suite_sources.json"
-    snapshot_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(snapshot_path, json.dumps(manifest, indent=2, sort_keys=True) + "\n")
 
     suite_feedback = user_feedback or manifest.get("user_feedback")
     result = SuiteRunResult(
@@ -341,9 +341,9 @@ def run_suite_manifest(
     result.report_path = report_path.name
     result.result_path = result_path.name
     result.manifest_path = evidence_path.name
-    sources_path.write_text(json.dumps({"schema_version": "trice-suite-sources/v1", "sources": source_records}, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    report_path.write_text(render_suite_report(result), encoding="utf-8")
-    result_path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(sources_path, json.dumps({"schema_version": "trice-suite-sources/v1", "sources": source_records}, indent=2, sort_keys=True) + "\n")
+    write_text_lf(report_path, render_suite_report(result))
+    write_text_lf(result_path, json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n")
 
     artifacts = [snapshot_path, sources_path, report_path]
     artifacts.extend(out / task.manifest_path for task in result.tasks)

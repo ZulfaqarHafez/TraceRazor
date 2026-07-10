@@ -28,7 +28,7 @@ from .claim import build_claim_card, render_claim_card_tex, write_claim_outputs
 from .contract import build_contract_card, render_contract_tex, write_contract_outputs
 from .crates import build_crates_card, write_crates_outputs
 from .design import build_design_card, render_design_tex, write_design_outputs
-from .evidence import build_manifest, write_manifest
+from .evidence import build_manifest, write_manifest, write_text_lf
 from .install import build_install_card, render_install_tex, write_install_outputs
 from .protocol import build_protocol_lock, render_protocol_tex, write_protocol_outputs
 from .readiness import build_suite_readiness, render_readiness_tex, write_readiness_outputs
@@ -351,7 +351,7 @@ def render_tex(
         "checksums should be release artifacts rather than prose-only claims "
         "\\cite{slsa,openssfscorecard,pypitrust,pypiattest,intoto,cyclonedx}. "
         "The separate \\texttt{tracerazor-trice release-evidence} packet binds "
-        "the wheel, source distribution, CLI binary, installability card, proof cards, paper artifacts, "
+        "the platform wheel, CLI binary, installability card, proof cards, paper artifacts, "
         "evidence bundles, SHA-256 checksums, CycloneDX-style Python and Cargo "
         "SBOMs, and an in-toto/SLSA-shaped provenance statement. The GitHub "
         "release workflow then generates release-evidence sidecars and hosted "
@@ -752,7 +752,7 @@ def build_pdf(
             "The release card snapshots tracerazor-trice doctor, binds the artifact, reproduction, and contract cards, records package metadata, "
             "and refuses public_release_ready until PyPI, piwheels, crates.io, GitHub tag alignment, GitHub Actions, and OpenSSF Scorecard are green. "
             "This follows supply-chain guidance that provenance, public project health, trusted publishing, attestations, SBOMs, and checksums should be release artifacts rather than prose-only claims. "
-            "The separate tracerazor-trice release-evidence packet binds the wheel, source distribution, CLI binary, installability card, proof cards, paper artifacts, evidence bundles, SHA-256 checksums, CycloneDX-style Python and Cargo SBOMs, and an in-toto/SLSA-shaped provenance statement. The GitHub release workflow then generates release-evidence sidecars and hosted artifact attestations for release assets produced by Actions. A separate tracerazor-trice integrity card binds offline doctor output, proof-card verifiers, release evidence, the crates publish card, installability card, research card, the paper manifest, schemas, and workflow hooks as one top-level proof graph.",
+            "The separate tracerazor-trice release-evidence packet binds the platform wheel, CLI binary, installability card, proof cards, paper artifacts, evidence bundles, SHA-256 checksums, CycloneDX-style Python and Cargo SBOMs, and an in-toto/SLSA-shaped provenance statement. The GitHub release workflow then generates release-evidence sidecars and hosted artifact attestations for release assets produced by Actions. A separate tracerazor-trice integrity card binds offline doctor output, proof-card verifiers, release evidence, the crates publish card, installability card, research card, the paper manifest, schemas, and workflow hooks as one top-level proof graph.",
             styles["BodyText"],
         ),
         Paragraph("Clean Wheel Installability", styles["Heading2"]),
@@ -979,7 +979,8 @@ def main(argv: list[str] | None = None) -> int:
     paper_protocol_outputs = write_protocol_outputs(protocol_card, paper_protocol_path)
     write_protocol_outputs(protocol_card, docs_protocol_path)
     design_card = build_design_card(docs_protocol_path, suite_result_path=args.broad_suite_results)
-    tex_path.write_text(
+    write_text_lf(
+        tex_path,
         render_tex(
             rows,
             gate,
@@ -999,12 +1000,11 @@ def main(argv: list[str] | None = None) -> int:
             install_card,
             research_card,
         ),
-        encoding="utf-8",
     )
-    bib_path.write_text(render_bib(), encoding="utf-8")
+    write_text_lf(bib_path, render_bib())
     svg = render_svg(rows, gate)
-    docs_svg_path.write_text(svg, encoding="utf-8")
-    paper_svg_path.write_text(svg, encoding="utf-8")
+    write_text_lf(docs_svg_path, svg)
+    write_text_lf(paper_svg_path, svg)
     build_pdf(
         rows,
         gate,

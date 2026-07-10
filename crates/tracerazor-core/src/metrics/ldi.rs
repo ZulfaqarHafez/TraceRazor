@@ -78,8 +78,7 @@ pub fn compute(trace: &Trace) -> LdiResult {
             let hash = step.state_hash();
             match state_seen.get_mut(&hash) {
                 Some((first_id, last_idx)) => {
-                    let mutated_between =
-                        steps[*last_idx + 1..idx].iter().any(|s| s.is_mutating());
+                    let mutated_between = steps[*last_idx + 1..idx].iter().any(|s| s.is_mutating());
                     if mutated_between && step.tool_success != Some(false) {
                         // Verification re-run: world changed since the last
                         // occurrence — fresh chain, not a loop iteration.
@@ -182,14 +181,11 @@ pub fn compute(trace: &Trace) -> LdiResult {
                 .collect();
 
             if pattern == next {
-                let loop_ids: Vec<u32> = steps[i..i + window * 2]
-                    .iter()
-                    .map(|s| s.id)
-                    .collect();
+                let loop_ids: Vec<u32> = steps[i..i + window * 2].iter().map(|s| s.id).collect();
                 // Avoid duplicate loop reports overlapping with state-hash loops.
-                let already_reported = loops.iter().any(|l| {
-                    l.step_ids.iter().any(|id| loop_ids.contains(id))
-                });
+                let already_reported = loops
+                    .iter()
+                    .any(|l| l.step_ids.iter().any(|id| loop_ids.contains(id)));
                 if !already_reported {
                     let len = loop_ids.len();
                     loops.push(DetectedLoop {
@@ -227,13 +223,20 @@ pub fn compute(trace: &Trace) -> LdiResult {
 
 /// Tool names whose calls carry a free-text command/query worth skeletonizing.
 const COMMAND_TOOLS: &[&str] = &[
-    "bash", "sh", "shell", "zsh", "terminal", "console", "sql", "mysql",
-    "psql", "python", "python3", "execute", "run", "exec", "code", "cmd",
+    "bash", "sh", "shell", "zsh", "terminal", "console", "sql", "mysql", "psql", "python",
+    "python3", "execute", "run", "exec", "code", "cmd",
 ];
 
 /// Parameter keys that hold a command/query string.
 const COMMAND_KEYS: &[&str] = &[
-    "command", "query", "cmd", "code", "script", "sql", "shell", "statement",
+    "command",
+    "query",
+    "cmd",
+    "code",
+    "script",
+    "sql",
+    "shell",
+    "statement",
 ];
 
 /// Extract the command/query text from a command-style tool call, if any.
@@ -293,7 +296,8 @@ fn skeleton_token(tok: &str) -> String {
         return "PATH".to_string();
     }
     let is_num = t.chars().any(|c| c.is_ascii_digit())
-        && t.chars().all(|c| c.is_ascii_digit() || matches!(c, '.' | ',' | '-' | '+'));
+        && t.chars()
+            .all(|c| c.is_ascii_digit() || matches!(c, '.' | ',' | '-' | '+'));
     if is_num {
         return "NUM".to_string();
     }

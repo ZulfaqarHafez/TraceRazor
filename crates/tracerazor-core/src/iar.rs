@@ -35,8 +35,8 @@ use serde::{Deserialize, Serialize};
 use crate::fixes::FixType;
 use crate::report::TraceReport;
 
-pub const TARGET: f64 = 0.75;  // 3 out of 4 fix types must improve to pass
-const MIN_DELTA: f64 = 0.01;   // ignore rounding noise
+pub const TARGET: f64 = 0.75; // 3 out of 4 fix types must improve to pass
+const MIN_DELTA: f64 = 0.01; // ignore rounding noise
 
 /// Per-fix-type adherence details.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -162,8 +162,8 @@ mod tests {
     /// Create a minimal TraceReport with the given fixes, for testing.
     fn minimal_report(fixes: Vec<Fix>) -> TraceReport {
         use crate::metrics::{
-            ccr::CcrResult,
             cce::CceResult,
+            ccr::CcrResult,
             csd::CsdResult,
             dbo::DboResult,
             gar::GarResult,
@@ -332,24 +332,20 @@ mod tests {
 
     #[test]
     fn all_fixes_improved_returns_one() {
-        let before = minimal_report(vec![
-            Fix {
-                fix_type: FixType::ToolSchema,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
-        let mut after = minimal_report(vec![
-            Fix {
-                fix_type: FixType::ToolSchema,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
+        let before = minimal_report(vec![Fix {
+            fix_type: FixType::ToolSchema,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
+        let mut after = minimal_report(vec![Fix {
+            fix_type: FixType::ToolSchema,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
         // Improve TCA score in after report
         after.score.tca.score = 100.0;
         let result = compute(&before, &after);
@@ -361,24 +357,20 @@ mod tests {
 
     #[test]
     fn no_fixes_improved_returns_zero() {
-        let before = minimal_report(vec![
-            Fix {
-                fix_type: FixType::ToolSchema,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
-        let after = minimal_report(vec![
-            Fix {
-                fix_type: FixType::ToolSchema,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
+        let before = minimal_report(vec![Fix {
+            fix_type: FixType::ToolSchema,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
+        let after = minimal_report(vec![Fix {
+            fix_type: FixType::ToolSchema,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
         // Scores stay the same → no improvement
         let result = compute(&before, &after);
         assert_eq!(result.score, 0.0);
@@ -637,24 +629,20 @@ mod tests {
 
     #[test]
     fn min_delta_filters_noise() {
-        let before = minimal_report(vec![
-            Fix {
-                fix_type: FixType::ToolSchema,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
-        let mut after = minimal_report(vec![
-            Fix {
-                fix_type: FixType::ToolSchema,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
+        let before = minimal_report(vec![Fix {
+            fix_type: FixType::ToolSchema,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
+        let mut after = minimal_report(vec![Fix {
+            fix_type: FixType::ToolSchema,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
         // Increase TCA by 0.005 (less than MIN_DELTA of 0.01)
         after.score.tca.score = before.score.tca.score + 0.5; // ~0.005 normalised
         let result = compute(&before, &after);
@@ -664,24 +652,20 @@ mod tests {
 
     #[test]
     fn hedge_reduction_uses_inverted_shl() {
-        let before = minimal_report(vec![
-            Fix {
-                fix_type: FixType::HedgeReduction,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
-        let mut after = minimal_report(vec![
-            Fix {
-                fix_type: FixType::HedgeReduction,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
+        let before = minimal_report(vec![Fix {
+            fix_type: FixType::HedgeReduction,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
+        let mut after = minimal_report(vec![Fix {
+            fix_type: FixType::HedgeReduction,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
         // SHL is "lower is better", so normalised() inverts it.
         // Decreasing raw SHL score → increasing normalised SHL → improvement.
         after.score.shl.score = 0.05; // was 0.1, so raw decreased
@@ -693,24 +677,20 @@ mod tests {
 
     #[test]
     fn reformulation_guard_uses_isr() {
-        let before = minimal_report(vec![
-            Fix {
-                fix_type: FixType::ReformulationGuard,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
-        let mut after = minimal_report(vec![
-            Fix {
-                fix_type: FixType::ReformulationGuard,
-                target: "test".into(),
-                patch: "test".into(),
-                estimated_token_savings: 100,
-                risk: Default::default(),
-            },
-        ]);
+        let before = minimal_report(vec![Fix {
+            fix_type: FixType::ReformulationGuard,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
+        let mut after = minimal_report(vec![Fix {
+            fix_type: FixType::ReformulationGuard,
+            target: "test".into(),
+            patch: "test".into(),
+            estimated_token_savings: 100,
+            risk: Default::default(),
+        }]);
         // ReformulationGuard targets ISR.
         after.score.isr.score = 90.0; // was 85.0
         let result = compute(&before, &after);
@@ -756,7 +736,13 @@ mod tests {
         after.score.cce.score = 0.9;
         let result = compute(&before, &after);
         assert_eq!(result.fix_adherence.len(), 2);
-        assert!(matches!(result.fix_adherence[0].fix_type, FixType::ToolSchema));
-        assert!(matches!(result.fix_adherence[1].fix_type, FixType::ContextCompression));
+        assert!(matches!(
+            result.fix_adherence[0].fix_type,
+            FixType::ToolSchema
+        ));
+        assert!(matches!(
+            result.fix_adherence[1].fix_type,
+            FixType::ContextCompression
+        ));
     }
 }

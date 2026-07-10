@@ -83,7 +83,10 @@ pub fn compute(trace: &Trace) -> BTreeMap<String, f64> {
 
     // 1. Observation token share: fraction of tokens spent on tool I/O.
     let obs_tokens: f64 = tool_steps.iter().map(|s| s.tokens as f64).sum();
-    f.insert("obs_token_share".into(), (obs_tokens / total_tokens).clamp(0.0, 1.0));
+    f.insert(
+        "obs_token_share".into(),
+        (obs_tokens / total_tokens).clamp(0.0, 1.0),
+    );
 
     // 2. Observation compressibility: how redundant the tool outputs are.
     let joined: String = tool_steps
@@ -91,7 +94,10 @@ pub fn compute(trace: &Trace) -> BTreeMap<String, f64> {
         .map(|s| obs_text(s))
         .collect::<Vec<_>>()
         .join("\n");
-    f.insert("obs_gzip_compressibility".into(), gzip_compressibility(&joined));
+    f.insert(
+        "obs_gzip_compressibility".into(),
+        gzip_compressibility(&joined),
+    );
 
     // 5. Redundant tool-call rate: identical (type, tool, params) re-issued.
     if !tool_steps.is_empty() {
@@ -124,7 +130,10 @@ pub fn compute(trace: &Trace) -> BTreeMap<String, f64> {
             }
             *c += 1;
         }
-        f.insert("repeated_obs_rate".into(), (dup_tokens / total_tokens).clamp(0.0, 1.0));
+        f.insert(
+            "repeated_obs_rate".into(),
+            (dup_tokens / total_tokens).clamp(0.0, 1.0),
+        );
     }
 
     // ── Path / length structure (the cross-run token delta is driven mostly by
@@ -147,7 +156,10 @@ pub fn compute(trace: &Trace) -> BTreeMap<String, f64> {
             max_run = max_run.max(run);
         }
     }
-    f.insert("reasoning_run_max".into(), (max_run as f64 / n as f64).clamp(0.0, 1.0));
+    f.insert(
+        "reasoning_run_max".into(),
+        (max_run as f64 / n as f64).clamp(0.0, 1.0),
+    );
     // Fraction of steps whose (type, tool, params) state repeats an earlier one
     // (path revisiting / churn), token-agnostic and over all step types.
     let mut seen_state = std::collections::HashSet::<String>::new();
@@ -157,11 +169,16 @@ pub fn compute(trace: &Trace) -> BTreeMap<String, f64> {
             revisits += 1;
         }
     }
-    f.insert("revisit_rate".into(), (revisits as f64 / n as f64).clamp(0.0, 1.0));
+    f.insert(
+        "revisit_rate".into(),
+        (revisits as f64 / n as f64).clamp(0.0, 1.0),
+    );
     // Tool diversity: distinct tools / tool calls (low = repetitive tool use).
     if !tool_steps.is_empty() {
-        let uniq: std::collections::HashSet<&str> =
-            tool_steps.iter().filter_map(|s| s.tool_name.as_deref()).collect();
+        let uniq: std::collections::HashSet<&str> = tool_steps
+            .iter()
+            .filter_map(|s| s.tool_name.as_deref())
+            .collect();
         f.insert(
             "tool_diversity".into(),
             (uniq.len() as f64 / tool_steps.len() as f64).clamp(0.0, 1.0),
@@ -182,15 +199,20 @@ pub fn compute(trace: &Trace) -> BTreeMap<String, f64> {
             if o.len() < MIN_OBS_MATCH_LEN {
                 continue;
             }
-            let retained = steps
-                .iter()
-                .skip(j + STALE_LOOKBACK + 1)
-                .any(|later| later.input_context.as_deref().is_some_and(|ic| ic.contains(o)));
+            let retained = steps.iter().skip(j + STALE_LOOKBACK + 1).any(|later| {
+                later
+                    .input_context
+                    .as_deref()
+                    .is_some_and(|ic| ic.contains(o))
+            });
             if retained {
                 stale_tokens += s.tokens as f64;
             }
         }
-        f.insert("stale_obs_retention".into(), (stale_tokens / total_tokens).clamp(0.0, 1.0));
+        f.insert(
+            "stale_obs_retention".into(),
+            (stale_tokens / total_tokens).clamp(0.0, 1.0),
+        );
 
         // 4. Context growth: fraction of the final context that is growth over
         // the run (0 = flat context, ->1 = context balloons).
@@ -308,7 +330,10 @@ mod tests {
             step(3, StepType::ToolCall, "b", 100),
         ]);
         for (k, v) in compute(&t) {
-            assert!(v.is_finite() && (0.0..=1.0).contains(&v), "{k}={v} out of range");
+            assert!(
+                v.is_finite() && (0.0..=1.0).contains(&v),
+                "{k}={v} out of range"
+            );
         }
     }
 }

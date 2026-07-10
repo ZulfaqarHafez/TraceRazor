@@ -1,0 +1,14 @@
+{
+	admin off
+	auto_https disable_redirects
+}
+
+# Compose publishes this listener only on host 127.0.0.1. Caddy terminates
+# HTTPS with its persisted local CA and injects the backend bearer credential;
+# the browser never receives the token.
+https://localhost:8443 {
+	tls internal
+	reverse_proxy tracerazor:8080 {
+		header_up Authorization "Bearer {$TRACERAZOR_API_TOKEN}"
+	}
+}

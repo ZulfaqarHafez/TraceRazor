@@ -2,7 +2,7 @@
   "checks": [
     {
       "name": "wheel_present",
-      "observed": "tracerazor-1.0.3-py3-none-any.whl",
+      "observed": "build/final-release-1.1.0-agent-native/tracerazor-1.1.0-py3-none-win_amd64.whl",
       "passed": true,
       "required": "built wheel exists"
     },
@@ -16,13 +16,13 @@
       "name": "wheel_installs",
       "observed": 0,
       "passed": true,
-      "required": "wheel installs with pip --no-deps"
+      "required": "wheel and MCP runtime dependencies install cleanly"
     },
     {
       "name": "version_matches",
-      "observed": "1.0.3",
+      "observed": "1.1.0",
       "passed": true,
-      "required": "1.0.3"
+      "required": "1.1.0"
     },
     {
       "name": "schemas_importable",
@@ -47,6 +47,47 @@
       "required": "public tracerazor.trice install/crates/research APIs import"
     },
     {
+      "name": "runtime_api_importable",
+      "observed": {
+        "event_schema": "TraceRazor runtime event v1",
+        "runtime_api": true
+      },
+      "passed": true,
+      "required": "runtime API and tracerazor-event/v1 schema import from wheel"
+    },
+    {
+      "name": "agent_assets_shipped",
+      "observed": {
+        "agent_policy": true,
+        "claude_plugin": true,
+        "codex_plugin": true,
+        "gemini_extension": true,
+        "sample_trace": true
+      },
+      "passed": true,
+      "required": "policy, sample trace, and Codex/Claude/Gemini assets ship in wheel"
+    },
+    {
+      "name": "mcp_catalog_importable",
+      "observed": [
+        "audit_current_run",
+        "audit_trace",
+        "check_policy",
+        "compare_runs",
+        "convert_transcript",
+        "doctor",
+        "explain_signal",
+        "latest_findings",
+        "list_claude_sessions",
+        "preview_fix",
+        "record_validation",
+        "verify_evidence",
+        "verify_report"
+      ],
+      "passed": true,
+      "required": "versioned MCP tool catalog imports without the optional SDK"
+    },
+    {
       "name": "trice_console_works",
       "observed": 0,
       "passed": true,
@@ -54,12 +95,46 @@
     },
     {
       "name": "rust_cli_bundled",
-      "observed": "exit=0; tracerazor 1.0.3\n",
+      "observed": "exit=0; tracerazor 1.1.0\n",
       "passed": true,
       "required": "tracerazor console script can find a bundled Rust auditor binary"
+    },
+    {
+      "name": "rust_cli_from_distribution",
+      "observed": true,
+      "passed": true,
+      "required": "resolved auditor binary lives inside the installed distribution"
+    },
+    {
+      "name": "agent_console_works",
+      "observed": "exit=0; {\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-wwu66b5b\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\",
+      "passed": true,
+      "required": "tracerazor agent doctor works after wheel install"
+    },
+    {
+      "name": "mcp_selftest_works",
+      "observed": "exit=0; [\n  {\n    \"name\": \"audit_trace\",\n    \"description\": \"Audit a trace hermetically and return the 1.x report shape with additive TraceRazor metadata.\"\n  },\n  {\n    \"name\": \"convert_tr",
+      "passed": true,
+      "required": "installed MCP server constructs and exposes its tool catalog"
+    },
+    {
+      "name": "sample_audit_works",
+      "observed": "exit=0; {\n  \"schema_version\": \"tracerazor-report/v1\",\n  \"trace_id\": \"support-agent-run-2847\",\n  \"agent_name\": \"customer-support-v3\",\n  \"framework\": \"langgraph\",\n  \"total_steps\": 11,\n  \"tot",
+      "passed": true,
+      "required": "installed bundled sample audits outside the source checkout"
     }
   ],
   "commands": {
+    "agent_console": {
+      "command_sha256": "0f6aeb7d4705f66ab9502049c58fd3b4309dcf42b842bc1de824c2a37a27b620",
+      "exit_code": 0,
+      "ok": true,
+      "status": "ok",
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_excerpt": "{\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-wwu66b5b\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\tracerazor.exe\",\n  \"hosts\": [\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"codex\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"claude\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null",
+      "stdout_sha256": "f24155c685775fd694223d56382f32c99e3d8633725462d5f539ef9c31a10ac1"
+    },
     "create_venv": {
       "command_sha256": "4f3ab3ed0132810037204e2c53e18b4a70854934c1a1f8413a4e57ae75c514e4",
       "exit_code": 0,
@@ -71,24 +146,34 @@
       "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     },
     "import_probe": {
-      "command_sha256": "20a997caacfeaf959466a4adadd46922fe10359989e956d9a3ea5e7f90892b17",
+      "command_sha256": "bbc8caea3b5679d35bba6f623edfb8346a20b81c740a9bcc4fdba2beb5fab9b6",
       "exit_code": 0,
       "ok": true,
       "status": "ok",
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_excerpt": "{\"build_crates_card\": true, \"build_install_card\": true, \"build_research_card\": true, \"crates_schema_title\": \"TRICE crates publish card\", \"install_schema_title\": \"TRICE installability card\", \"research_schema_title\": \"TRICE research card\", \"verify_install_card_file\": true, \"verify_research_card_file\": true, \"version\": \"1.0.3\"}\n",
-      "stdout_sha256": "7f87ec0acdb92e9ca5a639eada5cd69d8c2f16186dd90dd45ed359f4f1973d94"
+      "stdout_excerpt": "{\"agent_policy\": true, \"binary_inside_package\": true, \"build_crates_card\": true, \"build_install_card\": true, \"build_research_card\": true, \"claude_plugin\": true, \"codex_plugin\": true, \"crates_schema_title\": \"TRICE crates publish card\", \"event_schema\": \"TraceRazor runtime event v1\", \"gemini_extension\": true, \"install_schema_title\": \"TRICE installability card\", \"mcp_tools\": [\"audit_current_run\", \"audit_trace\", \"check_policy\", \"compare_runs\", \"convert_transcript\", \"doctor\", \"explain_signal\", \"latest",
+      "stdout_sha256": "b32dc14eac29675e4d7a84346e680fd75472bf23fcfef2037801ef93f4a32885"
     },
     "install_wheel": {
-      "command_sha256": "170c64f5adaf909271e4ec727c07437a132400616b8bbb011af009d746ce4876",
+      "command_sha256": "15e0997b3c84baa178e515b30234307b6e606709f73d94294dd5ff925b71ad59",
       "exit_code": 0,
       "ok": true,
       "status": "ok",
-      "stderr_excerpt": "\n[notice] A new release of pip is available: 23.2.1 -> 26.1.2\n[notice] To update, run: <tmp>\\venv\\Scripts\\python.exe -m pip install --upgrade pip\n",
-      "stderr_sha256": "8eb0c7312275437de5456b0c117ca7ac2340f7bf88b143c4f8f5fc14da97db21",
-      "stdout_excerpt": "Processing <artifact-dir-1>\\tracerazor-1.0.3-py3-none-any.whl\nInstalling collected packages: tracerazor\nSuccessfully installed tracerazor-1.0.3\n",
-      "stdout_sha256": "23121d510df7859973b362dcc90e2c9be2443e069c32dd021c364c85a32d1b24"
+      "stderr_excerpt": "\n[notice] A new release of pip is available: 23.2.1 -> 26.1.2\n[notice] To update, run: python.exe -m pip install --upgrade pip\n",
+      "stderr_sha256": "6128984d2797a089ee0cb6fbc6d4dfae4de9142597b21d1336e506271e7453f3",
+      "stdout_excerpt": "Processing <artifact-dir-1>\\tracerazor-1.1.0-py3-none-win_amd64.whl\nCollecting mcp>=1.0 (from tracerazor==1.1.0)\n  Obtaining dependency information for mcp>=1.0 from https://files.pythonhosted.org/packages/e2/5e/d118fce19f87a2e7d8101c35c8ae0ec289098a4df0ff244cec23e415aca0/mcp-1.28.1-py3-none-any.whl.metadata\n  Using cached mcp-1.28.1-py3-none-any.whl.metadata (9.4 kB)\nCollecting anyio>=4.5 (from mcp>=1.0->tracerazor==1.1.0)\n  Obtaining dependency information for anyio>=4.5 from https://files.pyt",
+      "stdout_sha256": "d3fd225712cedbf9faea2011e119bae5ca7f3d4608f0f48575a3fbd4b73dd6ae"
+    },
+    "mcp_selftest": {
+      "command_sha256": "0e5313001269a7e1d92d29fad606edb08f29bb175c20bc6d77877176f60680a1",
+      "exit_code": 0,
+      "ok": true,
+      "status": "ok",
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_excerpt": "[\n  {\n    \"name\": \"audit_trace\",\n    \"description\": \"Audit a trace hermetically and return the 1.x report shape with additive TraceRazor metadata.\"\n  },\n  {\n    \"name\": \"convert_transcript\",\n    \"description\": \"Normalize an external trace export into TraceRazor trace JSON.\"\n  },\n  {\n    \"name\": \"list_claude_sessions\",\n    \"description\": \"List audited Claude Code sessions using the legacy list shape.\"\n  },\n  {\n    \"name\": \"verify_report\",\n    \"description\": \"Re-verify a report or evidence bundle ",
+      "stdout_sha256": "f97ef6316ef8135f1bca44dfd73ae2acee83a44d60ea96cd0ba73053f7feddb2"
     },
     "rust_console": {
       "command_sha256": "a0f3538f834bcc53bc23b77f1b5f10e4a1bdd191cfd6594077462e0fb0c58f32",
@@ -97,8 +182,18 @@
       "status": "ok",
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_excerpt": "tracerazor 1.0.3\n",
-      "stdout_sha256": "e9a1d055b4b6e760957980e7c052f2f05786a9bb06fb363809e1b0cb306e8577"
+      "stdout_excerpt": "tracerazor 1.1.0\n",
+      "stdout_sha256": "3b8cd16359cecbb3650939dd01e498a7347f88f5a4541954a8c58bd42cb7aaa7"
+    },
+    "sample_audit": {
+      "command_sha256": "e296a41627f4da6f94f76a6c4c0899da1429c7017f6c73372667cd77704bc50c",
+      "exit_code": 0,
+      "ok": true,
+      "status": "ok",
+      "stderr_excerpt": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_excerpt": "{\n  \"schema_version\": \"tracerazor-report/v1\",\n  \"trace_id\": \"support-agent-run-2847\",\n  \"agent_name\": \"customer-support-v3\",\n  \"framework\": \"langgraph\",\n  \"total_steps\": 11,\n  \"total_tokens\": 14280,\n  \"analysis_duration_ms\": 4,\n  \"score\": {\n    \"score\": 83.1,\n    \"raw_tas\": 85.7,\n    \"task_value_score\": 0.9,\n    \"grade\": \"Good\",\n    \"vae\": 0.77,\n    \"passes_threshold\": true,\n    \"avs\": 0.263,\n    \"metric_normalised\": {\n      \"cce\": 0.613,\n      \"ccr\": 0.6162790697674418,\n      \"csd\": 0.438,\n    ",
+      "stdout_sha256": "1e6288aab7dbeba8275a9dbcac9eac039cb7336afa09ec7d21245d0fe79c5cd9"
     },
     "trice_console": {
       "command_sha256": "5695e414efa414eab6cc88b639b84dcff848720ac1f9f1b61a421cff27afc8d6",
@@ -111,55 +206,80 @@
       "stdout_sha256": "ce83b0525f48f45480c7bcf8ceb0de7cd49e5f4bfdfe60737aebe165278edc02"
     }
   },
-  "expected_version": "1.0.3",
+  "expected_version": "1.1.0",
   "inputs": {
     "dist_dir": {
       "kind": "directory",
-      "name": "dist",
-      "path": "dist",
+      "name": "final-release-1.1.0-agent-native",
+      "path": "build/final-release-1.1.0-agent-native",
       "present": true
     },
     "pyproject": {
-      "bytes": 6601,
+      "bytes": 7372,
       "kind": "file",
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "5cb1a63ea8dda672c1809415f8b8db40458cdfde621b2ef92e18b54937dd93fa"
+      "sha256": "6b22be0023ad0020fdd461467c053c888e0d1ec2e673dc72ea8fbfcac4f81323"
     }
   },
-  "install_card_sha256": "fdf749019fe2c5edb246d04be81e99ac6542501c76c71b649f9d7a35f0ea7165",
+  "install_card_sha256": "f1577bc22beb94bba66072225809ecb790b345ebc5e9b2e3f786ae377d40d921",
   "install_level": "full_cli_install_ready",
   "install_score": 100,
   "next_actions": [
     "Publish the install card with the release evidence bundle."
   ],
   "probe": {
+    "agent_policy": true,
+    "binary_inside_package": true,
     "build_crates_card": true,
     "build_install_card": true,
     "build_research_card": true,
+    "claude_plugin": true,
+    "codex_plugin": true,
     "crates_schema_title": "TRICE crates publish card",
+    "event_schema": "TraceRazor runtime event v1",
+    "gemini_extension": true,
     "install_schema_title": "TRICE installability card",
+    "mcp_tools": [
+      "audit_current_run",
+      "audit_trace",
+      "check_policy",
+      "compare_runs",
+      "convert_transcript",
+      "doctor",
+      "explain_signal",
+      "latest_findings",
+      "list_claude_sessions",
+      "preview_fix",
+      "record_validation",
+      "verify_evidence",
+      "verify_report"
+    ],
     "research_schema_title": "TRICE research card",
+    "runtime_api": true,
+    "sample_trace": true,
     "verify_install_card_file": true,
     "verify_research_card_file": true,
-    "version": "1.0.3"
+    "version": "1.1.0"
   },
   "python_executable": "python.exe",
   "research_basis": [
     "PyPA packaging guidance distinguishes building a distribution from installing and using it in a clean environment.",
-    "Wheel artifacts are user-facing contracts: import surfaces, console scripts, and packaged data must be verified after installation, not only hashed before upload.",
+    "Wheel artifacts are user-facing contracts: dependencies, import surfaces, console scripts, MCP startup, packaged data, and a real audit must be verified after installation, not only hashed before upload.",
     "TRICE separates Python/TRICE install readiness from full Rust CLI readiness so generic pure-Python wheels do not overclaim bundled-binary behavior.",
-    "Research-card schemas and APIs must be importable from the wheel because the paper/release basis is now a public contract surface."
+    "Research-card schemas and APIs must be importable from the wheel because the paper/release basis is now a public contract surface.",
+    "Agent-native release claims require the event schema, runtime API, host assets, and MCP catalog to import from the installed wheel.",
+    "The resolved Rust auditor must live inside the installed distribution; ambient PATH and TRACERAZOR_BIN are excluded from the probe."
   ],
   "schema_version": "trice-install-card/v1",
   "scope": "TraceRazor wheel installability",
   "wheel": {
-    "bytes": 286525,
+    "bytes": 6859719,
     "kind": "file",
     "name": "wheel",
-    "path": "tracerazor-1.0.3-py3-none-any.whl",
+    "path": "build/final-release-1.1.0-agent-native/tracerazor-1.1.0-py3-none-win_amd64.whl",
     "present": true,
-    "sha256": "6eb624d2fc9df2f266f63a67b49decbd8025f252ba0f103a3d30b84de5fe02ad"
+    "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
   }
 }

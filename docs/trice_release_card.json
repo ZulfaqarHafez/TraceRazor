@@ -2,13 +2,13 @@
   "checks": [
     {
       "name": "local_package",
-      "observed": "installed: version 1.0.3",
+      "observed": "installed: version 1.1.0",
       "passed": true,
       "required": "local package imports with version"
     },
     {
       "name": "bundled_cli",
-      "observed": "on-path: C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.0.3",
+      "observed": "on-path: C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.1.0",
       "passed": true,
       "required": "CLI binary is bundled or source-build reachable"
     },
@@ -50,37 +50,37 @@
     },
     {
       "name": "pypi",
-      "observed": "matched: latest=1.0.3 local=1.0.3",
-      "passed": true,
+      "observed": "skipped: offline mode",
+      "passed": false,
       "required": "PyPI latest version matches local version"
     },
     {
       "name": "piwheels",
-      "observed": "visible: files=1 local=1.0.3",
-      "passed": true,
+      "observed": "skipped: offline mode",
+      "passed": false,
       "required": "piwheels exposes the local version file"
     },
     {
       "name": "crates_io",
-      "observed": "missing: crate tracerazor is not published",
+      "observed": "skipped: offline mode",
       "passed": false,
       "required": "crates.io package is published"
     },
     {
       "name": "github_tag",
-      "observed": "pending: head=e986ec0a19a3 local_tag=False remote_tag=False",
+      "observed": "pending: head=6be5ac5b8677 local_tag=False remote_tag=False",
       "passed": false,
       "required": "local version tag points at current commit locally and remotely"
     },
     {
       "name": "github_actions",
-      "observed": "not-green: Agent Efficiency Gate=completed/success; Release=completed/cancelled; TraceRazor CI=completed/failure",
+      "observed": "skipped: offline mode",
       "passed": false,
       "required": "required public workflows are green"
     },
     {
       "name": "openssf_scorecard",
-      "observed": "below-threshold: score=2.8 minimum=7.0 date=2026-06-29T05:02:29Z commit=e986ec0a19a3",
+      "observed": "skipped: offline mode",
       "passed": false,
       "required": "OpenSSF Scorecard is published with score >= 7.0"
     },
@@ -125,14 +125,14 @@
       "sha256": "05946657b30c14d6d761ee3c61583728aa661dded680f2751db56ec9980d43c7"
     },
     {
-      "command": "python -m build --sdist --wheel --no-isolation",
+      "command": "bash scripts/build_platform_wheel.sh",
       "name": "build",
-      "sha256": "9031da9cd5124c3c14d41d5d56618decc8e63c2f41a6fa4af95b83ba63903d02"
+      "sha256": "4fb22334b8220d961aee6d59f84f905ed5278d3eafa95b877f0dda35fbeaa9d2"
     },
     {
-      "command": "python -m twine check dist/*",
+      "command": "python -m twine check dist/*.whl",
       "name": "twine-check",
-      "sha256": "2611b34af93f3e90963b7fed63687aa18ba0f214e5d182f5aa06a5034190b53c"
+      "sha256": "7c108d3474bdd41a615aba749433fe817b8915c4c20eae0b0998468cf619bd20"
     },
     {
       "command": "python -m pip_audit --progress-spinner off .",
@@ -148,49 +148,44 @@
   "doctor_snapshot": {
     "checks": {
       "bundled_cli": {
-        "detail": "C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.0.3",
+        "detail": "C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.1.0",
         "ok": true,
         "status": "on-path"
       },
       "crates_io": {
-        "detail": "crate tracerazor is not published",
-        "ok": false,
-        "status": "missing",
-        "url": "https://crates.io/api/v1/crates/tracerazor"
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
       },
       "github_actions": {
-        "detail": "Agent Efficiency Gate=completed/success; Release=completed/cancelled; TraceRazor CI=completed/failure",
-        "ok": false,
-        "status": "not-green",
-        "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
       },
       "github_tag": {
-        "detail": "head=e986ec0a19a3 local_tag=False remote_tag=False",
+        "detail": "head=6be5ac5b8677 local_tag=False remote_tag=False",
         "ok": false,
         "status": "pending"
       },
       "local_package": {
-        "detail": "version 1.0.3",
+        "detail": "version 1.1.0",
         "ok": true,
         "status": "installed"
       },
       "openssf_scorecard": {
-        "detail": "score=2.8 minimum=7.0 date=2026-06-29T05:02:29Z commit=e986ec0a19a3",
-        "ok": false,
-        "status": "below-threshold",
-        "url": "https://api.scorecard.dev/projects/github.com/ZulfaqarHafez/TraceRazor"
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
       },
       "piwheels": {
-        "detail": "files=1 local=1.0.3",
-        "ok": true,
-        "status": "visible",
-        "url": "https://www.piwheels.org/project/tracerazor/json"
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
       },
       "pypi": {
-        "detail": "latest=1.0.3 local=1.0.3",
-        "ok": true,
-        "status": "matched",
-        "url": "https://pypi.org/pypi/tracerazor/json"
+        "detail": "offline mode",
+        "ok": null,
+        "status": "skipped"
       },
       "schemas": {
         "detail": "19 schemas",
@@ -198,66 +193,69 @@
         "status": "available"
       }
     },
-    "local_version": "1.0.3",
-    "offline": false,
+    "local_version": "1.1.0",
+    "offline": true,
     "package": "tracerazor",
     "platform": "Windows-10-10.0.26200-SP0",
     "python": "3.11.6",
     "schema_version": "trice-doctor/v1",
     "summary": {
       "failed": [
-        "crates_io",
-        "github_tag",
-        "github_actions",
-        "openssf_scorecard"
+        "github_tag"
       ],
       "ok": false,
-      "unknown": []
+      "unknown": [
+        "pypi",
+        "piwheels",
+        "crates_io",
+        "github_actions",
+        "openssf_scorecard"
+      ]
     }
   },
-  "doctor_snapshot_sha256": "8997f848760e04ee916d17d29bd0aca04fe3acc4d89b450f30c833b85bdada80",
+  "doctor_snapshot_sha256": "58e6790c3fad4ad9837def4c320a2d76b1b05eb3806bbc62b95544e1f8cf8a35",
   "inputs": {
     "artifact_card": {
-      "bytes": 16653,
+      "bytes": 16185,
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "e624a39cb688bd22bbd568374d334bc8bfbd75fbf1f8fe96e4a3452669febc40"
+      "sha256": "2ca622a1999b25d27ecf92af85d4549d0d0bac5f9d663fef84cb8ae4851af10a"
     },
     "contract_card": {
-      "bytes": 19671,
+      "bytes": 19194,
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "547ec54d1fe6a0e8f10ffe27bcf49fc30b3ac6aa44c5b97c97ad7d8a96fcad7c"
+      "sha256": "1837de7eda82dc02abf5d9568d307431aac5749ba3eefdbf5a0d2c20a85c4461"
     },
     "install_card": {
-      "bytes": 7300,
+      "bytes": 14071,
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "8fec158d6bf7c73d084419e2b5737c53228c77a7746d532000d1db2998ba5191"
+      "sha256": "7855087064b41c51e9f41e160d8aa977c3a5baddbcaa1cea0ed3c7b2e8a1b618"
     },
     "public_trust_matrix": {
-      "bytes": 11212,
+      "bytes": 11804,
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "c5b0b5173a8efbe35ce1526401a5a6b88c0813d92d6625eac7d3055813b614b5"
+      "sha256": "c41b0d813a04e357834cf2a0c88a39a4d665cb8ea858145cd665f7cd76a53416"
     },
     "pyproject": {
-      "bytes": 6067,
+      "bytes": 7372,
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "b1c21d1c0681f219454047b0900d44a15ea6921eece2d986e0a269cccf3e9f93"
+      "sha256": "6b22be0023ad0020fdd461467c053c888e0d1ec2e673dc72ea8fbfcac4f81323"
     },
     "readme": {
-      "bytes": 86248,
+      "bytes": 88240,
       "path": "README.md",
       "present": true,
-      "sha256": "d40843c15ff2528f3478436b5e3c86da899f6c1651021e0ac4889c27d663a856"
+      "sha256": "717f69be9e4273e8a9def7b6de2326c4f94b9353eb67b79a62fe48a53c502b7f"
     },
     "release_checklist": {
-      "bytes": 9097,
+      "bytes": 8455,
       "path": "docs/release_checklist.md",
       "present": true,
-      "sha256": "e76b3715759701f51d86cce960e7d25297c5b13f08534e6c8b574a683d79664a"
+      "sha256": "e4b843f18203cc2adc28d4f76af61c566d4052631edf804063ee4a53715af475"
     },
     "reproduction_card": {
       "bytes": 7494,
@@ -267,22 +265,24 @@
     }
   },
   "next_actions": [
-    "Publish the Rust crates or keep cargo-install claims out of the README.",
-    "Create and push the v1.0.3 tag only after local gates pass.",
+    "Publish 1.1.0 to PyPI only after local release gates pass.",
+    "Informational only for 1.1: do not add an sdist solely for piwheels.",
+    "Optional: publish Rust crates only after declaring a stable public Rust API; keep cargo-install claims out of the README meanwhile.",
+    "Create and push the v1.1.0 tag only after local gates pass.",
     "Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.",
     "Run and publish OpenSSF Scorecard until the public score is at least 7.0."
   ],
   "package": {
-    "local_version": "1.0.3",
+    "local_version": "1.1.0",
     "name": "tracerazor",
-    "offline": false,
+    "offline": true,
     "platform": "Windows-10-10.0.26200-SP0",
     "python": "3.11.6"
   },
   "public_release_ready": false,
-  "release_card_sha256": "ae71e3596c0a97bad04cd936f1568a822c38de1ca50ff64367c7d403aed31666",
+  "release_card_sha256": "0ee102e519af5d215fb1722d34dcfcdc4ebd9abcedccee081c3f31afe0c80a68",
   "release_level": "local_release_candidate",
-  "release_score": 78,
+  "release_score": 74,
   "research_basis": [
     "SLSA frames provenance as a release property: consumers need to know what built an artifact, how, and from which inputs.",
     "OpenSSF Scorecard treats public project health as a set of automated checks rather than maintainer promises.",

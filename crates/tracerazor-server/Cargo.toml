@@ -16,10 +16,10 @@ name = "tracerazor-server"
 path = "src/main.rs"
 
 [dependencies]
-tracerazor-core = { path = "../tracerazor-core", version = "1.0.3" }
-tracerazor-ingest = { path = "../tracerazor-ingest", version = "1.0.3" }
-tracerazor-semantic = { path = "../tracerazor-semantic", version = "1.0.3" }
-tracerazor-store = { path = "../tracerazor-store", version = "1.0.3" }
+tracerazor-core = { path = "../tracerazor-core", version = "1.1.0" }
+tracerazor-ingest = { path = "../tracerazor-ingest", version = "1.1.0" }
+tracerazor-semantic = { path = "../tracerazor-semantic", version = "1.1.0" }
+tracerazor-store = { path = "../tracerazor-store", version = "1.1.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
@@ -30,7 +30,10 @@ tower = { workspace = true }
 chrono = { workspace = true }
 uuid = { workspace = true }
 futures-util = { workspace = true }
+flate2 = { workspace = true }
 reqwest = { workspace = true }
+opentelemetry-proto = { version = "0.32", default-features = false, features = ["gen-tonic-messages", "trace", "with-serde"] }
+prost = "0.14"
 dotenvy = "0.15"
 
 [dev-dependencies]

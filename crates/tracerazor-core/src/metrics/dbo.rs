@@ -305,7 +305,10 @@ mod tests {
             "score {} outside cold-start band",
             result.score
         );
-        assert!(result.pass, "clean cold-start trace should still pass the 0.70 target");
+        assert!(
+            result.pass,
+            "clean cold-start trace should still pass the 0.70 target"
+        );
     }
 
     #[test]

@@ -11,7 +11,7 @@ from typing import Any, Callable
 from .artifact import verify_artifact_card_file
 from .contract import verify_contract_card_file
 from .doctor import doctor_report
-from .evidence import canonical_json, sha256_file
+from .evidence import canonical_json, sha256_file, write_text_lf
 from .install import verify_install_card_file
 from .reproduction import verify_reproduction_card_file
 
@@ -114,7 +114,7 @@ def build_release_card(
             "Clean-wheel installability verifies packaged data and console scripts after build, separating Python/TRICE readiness from platform-bundled Rust CLI readiness.",
             "TRICE release cards separate local proof readiness from public distribution readiness and refuse S-tier wording while public gates are red.",
         ],
-        "next_actions": _next_actions(checks),
+        "next_actions": _next_actions(checks, str(doctor.get("local_version") or "unknown")),
         "commands": _commands(),
     }
     card["release_card_sha256"] = hashlib.sha256(canonical_json(_without_release_hash(card)).encode("utf-8")).hexdigest()
@@ -239,9 +239,9 @@ def render_release_svg(card: dict[str, Any]) -> str:
     stages = [
         ("local", _check_passed(card, "local_package") and _check_passed(card, "bundled_cli") and _check_passed(card, "schemas")),
         ("proof", _check_passed(card, "artifact_card_verifies") and _check_passed(card, "reproduction_card_verifies") and _check_passed(card, "contract_card_verifies") and _check_passed(card, "install_card_verifies")),
-        ("package", _check_passed(card, "pypi") and _check_passed(card, "piwheels")),
+        ("package", _check_passed(card, "pypi")),
         ("ci", _check_passed(card, "github_tag") and _check_passed(card, "github_actions") and _check_passed(card, "openssf_scorecard")),
-        ("crates", _check_passed(card, "crates_io")),
+        ("install", _check_passed(card, "install_card_verifies")),
     ]
     width, height = 980, 280
     parts = [
@@ -261,20 +261,20 @@ def render_release_svg(card: dict[str, Any]) -> str:
             parts.append(f'<line x1="{x + 148}" y1="{y + 29}" x2="{x + 176}" y2="{y + 29}" stroke="#9ca3af" stroke-width="3"/>')
     failed = [row["name"] for row in card["checks"] if not row["passed"]]
     parts.append(f'<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Local version {card["package"]["local_version"]} | blockers {len(failed)} | hash {card["release_card_sha256"][:16]}...</text>')
-    parts.append('<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Release card only: public release readiness requires PyPI/piwheels/crates.io/tag/CI/Scorecard all green.</text>')
+    parts.append('<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Release card only: 1.1 public readiness requires platform artifacts, PyPI, tag, CI, and Scorecard to be green.</text>')
     parts.append("</svg>")
     return "\n".join(parts) + "\n"
 
 
 def write_release_outputs(card: dict[str, Any], out: Path) -> dict[str, str]:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(card, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(card, indent=2, sort_keys=True) + "\n")
     md = out.with_suffix(".md")
     tex = out.with_suffix(".tex")
     svg = out.with_suffix(".svg")
-    md.write_text(render_release_markdown(card), encoding="utf-8")
-    tex.write_text(render_release_tex(card), encoding="utf-8")
-    svg.write_text(render_release_svg(card), encoding="utf-8")
+    write_text_lf(md, render_release_markdown(card))
+    write_text_lf(tex, render_release_tex(card))
+    write_text_lf(svg, render_release_svg(card))
     return {"json": str(out), "markdown": str(md), "tex": str(tex), "svg": str(svg)}
 
 
@@ -371,8 +371,6 @@ def _public_release_ready(checks: list[dict[str, Any]]) -> bool:
         "install_card_verifies",
         "release_docs_present",
         "pypi",
-        "piwheels",
-        "crates_io",
         "github_tag",
         "github_actions",
         "openssf_scorecard",
@@ -384,16 +382,20 @@ def _public_release_ready(checks: list[dict[str, Any]]) -> bool:
 def _release_score(checks: list[dict[str, Any]]) -> int:
     weights = {
         "local_package": 8,
-        "bundled_cli": 7,
+        "bundled_cli": 11,
         "schemas": 6,
         "artifact_card_verifies": 9,
         "reproduction_card_verifies": 8,
         "contract_card_verifies": 7,
-        "install_card_verifies": 7,
+        "install_card_verifies": 12,
         "release_docs_present": 5,
-        "pypi": 7,
-        "piwheels": 6,
-        "crates_io": 6,
+        "pypi": 10,
+        # piwheels builds from source distributions, which are intentionally
+        # not part of the 1.1 bundled-auditor contract.
+        "piwheels": 0,
+        # crates.io is an informational distribution check for 1.1.x. It is
+        # not a GA gate until TraceRazor declares a stable public Rust API.
+        "crates_io": 0,
         "github_tag": 6,
         "github_actions": 6,
         "openssf_scorecard": 4,
@@ -404,7 +406,7 @@ def _release_score(checks: list[dict[str, Any]]) -> int:
     return min(100, sum(weights.get(row["name"], 0) for row in checks if row["passed"]))
 
 
-def _next_actions(checks: list[dict[str, Any]]) -> list[str]:
+def _next_actions(checks: list[dict[str, Any]], version: str) -> list[str]:
     missing = [row["name"] for row in checks if not row["passed"]]
     if not missing:
         return [
@@ -414,10 +416,10 @@ def _next_actions(checks: list[dict[str, Any]]) -> list[str]:
         ]
     actions = []
     mapping = {
-        "pypi": "Publish 1.0.3 to PyPI or lower the local version until it matches the public registry.",
-        "piwheels": "Wait for piwheels to expose the 1.0.3 file after PyPI publish.",
-        "crates_io": "Publish the Rust crates or keep cargo-install claims out of the README.",
-        "github_tag": "Create and push the v1.0.3 tag only after local gates pass.",
+        "pypi": f"Publish {version} to PyPI only after local release gates pass.",
+        "piwheels": "Informational only for 1.1: do not add an sdist solely for piwheels.",
+        "crates_io": "Optional: publish Rust crates only after declaring a stable public Rust API; keep cargo-install claims out of the README meanwhile.",
+        "github_tag": f"Create and push the v{version} tag only after local gates pass.",
         "github_actions": "Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.",
         "openssf_scorecard": "Run and publish OpenSSF Scorecard until the public score is at least 7.0.",
         "artifact_card_verifies": "Regenerate and verify the artifact card.",
@@ -440,8 +442,8 @@ def _commands() -> list[dict[str, Any]]:
         ("verify-contract", "python -m tracerazor.trice verify-contract docs/trice_contract_card.json"),
         ("verify-reproduction", "python -m tracerazor.trice verify-reproduction docs/trice_reproduction_card.json"),
         ("verify-artifact", "python -m tracerazor.trice verify-artifact docs/trice_artifact_card.json"),
-        ("build", "python -m build --sdist --wheel --no-isolation"),
-        ("twine-check", "python -m twine check dist/*"),
+        ("build", "bash scripts/build_platform_wheel.sh"),
+        ("twine-check", "python -m twine check dist/*.whl"),
         ("pip-audit", "python -m pip_audit --progress-spinner off ."),
         ("scorecard", "scorecard --repo=github.com/ZulfaqarHafez/TraceRazor"),
     ]

@@ -82,7 +82,7 @@
   "doctor_snapshot": {
     "checks": {
       "bundled_cli": {
-        "detail": "C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.0.3",
+        "detail": "C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.1.0",
         "ok": true,
         "status": "on-path"
       },
@@ -97,12 +97,12 @@
         "status": "skipped"
       },
       "github_tag": {
-        "detail": "head=e986ec0a19a3 local_tag=False remote_tag=False",
+        "detail": "head=6be5ac5b8677 local_tag=False remote_tag=False",
         "ok": false,
         "status": "pending"
       },
       "local_package": {
-        "detail": "version 1.0.3",
+        "detail": "version 1.1.0",
         "ok": true,
         "status": "installed"
       },
@@ -127,7 +127,7 @@
         "status": "available"
       }
     },
-    "local_version": "1.0.3",
+    "local_version": "1.1.0",
     "offline": true,
     "package": "tracerazor",
     "platform": "Windows-10-10.0.26200-SP0",
@@ -147,35 +147,35 @@
       ]
     }
   },
-  "doctor_snapshot_sha256": "9800baf4bb23c268205b4cc7b874e7e194484851e973929c64f2f75cf3a8146e",
+  "doctor_snapshot_sha256": "58e6790c3fad4ad9837def4c320a2d76b1b05eb3806bbc62b95544e1f8cf8a35",
   "inputs": {
     "artifact_card": {
-      "bytes": 16653,
+      "bytes": 16185,
       "name": "trice_artifact_card.json",
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "e624a39cb688bd22bbd568374d334bc8bfbd75fbf1f8fe96e4a3452669febc40"
+      "sha256": "2ca622a1999b25d27ecf92af85d4549d0d0bac5f9d663fef84cb8ae4851af10a"
     },
     "contract_card": {
-      "bytes": 19671,
+      "bytes": 19194,
       "name": "trice_contract_card.json",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "547ec54d1fe6a0e8f10ffe27bcf49fc30b3ac6aa44c5b97c97ad7d8a96fcad7c"
+      "sha256": "1837de7eda82dc02abf5d9568d307431aac5749ba3eefdbf5a0d2c20a85c4461"
     },
     "crates_card": {
-      "bytes": 22152,
+      "bytes": 20152,
       "name": "trice_crates_card.json",
       "path": "docs/trice_crates_card.json",
       "present": true,
-      "sha256": "3ae2ba5b02bfa9348bdd7666e43d4e2e925c82fb00c27f45a4e94cec7f828c4e"
+      "sha256": "92f9bb02700bca505e64a665431e9b0e9c46458c87519d9d8cfd87538e412420"
     },
     "install_card": {
-      "bytes": 7300,
+      "bytes": 14071,
       "name": "trice_install_card.json",
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "8fec158d6bf7c73d084419e2b5737c53228c77a7746d532000d1db2998ba5191"
+      "sha256": "7855087064b41c51e9f41e160d8aa977c3a5baddbcaa1cea0ed3c7b2e8a1b618"
     },
     "paper_manifest": {
       "bytes": 7591,
@@ -192,18 +192,18 @@
       "sha256": "f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8"
     },
     "release_card": {
-      "bytes": 11689,
+      "bytes": 10841,
       "name": "trice_release_card.json",
       "path": "docs/trice_release_card.json",
       "present": true,
-      "sha256": "878fda974aece62094c02e0c7b286ae364e7f4accbbdcad2a97f666621c3c6bd"
+      "sha256": "dca08aa7e3dd32bcd8dd6119f59f7e3b68410a1fa85ed1dcca405925f68c8a51"
     },
     "release_evidence": {
-      "bytes": 145113,
+      "bytes": 150597,
       "name": "trice_release_evidence.json",
       "path": "docs/trice_release_evidence.json",
       "present": true,
-      "sha256": "a8607e311eb86fffd99b14940a0b9e27d618e5fd874d0848eae44ae48525c8f5"
+      "sha256": "1dba74113a17d5fe2419907e3f8c76863b6729529d2aee09af627ca3ab0c9fdc"
     },
     "reproduction_card": {
       "bytes": 7494,
@@ -213,14 +213,14 @@
       "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
     },
     "research_card": {
-      "bytes": 71467,
+      "bytes": 69670,
       "name": "trice_research_card.json",
       "path": "docs/trice_research_card.json",
       "present": true,
-      "sha256": "2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1"
+      "sha256": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
     }
   },
-  "integrity_card_sha256": "1c271b25769d773e70a9d1c60ac50e589c7588113afea0fad24a8b74e687c1e1",
+  "integrity_card_sha256": "8fbc88a0fbbac04e08d80c972aaccce335ceaac03b6eddc3ebef6d0b0d69a58b",
   "integrity_level": "proof_graph_integrity_locked",
   "integrity_score": 100,
   "next_actions": [
@@ -409,7 +409,7 @@
       "ok": true,
       "public_release_ready": false,
       "release_level": "local_release_candidate",
-      "release_score": 78
+      "release_score": 74
     },
     "release_evidence": {
       "errors": [],
@@ -433,7 +433,7 @@
   },
   "workflows": [
     {
-      "bytes": 11474,
+      "bytes": 29157,
       "markers_present": true,
       "name": "release_workflow",
       "path": ".github/workflows/release.yml",
@@ -446,10 +446,10 @@
         "trice_research_card",
         "pypa/gh-action-pypi-publish"
       ],
-      "sha256": "d02083a6220393b437cd1913635fe84df7833c6c1fadcdf3364454a967cfceb3"
+      "sha256": "3e18e82ec98c82fd429eb11556c7767ec669a8f6ce7e7a4fc2728bd390262652"
     },
     {
-      "bytes": 10112,
+      "bytes": 10102,
       "markers_present": true,
       "name": "ci_workflow",
       "path": ".github/workflows/tracerazor.yml",
@@ -459,7 +459,7 @@
         "tracerazor.trice integrity",
         "tracerazor.trice verify-integrity"
       ],
-      "sha256": "6341863650243dc90df4d7680e78490f21480738f0466e8771f51896a0acff90"
+      "sha256": "9945763fa168f4b58f063f819c97d97b7b92996e3d1d0cf92d21e8c9ee51143b"
     },
     {
       "bytes": 788,

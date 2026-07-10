@@ -1,20 +1,20 @@
 """
-TraceRazor 1.0.3
+TraceRazor 1.1.0
 
-TraceRazor is a token efficiency auditor and adaptive sampling library for
-production AI agents. It does two things:
+TraceRazor is a local-first efficiency supervisor for production AI agents.
+Its stable core audits runs, diagnoses structural token waste, and verifies
+before/after improvements. Adaptive sampling remains an independent Labs API.
 
 1. Audit: record your agent's reasoning steps and tool calls, then submit
-   the trace to the TraceRazor analyzer to get a Token Adequacy Score (TAS),
+   the trace to the TraceRazor analyzer to get a Token Alignment Score (TAS),
    per-metric breakdowns, fix recommendations, and savings estimates.
 
-2. Sample: replace your agent's single LLM call per step with a parallel
-   ensemble. TraceRazor's AdaptiveKNode samples K candidates per step and
-   picks the consensus winner, increasing task success rates while keeping
-   token overhead low.
+2. Sample (Labs): TraceRazor's AdaptiveKNode can sample K candidates per step
+   and select a consensus result. This experimental surface has no general
+   efficacy claim and is not part of the agent-supervisor GA contract.
 
-Both features work independently. Use just the auditor, just the sampler,
-or both together.
+The stable product is the auditor and agent-efficiency workflow. Sampling is
+kept import-compatible as a separate Labs API.
 
 
 AUDIT QUICKSTART
@@ -33,7 +33,7 @@ Record steps manually with Tracer:
 
     report = t.analyse()
     print(report.summary())
-    report.assert_passes()   # raises AssertionError in CI if TAS < 70
+    # Prefer a same-workload `tracerazor compare` gate in CI.
 
 
 SAMPLING QUICKSTART
@@ -60,8 +60,8 @@ TraceRazorClient   Lower-level client for submitting trace dicts directly.
 TraceRazorReport   Parsed audit result with TAS score, metrics, and fixes.
 TraceStep          Data class for a single recorded step.
 
-SAMPLING API
-------------
+SAMPLING API (LABS)
+-------------------
 AdaptiveKNode        LangGraph node. Samples K candidates per step and picks
                      the consensus winner. K adapts dynamically.
 ExactMatchConsensus  Aggregates K branch proposals by exact-match comparison.
@@ -108,7 +108,7 @@ from ._self_consistency import SCResult, SelfConsistencyBaseline
 # LLM adapters
 from ._adapters import anthropic_llm, mock_llm, openai_llm
 
-__version__ = "1.0.3"
+__version__ = "1.1.0"
 __author__ = "Zulfaqar Hafez"
 
 __all__ = [

@@ -87,7 +87,11 @@ pub fn compute(trace: &Trace) -> TurResult {
         .iter()
         .filter(|s| s.step_type == StepType::ToolCall)
         .count();
-    let target = if tool_call_count <= 1 { 0.70 } else { TARGET_COMPLEX };
+    let target = if tool_call_count <= 1 {
+        0.70
+    } else {
+        TARGET_COMPLEX
+    };
 
     TurResult {
         score: (ratio * 1000.0).round() / 1000.0,

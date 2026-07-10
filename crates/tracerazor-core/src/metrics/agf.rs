@@ -87,7 +87,10 @@ fn quoted_span_is_syntax(s: &str) -> bool {
         return true;
     }
     // Mostly-punctuation spans are pattern syntax.
-    let non_alnum = t.chars().filter(|c| !c.is_alphanumeric() && *c != ' ').count();
+    let non_alnum = t
+        .chars()
+        .filter(|c| !c.is_alphanumeric() && *c != ' ')
+        .count();
     non_alnum * 5 > t.chars().count() * 2 // > 40% punctuation
 }
 
@@ -372,8 +375,7 @@ mod tests {
 
         let mut count = step(2, StepType::ToolCall, "count lines in the syslog");
         count.tool_name = Some("bash".into());
-        count.tool_params =
-            Some(serde_json::json!({"command": "wc -l /var/log/syslog"}));
+        count.tool_params = Some(serde_json::json!({"command": "wc -l /var/log/syslog"}));
         count.output = Some("4242 /var/log/syslog".into());
 
         let answer = step(3, StepType::Reasoning, "The syslog has 4242 lines.");
@@ -393,11 +395,12 @@ mod tests {
         // The agent invents a path never seen in task or observations.
         let mut cat = step(1, StepType::ToolCall, "read the secret config now");
         cat.tool_name = Some("bash".into());
-        cat.tool_params =
-            Some(serde_json::json!({"command": "cat /opt/imaginary/conf.yaml"}));
+        cat.tool_params = Some(serde_json::json!({"command": "cat /opt/imaginary/conf.yaml"}));
         cat.output = Some("nope".into());
-        let t = trace(vec![cat, step(2, StepType::Reasoning, "Done.")],
-                      Some("Inspect the configuration"));
+        let t = trace(
+            vec![cat, step(2, StepType::Reasoning, "Done.")],
+            Some("Inspect the configuration"),
+        );
         let r = compute(&t);
         assert_eq!(r.action_grounding, Some(0.0));
         assert!(r
@@ -418,12 +421,18 @@ mod tests {
         let t = trace(vec![du, answer], Some("Total bytes of pdfs in /docs"));
         let r = compute(&t);
         assert_eq!(r.claim_grounding, Some(0.0));
-        assert!(r.ungrounded.iter().any(|u| u.kind == "claim" && u.literal == "172"));
+        assert!(r
+            .ungrounded
+            .iter()
+            .any(|u| u.kind == "claim" && u.literal == "172"));
     }
 
     #[test]
     fn no_params_no_claims_is_neutral() {
-        let t = trace(vec![step(1, StepType::Reasoning, "pure thought, no facts")], None);
+        let t = trace(
+            vec![step(1, StepType::Reasoning, "pure thought, no facts")],
+            None,
+        );
         let r = compute(&t);
         assert_eq!(r.score, 1.0);
         assert!(r.pass);
@@ -437,9 +446,15 @@ mod tests {
         s.tool_params = Some(serde_json::json!({
             "command": "grep -r 'needle' /haystack /other/place"
         }));
-        let t = trace(vec![s, step(2, StepType::Reasoning, "found 37 matches")], None);
+        let t = trace(
+            vec![s, step(2, StepType::Reasoning, "found 37 matches")],
+            None,
+        );
         let a = compute(&t);
         let b = compute(&t);
-        assert_eq!(serde_json::to_string(&a).unwrap(), serde_json::to_string(&b).unwrap());
+        assert_eq!(
+            serde_json::to_string(&a).unwrap(),
+            serde_json::to_string(&b).unwrap()
+        );
     }
 }

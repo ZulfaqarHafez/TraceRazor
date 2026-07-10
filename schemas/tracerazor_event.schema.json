@@ -1,0 +1,175 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/ZulfaqarHafez/tracerazor/blob/main/schemas/tracerazor_event.schema.json",
+  "title": "TraceRazor runtime event v1",
+  "description": "A privacy-aware, provenance-carrying event emitted by an AI-agent runtime before compilation to TraceRazor's native trace format.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_id",
+    "timestamp",
+    "sequence",
+    "run_id",
+    "trace_id",
+    "span_id",
+    "parent_span_id",
+    "session_id",
+    "agent_id",
+    "parent_agent_id",
+    "event_type",
+    "host",
+    "host_version",
+    "framework",
+    "framework_version",
+    "tokens",
+    "tool",
+    "task",
+    "capture",
+    "content",
+    "content_sha256",
+    "input_context",
+    "input_context_sha256",
+    "output",
+    "output_sha256",
+    "metadata"
+  ],
+  "properties": {
+    "schema_version": { "const": "tracerazor-event/v1" },
+    "event_id": { "type": "string", "minLength": 1 },
+    "timestamp": { "type": "string", "format": "date-time" },
+    "sequence": { "type": "integer", "minimum": 0 },
+    "run_id": { "type": "string", "minLength": 1 },
+    "trace_id": { "type": "string", "minLength": 1 },
+    "span_id": { "type": "string", "minLength": 1 },
+    "parent_span_id": { "$ref": "#/definitions/nullableString" },
+    "session_id": { "type": "string", "minLength": 1 },
+    "agent_id": { "type": "string", "minLength": 1 },
+    "parent_agent_id": { "$ref": "#/definitions/nullableString" },
+    "event_type": {
+      "type": "string",
+      "enum": ["reasoning", "tool_call", "handoff", "message", "unknown", "run_start", "run_end", "error"]
+    },
+    "host": { "type": "string", "minLength": 1 },
+    "host_version": { "$ref": "#/definitions/nullableString" },
+    "framework": { "type": "string", "minLength": 1 },
+    "framework_version": { "$ref": "#/definitions/nullableString" },
+    "tokens": { "$ref": "#/definitions/tokens" },
+    "tool": {
+      "anyOf": [
+        { "$ref": "#/definitions/tool" },
+        { "type": "null" }
+      ]
+    },
+    "task": {
+      "anyOf": [
+        { "$ref": "#/definitions/task" },
+        { "type": "null" }
+      ]
+    },
+    "capture": { "$ref": "#/definitions/capture" },
+    "content": { "$ref": "#/definitions/nullableString" },
+    "content_sha256": { "$ref": "#/definitions/nullableDigest" },
+    "input_context": { "$ref": "#/definitions/nullableString" },
+    "input_context_sha256": { "$ref": "#/definitions/nullableDigest" },
+    "output": { "$ref": "#/definitions/nullableString" },
+    "output_sha256": { "$ref": "#/definitions/nullableDigest" },
+    "metadata": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "event_type": { "const": "tool_call" } } },
+      "then": { "properties": { "tool": { "$ref": "#/definitions/tool" } } },
+      "else": { "properties": { "tool": { "type": "null" } } }
+    }
+  ],
+  "definitions": {
+    "nullableString": {
+      "anyOf": [
+        { "type": "string", "minLength": 1 },
+        { "type": "null" }
+      ]
+    },
+    "nullableDigest": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        { "type": "null" }
+      ]
+    },
+    "tokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "output", "cache_read", "cache_write", "reasoning", "total", "provenance"],
+      "properties": {
+        "input": { "type": "integer", "minimum": 0 },
+        "output": { "type": "integer", "minimum": 0 },
+        "cache_read": { "type": "integer", "minimum": 0 },
+        "cache_write": { "type": "integer", "minimum": 0 },
+        "reasoning": { "type": "integer", "minimum": 0 },
+        "total": { "type": "integer", "minimum": 0 },
+        "provenance": {
+          "type": "string",
+          "enum": ["provider_reported", "estimated", "missing"]
+        }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "provenance": { "const": "missing" } } },
+          "then": {
+            "properties": {
+              "input": { "maximum": 0 },
+              "output": { "maximum": 0 },
+              "cache_read": { "maximum": 0 },
+              "cache_write": { "maximum": 0 },
+              "reasoning": { "maximum": 0 },
+              "total": { "maximum": 0 }
+            }
+          }
+        }
+      ]
+    },
+    "tool": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["signature", "arguments_digest", "status", "duration_ms", "expected_failure", "observation_size", "error_type"],
+      "properties": {
+        "signature": { "type": "string", "minLength": 1 },
+        "arguments_digest": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "status": { "type": "string", "enum": ["success", "error", "pending", "skipped"] },
+        "duration_ms": {
+          "anyOf": [
+            { "type": "number", "minimum": 0 },
+            { "type": "null" }
+          ]
+        },
+        "expected_failure": { "type": "boolean" },
+        "observation_size": { "type": "integer", "minimum": 0 },
+        "error_type": { "$ref": "#/definitions/nullableString" }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["outcome", "verifier", "evidence"],
+      "properties": {
+        "outcome": { "type": "string", "enum": ["passed", "failed", "unknown", "cancelled"] },
+        "verifier": { "$ref": "#/definitions/nullableString" },
+        "evidence": { "type": "object" }
+      }
+    },
+    "capture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["quality", "privacy", "issues"],
+      "properties": {
+        "quality": { "type": "string", "enum": ["complete", "degraded", "partial"] },
+        "privacy": { "type": "string", "enum": ["local-redacted", "raw"] },
+        "issues": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_.:-]*$" }
+        }
+      }
+    }
+  }
+}

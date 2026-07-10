@@ -94,8 +94,7 @@ where
         let from_step = reasoning_steps[i];
         let to_step = reasoning_steps[i + 1];
 
-        let sim = similarity_fn(&texts[i], &texts[i + 1])
-            .clamp(0.0, 1.0);
+        let sim = similarity_fn(&texts[i], &texts[i + 1]).clamp(0.0, 1.0);
 
         let sim_rounded = (sim * 1000.0).round() / 1000.0;
 
@@ -175,9 +174,7 @@ mod tests {
 
     #[test]
     fn single_step_returns_perfect_score() {
-        let trace = make_trace(vec![
-            step(1, "step 1", StepType::Reasoning),
-        ]);
+        let trace = make_trace(vec![step(1, "step 1", StepType::Reasoning)]);
         let result = compute(&trace, |_, _| 0.5);
         assert_eq!(result.score, 1.0);
         assert!(result.pass);
@@ -209,7 +206,10 @@ mod tests {
         assert_eq!(result.score, 0.8);
         assert!(result.pass); // 0.8 >= 0.60
         assert_eq!(result.step_results.len(), 2);
-        assert!(result.high_drift_pairs.is_empty(), "no high drift pairs expected");
+        assert!(
+            result.high_drift_pairs.is_empty(),
+            "no high drift pairs expected"
+        );
     }
 
     #[test]
@@ -235,13 +235,11 @@ mod tests {
             step(4, "step4", StepType::Reasoning),
         ]);
         // Use a similarity function that gives different values based on content patterns
-        let result = compute(&trace, |a, b| {
-            match (a, b) {
-                ("step1", "step2") => 0.4,
-                ("step2", "step3") => 0.6,
-                ("step3", "step4") => 0.8,
-                _ => 0.0,
-            }
+        let result = compute(&trace, |a, b| match (a, b) {
+            ("step1", "step2") => 0.4,
+            ("step2", "step3") => 0.6,
+            ("step3", "step4") => 0.8,
+            _ => 0.0,
         });
         // Mean = (0.4 + 0.6 + 0.8) / 3 = 0.6
         assert_eq!(result.score, 0.6);
@@ -258,18 +256,13 @@ mod tests {
             step(4, "reasoningd", StepType::Reasoning),
         ]);
         // Pairs: (1,2) = 0.25 (drift), (2,3) = 0.5 (ok), (3,4) = 0.1 (drift)
-        let result = compute(&trace, |a, b| {
-            match (a, b) {
-                ("reasoninga", "reasoningb") => 0.25,
-                ("reasoningb", "reasoningc") => 0.5,
-                ("reasoningc", "reasoningd") => 0.1,
-                _ => 0.0,
-            }
+        let result = compute(&trace, |a, b| match (a, b) {
+            ("reasoninga", "reasoningb") => 0.25,
+            ("reasoningb", "reasoningc") => 0.5,
+            ("reasoningc", "reasoningd") => 0.1,
+            _ => 0.0,
         });
-        assert_eq!(
-            result.high_drift_pairs,
-            vec![(1, 2), (3, 4)]
-        );
+        assert_eq!(result.high_drift_pairs, vec![(1, 2), (3, 4)]);
     }
 
     #[test]
@@ -325,7 +318,11 @@ mod tests {
         ]);
         let sim = |a: &str, b: &str| {
             let norm = |s: &str| s.split_whitespace().collect::<Vec<_>>().join(" ");
-            if norm(a) == norm(b) { 1.0 } else { 0.0 }
+            if norm(a) == norm(b) {
+                1.0
+            } else {
+                0.0
+            }
         };
         let result = compute(&trace, sim);
         assert_eq!(

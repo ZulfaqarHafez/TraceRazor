@@ -1,8 +1,8 @@
-pub mod langsmith;
 pub mod claude_code;
 pub mod langfuse;
-pub mod raw_json;
+pub mod langsmith;
 pub mod otel;
+pub mod raw_json;
 
 use anyhow::Result;
 use tracerazor_core::types::Trace;
@@ -97,7 +97,12 @@ fn looks_like_chat_log(v: &serde_json::Value) -> bool {
 
 fn looks_like_claude_code_jsonl(data: &str) -> bool {
     let mut saw = false;
-    for line in data.lines().map(str::trim).filter(|l| !l.is_empty()).take(8) {
+    for line in data
+        .lines()
+        .map(str::trim)
+        .filter(|l| !l.is_empty())
+        .take(8)
+    {
         let Ok(v) = serde_json::from_str::<serde_json::Value>(line) else {
             return false;
         };
@@ -124,13 +129,11 @@ fn looks_like_claude_code_entry(v: &serde_json::Value) -> bool {
 fn looks_like_langfuse(v: &serde_json::Value) -> bool {
     v.get("observations").is_some()
         || v.get("traces").is_some()
-        || v.as_array()
-            .and_then(|a| a.first())
-            .is_some_and(|first| {
-                first.get("observations").is_some()
-                    || first.get("traceId").is_some()
-                    || first.get("usageDetails").is_some()
-            })
+        || v.as_array().and_then(|a| a.first()).is_some_and(|first| {
+            first.get("observations").is_some()
+                || first.get("traceId").is_some()
+                || first.get("usageDetails").is_some()
+        })
 }
 
 #[cfg(test)]

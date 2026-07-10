@@ -2,6 +2,10 @@
 
 Date: 2026-06-21
 
+> Historical evaluation snapshot. Under the 1.1 contract, fleet-average TAS
+> and projected savings are diagnostic fixtures, not efficacy evidence. The
+> measured paired rerun remains the only product-effect result in this file.
+
 ## Executive Summary
 
 TraceRazor is already strongest where many LLM tooling products are weak: it has
@@ -23,7 +27,7 @@ mean token reduction 0.7%, 95% CI [-8.9%, 9.9%], pass rate 12/12 before and
 
 | Evaluation | Command | Result |
 |---|---|---|
-| Public real-trace audit benchmark | `python -m benchmark.run_benchmarks` | 28 real traces, avg TAS 81.1, 82,080 tokens audited, 26,586 projected saved tokens (32%) |
+| Public real-trace audit benchmark | `python -m benchmark.run_benchmarks` | 28 historical ingest/detector fixtures; projected values are estimated and cross-trace average TAS is not a product metric |
 | Hugging Face AgentInstruct audit | `python -m benchmark.hf_audit_stats` | 13 traces present; 4 above default 5-step floor; mean TAS 85.1; 20 fixes over full corpus with `--min-steps 2` |
 | Measured live case-study replay | `python -m benchmark.case_study --pairs-dir benchmark/live/traces` | 12 before/after pairs, +0.7% mean token reduction, 95% CI [-8.9%, 9.9%], pass held on every pair |
 | Python regression tests | `python -m pytest tests/test_readme_claims.py tests/test_hf_agentinstruct.py -q` | 26 passed, 2 skipped |

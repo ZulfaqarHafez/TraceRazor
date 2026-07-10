@@ -327,8 +327,9 @@
     <p>Axum REST API + WebSocket live events + embedded React dashboard. Serves the full UI at port 8080.</p>
   </div>
   <div class="card">
-    <h4>tracerazor-proxy</h4>
-    <p>Four-layer guardrail interceptor: semantic preservation, scope whitelist, budget injection, verbosity directive.</p>
+    <h4>tracerazor.runtime</h4>
+    <p>Python event processor with provenance-aware usage, local disk spooling,
+    privacy controls, spawned-agent linkage, and advisory streaming detectors.</p>
   </div>
   <div class="card">
     <h4>tracerazor-cli</h4>
@@ -336,7 +337,10 @@
   </div>
   <div class="card">
     <h4>Python Integrations</h4>
-    <p>SDK (<code>pip install tracerazor</code>) + adapters for LangGraph, CrewAI, and OpenAI Agents. All on PyPI v0.2.0.</p>
+    <p>The 1.1 platform wheel contains the native auditor, runtime event API,
+    Agent Skill assets, MCP entry point, and optional adapters for LangGraph,
+    CrewAI, and OpenAI Agents. Public 1.1 artifacts remain pending until the
+    clean-machine release matrix passes.</p>
   </div>
 </div>
 
@@ -389,40 +393,52 @@
 <table>
   <tr><th>Command</th><th>Purpose</th></tr>
   <tr><td><code>tracerazor audit</code></td><td>Score a trace; optionally gate on <code>--threshold</code></td></tr>
-  <tr><td><code>tracerazor optimize</code></td><td>Rewrite system prompt via LLM to eliminate detected waste</td></tr>
+  <tr><td><code>tracerazor optimize</code></td><td>Labs-only prompt experiment; not an autonomous or verified improvement</td></tr>
   <tr><td><code>tracerazor bench</code></td><td>Compare before/after traces, verify savings</td></tr>
   <tr><td><code>tracerazor simulate</code></td><td>Project TAS impact of removing/merging steps</td></tr>
   <tr><td><code>tracerazor compare</code></td><td>Side-by-side metric delta between two traces</td></tr>
-  <tr><td><code>tracerazor cost</code></td><td>Monthly savings estimate across trace set</td></tr>
+  <tr><td><code>tracerazor cost</code></td><td>Estimated monthly cost projection across a trace set</td></tr>
   <tr><td><code>tracerazor export</code></td><td>Forward trace to OTEL or webhook</td></tr>
 </table>
 
 <!-- ====== INTEGRATIONS ====== -->
 <h2>Python Integrations</h2>
-<p>All published to PyPI v0.2.0. Each wraps the core analysis engine with framework-native callbacks.</p>
+<p>TraceRazor 1.1 uses one package and one provenance-aware runtime contract.
+Framework SDKs remain optional, and estimated usage is marked degraded rather
+than treated as enforcement-quality evidence.</p>
 
 <div class="card-grid">
   <div class="card">
-    <h4>tracerazor (SDK)</h4>
-    <p><code>pip install tracerazor</code><br>Framework-agnostic. Use <code>Tracer</code> context manager with any Python agent.</p>
+    <h4>Unified runtime</h4>
+    <p><code>from tracerazor.runtime import configure</code><br>Emits
+    <code>tracerazor-event/v1</code>, preserves token provenance, and stores
+    local-redacted run artifacts.</p>
   </div>
   <div class="card">
-    <h4>tracerazor-langgraph</h4>
-    <p><code>pip install tracerazor-langgraph</code><br>Native <code>BaseCallbackHandler</code>. Auto-captures LLM and tool events.</p>
+    <h4>Agent bootstrap</h4>
+    <p><code>tracerazor agent install --host auto --scope project</code><br>
+    Previewable, idempotent adapters for Codex, Claude Code, Gemini CLI, and a
+    generic wrapper.</p>
   </div>
   <div class="card">
-    <h4>tracerazor-crewai</h4>
-    <p><code>pip install tracerazor-crewai</code><br>CrewAI callback adapter. Traces tasks, agent actions, and tool calls.</p>
+    <h4>MCP</h4>
+    <p><code>pip install "tracerazor[mcp]&gt;=1.1,&lt;2"</code><br>Local diagnosis,
+    comparisons, policy checks, validation records, and evidence verification.</p>
   </div>
   <div class="card">
-    <h4>tracerazor-openai-agents</h4>
-    <p><code>pip install tracerazor-openai-agents</code><br>OpenAI <code>RunHooks</code> adapter. Captures agent ends, tool use, handoffs.</p>
+    <h4>Framework callbacks</h4>
+    <p>Optional OpenAI Agents, LangGraph, and CrewAI adapters feed the same
+    runtime processor. Unsupported automatic registration is reported instead
+    of silently claiming capture.</p>
   </div>
 </div>
 
 <!-- ====== MULTI-AGENT ====== -->
 <h2 class="page-break">Multi-Agent Support</h2>
-<p>Each agent in a workflow gets its own tracer and independent report. Aggregate metrics across all agents for workflow-level visibility.</p>
+<p>Parent and child runs carry linked W3C trace context, run receipts, and
+project policy. TAS remains ordinal: do not average or rank unrelated child
+agents. Use linkage, exact usage, tool-loop findings, and same-workload
+before/after comparisons for workflow-level decisions.</p>
 
 <div class="chart-container">
 <svg viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
@@ -435,35 +451,37 @@
   <!-- Triage -->
   <rect x="110" y="75" width="80" height="50" rx="6" fill="#e94560"/>
   <text x="150" y="96" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Triage</text>
-  <text x="150" y="112" text-anchor="middle" font-size="7" fill="#fdd">TAS: 82</text>
+  <text x="150" y="112" text-anchor="middle" font-size="7" fill="#fdd">receipt: linked</text>
   <line x1="195" y1="100" x2="215" y2="100" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
   <!-- Resolution -->
   <rect x="220" y="75" width="80" height="50" rx="6" fill="#0f3460"/>
   <text x="260" y="96" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Resolution</text>
-  <text x="260" y="112" text-anchor="middle" font-size="7" fill="#aaa">TAS: 74</text>
+  <text x="260" y="112" text-anchor="middle" font-size="7" fill="#aaa">receipt: linked</text>
   <!-- Branch -->
   <line x1="305" y1="90" x2="330" y2="55" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
   <line x1="305" y1="110" x2="330" y2="145" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
   <!-- Escalation -->
   <rect x="335" y="30" width="80" height="50" rx="6" fill="#533483"/>
   <text x="375" y="51" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Escalation</text>
-  <text x="375" y="67" text-anchor="middle" font-size="7" fill="#ccc">TAS: 79</text>
+  <text x="375" y="67" text-anchor="middle" font-size="7" fill="#ccc">receipt: linked</text>
   <!-- Knowledge -->
   <rect x="335" y="120" width="80" height="50" rx="6" fill="#44bba4"/>
   <text x="375" y="141" text-anchor="middle" font-size="9" font-weight="600" fill="#fff">Knowledge</text>
-  <text x="375" y="157" text-anchor="middle" font-size="7" fill="#dff">TAS: 88</text>
+  <text x="375" y="157" text-anchor="middle" font-size="7" fill="#dff">receipt: linked</text>
   <!-- Aggregate -->
   <line x1="420" y1="55" x2="445" y2="100" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
   <line x1="420" y1="145" x2="445" y2="100" stroke="#888" stroke-width="1.5" marker-end="url(#a3)"/>
   <rect x="450" y="75" width="40" height="50" rx="6" fill="#16213e"/>
-  <text x="470" y="96" text-anchor="middle" font-size="8" font-weight="700" fill="#e94560">80.8</text>
-  <text x="470" y="112" text-anchor="middle" font-size="7" fill="#aaa">Avg TAS</text>
+  <text x="470" y="96" text-anchor="middle" font-size="8" font-weight="700" fill="#e94560">4/4</text>
+  <text x="470" y="112" text-anchor="middle" font-size="7" fill="#aaa">linked</text>
 </svg>
 </div>
 
 <!-- ====== BENCHMARKS ====== -->
 <h2>Benchmark Results</h2>
-<p>5 synthetic traces, each isolating a waste pattern. Run with <code>python benchmarks/run_benchmarks.py</code>.</p>
+<p>Five synthetic fixtures, each isolating a waste pattern. These outputs test
+detector behavior; they are not an efficacy study, are not comparable across
+agents, and do not establish measured savings.</p>
 
 <!-- Bar chart -->
 <div class="chart-container">
@@ -496,7 +514,7 @@
 </div>
 
 <table>
-  <tr><th>Trace</th><th>TAS</th><th>Grade</th><th>Tokens</th><th>Waste</th><th>Savings</th><th>Fixes</th></tr>
+  <tr><th>Trace</th><th>TAS</th><th>Grade</th><th>Tokens</th><th>Waste</th><th>Estimated savings</th><th>Fixes</th></tr>
   <tr><td>bloated-agent</td><td>87.9</td><td>Good</td><td>2,320</td><td>30%</td><td>693</td><td>2</td></tr>
   <tr><td>clean-agent</td><td>89.4</td><td>Good</td><td>860</td><td>34%</td><td>289</td><td>1</td></tr>
   <tr><td>looping-agent</td><td>69.4</td><td>Fair</td><td>1,710</td><td>35%</td><td>603</td><td>3</td></tr>
@@ -507,23 +525,21 @@
 <div class="highlight-box">
   <h3>Summary</h3>
   <div class="stat-row">
-    <div class="stat"><div class="num">82.1</div><div class="label">Average TAS</div></div>
-    <div class="stat"><div class="num">8,990</div><div class="label">Total Tokens</div></div>
-    <div class="stat"><div class="num">3,473</div><div class="label">Tokens Saveable (39%)</div></div>
-    <div class="stat"><div class="num">125+</div><div class="label">Tests Passing</div></div>
+    <div class="stat"><div class="num">5</div><div class="label">Synthetic Fixtures</div></div>
+    <div class="stat"><div class="num">8,990</div><div class="label">Fixture Tokens</div></div>
+    <div class="stat"><div class="num">3,473</div><div class="label">Estimated Tokens Flagged</div></div>
+    <div class="stat"><div class="num">0</div><div class="label">Efficacy Claims</div></div>
   </div>
 </div>
 
 <!-- ====== TEST COVERAGE ====== -->
 <h2>Test Coverage</h2>
 <table>
-  <tr><th>Crate</th><th>Tests</th><th>Covers</th></tr>
-  <tr><td>tracerazor-core</td><td>125</td><td>All 13 metrics, scoring, fixes, IAR, simulation, reports</td></tr>
-  <tr><td>tracerazor-ingest</td><td>3</td><td>Raw JSON, LangSmith, OTEL parsers</td></tr>
-  <tr><td>tracerazor-semantic</td><td>5</td><td>BoW similarity, tokenization</td></tr>
-  <tr><td>tracerazor-store</td><td>9</td><td>CRUD, baselines, anomaly detection</td></tr>
-  <tr><td>tracerazor-server</td><td>13</td><td>REST API endpoints, WebSocket</td></tr>
-  <tr><td>tracerazor-proxy</td><td>12</td><td>All 4 proxy layers</td></tr>
+  <tr><th>Surface</th><th>Release gate</th><th>Covers</th></tr>
+  <tr><td>Rust workspace</td><td>Required</td><td>Metrics, ingestion, storage, API, CLI, signing, and host bootstrap</td></tr>
+  <tr><td>Python package</td><td>Required</td><td>Runtime events, redaction, persistence, MCP, adapters, and proof tooling</td></tr>
+  <tr><td>Clean platform wheel</td><td>Required</td><td>Bundled binary origin, schemas, host assets, MCP self-test, and sample audit</td></tr>
+  <tr><td>Agent evaluation</td><td>Required for efficacy claims</td><td>Held-out task quality, matched usage, confidence intervals, receipts, and safety</td></tr>
 </table>
 
 <!-- ====== QUICK START ====== -->
@@ -533,16 +549,17 @@
 <pre><code>git clone https://github.com/ZulfaqarHafez/tracerazor
 cd tracerazor
 docker compose up --build
-# Dashboard at http://localhost:8080</code></pre>
+# Requires TRACERAZOR_API_TOKEN in .env; trust the local Caddy CA first.
+# Dashboard at https://localhost:8080</code></pre>
 
 <h3>Option 2: Cargo</h3>
 <pre><code>cargo build --release
 ./target/release/tracerazor audit trace.json</code></pre>
 
 <h3>Option 3: Python</h3>
-<pre><code>pip install tracerazor
+<pre><code>pip install "tracerazor[mcp]&gt;=1.1,&lt;2"
 
-from tracerazor_sdk import Tracer
+from tracerazor import Tracer
 
 with Tracer(agent_name="my-agent") as t:
     t.reasoning("Analyzing request...", tokens=200)
@@ -550,16 +567,16 @@ with Tracer(agent_name="my-agent") as t:
 
 report = t.analyse()
 print(report.summary())
-# TAS 78.5/100 [GOOD] | 4 steps, 350 tokens | Saved 90 tokens (26%)</code></pre>
+# TAS 78.5/100 [GOOD] | 4 steps, 350 tokens | Estimated 90 tokens (26%)</code></pre>
 
 <h3>CI/CD Gate</h3>
-<pre><code>tracerazor audit trace.json --threshold 75
-# Exit code 1 if TAS &lt; 75</code></pre>
+<pre><code>tracerazor compare baseline.json candidate.json --regression-threshold 10
+# Exit code 1 on a declared same-workload regression</code></pre>
 
 <!-- ====== FOOTER ====== -->
 <hr style="margin-top: 40px; border: none; border-top: 2px solid #e94560;">
 <p style="text-align: center; color: #888; font-size: 0.85em; margin-top: 14px;">
-  <strong>TraceRazor v0.2.0</strong> | Apache 2.0 | Author: Zulfaqar Hafez<br>
+  <strong>TraceRazor v1.1.0 release candidate</strong> | MIT | Author: Zulfaqar Hafez<br>
   github.com/ZulfaqarHafez/tracerazor
 </p>
 

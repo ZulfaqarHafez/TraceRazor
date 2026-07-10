@@ -37,7 +37,7 @@ class TraceRazorReport:
         framework:    Framework identifier (e.g. "openai", "langgraph").
         total_steps:  Number of steps in the trace.
         total_tokens: Total token count across all steps.
-        tas_score:    Token Adequacy Score, 0-100. Higher is more efficient.
+        tas_score:    Token Alignment Score, 0-100. Ordinal within one workload.
         grade:        Letter grade: Excellent / Good / Fair / Poor.
         passes:       True if the analyzer's pass/gate verdict passed.
         threshold:    The minimum score used for pass/fail.
@@ -70,7 +70,7 @@ class TraceRazorReport:
         return (
             f"TAS {self.tas_score:.1f}/100 [{self.grade}] | "
             f"{self.total_steps} steps, {self.total_tokens} tokens | "
-            f"Saved {saved} tokens ({pct:.0f}%)"
+            f"Estimated {saved} tokens ({pct:.0f}%)"
         )
 
     def markdown(self) -> str:
@@ -96,13 +96,21 @@ class TraceRazorReport:
                 status = "PASS" if m.get("pass") else "FAIL"
                 lines.append(f"{code.upper():<6} {m.get('score', 0):.3f}   {status}")
         if self.savings:
+            monthly_runs = self.savings.get("monthly_runs")
+            monthly_assumed = self.savings.get("monthly_runs_assumed") is True
+            monthly_label = (
+                f"  At {'ASSUMED ' if monthly_assumed else ''}{int(monthly_runs):,}/month:  "
+                if isinstance(monthly_runs, (int, float))
+                else "  Monthly projection:  "
+            )
             lines += [
                 sep,
                 "SAVINGS ESTIMATE",
                 f"  Tokens saved:  {self.savings.get('tokens_saved', 0)}  "
                 f"({self.savings.get('reduction_pct', 0):.1f}% reduction)",
                 f"  Cost saved:    ${self.savings.get('cost_saved_per_run_usd', 0):.4f}/run",
-                f"  At 50K/month:  ${self.savings.get('monthly_savings_usd', 0):.2f}/month",
+                monthly_label
+                + f"${self.savings.get('monthly_savings_usd', 0):.2f}/month (estimated)",
             ]
         if self.fixes:
             lines += [sep, "AUTO-GENERATED FIXES"]
@@ -141,7 +149,9 @@ class TraceRazorClient:
                    Ignored when server is set.
         server:    Base URL of a running tracerazor-server, e.g.
                    "http://localhost:8080". Activates HTTP mode.
-        threshold: Minimum TAS score for assert_passes() (default 70).
+        threshold: Explicit project-local TAS floor for the legacy
+                   assert_passes() helper. Default 70 is retained for 1.x
+                   compatibility and is not a universal quality threshold.
         hermetic:  Default CLI/server audit mode. True means score as a pure
                    function of trace, config, and version.
         min_steps: Optional audit floor to pass through to the CLI.

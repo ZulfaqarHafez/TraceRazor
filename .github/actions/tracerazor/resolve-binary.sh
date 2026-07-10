@@ -15,7 +15,7 @@
 set -euo pipefail
 
 BINARY_PATH="${BINARY_PATH:-}"
-VERSION="${VERSION:-latest}"
+VERSION="${VERSION:-}"
 RELEASE_REPO="${RELEASE_REPO:-ZulfaqarHafez/TraceRazor}"
 DEST_DIR="${DEST_DIR:-${RUNNER_TEMP:-/tmp}/tracerazor-bin}"
 
@@ -59,15 +59,42 @@ esac
 
 ASSET="tracerazor-${TRIPLE}.${ARCHIVE_EXT}"
 if [ "$VERSION" = "latest" ]; then
-  URL="https://github.com/${RELEASE_REPO}/releases/latest/download/${ASSET}"
+  BASE_URL="https://github.com/${RELEASE_REPO}/releases/latest/download"
 else
-  URL="https://github.com/${RELEASE_REPO}/releases/download/${VERSION}/${ASSET}"
+  BASE_URL="https://github.com/${RELEASE_REPO}/releases/download/${VERSION}"
 fi
+
+if [ -z "$VERSION" ]; then
+  echo "::error::version is required; pass an immutable vX.Y.Z tag or explicitly opt in to latest" >&2
+  exit 2
+fi
+URL="${BASE_URL}/${ASSET}"
 
 mkdir -p "$DEST_DIR"
 echo "Downloading ${URL}" >&2
 if ! curl -fsSL --retry 3 --retry-delay 2 -o "$DEST_DIR/$ASSET" "$URL"; then
   echo "::error::could not download prebuilt binary from ${URL}. Either the release has no asset for ${TRIPLE}, or the tag is wrong. Alternatives: pass binary-path, or set build-from-source: true (requires a Rust toolchain and the TraceRazor sources)." >&2
+  exit 2
+fi
+if ! curl -fsSL --retry 3 --retry-delay 2 -o "$DEST_DIR/SHA256SUMS" "${BASE_URL}/SHA256SUMS"; then
+  echo "::error::release ${VERSION} has no SHA256SUMS; refusing an unverified binary" >&2
+  exit 2
+fi
+EXPECTED=$(awk -v asset="$ASSET" '$2 == asset {print $1}' "$DEST_DIR/SHA256SUMS")
+if [ -z "$EXPECTED" ]; then
+  echo "::error::SHA256SUMS has no entry for ${ASSET}" >&2
+  exit 2
+fi
+if command -v sha256sum >/dev/null 2>&1; then
+  ACTUAL=$(sha256sum "$DEST_DIR/$ASSET" | awk '{print $1}')
+elif command -v shasum >/dev/null 2>&1; then
+  ACTUAL=$(shasum -a 256 "$DEST_DIR/$ASSET" | awk '{print $1}')
+else
+  echo "::error::sha256sum or shasum is required to verify ${ASSET}" >&2
+  exit 2
+fi
+if [ "$ACTUAL" != "$EXPECTED" ]; then
+  echo "::error::checksum mismatch for ${ASSET}" >&2
   exit 2
 fi
 # The Windows asset is a .zip; extract with unzip when present, else bsdtar

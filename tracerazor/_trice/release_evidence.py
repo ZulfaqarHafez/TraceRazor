@@ -7,7 +7,10 @@ import hashlib
 import json
 import re
 import sys
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # pragma: no cover - exercised on Python 3.10
+    import tomli as tomllib
 from pathlib import Path
 from typing import Any
 
@@ -60,7 +63,7 @@ def build_release_evidence_card(
     sidecars = _sidecar_rows(sidecar_stem, artifacts, python_sbom, cargo_sbom, provenance_statement)
     checks = [
         _check("wheel_present", _kind_count(artifacts, "wheel") >= 1, _kind_count(artifacts, "wheel"), "at least one wheel artifact"),
-        _check("sdist_present", _kind_count(artifacts, "sdist") >= 1, _kind_count(artifacts, "sdist"), "one source distribution artifact"),
+        _check("sdist_absent", _kind_count(artifacts, "sdist") == 0, _kind_count(artifacts, "sdist"), "no source distribution until it can satisfy the bundled-auditor contract"),
         _check("cli_binary_present", _kind_count(artifacts, "binary") >= 1, _kind_count(artifacts, "binary"), "one built CLI binary"),
         _check("proof_cards_present", _all_named_present(artifacts, ["contract_card", "artifact_card", "reproduction_card", "crates_card", "install_card", "research_card"]), _present_named(artifacts, ["contract_card", "artifact_card", "reproduction_card", "crates_card", "install_card", "research_card"]), "contract, artifact, reproduction, crates, installability, and research cards"),
         _check("evidence_bundles_present", _all_named_present(artifacts, ["broad_evidence_bundle", "remote_smoke_bundle"]), _present_named(artifacts, ["broad_evidence_bundle", "remote_smoke_bundle"]), "broad and remote smoke evidence bundles"),
@@ -221,7 +224,7 @@ def render_release_evidence_tex(card: dict[str, Any]) -> str:
 
 def render_release_evidence_svg(card: dict[str, Any]) -> str:
     stages = [
-        ("packages", _check_passed(card, "wheel_present") and _check_passed(card, "sdist_present")),
+        ("packages", _check_passed(card, "wheel_present") and _check_passed(card, "sdist_absent")),
         ("binary", _check_passed(card, "cli_binary_present")),
         ("proof", _check_passed(card, "proof_cards_present") and _check_passed(card, "evidence_bundles_present")),
         ("sbom", _check_passed(card, "python_sbom_generated") and _check_passed(card, "cargo_sbom_generated")),
@@ -245,7 +248,7 @@ def render_release_evidence_svg(card: dict[str, Any]) -> str:
         if idx < len(stages) - 1:
             parts.append(f'<line x1="{x + 136}" y1="{y + 29}" x2="{x + 156}" y2="{y + 29}" stroke="#9ca3af" stroke-width="3"/>')
     parts.append(f'<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Artifacts {sum(1 for row in card["artifacts"] if row["present"])}/{len(card["artifacts"])} | Python SBOM components {card["python_sbom"]["component_count"]} | Cargo SBOM components {card["cargo_sbom"]["component_count"]}</text>')
-    parts.append('<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Release evidence is a local verifier packet; registry trust still requires PyPI/piwheels/crates.io/tag/CI to be green.</text>')
+    parts.append('<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Release evidence is a local verifier packet; the 1.1 contract still requires platform-wheel, image, tag, CI, and PyPI publication checks.</text>')
     parts.append("</svg>")
     return "\n".join(parts) + "\n"
 
@@ -550,7 +553,7 @@ def _release_evidence_level(checks: list[dict[str, Any]]) -> str:
     passed = {row["name"] for row in checks if row["passed"]}
     required = {
         "wheel_present",
-        "sdist_present",
+        "sdist_absent",
         "cli_binary_present",
         "proof_cards_present",
         "evidence_bundles_present",
@@ -571,7 +574,7 @@ def _release_evidence_level(checks: list[dict[str, Any]]) -> str:
 def _release_evidence_score(checks: list[dict[str, Any]]) -> int:
     weights = {
         "wheel_present": 10,
-        "sdist_present": 10,
+        "sdist_absent": 10,
         "cli_binary_present": 8,
         "proof_cards_present": 10,
         "evidence_bundles_present": 10,
@@ -589,14 +592,14 @@ def _next_actions(checks: list[dict[str, Any]]) -> list[str]:
     missing = [row["name"] for row in checks if not row["passed"]]
     if not missing:
         return [
-            "Attach the release evidence card, checksums, SBOMs, provenance statement, wheel, sdist, binary, paper, and evidence bundles to the GitHub release.",
+            "Attach the release evidence card, checksums, SBOMs, provenance statement, platform wheels, binaries, paper, and evidence bundles to the GitHub release.",
             "Regenerate this packet after every package rebuild, proof-card change, or evidence-bundle change.",
             "Publish registry attestations through trusted publishing where supported.",
         ]
     actions = []
     mapping = {
         "wheel_present": "Build the Python wheel before generating release evidence.",
-        "sdist_present": "Build the source distribution before generating release evidence.",
+        "sdist_absent": "Remove the source distribution until it can satisfy the bundled-auditor contract.",
         "cli_binary_present": "Build the Rust CLI binary before generating release evidence.",
         "proof_cards_present": "Regenerate contract, artifact, reproduction, and crates cards before generating release evidence.",
         "evidence_bundles_present": "Regenerate broad and remote smoke .trice.zip bundles.",

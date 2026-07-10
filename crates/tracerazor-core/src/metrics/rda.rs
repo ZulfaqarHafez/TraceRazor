@@ -137,7 +137,11 @@ const SIMPLE_KEYWORDS: &[&str] = &[
 /// Accuracy improves when an agent-specific historical median step count is
 /// supplied via `ScoringConfig.historical_median_steps`.
 pub fn classify_complexity(trace: &Trace) -> TaskComplexity {
-    let first_content = trace.steps.first().map(|s| s.content.as_str()).unwrap_or("");
+    let first_content = trace
+        .steps
+        .first()
+        .map(|s| s.content.as_str())
+        .unwrap_or("");
     let lower = first_content.to_lowercase();
 
     // Signal 1: distinct tools actually called in the trace.
@@ -304,7 +308,13 @@ mod tests {
         // 3 tools → classified Complex (8 steps expected). 5 steps used → well within range.
         let trace = make_trace(
             "process order",
-            &["get_order", "check_eligibility", "process_refund", "send_email", "log_result"],
+            &[
+                "get_order",
+                "check_eligibility",
+                "process_refund",
+                "send_email",
+                "log_result",
+            ],
         );
         let result = compute(&trace, None);
         // actual=6 steps, expected depends on complexity. Should not be wildly off.

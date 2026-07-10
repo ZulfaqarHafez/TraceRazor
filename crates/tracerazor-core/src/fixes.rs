@@ -192,9 +192,11 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
             .bloated_steps
             .iter()
             .filter_map(|b| {
-                trace.steps.iter().find(|s| s.id == b.step_id).map(|s| {
-                    (s.tokens as f64 * b.duplicate_pct / 100.0) as u32
-                })
+                trace
+                    .steps
+                    .iter()
+                    .find(|s| s.id == b.step_id)
+                    .map(|s| (s.tokens as f64 * b.duplicate_pct / 100.0) as u32)
             })
             .sum();
         fixes.push(Fix {
@@ -214,7 +216,11 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
         if detected_loop.step_ids.is_empty() {
             continue;
         }
-        let ids: Vec<String> = detected_loop.step_ids.iter().map(|id| id.to_string()).collect();
+        let ids: Vec<String> = detected_loop
+            .step_ids
+            .iter()
+            .map(|id| id.to_string())
+            .collect();
         let loop_desc = ids.join(", ");
 
         // Estimate savings: token cost of all but the first iteration.
@@ -250,7 +256,10 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
             .sum();
 
         // Even if no OverDepth flags exist, estimate from excess steps.
-        let excess = score.rda.actual_steps.saturating_sub(score.rda.expected_steps as usize);
+        let excess = score
+            .rda
+            .actual_steps
+            .saturating_sub(score.rda.expected_steps as usize);
         let avg_tokens = if trace.steps.is_empty() {
             0
         } else {
@@ -308,7 +317,9 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
                 let offenders_clause = if observed.is_empty() {
                     "filler adverbs and vague qualifiers".to_string()
                 } else {
-                    format!("the highest-frequency filler patterns observed in this trace: {observed}")
+                    format!(
+                        "the highest-frequency filler patterns observed in this trace: {observed}"
+                    )
                 };
                 fixes.push(Fix {
                     fix_type: FixType::VerbosityReduction,
@@ -331,7 +342,8 @@ pub fn generate_fixes(trace: &Trace, score: &TasScore, tpe: &TpeResult) -> Vec<F
 
         // SHL: high sycophancy/hedging → HedgeReduction
         if !score.shl.pass {
-            let shl_waste = (score.shl.score * trace.steps.iter().map(|s| s.tokens).sum::<u32>() as f64)
+            let shl_waste = (score.shl.score
+                * trace.steps.iter().map(|s| s.tokens).sum::<u32>() as f64)
                 .round() as u32;
             fixes.push(Fix {
                 fix_type: FixType::HedgeReduction,
@@ -555,7 +567,9 @@ mod tests {
         let report = crate::analyse(&mut t, sim, &config).unwrap();
         let fixes = generate_fixes(&trace, &report.score, &report.path_entropy);
         // Clean trace with no misfire, no bloat, no loops → likely empty or only RDA.
-        assert!(fixes.iter().all(|f| !matches!(f.fix_type, FixType::ToolSchema)));
+        assert!(fixes
+            .iter()
+            .all(|f| !matches!(f.fix_type, FixType::ToolSchema)));
     }
 
     #[test]
@@ -565,12 +579,11 @@ mod tests {
         let verbose_step = |id: u32| TraceStep {
             id,
             step_type: StepType::Reasoning,
-            content:
-                "Let me think through this carefully. I'd be happy to help. \
+            content: "Let me think through this carefully. I'd be happy to help. \
                  Basically the order is, actually, essentially in the system. \
                  Basically I will now proceed. Actually let me also confirm. \
                  Essentially we should basically actually proceed actually now."
-                    .into(),
+                .into(),
             tokens: 600,
             tool_name: None,
             tool_params: None,

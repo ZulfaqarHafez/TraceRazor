@@ -58,10 +58,12 @@ use std::time::Instant;
 use anyhow::Result;
 
 use crate::fixes::generate_fixes;
-use crate::metrics::{agf, ccr, cce, csd, dbo, gar, isr, ldi, obs, rda, reformulation, shl, srr, tca, tpe, tur, vdi};
-use crate::report::{AgentBreakdown, TraceReport, generate_oneliner, generate_summary};
-use crate::scoring::{ScoringConfig, estimate_savings};
-use crate::types::{MIN_TRACE_STEPS, Trace};
+use crate::metrics::{
+    agf, cce, ccr, csd, dbo, gar, isr, ldi, obs, rda, reformulation, shl, srr, tca, tpe, tur, vdi,
+};
+use crate::report::{generate_oneliner, generate_summary, AgentBreakdown, TraceReport};
+use crate::scoring::{estimate_savings, ScoringConfig};
+use crate::types::{Trace, MIN_TRACE_STEPS};
 
 /// Analyse a trace and compute all thirteen TAS metrics plus the Trajectory
 /// Path Entropy diagnostic.
@@ -481,12 +483,20 @@ mod tests {
                     },
                     content: format!("step {} content about processing tasks", id),
                     tokens: 400,
-                    tool_name: if id % 2 == 0 { Some(format!("tool_{id}")) } else { None },
+                    tool_name: if id % 2 == 0 {
+                        Some(format!("tool_{id}"))
+                    } else {
+                        None
+                    },
                     tool_params: None,
                     tool_success: Some(true),
                     tool_error: None,
                     // First 6 steps = researcher, last 6 = resolver
-                    agent_id: Some(if id <= 6 { "researcher".into() } else { "resolver".into() }),
+                    agent_id: Some(if id <= 6 {
+                        "researcher".into()
+                    } else {
+                        "resolver".into()
+                    }),
                     input_context: None,
                     output: None,
                     flags: vec![],
@@ -500,9 +510,21 @@ mod tests {
         let config = ScoringConfig::default();
         let report = analyse(&mut trace, simple_sim, &config).unwrap();
 
-        assert_eq!(report.per_agent.len(), 2, "should have two agent breakdowns");
-        let researcher = report.per_agent.iter().find(|a| a.agent_id == "researcher").unwrap();
-        let resolver = report.per_agent.iter().find(|a| a.agent_id == "resolver").unwrap();
+        assert_eq!(
+            report.per_agent.len(),
+            2,
+            "should have two agent breakdowns"
+        );
+        let researcher = report
+            .per_agent
+            .iter()
+            .find(|a| a.agent_id == "researcher")
+            .unwrap();
+        let resolver = report
+            .per_agent
+            .iter()
+            .find(|a| a.agent_id == "resolver")
+            .unwrap();
         assert_eq!(researcher.total_steps, 6);
         assert_eq!(resolver.total_steps, 6);
         assert!((researcher.token_share_pct - 50.0).abs() < 1.0);
@@ -516,7 +538,10 @@ mod tests {
         let mut trace = make_trace(); // no agent_id set
         let config = ScoringConfig::default();
         let report = analyse(&mut trace, simple_sim, &config).unwrap();
-        assert!(report.per_agent.is_empty(), "single-agent trace should have no breakdown");
+        assert!(
+            report.per_agent.is_empty(),
+            "single-agent trace should have no breakdown"
+        );
     }
 
     #[test]
@@ -526,7 +551,9 @@ mod tests {
         let report = analyse(&mut trace, simple_sim, &config).unwrap();
         assert!(!report.summary_oneliner.is_empty());
         // One-liner should contain the score.
-        assert!(report.summary_oneliner.contains(&format!("{:.0}", report.score.score)));
+        assert!(report
+            .summary_oneliner
+            .contains(&format!("{:.0}", report.score.score)));
     }
 
     // ── M2: Task Value Integration (integration) ──────────────────────────────
@@ -594,7 +621,10 @@ mod tests {
         let report = analyse(&mut trace, simple_sim, &config).unwrap();
         let json = serde_json::to_string(&report).unwrap();
         assert!(json.contains("\"raw_tas\""), "raw_tas must appear in JSON");
-        assert!(json.contains("\"task_value_score\""), "task_value_score must appear in JSON");
+        assert!(
+            json.contains("\"task_value_score\""),
+            "task_value_score must appear in JSON"
+        );
     }
 
     // ── M3: Minimum Viable Trace Gap (integration) ────────────────────────────
@@ -645,7 +675,11 @@ mod tests {
                     },
                     content: format!("step {id}: unique actionable content for task {id}"),
                     tokens: 100,
-                    tool_name: if id % 2 == 0 { Some(format!("tool_{id}")) } else { None },
+                    tool_name: if id % 2 == 0 {
+                        Some(format!("tool_{id}"))
+                    } else {
+                        None
+                    },
                     tool_params: None,
                     tool_success: Some(true),
                     tool_error: None,

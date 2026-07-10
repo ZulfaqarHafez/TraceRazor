@@ -160,10 +160,28 @@ impl TraceStep {
         }
         let name = self.tool_name.as_deref().unwrap_or("").to_lowercase();
         const MUTATING_NAMES: &[&str] = &[
-            "book", "create", "update", "delete", "remove", "exchange", "send",
-            "post", "write", "edit", "insert", "cancel", "modify", "transfer",
-            "pay", "refund", "commit", "push", "upload", "submit",
-            "str_replace", "set_",
+            "book",
+            "create",
+            "update",
+            "delete",
+            "remove",
+            "exchange",
+            "send",
+            "post",
+            "write",
+            "edit",
+            "insert",
+            "cancel",
+            "modify",
+            "transfer",
+            "pay",
+            "refund",
+            "commit",
+            "push",
+            "upload",
+            "submit",
+            "str_replace",
+            "set_",
         ];
         if MUTATING_NAMES.iter().any(|p| name.contains(p)) {
             return true;
@@ -176,10 +194,24 @@ impl TraceStep {
             if let Some(p) = &self.tool_params {
                 let cmd = p.to_string().to_lowercase();
                 const WRITE_PATTERNS: &[&str] = &[
-                    " rm ", " mv ", ">", "mkdir", "touch ", "sed -i", "chmod",
-                    "chown", "zip ", "crontab", "git commit", "git push",
-                    "insert into", "update ", "delete from", "drop table",
-                    "create table", "alter table",
+                    " rm ",
+                    " mv ",
+                    ">",
+                    "mkdir",
+                    "touch ",
+                    "sed -i",
+                    "chmod",
+                    "chown",
+                    "zip ",
+                    "crontab",
+                    "git commit",
+                    "git push",
+                    "insert into",
+                    "update ",
+                    "delete from",
+                    "drop table",
+                    "create table",
+                    "alter table",
                 ];
                 return WRITE_PATTERNS.iter().any(|w| cmd.contains(w));
             }

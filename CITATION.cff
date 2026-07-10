@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use TraceRazor or TRICE in research, please cite this software."
 title: "TraceRazor"
-version: "1.0.3"
-date-released: "2026-06-21"
+version: "1.1.0"
+date-released: "2026-07-10"
 authors:
   - family-names: "Hafez"
     given-names: "Zulfaqar"

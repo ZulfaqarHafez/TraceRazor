@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from tracerazor import BelowMinStepsError, BinaryNotFoundError, TraceRazorClient
+from tracerazor import BelowMinStepsError, BinaryNotFoundError, TraceRazorClient, TraceRazorReport
 
 
 def _cli_report(score: float = 80.0) -> dict:
@@ -140,3 +140,28 @@ def test_http_audit_sends_bearer_and_maps_full_server_response(monkeypatch):
     assert report.metrics["avs"] == 0.26
     assert report.metrics["manifest"] == {"hermetic": True}
     assert report.markdown() == "# REPORT"
+
+
+def test_report_labels_projected_savings_as_estimated():
+    report = TraceRazorReport(
+        trace_id="t",
+        agent_name="a",
+        framework="custom",
+        total_steps=5,
+        total_tokens=100,
+        tas_score=75,
+        grade="Good",
+        passes=True,
+        threshold=70,
+        savings={
+            "tokens_saved": 20,
+            "reduction_pct": 20,
+            "monthly_runs": 50000,
+            "monthly_runs_assumed": True,
+            "monthly_savings_usd": 12.5,
+        },
+    )
+    assert "Estimated 20 tokens" in report.summary()
+    markdown = report.markdown()
+    assert "ASSUMED 50,000/month" in markdown
+    assert "$12.50/month (estimated)" in markdown

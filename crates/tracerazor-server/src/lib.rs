@@ -7,11 +7,14 @@
 //! ## Authentication
 //!
 //! Setting `TRACERAZOR_API_TOKEN` requires `Authorization: Bearer <token>` on
-//! every `/api/*` route and on `/ws`. Without the env var the API is open —
-//! suitable only for loopback/dev use, and [`run_server`] warns loudly when
-//! binding a non-loopback address unauthenticated.
+//! every `/api/*` route, the OTLP `/v1/traces` receiver, and `/ws`. Without the
+//! env var these surfaces are open — suitable only for loopback/dev use.
+//! [`run_server`] refuses every non-loopback bind unless bearer auth is enabled
+//! and `TRACERAZOR_TLS_TERMINATED=true` explicitly asserts a trusted reverse
+//! proxy TLS boundary. TraceRazor does not terminate TLS itself.
 
 pub mod api;
+mod otlp;
 pub mod state;
 pub mod ws;
 
@@ -33,9 +36,9 @@ use tower_http::services::ServeDir;
 use state::AppState;
 
 /// Maximum accepted request body size (16 MiB). Prevents memory-exhaustion DoS
-/// via an unbounded `POST /api/audit` payload while leaving ample room for
+/// via unbounded audit or OTLP ingest payloads while leaving ample room for
 /// legitimately large traces.
-const MAX_BODY_BYTES: usize = 16 * 1024 * 1024;
+pub(crate) const MAX_BODY_BYTES: usize = 16 * 1024 * 1024;
 
 /// Lightweight Alpine.js + Chart.js dashboard — embedded in the binary,
 /// no build step required. Served at `/`.
@@ -151,10 +154,11 @@ fn constant_time_eq(a: &[u8], b: &[u8]) -> bool {
     a.iter().zip(b).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
 }
 
-/// Bearer-token gate applied to `/api/*` and `/ws` when a token is configured.
-/// Health probes and the static dashboard page stay open (the dashboard's API
-/// calls are themselves gated).
+/// Bearer-token gate applied to `/api/*`, `/v1/traces`, and `/ws` when a token
+/// is configured. Health probes and the static dashboard page stay open (the
+/// dashboard's API calls are themselves gated).
 async fn require_bearer(State(expected): State<ApiToken>, req: Request, next: Next) -> Response {
+    let is_otlp_export = req.uri().path() == "/v1/traces";
     let provided = req
         .headers()
         .get(header::AUTHORIZATION)
@@ -164,14 +168,22 @@ async fn require_bearer(State(expected): State<ApiToken>, req: Request, next: Ne
         Some(tok) if constant_time_eq(tok.as_bytes(), expected.0.as_bytes()) => {
             next.run(req).await
         }
-        _ => (
+        _ if is_otlp_export => otlp::error_response_for_request(
+            req.headers(),
             StatusCode::UNAUTHORIZED,
-            [(header::WWW_AUTHENTICATE, "Bearer")],
-            Json(json!({
-                "error": "unauthorized: this server requires `Authorization: Bearer <token>` (TRACERAZOR_API_TOKEN)"
-            })),
-        )
-            .into_response(),
+            otlp::STATUS_UNAUTHENTICATED,
+            "unauthorized: this server requires `Authorization: Bearer <token>`",
+        ),
+        _ => {
+            (
+                StatusCode::UNAUTHORIZED,
+                [(header::WWW_AUTHENTICATE, "Bearer")],
+                Json(json!({
+                    "error": "unauthorized: this server requires `Authorization: Bearer <token>` (TRACERAZOR_API_TOKEN)"
+                })),
+            )
+                .into_response()
+        }
     }
 }
 
@@ -197,6 +209,7 @@ pub fn build_app_with_token(state: AppState, api_token: Option<String>) -> Route
     // Everything that exposes data or accepts writes sits behind the token.
     let mut protected = Router::new()
         .nest("/api", api::router())
+        .route("/v1/traces", axum::routing::post(otlp::export_traces))
         .route("/ws", axum::routing::get(ws::handler));
     if let Some(token) = api_token {
         protected = protected.layer(axum::middleware::from_fn_with_state(
@@ -269,10 +282,18 @@ fn is_loopback(bind: &str) -> bool {
         .is_ok_and(|ip| ip.is_loopback())
 }
 
-fn validate_bind_auth(bind: &str, authed: bool) -> Result<()> {
-    if !authed && !is_loopback(bind) {
+fn validate_bind_security(bind: &str, authed: bool, tls_terminated: bool) -> Result<()> {
+    if is_loopback(bind) {
+        return Ok(());
+    }
+    if !authed {
         return Err(anyhow::anyhow!(
-            "refusing to bind {bind} without TRACERAZOR_API_TOKEN; bind to 127.0.0.1/::1 for tokenless local dev or set a bearer token for shared deployments"
+            "refusing non-loopback bind {bind} without TRACERAZOR_API_TOKEN; use loopback or configure both bearer auth and a TLS reverse proxy"
+        ));
+    }
+    if !tls_terminated {
+        return Err(anyhow::anyhow!(
+            "refusing plaintext non-loopback bind {bind}; terminate TLS at a trusted reverse proxy and set TRACERAZOR_TLS_TERMINATED=true only when that boundary is active"
         ));
     }
     Ok(())
@@ -281,13 +302,19 @@ fn validate_bind_auth(bind: &str, authed: bool) -> Result<()> {
 /// Start the server and block until it exits. Shared by the
 /// `tracerazor-server` binary and the `tracerazor serve` CLI alias.
 pub async fn run_server(opts: ServeOptions) -> Result<()> {
-    let state = AppState::new(&opts.db_path).await?;
-
     let token = std::env::var("TRACERAZOR_API_TOKEN")
         .ok()
         .filter(|t| !t.is_empty());
     let authed = token.is_some();
-    validate_bind_auth(&opts.bind, authed)?;
+    let tls_terminated = std::env::var("TRACERAZOR_TLS_TERMINATED")
+        .is_ok_and(|value| value.eq_ignore_ascii_case("true"));
+    validate_bind_security(&opts.bind, authed, tls_terminated)?;
+
+    let spool_dir = std::env::var_os("TRACERAZOR_OTLP_SPOOL_DIR")
+        .filter(|value| !value.is_empty())
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|| std::path::PathBuf::from(state::DEFAULT_OTLP_SPOOL_DIR));
+    let state = AppState::new_with_spool_dir(&opts.db_path, &spool_dir).await?;
     let app = build_app_with_token(state, token);
 
     let addr: SocketAddr = format!("{}:{}", opts.bind, opts.port)
@@ -302,6 +329,14 @@ pub async fn run_server(opts: ServeOptions) -> Result<()> {
             "none (set TRACERAZOR_API_TOKEN to enable)"
         }
     );
+    println!(
+        "Transport boundary: {}",
+        if is_loopback(&opts.bind) {
+            "loopback-only"
+        } else {
+            "TLS terminated by trusted reverse proxy (asserted by TRACERAZOR_TLS_TERMINATED=true)"
+        }
+    );
     println!("Dashboard (Alpine): http://localhost:{}/", opts.port);
     println!(
         "Dashboard (React):  http://localhost:{}/app  (requires: cd dashboard && npm run build)",
@@ -311,6 +346,11 @@ pub async fn run_server(opts: ServeOptions) -> Result<()> {
         "Metrics:            http://localhost:{}/api/metrics",
         opts.port
     );
+    println!(
+        "OTLP/HTTP JSON+PB:  http://localhost:{}/v1/traces",
+        opts.port
+    );
+    println!("OTLP spool:         {}", spool_dir.display());
 
     let listener = tokio::net::TcpListener::bind(addr).await?;
     axum::serve(listener, app).await?;
@@ -414,11 +454,12 @@ mod auth_tests {
     }
 
     #[test]
-    fn non_loopback_bind_requires_token() {
-        assert!(validate_bind_auth("127.0.0.1", false).is_ok());
-        assert!(validate_bind_auth("[::1]", false).is_ok());
-        assert!(validate_bind_auth("0.0.0.0", false).is_err());
-        assert!(validate_bind_auth("192.168.1.25", false).is_err());
-        assert!(validate_bind_auth("0.0.0.0", true).is_ok());
+    fn non_loopback_bind_requires_auth_and_tls_boundary() {
+        assert!(validate_bind_security("127.0.0.1", false, false).is_ok());
+        assert!(validate_bind_security("[::1]", false, false).is_ok());
+        assert!(validate_bind_security("0.0.0.0", false, false).is_err());
+        assert!(validate_bind_security("192.168.1.25", true, false).is_err());
+        assert!(validate_bind_security("0.0.0.0", false, true).is_err());
+        assert!(validate_bind_security("0.0.0.0", true, true).is_ok());
     }
 }

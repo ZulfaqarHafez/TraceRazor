@@ -67,20 +67,14 @@ pub fn annotate_steps(steps: &mut [TraceStep], detected: &[ReformulationStep]) {
 
 /// Extract the first sentence from text (up to the first `.`, `!`, or `?`).
 fn first_sentence(text: &str) -> &str {
-    text.split(['.', '!', '?'])
-        .next()
-        .unwrap_or(text)
-        .trim()
+    text.split(['.', '!', '?']).next().unwrap_or(text).trim()
 }
 
 /// Build a set of consecutive word bigrams from text.
 fn bigrams(text: &str) -> HashSet<(String, String)> {
     let words: Vec<String> = text
         .split_whitespace()
-        .map(|w| {
-            w.trim_matches(|c: char| !c.is_alphabetic())
-                .to_lowercase()
-        })
+        .map(|w| w.trim_matches(|c: char| !c.is_alphabetic()).to_lowercase())
         .filter(|w| !w.is_empty())
         .collect();
     words
@@ -154,8 +148,7 @@ mod tests {
     #[test]
     fn test_high_overlap_flagged() {
         // Step opening sentence is nearly identical to input_context.
-        let ctx =
-            "The user wants to process a refund for order ORD-9182 placed on Monday";
+        let ctx = "The user wants to process a refund for order ORD-9182 placed on Monday";
         let content = "The user wants to process a refund for order ORD-9182.";
         let trace = make_trace(vec![make_step(1, content, Some(ctx))]);
         let detected = detect(&trace);

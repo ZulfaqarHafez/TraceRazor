@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from .adapters import CommandRepairAdapter, JsonPatchAdapter, RepairAdapter
-from .evidence import build_manifest, verify_manifest, write_manifest
+from .evidence import build_manifest, verify_manifest, write_manifest, write_text_lf
 from .learn import LearningWeights, update_weights
 from .policy import ContextPolicy, solve_policy
 from .recall import evidence_recall_from_policy
@@ -309,8 +309,8 @@ def run_live_learning_loop(
     result.report_path = str(report_path)
     manifest_path = out / "trice_v2_evidence_manifest.json"
     result.manifest_path = str(manifest_path)
-    report_path.write_text(render_live_report(result), encoding="utf-8")
-    result_path.write_text(json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(report_path, render_live_report(result))
+    write_text_lf(result_path, json.dumps(result.to_dict(), indent=2, sort_keys=True) + "\n")
     artifact_paths: list[Path] = [report_path]
     try:
         profile_file.resolve().relative_to(out.resolve())
@@ -439,7 +439,7 @@ def _run_condition(
     trace = _decision_trace(task, workspace)
     decision_trace_path = round_dir / condition / "decision_trace.json"
     decision_trace_path.parent.mkdir(parents=True, exist_ok=True)
-    decision_trace_path.write_text(json.dumps(trace, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(decision_trace_path, json.dumps(trace, indent=2, sort_keys=True) + "\n")
     segments = segments_from_trace(trace)
     baseline_input_tokens = sum(s.tokens for s in segments)
     input_tokens = baseline_input_tokens
@@ -450,8 +450,8 @@ def _run_condition(
         policy_path = str(round_dir / condition / "context_policy.json")
         context_path = str(round_dir / condition / "compressed_context.txt")
         Path(policy_path).parent.mkdir(parents=True, exist_ok=True)
-        Path(policy_path).write_text(render_policy_json(policy), encoding="utf-8")
-        Path(context_path).write_text(render_context(policy, segments), encoding="utf-8")
+        write_text_lf(policy_path, render_policy_json(policy))
+        write_text_lf(context_path, render_context(policy, segments))
 
     trice_context = _trice_context_for_condition(
         condition=condition,
@@ -475,7 +475,7 @@ def _run_condition(
     receipt = _receipt_for_condition(adapter, adapter_task, workspace, modified)
     receipt_path = round_dir / condition / "run_receipt.json"
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
-    receipt_path.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(receipt_path, json.dumps(receipt, indent=2, sort_keys=True) + "\n")
     receipt_sha = _sha256_file(receipt_path)
     _clear_python_bytecode(workspace)
     verify = _run_verify(task.verify_cmd, workspace)
@@ -500,7 +500,7 @@ def _run_condition(
 
     trace_path = round_dir / condition / "trace.json"
     trace_path.parent.mkdir(parents=True, exist_ok=True)
-    trace_path.write_text(json.dumps(trace, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(trace_path, json.dumps(trace, indent=2, sort_keys=True) + "\n")
     return ConditionRun(
         task_id=task.task_id,
         condition=condition,

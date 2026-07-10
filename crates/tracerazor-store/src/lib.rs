@@ -11,7 +11,7 @@
 //! and keeps the query layer trivial to inspect.
 
 pub mod kb;
-pub use kb::{KGP_CAPTURE_THRESHOLD, KgpEntry, KgpMatch, KgpStep, build_kb_entry};
+pub use kb::{build_kb_entry, KgpEntry, KgpMatch, KgpStep, KGP_CAPTURE_THRESHOLD};
 
 use anyhow::{Context, Result};
 use chrono::Utc;
@@ -229,7 +229,12 @@ impl TraceStore {
 
     /// List all stored trace summaries.
     pub async fn list_traces(&self) -> Result<Vec<TraceSummary>> {
-        Ok(self.all_stored().await?.into_iter().map(Self::to_summary).collect())
+        Ok(self
+            .all_stored()
+            .await?
+            .into_iter()
+            .map(Self::to_summary)
+            .collect())
     }
 
     /// Aggregate statistics for a specific agent.
@@ -250,7 +255,11 @@ impl TraceStore {
             .filter_map(|a| Self::compute_agent_stats(a, &summaries))
             .collect();
         // Sort by avg_tas ascending (worst offenders first).
-        stats.sort_by(|a, b| a.avg_tas.partial_cmp(&b.avg_tas).unwrap_or(std::cmp::Ordering::Equal));
+        stats.sort_by(|a, b| {
+            a.avg_tas
+                .partial_cmp(&b.avg_tas)
+                .unwrap_or(std::cmp::Ordering::Equal)
+        });
         Ok(stats)
     }
 
@@ -289,10 +298,7 @@ impl TraceStore {
     ///
     /// Returns sequences for all stored traces by this agent.
     /// DBO cold-starts when fewer than 10 similar sequences are found.
-    pub async fn historical_sequences(
-        &self,
-        agent_name: &str,
-    ) -> Result<Vec<HistoricalSequence>> {
+    pub async fn historical_sequences(&self, agent_name: &str) -> Result<Vec<HistoricalSequence>> {
         let stored = self.all_stored().await?;
         let sequences = stored
             .into_iter()
@@ -392,15 +398,15 @@ impl TraceStore {
             .filter_map(|st| st.report.as_ref())
             .map(|r| {
                 [
-                    r.score.score,                  // idx 0: TAS
-                    r.score.srr.normalised(),        // idx 1
-                    r.score.ldi.normalised(),        // idx 2
-                    r.score.tca.normalised(),        // idx 3
-                    r.score.tur.normalised(),        // idx 4
-                    r.score.cce.normalised(),        // idx 5
-                    r.score.rda.normalised(),        // idx 6
-                    r.score.isr.normalised(),        // idx 7
-                    r.score.dbo.normalised(),        // idx 8
+                    r.score.score,            // idx 0: TAS
+                    r.score.srr.normalised(), // idx 1
+                    r.score.ldi.normalised(), // idx 2
+                    r.score.tca.normalised(), // idx 3
+                    r.score.tur.normalised(), // idx 4
+                    r.score.cce.normalised(), // idx 5
+                    r.score.rda.normalised(), // idx 6
+                    r.score.isr.normalised(), // idx 7
+                    r.score.dbo.normalised(), // idx 8
                 ]
             })
             .collect();
@@ -409,7 +415,17 @@ impl TraceStore {
             return Ok(vec![]);
         }
 
-        let names = ["tas_score", "srr", "ldi", "tca", "tur", "cce", "rda", "isr", "dbo"];
+        let names = [
+            "tas_score",
+            "srr",
+            "ldi",
+            "tca",
+            "tur",
+            "cce",
+            "rda",
+            "isr",
+            "dbo",
+        ];
         let current = [
             report.score.score,
             report.score.srr.normalised(),
@@ -427,7 +443,8 @@ impl TraceStore {
         for (i, &metric_name) in names.iter().enumerate() {
             let values: Vec<f64> = history.iter().map(|row| row[i]).collect();
             let mean = values.iter().sum::<f64>() / values.len() as f64;
-            let variance = values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
+            let variance =
+                values.iter().map(|v| (v - mean).powi(2)).sum::<f64>() / values.len() as f64;
             let std_dev = variance.sqrt().max(0.01); // floor to avoid division by near-zero σ
 
             let z = (current[i] - mean) / std_dev;
@@ -461,8 +478,7 @@ impl TraceStore {
         }
 
         let mean = scores.iter().sum::<f64>() / scores.len() as f64;
-        let variance =
-            scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
+        let variance = scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
         let std_dev = variance.sqrt();
 
         Ok(Some(AgentBaseline {
@@ -477,11 +493,7 @@ impl TraceStore {
     ///
     /// Returns anomaly entries if the score deviates by more than 2 standard
     /// deviations from the rolling mean. Pass the result into `report.anomalies`.
-    pub async fn detect_anomalies(
-        &self,
-        agent_name: &str,
-        tas_score: f64,
-    ) -> Result<Vec<Anomaly>> {
+    pub async fn detect_anomalies(&self, agent_name: &str, tas_score: f64) -> Result<Vec<Anomaly>> {
         let Some(baseline) = self.agent_baseline(agent_name).await? else {
             return Ok(vec![]);
         };
@@ -592,8 +604,14 @@ mod tests {
     #[tokio::test]
     async fn test_list_traces() {
         let store = TraceStore::connect_mem().await.unwrap();
-        store.save_trace(&dummy_trace("t1", "agent-a"), None).await.unwrap();
-        store.save_trace(&dummy_trace("t2", "agent-b"), None).await.unwrap();
+        store
+            .save_trace(&dummy_trace("t1", "agent-a"), None)
+            .await
+            .unwrap();
+        store
+            .save_trace(&dummy_trace("t2", "agent-b"), None)
+            .await
+            .unwrap();
         let list = store.list_traces().await.unwrap();
         assert_eq!(list.len(), 2);
     }
@@ -614,7 +632,10 @@ mod tests {
     #[tokio::test]
     async fn test_dashboard_data() {
         let store = TraceStore::connect_mem().await.unwrap();
-        store.save_trace(&dummy_trace("t1", "agent-a"), None).await.unwrap();
+        store
+            .save_trace(&dummy_trace("t1", "agent-a"), None)
+            .await
+            .unwrap();
         let data = store.dashboard_data().await.unwrap();
         assert_eq!(data.total_traces, 1);
     }
@@ -622,7 +643,10 @@ mod tests {
     #[tokio::test]
     async fn test_delete_trace() {
         let store = TraceStore::connect_mem().await.unwrap();
-        store.save_trace(&dummy_trace("t1", "agent-a"), None).await.unwrap();
+        store
+            .save_trace(&dummy_trace("t1", "agent-a"), None)
+            .await
+            .unwrap();
         store.delete_trace("t1").await.unwrap();
         let retrieved = store.get_trace("t1").await.unwrap();
         assert!(retrieved.is_none());
@@ -639,8 +663,14 @@ mod tests {
     async fn test_anomaly_detection_insufficient_data() {
         let store = TraceStore::connect_mem().await.unwrap();
         // Only 2 traces — below the 5-trace minimum.
-        store.save_trace(&dummy_trace("t1", "agent-a"), None).await.unwrap();
-        store.save_trace(&dummy_trace("t2", "agent-a"), None).await.unwrap();
+        store
+            .save_trace(&dummy_trace("t1", "agent-a"), None)
+            .await
+            .unwrap();
+        store
+            .save_trace(&dummy_trace("t2", "agent-a"), None)
+            .await
+            .unwrap();
         let anomalies = store.detect_anomalies("agent-a", 30.0).await.unwrap();
         assert!(anomalies.is_empty());
     }
@@ -650,33 +680,44 @@ mod tests {
         let store = TraceStore::connect_mem().await.unwrap();
         // Only 3 traces — below the 5-trace minimum.
         for i in 1..=3 {
-            store.save_trace(&dummy_trace(&format!("t{i}"), "agent-b"), None).await.unwrap();
+            store
+                .save_trace(&dummy_trace(&format!("t{i}"), "agent-b"), None)
+                .await
+                .unwrap();
         }
         // Build a minimal report with defaults.
         use tracerazor_core::types::{StepType, TraceStep};
         use tracerazor_core::{analyse, scoring::ScoringConfig};
         let mut trace = dummy_trace("probe", "agent-b");
         // Add enough steps for analysis.
-        trace.steps = (1..=6).map(|id| TraceStep {
-            id,
-            step_type: StepType::Reasoning,
-            content: format!("step {id}"),
-            tokens: 200,
-            tool_name: None,
-            tool_params: None,
-            tool_success: None,
-            tool_error: None,
-            agent_id: None,
-            input_context: None,
-            output: None,
-            flags: vec![],
-            flag_details: vec![],
-        }).collect();
+        trace.steps = (1..=6)
+            .map(|id| TraceStep {
+                id,
+                step_type: StepType::Reasoning,
+                content: format!("step {id}"),
+                tokens: 200,
+                tool_name: None,
+                tool_params: None,
+                tool_success: None,
+                tool_error: None,
+                agent_id: None,
+                input_context: None,
+                output: None,
+                flags: vec![],
+                flag_details: vec![],
+            })
+            .collect();
         trace.total_tokens = 1200;
         let config = ScoringConfig::default();
         let report = analyse(&mut trace, |_, _| 0.0_f64, &config).unwrap();
-        let anomalies = store.detect_all_anomalies("agent-b", &report).await.unwrap();
-        assert!(anomalies.is_empty(), "should be empty with < 5 historical reports");
+        let anomalies = store
+            .detect_all_anomalies("agent-b", &report)
+            .await
+            .unwrap();
+        assert!(
+            anomalies.is_empty(),
+            "should be empty with < 5 historical reports"
+        );
     }
 
     #[tokio::test]
@@ -687,7 +728,10 @@ mod tests {
         let path_str = path.to_str().unwrap();
         {
             let store = TraceStore::connect_file(path_str).await.unwrap();
-            store.save_trace(&dummy_trace("persist", "agent-p"), None).await.unwrap();
+            store
+                .save_trace(&dummy_trace("persist", "agent-p"), None)
+                .await
+                .unwrap();
         }
         let reopened = TraceStore::connect_file(path_str).await.unwrap();
         let got = reopened.get_trace("persist").await.unwrap();

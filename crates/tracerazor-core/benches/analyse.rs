@@ -6,7 +6,7 @@
 
 use std::collections::HashMap;
 
-use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use tracerazor_core::{
     analyse,
     scoring::ScoringConfig,
@@ -35,10 +35,18 @@ fn synth_trace(n: usize) -> Trace {
         };
         steps.push(TraceStep {
             id: (i + 1) as u32,
-            step_type: if is_tool { StepType::ToolCall } else { StepType::Reasoning },
+            step_type: if is_tool {
+                StepType::ToolCall
+            } else {
+                StepType::Reasoning
+            },
             content,
             tokens: 120 + (i as u32 % 50),
-            tool_name: if is_tool { Some(format!("tool_{}", i % 4)) } else { None },
+            tool_name: if is_tool {
+                Some(format!("tool_{}", i % 4))
+            } else {
+                None
+            },
             tool_params: if is_tool {
                 Some(serde_json::json!({ "id": i, "topic": topic }))
             } else {

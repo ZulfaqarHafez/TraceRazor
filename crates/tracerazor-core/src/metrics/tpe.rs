@@ -185,10 +185,7 @@ pub fn compute(
         std::collections::HashMap::new();
     for s in &trace.steps {
         let key = match s.step_type {
-            StepType::ToolCall => s
-                .tool_name
-                .clone()
-                .unwrap_or_else(|| "tool".to_string()),
+            StepType::ToolCall => s.tool_name.clone().unwrap_or_else(|| "tool".to_string()),
             StepType::Reasoning => "reasoning".to_string(),
             StepType::Handoff => "handoff".to_string(),
             StepType::Unknown => "unknown".to_string(),
@@ -217,7 +214,10 @@ pub fn compute(
 
     let (goal_text, goal_origin) = match goal {
         Some(g) => (g.to_string(), GoalOrigin::TaskGoal),
-        None => (reasoning.last().unwrap().content.clone(), GoalOrigin::FinalStep),
+        None => (
+            reasoning.last().unwrap().content.clone(),
+            GoalOrigin::FinalStep,
+        ),
     };
 
     // Steps that form the trajectory toward the goal. When the goal IS the final
@@ -256,8 +256,7 @@ pub fn compute(
         0.0
     };
 
-    let focus_score =
-        (((directedness + 1.0) / 2.0) - 0.25 * path_entropy).clamp(0.0, 1.0);
+    let focus_score = (((directedness + 1.0) / 2.0) - 0.25 * path_entropy).clamp(0.0, 1.0);
 
     let round3 = |x: f64| (x * 1000.0).round() / 1000.0;
     let focus_score = round3(focus_score);
@@ -342,7 +341,11 @@ mod tests {
         assert_eq!(r.regresses, 0);
         assert_eq!(r.stalls, 0);
         assert_eq!(r.path_entropy, 0.0, "single symbol → zero entropy");
-        assert!(r.focus_score > 0.99, "monotonic climb → focus ~1.0, got {}", r.focus_score);
+        assert!(
+            r.focus_score > 0.99,
+            "monotonic climb → focus ~1.0, got {}",
+            r.focus_score
+        );
         assert!(r.pass && !r.high_drift);
         assert_eq!(r.interpretation(), "focused");
     }
@@ -354,7 +357,11 @@ mod tests {
         let r = compute(&trace, goal_progress_sim, Some("GOAL"));
         assert_eq!(r.regresses, 4);
         assert_eq!(r.path_entropy, 0.0);
-        assert!(r.focus_score < 0.01, "steady regress → focus ~0, got {}", r.focus_score);
+        assert!(
+            r.focus_score < 0.01,
+            "steady regress → focus ~0, got {}",
+            r.focus_score
+        );
         assert!(r.high_drift && !r.pass);
         assert_eq!(r.interpretation(), "regressing");
     }
@@ -364,8 +371,16 @@ mod tests {
         // Lurching up and down → mix of advance/regress → high entropy.
         let trace = progress_trace(&[0.5, 0.9, 0.2, 0.8, 0.1, 0.7]);
         let r = compute(&trace, goal_progress_sim, Some("GOAL"));
-        assert!(r.path_entropy > 0.8, "erratic walk → high entropy, got {}", r.path_entropy);
-        assert!(r.focus_score < FOCUS_TARGET, "erratic → drift, got {}", r.focus_score);
+        assert!(
+            r.path_entropy > 0.8,
+            "erratic walk → high entropy, got {}",
+            r.path_entropy
+        );
+        assert!(
+            r.focus_score < FOCUS_TARGET,
+            "erratic → drift, got {}",
+            r.focus_score
+        );
         assert!(r.high_drift);
     }
 
@@ -376,7 +391,11 @@ mod tests {
         let r = compute(&trace, goal_progress_sim, Some("GOAL"));
         assert_eq!(r.stalls, 3);
         assert_eq!(r.path_entropy, 0.0);
-        assert!((r.focus_score - 0.5).abs() < 0.001, "stall → 0.5, got {}", r.focus_score);
+        assert!(
+            (r.focus_score - 0.5).abs() < 0.001,
+            "stall → 0.5, got {}",
+            r.focus_score
+        );
         assert_eq!(r.interpretation(), "wandering");
     }
 
@@ -410,11 +429,7 @@ mod tests {
     #[test]
     fn action_entropy_rises_with_tool_variety() {
         // Mix reasoning with several distinct tools → non-zero action entropy.
-        let mut steps = vec![
-            rstep(1, "0.1"),
-            rstep(2, "0.4"),
-            rstep(3, "0.9"),
-        ];
+        let mut steps = vec![rstep(1, "0.1"), rstep(2, "0.4"), rstep(3, "0.9")];
         for (i, name) in ["a", "b", "c"].iter().enumerate() {
             let mut t = rstep((10 + i) as u32, "tool");
             t.step_type = StepType::ToolCall;
@@ -456,7 +471,10 @@ mod tests {
         let r = compute(&trace, goal_progress_sim, None);
         assert_eq!(r.goal_origin, GoalOrigin::FinalStep);
         let increments = r.advances + r.stalls + r.regresses;
-        assert_eq!(increments, 2, "goal step must be excluded from the trajectory");
+        assert_eq!(
+            increments, 2,
+            "goal step must be excluded from the trajectory"
+        );
         assert_eq!(r.advances, 2);
         assert_eq!(r.regresses, 0);
         assert_eq!(r.stalls, 0);

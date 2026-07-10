@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "name": "tracerazor-session-start",
+            "type": "command",
+            "command": "tracerazor agent hook --host gemini --event session-start",
+            "timeout": 10000,
+            "description": "Load advisory TraceRazor coach context"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "name": "tracerazor-session-end",
+            "type": "command",
+            "command": "tracerazor agent hook --host gemini --event session-end",
+            "timeout": 60000,
+            "description": "Finalize the local TraceRazor run"
+          }
+        ]
+      }
+    ],
+    "AfterAgent": [
+      {
+        "hooks": [
+          {
+            "name": "tracerazor-after-agent",
+            "type": "command",
+            "command": "tracerazor agent hook --host gemini --event after-agent",
+            "timeout": 60000,
+            "description": "Audit the completed Gemini turn locally"
+          }
+        ]
+      }
+    ],
+    "PreCompress": [
+      {
+        "hooks": [
+          {
+            "name": "tracerazor-pre-compress",
+            "type": "command",
+            "command": "tracerazor agent hook --host gemini --event pre-compress",
+            "timeout": 10000,
+            "description": "Record a context-compression boundary"
+          }
+        ]
+      }
+    ]
+  }
+}

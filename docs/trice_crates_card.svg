@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="300" viewBox="0 0 980 300">
 <rect width="100%" height="100%" fill="#ffffff"/>
 <text x="28" y="34" font-family="Inter,Segoe UI,Arial" font-size="20" font-weight="700" fill="#111827">TRICE crates publish card</text>
-<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 80/100 | level publish_plan_locked | version 1.0.3</text>
+<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 80/100 | level publish_plan_locked | version 1.1.0</text>
 <rect x="36" y="96" width="138" height="58" rx="8" fill="#047857"/>
 <text x="105" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">metadata</text>
 <line x1="184" y1="125" x2="212" y2="125" stroke="#9ca3af" stroke-width="3"/>
@@ -17,5 +17,5 @@
 <rect x="772" y="96" width="138" height="58" rx="8" fill="#e5e7eb"/>
 <text x="841" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#374151">install</text>
 <text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Currently publishable: tracerazor-core, tracerazor-semantic</text>
-<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Cargo install claim allowed: false | hash 85d86cf7f693cdfe...</text>
+<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Cargo install claim allowed: false | hash 4ac820e72bae9106...</text>
 </svg>

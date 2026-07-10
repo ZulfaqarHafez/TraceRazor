@@ -2,7 +2,7 @@
   "checks": [
     {
       "name": "semver_version",
-      "observed": "1.0.3",
+      "observed": "1.1.0",
       "passed": true,
       "required": "MAJOR.MINOR.PATCH"
     },
@@ -174,7 +174,7 @@
     "sha256": "9c6efa67e57069208d5436b7ae808188b412f49a71d3d9ef32800a3e384a18a1",
     "source": "tracerazor/trice/cli.py"
   },
-  "contract_card_sha256": "892e149df4cb422ee1c6891ffad47092379b92daa421c2305993d767dc17e08e",
+  "contract_card_sha256": "b7ede1a8a29fcafaeba3264d4668554d76edd3edb46a5d33f4efccd1b04fb51c",
   "contract_level": "library_contract_locked",
   "contract_score": 100,
   "examples": [
@@ -251,25 +251,25 @@
       "sha256": "a256eb788c0dc9c04a976e19e1ca0f8a788c2c5b03e2b8433f3114cff55524bf"
     },
     "public_trust_matrix": {
-      "bytes": 11212,
+      "bytes": 11804,
       "name": "public_trust_matrix.md",
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "c5b0b5173a8efbe35ce1526401a5a6b88c0813d92d6625eac7d3055813b614b5"
+      "sha256": "c41b0d813a04e357834cf2a0c88a39a4d665cb8ea858145cd665f7cd76a53416"
     },
     "pyproject": {
-      "bytes": 6601,
+      "bytes": 7372,
       "name": "pyproject.toml",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "5cb1a63ea8dda672c1809415f8b8db40458cdfde621b2ef92e18b54937dd93fa"
+      "sha256": "6b22be0023ad0020fdd461467c053c888e0d1ec2e673dc72ea8fbfcac4f81323"
     },
     "readme": {
-      "bytes": 86248,
+      "bytes": 88240,
       "name": "README.md",
       "path": "README.md",
       "present": true,
-      "sha256": "d40843c15ff2528f3478436b5e3c86da899f6c1651021e0ac4889c27d663a856"
+      "sha256": "717f69be9e4273e8a9def7b6de2326c4f94b9353eb67b79a62fe48a53c502b7f"
     },
     "research_ledger": {
       "bytes": 35605,
@@ -614,8 +614,8 @@
   "scope": "TraceRazor/TRICE public library contract",
   "semver": {
     "major": 1,
-    "minor": 0,
-    "patch": 3
+    "minor": 1,
+    "patch": 0
   },
-  "version": "1.0.3"
+  "version": "1.1.0"
 }

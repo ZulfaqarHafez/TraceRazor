@@ -1,6 +1,17 @@
 # Rust build output
 target/
 
+# Local Python/release outputs. The Linux auditor is copied explicitly from
+# the native-builder stage, so a stale host binary must never leak into a
+# different platform wheel.
+build/
+dist/
+tracerazor/bin/tracerazor
+tracerazor/bin/tracerazor.exe
+**/__pycache__/
+.pytest_cache/
+.tracerazor/
+
 # Node dependencies and build output
 dashboard/node_modules/
 dashboard/dist/
@@ -18,6 +29,16 @@ dashboard/dist/
 *.md
 *.docx
 TraceRazor_PRD*
+
+# The agent wheel is built inside Docker and requires its package readme and
+# canonical skill/plugin Markdown even though the rest of the docs stay out.
+!README.md
+!skills/tracerazor/SKILL.md
+!.agents/skills/tracerazor/SKILL.md
+!plugins/tracerazor/skills/tracerazor/SKILL.md
+!extensions/claude-code/tracerazor/skills/tracerazor/SKILL.md
+!extensions/gemini-cli/tracerazor/skills/tracerazor/SKILL.md
+!crates/tracerazor-cli/assets/tracerazor-skill/SKILL.md
 
 # Test artifacts
 tracerazor-reports/

@@ -145,8 +145,8 @@ impl LlmConfig {
         };
 
         // Openai-compatible requires a base URL; anything else just overrides the default.
-        let base_url = get("TRACERAZOR_LLM_BASE_URL")
-            .unwrap_or_else(|| provider.default_base().to_string());
+        let base_url =
+            get("TRACERAZOR_LLM_BASE_URL").unwrap_or_else(|| provider.default_base().to_string());
         if provider == Provider::OpenaiCompatible && base_url.is_empty() {
             return None;
         }
@@ -353,7 +353,10 @@ async fn complete_anthropic(
     if !response.status().is_success() {
         let status = response.status();
         let txt = response.text().await.unwrap_or_default();
-        bail!("Anthropic API error {status}: {}", truncate_error_body(&txt));
+        bail!(
+            "Anthropic API error {status}: {}",
+            truncate_error_body(&txt)
+        );
     }
 
     let parsed: AnthropicResponse = response
@@ -414,7 +417,10 @@ async fn embed_openai(
     if !response.status().is_success() {
         let status = response.status();
         let txt = response.text().await.unwrap_or_default();
-        bail!("embeddings API error {status}: {}", truncate_error_body(&txt));
+        bail!(
+            "embeddings API error {status}: {}",
+            truncate_error_body(&txt)
+        );
     }
 
     let parsed: EmbedResponse = response
@@ -485,10 +491,10 @@ mod tests {
     #[test]
     fn from_env_openai_compatible_requires_base_url() {
         // Missing base_url → None.
-        assert!(LlmConfig::from_env_map(map(&[
-            ("TRACERAZOR_LLM_PROVIDER", "openai-compatible")
-        ]))
-        .is_none());
+        assert!(
+            LlmConfig::from_env_map(map(&[("TRACERAZOR_LLM_PROVIDER", "openai-compatible")]))
+                .is_none()
+        );
 
         // With base_url → OK (empty key allowed for local servers).
         let cfg = LlmConfig::from_env_map(map(&[
@@ -559,7 +565,9 @@ mod tests {
         Mock::given(method("POST"))
             .and(path("/chat/completions"))
             .and(header("authorization", "Bearer sk-test"))
-            .and(body_partial_json(serde_json::json!({"model": "gpt-4o-mini"})))
+            .and(body_partial_json(
+                serde_json::json!({"model": "gpt-4o-mini"}),
+            ))
             .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
                 "choices": [{"message": {"role": "assistant", "content": "hello from openai"}}]
             })))

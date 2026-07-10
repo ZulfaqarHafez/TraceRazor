@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="980" height="280" viewBox="0 0 980 280">
 <rect width="100%" height="100%" fill="#ffffff"/>
 <text x="28" y="34" font-family="Inter,Segoe UI,Arial" font-size="20" font-weight="700" fill="#111827">TRICE release card</text>
-<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 78/100 | level local_release_candidate | public ready false</text>
+<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 74/100 | level local_release_candidate | public ready false</text>
 <rect x="36" y="96" width="138" height="58" rx="8" fill="#0f766e"/>
 <text x="105" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="16" font-weight="700" fill="#ffffff">local</text>
 <line x1="184" y1="125" x2="212" y2="125" stroke="#9ca3af" stroke-width="3"/>
 <rect x="220" y="96" width="138" height="58" rx="8" fill="#0f766e"/>
 <text x="289" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="16" font-weight="700" fill="#ffffff">proof</text>
 <line x1="368" y1="125" x2="396" y2="125" stroke="#9ca3af" stroke-width="3"/>
-<rect x="404" y="96" width="138" height="58" rx="8" fill="#0f766e"/>
-<text x="473" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="16" font-weight="700" fill="#ffffff">package</text>
+<rect x="404" y="96" width="138" height="58" rx="8" fill="#e5e7eb"/>
+<text x="473" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="16" font-weight="700" fill="#374151">package</text>
 <line x1="552" y1="125" x2="580" y2="125" stroke="#9ca3af" stroke-width="3"/>
 <rect x="588" y="96" width="138" height="58" rx="8" fill="#e5e7eb"/>
 <text x="657" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="16" font-weight="700" fill="#374151">ci</text>
 <line x1="736" y1="125" x2="764" y2="125" stroke="#9ca3af" stroke-width="3"/>
-<rect x="772" y="96" width="138" height="58" rx="8" fill="#e5e7eb"/>
-<text x="841" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="16" font-weight="700" fill="#374151">crates</text>
-<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Local version 1.0.3 | blockers 4 | hash ae71e3596c0a97ba...</text>
-<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Release card only: public release readiness requires PyPI/piwheels/crates.io/tag/CI/Scorecard all green.</text>
+<rect x="772" y="96" width="138" height="58" rx="8" fill="#0f766e"/>
+<text x="841" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="16" font-weight="700" fill="#ffffff">install</text>
+<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Local version 1.1.0 | blockers 6 | hash 0ee102e519af5d21...</text>
+<text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Release card only: 1.1 public readiness requires platform artifacts, PyPI, tag, CI, and Scorecard to be green.</text>
 </svg>

@@ -1,7 +1,7 @@
 # TRICE Contract Card
 
 - Package: `tracerazor`
-- Version: `1.0.3`
+- Version: `1.1.0`
 - Contract level: `library_contract_locked`
 - Contract score: **100/100**
 
@@ -9,7 +9,7 @@
 
 | Check | Pass | Observed | Required |
 |---|---:|---|---|
-| semver_version | yes | 1.0.3 | MAJOR.MINOR.PATCH |
+| semver_version | yes | 1.1.0 | MAJOR.MINOR.PATCH |
 | top_level_api | yes | {"count": 25, "missing": []} | tracerazor.__all__ resolves |
 | trice_api | yes | {"count": 139, "missing": []} | tracerazor.trice.__all__ resolves |
 | cli_contract | yes | ["artifact", "bundle", "claim", "contract", "crates", "design", "doctor", "install", "integrity", "protocol", "release", "release-evidence", "reproduction", "research", "run", "schema", "suite", "validate-adapter", "validate-patch", "validate-receipt", "validate-suite", "verify", "verify-artifact", "verify-bundle", "verify-claim", "verify-contract", "verify-crates", "verify-design", "verify-install", "verify-integrity", "verify-protocol", "verify-release", "verify-release-evidence", "verify-reproduction", "verify-research", "verify-suite"] | all documented tracerazor-trice commands exist |
@@ -45,4 +45,4 @@
 
 ## Hash
 
-- contract card: `892e149df4cb422ee1c6891ffad47092379b92daa421c2305993d767dc17e08e`
+- contract card: `b7ede1a8a29fcafaeba3264d4668554d76edd3edb46a5d33f4efccd1b04fb51c`

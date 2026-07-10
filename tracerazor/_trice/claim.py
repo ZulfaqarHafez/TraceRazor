@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .evidence import canonical_json
+from .evidence import canonical_json, write_text_lf
 from .suite import verify_suite_evidence
 
 CLAIM_SCHEMA_VERSION = "trice-claim-card/v1"
@@ -224,13 +224,13 @@ def render_claim_ladder_svg(card: dict[str, Any]) -> str:
 
 def write_claim_outputs(card: dict[str, Any], out: Path) -> dict[str, str]:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(card, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(card, indent=2, sort_keys=True) + "\n")
     md = out.with_suffix(".md")
     tex = out.with_suffix(".tex")
     svg = out.with_suffix(".svg")
-    md.write_text(render_claim_card_markdown(card), encoding="utf-8")
-    tex.write_text(render_claim_card_tex(card), encoding="utf-8")
-    svg.write_text(render_claim_ladder_svg(card), encoding="utf-8")
+    write_text_lf(md, render_claim_card_markdown(card))
+    write_text_lf(tex, render_claim_card_tex(card))
+    write_text_lf(svg, render_claim_ladder_svg(card))
     return {"json": str(out), "markdown": str(md), "tex": str(tex), "svg": str(svg)}
 
 

@@ -10,7 +10,7 @@ from pathlib import Path
 from statistics import mean, stdev
 from typing import Any
 
-from .evidence import canonical_json, sha256_file
+from .evidence import canonical_json, sha256_file, write_text_lf
 from .protocol import verify_protocol_lock_file
 
 DESIGN_SCHEMA_VERSION = "trice-design-card/v1"
@@ -234,13 +234,13 @@ def render_design_svg(card: dict[str, Any]) -> str:
 
 def write_design_outputs(card: dict[str, Any], out: Path) -> dict[str, str]:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(card, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(card, indent=2, sort_keys=True) + "\n")
     md = out.with_suffix(".md")
     tex = out.with_suffix(".tex")
     svg = out.with_suffix(".svg")
-    md.write_text(render_design_markdown(card), encoding="utf-8")
-    tex.write_text(render_design_tex(card), encoding="utf-8")
-    svg.write_text(render_design_svg(card), encoding="utf-8")
+    write_text_lf(md, render_design_markdown(card))
+    write_text_lf(tex, render_design_tex(card))
+    write_text_lf(svg, render_design_svg(card))
     return {"json": str(out), "markdown": str(md), "tex": str(tex), "svg": str(svg)}
 
 

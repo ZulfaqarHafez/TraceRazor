@@ -36,9 +36,9 @@
 | protocol_lock | yes | `docs/trice_protocol_lock.json` | `877f06f9d5c312f5d9396fcc2bb3001122d27c91bdeb575236361c5d4c841d05` |
 | design_card | yes | `docs/trice_design_card.json` | `a9568aa5b32a54c99ab36bec232132c1a7f7ff7a25427353f0df1ef6f10140f2` |
 | reproduction_card | yes | `docs/trice_reproduction_card.json` | `34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54` |
-| contract_card | yes | `docs/trice_contract_card.json` | `0153cf143e17eaec75f5ff0def49476fcf7a548cc5247cf5ed2e6e6a9ec0e3ae` |
-| install_card | yes | `docs/trice_install_card.json` | `7e0ab240e9a92ecb079bd7720f81f7cc560b0981a63d647a1318443dd9a42a37` |
-| research_card | yes | `docs/trice_research_card.json` | `2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1` |
+| contract_card | yes | `docs/trice_contract_card.json` | `1837de7eda82dc02abf5d9568d307431aac5749ba3eefdbf5a0d2c20a85c4461` |
+| install_card | yes | `docs/trice_install_card.json` | `7855087064b41c51e9f41e160d8aa977c3a5baddbcaa1cea0ed3c7b2e8a1b618` |
+| research_card | yes | `docs/trice_research_card.json` | `2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18` |
 | claim | yes | `docs/trice_claim_card.json` | `c2c8758ed555ccbc9328c894b63b20da289c56f754fd597c3b411e4bbad5009e` |
 | remote_smoke_claim | yes | `docs/trice_remote_smoke_claim_card.json` | `528f1f9e24d0497aff6b1302cb9fc66e05f2c63495d7bfb708f5748af4de9fc7` |
 | evidence_bundle | yes | `benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip` | `a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564` |
@@ -47,7 +47,7 @@
 | paper_result | yes | `benchmark/trice/results/v2-smoke/trice_v2_live_results.json` | `f2e7956fa5ffe1cae48311188dfe8f2afc5fbe41ab7d3a6381b745b382fe95b8` |
 | paper_tex | yes | `paper/trice_v3_research_paper.tex` | `046bbd935e7bddf6d8340e8da150caaed256b6954f585c24eb1310e6d1c2a508` |
 | paper_pdf | yes | `paper/trice_v3_research_paper.pdf` | `a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45` |
-| readme | yes | `README.md` | `d40843c15ff2528f3478436b5e3c86da899f6c1651021e0ac4889c27d663a856` |
+| readme | yes | `README.md` | `717f69be9e4273e8a9def7b6de2326c4f94b9353eb67b79a62fe48a53c502b7f` |
 | library_doc | yes | `docs/trice_library.md` | `a256eb788c0dc9c04a976e19e1ca0f8a788c2c5b03e2b8433f3114cff55524bf` |
 
 ## Next Actions
@@ -58,4 +58,4 @@
 
 ## Hash
 
-- artifact card: `beca7656c30f16a143ea1e55b7153f0dc1f9885a46ff4d6cc651cbac4c2a0dc5`
+- artifact card: `29f9a68d6df53afc91b1049ada0fab56176596af4746cbb067fe9b874bce4028`

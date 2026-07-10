@@ -20,8 +20,17 @@ MODULE = "tracerazor.mcp_server"
 
 EXPECTED_TOOLS = {
     "audit_trace",
+    "audit_current_run",
+    "check_policy",
+    "compare_runs",
     "convert_transcript",
+    "doctor",
+    "explain_signal",
+    "latest_findings",
     "list_claude_sessions",
+    "preview_fix",
+    "record_validation",
+    "verify_evidence",
     "verify_report",
 }
 

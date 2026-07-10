@@ -1,15 +1,14 @@
 # TraceRazor
 
-Token efficiency auditing and adaptive sampling for production AI agents.
+Local-first efficiency supervision for production AI agents.
 
-TraceRazor does two things:
+TraceRazor has one stable product surface and one independent Labs surface:
 
 **Audit** your agent's traces to find wasted tokens, detect tool misfires and
 reasoning loops, generate fix patches, and estimate cost savings.
 
-**Sample** more reliably by running K parallel LLM candidates per step and
-picking the consensus winner. Improves task pass rates without changing your
-agent's logic.
+**Labs / Sample** K parallel LLM candidates per step and select a consensus
+result. This experimental surface has no general pass-rate or efficiency claim.
 
 Both features are independent. Use one, the other, or both.
 
@@ -18,7 +17,7 @@ Both features are independent. Use one, the other, or both.
 ## Install
 
 ```bash
-pip install tracerazor
+pip install "tracerazor[mcp]>=1.1,<2"
 ```
 
 Install with optional dependencies as needed:
@@ -50,13 +49,14 @@ with Tracer(agent_name="support-agent", framework="openai") as t:
 
 report = t.analyse()
 print(report.summary())
-# TAS 81.4/100 [Good] | 2 steps, 900 tokens | Saved 140 tokens (16%)
+# TAS 81.4/100 [Good] | 2 steps, 900 tokens | Estimated 140 tokens (16%)
 
-report.assert_passes()  # raises AssertionError in CI if TAS < 70
+# For CI, compare a candidate against a declared baseline for the same workload.
 ```
 
-The `Tracer` submits the trace to the local `tracerazor` binary (CLI mode) or
-to a running `tracerazor-server` (HTTP mode). Build the binary with:
+The `Tracer` submits the trace to the bundled local `tracerazor` binary (CLI
+mode) or to a running `tracerazor-server` (HTTP mode). Platform wheels include
+the binary. Source-development builds can use:
 
 ```bash
 cargo build --release
@@ -67,6 +67,79 @@ Or point to an existing binary:
 ```bash
 export TRACERAZOR_BIN=/path/to/tracerazor
 ```
+
+---
+
+## Agent-native runtime
+
+The dependency-free runtime records provenance-aware events and persists a
+privacy-safe run envelope:
+
+```python
+from tracerazor.runtime import TokenUsage, configure
+
+runtime = configure(
+    policy_path="tracerazor.toml",
+    host="openai-agents",
+    framework="openai-agents",
+    agent_id="planner",
+)
+runtime.record(
+    "reasoning",
+    content="Choose the smallest applicable tool.",
+    tokens=TokenUsage.reported(input_tokens=120, output_tokens=32),
+)
+runtime.finalize()
+```
+
+Use `runtime.spawn_env(child_agent_id="researcher")` when launching children;
+it propagates W3C `traceparent` plus the TraceRazor run, parent-agent, and policy
+identifiers. Estimated or missing token counts are marked degraded and cannot
+drive enforcement. See [agent-native.md](agent-native.md) for the complete
+policy, event, privacy, and host-bootstrap contract.
+
+### Framework callback handles
+
+`auto_instrument()` imports optional SDKs only when requested and returns host
+handles in `InstrumentationResult.handles`:
+
+```python
+from tracerazor.runtime import auto_instrument, configure
+
+runtime = configure(policy_path="tracerazor.toml", framework="langgraph")
+result = auto_instrument("langgraph", processor=runtime)
+langgraph = result.handles["langgraph"]
+answer = langgraph.invoke(graph, graph_input)
+```
+
+For an existing LangGraph invocation, use
+`graph.invoke(graph_input, config=langgraph.attach(existing_config))`; the input
+configuration is copied, not mutated. The returned callback captures root and
+node lifecycle, LLM responses and provider usage, tools, and failures. Use
+`langgraph.ainvoke(...)`, `langgraph.stream(...)`, or `langgraph.astream(...)`
+rather than attaching manually when the wrapper should own finalization.
+
+CrewAI event-bus attachment requires a second explicit action because its bus is
+process-global:
+
+```python
+runtime = configure(policy_path="tracerazor.toml", framework="crewai")
+crewai = auto_instrument("crewai", processor=runtime).handles["crewai"]
+crewai.attach(crew)
+try:
+    output = crew.kickoff()
+    crewai.finish(output=output)
+finally:
+    crewai.detach()
+```
+
+Both adapters isolate callback errors from the host and expose them through
+`handle.errors`. They never estimate token counts from message length. Missing
+framework usage remains `missing`; a provider-only total is preserved but marked
+`estimated` because an exact input/output split is unavailable. CrewAI source filtering
+is best-effort when upstream events omit crew/agent/task identifiers, so do not
+run multiple unscoped listeners concurrently. These runtime handles are distinct
+from the older `tracerazor.integrations.*` trace-builder callbacks.
 
 ---
 

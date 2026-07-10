@@ -637,8 +637,7 @@ def test_tracerazor_trice_module_schema_and_patch_validation(tmp_path):
 
     dist = tmp_path / "dist"
     dist.mkdir()
-    (dist / "tracerazor-1.0.3-py3-none-any.whl").write_bytes(b"fake wheel\n")
-    (dist / "tracerazor-1.0.3.tar.gz").write_bytes(b"fake sdist\n")
+    (dist / "tracerazor-1.1.0-py3-none-any.whl").write_bytes(b"fake wheel\n")
     cli_binary = tmp_path / ("tracerazor.exe" if sys.platform.startswith("win") else "tracerazor")
     cli_binary.write_bytes(b"fake cli\n")
     release_evidence_card = tmp_path / "release-evidence.json"

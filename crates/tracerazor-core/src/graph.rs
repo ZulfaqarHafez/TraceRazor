@@ -85,11 +85,8 @@ impl TraceGraph {
     /// Returns a list of cycles, each cycle being a list of step IDs.
     pub fn detect_cycles(&self) -> Vec<Vec<u32>> {
         // Build reverse map: NodeIndex -> step_id
-        let reverse_map: HashMap<NodeIndex, u32> = self
-            .node_map
-            .iter()
-            .map(|(k, v)| (*v, *k))
-            .collect();
+        let reverse_map: HashMap<NodeIndex, u32> =
+            self.node_map.iter().map(|(k, v)| (*v, *k)).collect();
 
         let sccs = petgraph::algo::kosaraju_scc(&self.graph);
         let mut cycles: Vec<Vec<u32>> = Vec::new();

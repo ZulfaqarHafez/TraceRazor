@@ -56,8 +56,8 @@ pub fn parse(data: &str) -> Result<Trace> {
         // Flat `client.list_runs()` export: EVERY run must survive. Rebuild
         // the tree from `parent_run_id` (the old code silently kept only the
         // first run and discarded the rest).
-        let runs: Vec<LangSmithRun> = serde_json::from_value(v)
-            .context("Failed to parse LangSmith run array")?;
+        let runs: Vec<LangSmithRun> =
+            serde_json::from_value(v).context("Failed to parse LangSmith run array")?;
         if runs.is_empty() {
             anyhow::bail!("LangSmith trace contains no runs");
         }
@@ -154,14 +154,20 @@ fn rebuild_tree(mut runs: Vec<LangSmithRun>) -> Result<LangSmithRun> {
     // If the roots belong to *different* traces, using the first root's
     // trace_id would falsely attribute the whole export to that one trace;
     // instead generate a synthetic id so the audit report is not misleading.
-    let first_tid = roots[0].trace_id.clone().unwrap_or_else(|| roots[0].id.clone());
+    let first_tid = roots[0]
+        .trace_id
+        .clone()
+        .unwrap_or_else(|| roots[0].id.clone());
     let all_same_trace = roots
         .iter()
         .all(|r| r.trace_id.as_deref().unwrap_or(&r.id) == first_tid);
     let (trace_id, name) = if all_same_trace {
         (first_tid, roots[0].name.clone())
     } else {
-        (format!("multi-{}-runs", roots.len()), "multi-trace-export".to_string())
+        (
+            format!("multi-{}-runs", roots.len()),
+            "multi-trace-export".to_string(),
+        )
     };
     Ok(LangSmithRun {
         id: trace_id.clone(),
@@ -284,12 +290,12 @@ fn extract_tokens(run: &LangSmithRun) -> u32 {
             })
     }
 
-    let from_run = run.total_tokens.or_else(|| {
-        match (run.prompt_tokens, run.completion_tokens) {
+    let from_run = run
+        .total_tokens
+        .or_else(|| match (run.prompt_tokens, run.completion_tokens) {
             (None, None) => None,
             (p, c) => Some(p.unwrap_or(0) + c.unwrap_or(0)),
-        }
-    });
+        });
 
     let found = from_run
         .or_else(|| {
@@ -307,7 +313,9 @@ fn extract_tokens(run: &LangSmithRun) -> u32 {
         });
 
     // Saturate rather than silently truncating the upper 32 bits.
-    found.map(|t| u32::try_from(t).unwrap_or(u32::MAX)).unwrap_or(0)
+    found
+        .map(|t| u32::try_from(t).unwrap_or(u32::MAX))
+        .unwrap_or(0)
 }
 
 fn build_content(
@@ -333,7 +341,8 @@ fn build_content(
                                 .map(|s| s.to_string())
                                 .or_else(|| {
                                     msg.as_array().and_then(|inner| {
-                                        inner.first()
+                                        inner
+                                            .first()
                                             .and_then(|m| m.get("content"))
                                             .and_then(|c| c.as_str())
                                             .map(|s| s.to_string())
@@ -356,12 +365,13 @@ fn build_content(
                 .and_then(|t| t.as_str())
                 .unwrap_or_default();
 
-            format!("{} {}", input_text, output_text)
-                .trim()
-                .to_string()
+            format!("{} {}", input_text, output_text).trim().to_string()
         }
         "tool" | "retriever" => {
-            let output_text = outputs.get("output").and_then(|o| o.as_str()).unwrap_or_default();
+            let output_text = outputs
+                .get("output")
+                .and_then(|o| o.as_str())
+                .unwrap_or_default();
             output_text.to_string()
         }
         _ => serde_json::to_string(inputs).unwrap_or_default(),
@@ -407,7 +417,10 @@ mod tests {
         assert_eq!(trace.steps.len(), 2);
         assert_eq!(trace.steps[0].step_type, StepType::Reasoning);
         assert_eq!(trace.steps[1].step_type, StepType::ToolCall);
-        assert_eq!(trace.steps[1].tool_name.as_deref(), Some("get_order_details"));
+        assert_eq!(
+            trace.steps[1].tool_name.as_deref(),
+            Some("get_order_details")
+        );
     }
 
     #[test]

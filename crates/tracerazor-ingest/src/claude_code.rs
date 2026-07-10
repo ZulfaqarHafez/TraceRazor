@@ -70,7 +70,10 @@ pub fn parse(data: &str) -> Result<Trace> {
                     msg.get("content").unwrap_or(&Value::Null),
                     &mut pending_context,
                     &mut first_user_prompt,
-                    entry.get("isSidechain").and_then(Value::as_bool).unwrap_or(false),
+                    entry
+                        .get("isSidechain")
+                        .and_then(Value::as_bool)
+                        .unwrap_or(false),
                 );
             }
             Some("assistant") => {
@@ -193,7 +196,10 @@ pub fn parse(data: &str) -> Result<Trace> {
                     tool.get("name").and_then(Value::as_str).unwrap_or("tool"),
                     tool.get("input").unwrap_or(&Value::Null)
                 ),
-                tool_name: tool.get("name").and_then(Value::as_str).map(ToOwned::to_owned),
+                tool_name: tool
+                    .get("name")
+                    .and_then(Value::as_str)
+                    .map(ToOwned::to_owned),
                 tool_params: tool.get("input").cloned(),
                 tool_success: Some(!is_error),
                 tool_error: is_error.then(|| clip(&output, MAX_OUTPUT_CHARS)),
@@ -208,7 +214,10 @@ pub fn parse(data: &str) -> Result<Trace> {
     }
 
     let mut metadata = HashMap::new();
-    metadata.insert("source".into(), Value::String("claude-code-transcript".into()));
+    metadata.insert(
+        "source".into(),
+        Value::String("claude-code-transcript".into()),
+    );
     metadata.insert(
         "token_accounting".into(),
         Value::String(
@@ -241,17 +250,25 @@ pub fn parse(data: &str) -> Result<Trace> {
 fn load_entries(data: &str) -> Result<Vec<Value>> {
     let trimmed = data.trim();
     if trimmed.starts_with('[') {
-        let entries: Vec<Value> = serde_json::from_str(trimmed)
-            .context("Invalid Claude Code transcript JSON array")?;
+        let entries: Vec<Value> =
+            serde_json::from_str(trimmed).context("Invalid Claude Code transcript JSON array")?;
         return Ok(entries
             .into_iter()
-            .filter(|v| matches!(v.get("type").and_then(Value::as_str), Some("assistant" | "user")))
+            .filter(|v| {
+                matches!(
+                    v.get("type").and_then(Value::as_str),
+                    Some("assistant" | "user")
+                )
+            })
             .collect());
     }
     let mut entries = Vec::new();
     for line in data.lines().map(str::trim).filter(|l| !l.is_empty()) {
         if let Ok(v) = serde_json::from_str::<Value>(line) {
-            if matches!(v.get("type").and_then(Value::as_str), Some("assistant" | "user")) {
+            if matches!(
+                v.get("type").and_then(Value::as_str),
+                Some("assistant" | "user")
+            ) {
                 entries.push(v);
             }
         }
@@ -279,7 +296,8 @@ fn collect_user_context(
                 }
                 match block.get("type").and_then(Value::as_str) {
                     Some("tool_result") => {
-                        pending_context.push(block_text(block.get("content").unwrap_or(&Value::Null)));
+                        pending_context
+                            .push(block_text(block.get("content").unwrap_or(&Value::Null)));
                     }
                     Some("text") => {
                         if let Some(text) = block.get("text").and_then(Value::as_str) {
@@ -322,8 +340,8 @@ fn block_text(content: &Value) -> String {
 }
 
 fn usage_tokens(usage: &Value, include_cache_read: bool, first_turn: bool) -> u32 {
-    let mut total = usage_u32(usage, "input_tokens")
-        .saturating_add(usage_u32(usage, "output_tokens"));
+    let mut total =
+        usage_u32(usage, "input_tokens").saturating_add(usage_u32(usage, "output_tokens"));
     if !first_turn || include_cache_read {
         total = total.saturating_add(usage_u32(usage, "cache_creation_input_tokens"));
     }
@@ -336,7 +354,10 @@ fn usage_tokens(usage: &Value, include_cache_read: bool, first_turn: bool) -> u3
 fn usage_u32(usage: &Value, key: &str) -> u32 {
     usage
         .get(key)
-        .and_then(|v| v.as_u64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+        .and_then(|v| {
+            v.as_u64()
+                .or_else(|| v.as_str().and_then(|s| s.parse().ok()))
+        })
         .map(|v| u32::try_from(v).unwrap_or(u32::MAX))
         .unwrap_or(0)
 }
@@ -374,17 +395,30 @@ mod tests {
     fn counts_usage_once_per_split_message() {
         let entries = vec![
             serde_json::json!({"type":"user","message":{"content":"Fix the test"}}),
-            assistant("m1", serde_json::json!({"type":"text","text":"Let me inspect."})),
-            assistant("m1", serde_json::json!({"type":"tool_use","id":"tu1","name":"Read","input":{"file_path":"a.py"}})),
+            assistant(
+                "m1",
+                serde_json::json!({"type":"text","text":"Let me inspect."}),
+            ),
+            assistant(
+                "m1",
+                serde_json::json!({"type":"tool_use","id":"tu1","name":"Read","input":{"file_path":"a.py"}}),
+            ),
             serde_json::json!({"type":"user","message":{"content":[{"type":"tool_result","tool_use_id":"tu1","content":[{"type":"text","text":"file contents"}]}]}}),
             assistant("m2", serde_json::json!({"type":"text","text":"Found it."})),
         ];
-        let data = entries.into_iter().map(|v| v.to_string()).collect::<Vec<_>>().join("\n");
+        let data = entries
+            .into_iter()
+            .map(|v| v.to_string())
+            .collect::<Vec<_>>()
+            .join("\n");
         let trace = parse(&data).unwrap();
         assert_eq!(trace.total_tokens, 310);
         assert_eq!(trace.steps.len(), 3);
         assert_eq!(trace.steps[1].tool_name.as_deref(), Some("Read"));
-        assert_eq!(trace.steps[2].input_context.as_deref(), Some("file contents"));
+        assert_eq!(
+            trace.steps[2].input_context.as_deref(),
+            Some("file contents")
+        );
     }
 
     #[test]

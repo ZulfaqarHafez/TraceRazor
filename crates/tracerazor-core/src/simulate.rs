@@ -127,10 +127,7 @@ where
             // Merged token estimate: max of the two * 0.7 (merging produces shorter output).
             let merged_tokens = (tokens_a.max(tokens_b) as f64 * 0.7) as u32;
             steps[pos_a].tokens = merged_tokens;
-            steps[pos_a].content = format!(
-                "{} [merged with step {id_b}]",
-                steps[pos_a].content
-            );
+            steps[pos_a].content = format!("{} [merged with step {id_b}]", steps[pos_a].content);
             // Remove step B (mark for deletion by resetting its id temporarily).
             let _removed = steps.remove(pos_b);
         }
@@ -184,32 +181,19 @@ where
         original_steps: original_report.total_steps,
         projected_steps: projected_report.total_steps,
         metric_deltas: MetricDeltas {
-            srr: projected_report.score.srr.normalised()
-                - original_report.score.srr.normalised(),
-            ldi: projected_report.score.ldi.normalised()
-                - original_report.score.ldi.normalised(),
-            tca: projected_report.score.tca.normalised()
-                - original_report.score.tca.normalised(),
-            tur: projected_report.score.tur.normalised()
-                - original_report.score.tur.normalised(),
-            cce: projected_report.score.cce.normalised()
-                - original_report.score.cce.normalised(),
-            rda: projected_report.score.rda.normalised()
-                - original_report.score.rda.normalised(),
-            isr: projected_report.score.isr.normalised()
-                - original_report.score.isr.normalised(),
-            dbo: projected_report.score.dbo.normalised()
-                - original_report.score.dbo.normalised(),
-            vdi: projected_report.score.vdi.normalised()
-                - original_report.score.vdi.normalised(),
-            shl: projected_report.score.shl.normalised()
-                - original_report.score.shl.normalised(),
-            ccr: projected_report.score.ccr.normalised()
-                - original_report.score.ccr.normalised(),
-            gar: projected_report.score.gar.normalised()
-                - original_report.score.gar.normalised(),
-            csd: projected_report.score.csd.normalised()
-                - original_report.score.csd.normalised(),
+            srr: projected_report.score.srr.normalised() - original_report.score.srr.normalised(),
+            ldi: projected_report.score.ldi.normalised() - original_report.score.ldi.normalised(),
+            tca: projected_report.score.tca.normalised() - original_report.score.tca.normalised(),
+            tur: projected_report.score.tur.normalised() - original_report.score.tur.normalised(),
+            cce: projected_report.score.cce.normalised() - original_report.score.cce.normalised(),
+            rda: projected_report.score.rda.normalised() - original_report.score.rda.normalised(),
+            isr: projected_report.score.isr.normalised() - original_report.score.isr.normalised(),
+            dbo: projected_report.score.dbo.normalised() - original_report.score.dbo.normalised(),
+            vdi: projected_report.score.vdi.normalised() - original_report.score.vdi.normalised(),
+            shl: projected_report.score.shl.normalised() - original_report.score.shl.normalised(),
+            ccr: projected_report.score.ccr.normalised() - original_report.score.ccr.normalised(),
+            gar: projected_report.score.gar.normalised() - original_report.score.gar.normalised(),
+            csd: projected_report.score.csd.normalised() - original_report.score.csd.normalised(),
         },
         simulated_step_ids: simulated_ids,
     }
@@ -217,6 +201,7 @@ where
 
 fn placeholder_report(trace: &Trace) -> TraceReport {
     use crate::metrics::{
+        cce::CceResult,
         ccr::{CcrResult, CcrStepResult},
         csd::CsdResult,
         dbo::DboResult,
@@ -228,7 +213,6 @@ fn placeholder_report(trace: &Trace) -> TraceReport {
         srr::SrrResult,
         tca::TcaResult,
         tur::TurResult,
-        cce::CceResult,
         vdi::{VdiResult, VdiStepResult},
     };
     use crate::scoring::{Grade, SavingsEstimate, TasScore};
@@ -465,7 +449,10 @@ mod tests {
         let result = simulate(&trace, &spec, &ScoringConfig::default(), |_, _| 0.0);
         assert_eq!(result.original_steps, 7);
         assert!(result.projected_steps <= 5);
-        assert!(result.token_delta < 0, "Removing steps should reduce tokens");
+        assert!(
+            result.token_delta < 0,
+            "Removing steps should reduce tokens"
+        );
     }
 
     #[test]

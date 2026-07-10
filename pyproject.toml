@@ -4,16 +4,16 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tracerazor"
-version = "1.0.3"
-description = "Token efficiency auditing, adaptive sampling, and substitutability analysis for production AI agents"
+version = "1.1.0"
+description = "Local-first efficiency supervision, regression testing, and verified before/after evaluation for AI agents"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "Zulfaqar Hafez", email = "zulfaqarhafez@gmail.com" }]
 requires-python = ">=3.10"
 keywords = [
     "ai", "agents", "llm", "token-efficiency", "observability",
-    "tracing", "adaptive-sampling", "consensus", "langgraph", "crewai",
-    "substitutability", "semantic-caching",
+    "tracing", "agent-skills", "mcp", "langgraph", "crewai",
+    "opentelemetry", "regression-testing", "offline",
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -26,7 +26,9 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-dependencies = []
+dependencies = [
+    "tomli>=2; python_version < '3.11'",
+]
 
 [project.scripts]
 tracerazor = "tracerazor._launcher:main"
@@ -104,6 +106,15 @@ packages = ["tracerazor"]
 artifacts = ["tracerazor/bin/*"]
 
 [tool.hatch.build.targets.wheel.force-include]
+"schemas/trace.schema.json" = "tracerazor/schemas/trace.schema.json"
+"schemas/report.schema.json" = "tracerazor/schemas/report.schema.json"
+"schemas/tracerazor_event.schema.json" = "tracerazor/schemas/tracerazor_event.schema.json"
+"tracerazor.toml" = "tracerazor/agent_assets/tracerazor.toml"
+"traces/support-agent-run-2847.json" = "tracerazor/agent_assets/traces/support-agent-run-2847.json"
+".agents/skills/tracerazor" = "tracerazor/agent_assets/skills/tracerazor"
+"plugins/tracerazor" = "tracerazor/agent_assets/plugins/tracerazor"
+"extensions/claude-code/tracerazor" = "tracerazor/agent_assets/extensions/claude-code/tracerazor"
+"extensions/gemini-cli/tracerazor" = "tracerazor/agent_assets/extensions/gemini-cli/tracerazor"
 "schemas/trice_patch_spec.schema.json" = "tracerazor/_trice/schemas/trice_patch_spec.schema.json"
 "schemas/trice_evidence_manifest.schema.json" = "tracerazor/_trice/schemas/trice_evidence_manifest.schema.json"
 "schemas/trice_suite_manifest.schema.json" = "tracerazor/_trice/schemas/trice_suite_manifest.schema.json"

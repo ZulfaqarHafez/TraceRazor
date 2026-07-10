@@ -1,0 +1,199 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tracerazor.dev/schemas/agent-native-eval-result-v1.json",
+  "title": "TraceRazor agent-native evaluation JSONL record",
+  "description": "Each JSONL line validates as exactly one record type.",
+  "oneOf": [
+    { "$ref": "#/$defs/study_manifest" },
+    { "$ref": "#/$defs/run" },
+    { "$ref": "#/$defs/install_probe" },
+    { "$ref": "#/$defs/activation_probe" },
+    { "$ref": "#/$defs/capture_probe" },
+    { "$ref": "#/$defs/overhead_probe" },
+    { "$ref": "#/$defs/safety_probe" }
+  ],
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "common": {
+      "type": "object",
+      "required": ["record_type", "study_id"],
+      "properties": {
+        "record_type": { "type": "string" },
+        "study_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "study_manifest": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "record_type", "study_id", "protocol_sha256", "task_manifest_sha256",
+            "collection_started_at", "protocol_locked_before_collection",
+            "task_manifest_locked_before_collection", "result_mode"
+          ],
+          "properties": {
+            "record_type": { "const": "study_manifest" },
+            "study_id": { "type": "string" },
+            "protocol_sha256": { "$ref": "#/$defs/sha256" },
+            "task_manifest_sha256": { "$ref": "#/$defs/sha256" },
+            "collection_started_at": { "type": "string", "format": "date-time" },
+            "protocol_locked_before_collection": { "const": true },
+            "task_manifest_locked_before_collection": { "const": true },
+            "result_mode": { "enum": ["real", "synthetic"] }
+          }
+        }
+      ]
+    },
+    "token_usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provenance"],
+      "properties": {
+        "provenance": { "enum": ["provider_reported", "estimated", "missing"] },
+        "value": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "run": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "record_type", "study_id", "run_id", "task_id", "task_input_sha256",
+            "initial_state_sha256", "execution_environment_sha256",
+            "disposable_workspace_id",
+            "host_category", "host_version", "model_id", "model_version",
+            "agent_config_sha256", "workload_stratum", "condition", "repetition",
+            "randomization_block", "order_index", "started_at", "held_out",
+            "token_usage", "task_success", "verifier_id", "run_receipt_sha256",
+            "verifier_receipt_sha256", "recommendation_issued", "recommendation_id",
+            "recommendation_issuer_id",
+            "recommendation_adjudicated", "recommendation_adjudicator_id", "recommendation_actionable",
+            "adjudication_receipt_sha256", "intervention_accepted"
+          ],
+          "properties": {
+            "record_type": { "const": "run" },
+            "study_id": { "type": "string" },
+            "run_id": { "type": "string", "minLength": 1 },
+            "task_id": { "type": "string", "minLength": 1 },
+            "task_input_sha256": { "$ref": "#/$defs/sha256" },
+            "initial_state_sha256": { "$ref": "#/$defs/sha256" },
+            "execution_environment_sha256": { "$ref": "#/$defs/sha256" },
+            "disposable_workspace_id": { "type": "string", "minLength": 1 },
+            "host_category": { "type": "string", "minLength": 1 },
+            "host_version": { "type": "string", "minLength": 1 },
+            "model_id": { "type": "string", "minLength": 1 },
+            "model_version": { "type": "string", "minLength": 1 },
+            "agent_config_sha256": { "$ref": "#/$defs/sha256" },
+            "workload_stratum": { "type": "string", "minLength": 1 },
+            "condition": { "type": "string", "minLength": 1 },
+            "repetition": { "type": "integer", "minimum": 1 },
+            "randomization_block": { "type": "string", "minLength": 1 },
+            "order_index": { "type": "integer", "minimum": 1, "maximum": 3 },
+            "started_at": { "type": "string", "format": "date-time" },
+            "held_out": { "const": true },
+            "token_usage": { "$ref": "#/$defs/token_usage" },
+            "task_success": { "type": "boolean" },
+            "verifier_id": { "type": "string", "minLength": 1 },
+            "run_receipt_sha256": { "$ref": "#/$defs/sha256" },
+            "verifier_receipt_sha256": { "$ref": "#/$defs/sha256" },
+            "recommendation_issued": { "type": "boolean" },
+            "recommendation_issuer_id": { "type": ["string", "null"] },
+            "recommendation_id": { "type": ["string", "null"] },
+            "recommendation_adjudicated": { "type": "boolean" },
+            "recommendation_adjudicator_id": { "type": ["string", "null"] },
+            "recommendation_actionable": { "type": "boolean" },
+            "adjudication_receipt_sha256": {
+              "oneOf": [
+                { "$ref": "#/$defs/sha256" },
+                { "type": "null" }
+              ]
+            },
+            "intervention_accepted": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "install_probe": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["record_type", "study_id", "matrix_cell", "attempt_id", "succeeded", "time_to_first_audit_seconds"],
+          "properties": {
+            "record_type": { "const": "install_probe" }, "study_id": { "type": "string" },
+            "matrix_cell": { "type": "string" }, "attempt_id": { "type": "string" },
+            "succeeded": { "type": "boolean" },
+            "time_to_first_audit_seconds": { "type": "number", "minimum": 0 }
+          }
+        }
+      ]
+    },
+    "activation_probe": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["record_type", "study_id", "probe_id", "expected_activation", "activated"],
+          "properties": {
+            "record_type": { "const": "activation_probe" }, "study_id": { "type": "string" },
+            "probe_id": { "type": "string" }, "expected_activation": { "type": "boolean" },
+            "activated": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "capture_probe": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["record_type", "study_id", "probe_id", "token_provenance", "parent_child_expected", "parent_child_linked"],
+          "properties": {
+            "record_type": { "const": "capture_probe" }, "study_id": { "type": "string" },
+            "probe_id": { "type": "string" },
+            "token_provenance": { "enum": ["provider_reported", "estimated", "missing"] },
+            "provider_total_tokens": { "type": "integer", "minimum": 0 },
+            "tracerazor_total_tokens": { "type": "integer", "minimum": 0 },
+            "parent_child_expected": { "type": "boolean" }, "parent_child_linked": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "overhead_probe": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["record_type", "study_id", "probe_id", "baseline_wall_ms", "instrumented_wall_ms", "event_latencies_ms"],
+          "properties": {
+            "record_type": { "const": "overhead_probe" }, "study_id": { "type": "string" },
+            "probe_id": { "type": "string" }, "baseline_wall_ms": { "type": "number", "exclusiveMinimum": 0 },
+            "instrumented_wall_ms": { "type": "number", "minimum": 0 },
+            "event_latencies_ms": { "type": "array", "minItems": 1, "items": { "type": "number", "minimum": 0 } }
+          }
+        }
+      ]
+    },
+    "safety_probe": {
+      "allOf": [
+        { "$ref": "#/$defs/common" },
+        {
+          "type": "object", "additionalProperties": false,
+          "required": ["record_type", "study_id", "probe_id", "sandbox_escape", "redacted_secret_leak"],
+          "properties": {
+            "record_type": { "const": "safety_probe" }, "study_id": { "type": "string" },
+            "probe_id": { "type": "string" }, "sandbox_escape": { "type": "boolean" },
+            "redacted_secret_leak": { "type": "boolean" }
+          }
+        }
+      ]
+    }
+  }
+}

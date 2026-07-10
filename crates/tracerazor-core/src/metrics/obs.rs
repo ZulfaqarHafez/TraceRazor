@@ -39,7 +39,11 @@ impl ObsResult {
 
 /// Compute the observation token share for a trace.
 pub fn compute(trace: &Trace) -> ObsResult {
-    let total: u32 = trace.steps.iter().map(|s| s.tokens).fold(0u32, u32::saturating_add);
+    let total: u32 = trace
+        .steps
+        .iter()
+        .map(|s| s.tokens)
+        .fold(0u32, u32::saturating_add);
     let obs: u32 = trace
         .steps
         .iter()

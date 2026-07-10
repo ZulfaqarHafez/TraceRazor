@@ -1,7 +1,7 @@
 name: TraceRazor Audit
 description: >
-  Audit an AI agent trace file and gate CI on a minimum TAS score and/or
-  per-metric regressions against a baseline trace. v2: downloads a prebuilt
+  Audit an AI agent trace file and optionally gate same-workload regressions
+  or an explicitly selected project TAS floor. Downloads a prebuilt
   release binary (works from any repo, no Rust toolchain), parses the report
   JSON (a malformed report fails the step instead of silently scoring 0),
   posts a sticky PR comment, and uploads the JSON report as an artifact.
@@ -11,9 +11,9 @@ inputs:
     description: Path to the trace JSON file to audit.
     required: true
   threshold:
-    description: Minimum TAS score (0–100). CI fails if TAS is below this value.
+    description: Optional project-specific TAS floor (0–100). Empty disables this gate.
     required: false
-    default: "70"
+    default: ""
   baseline-trace:
     description: >
       Optional baseline trace. When set, `tracerazor compare` runs with
@@ -29,9 +29,9 @@ inputs:
     required: false
     default: "markdown"
   version:
-    description: TraceRazor release tag to download (e.g. "v0.5.0"), or "latest".
+    description: Immutable release tag to download, or explicit "latest" opt-in.
     required: false
-    default: "latest"
+    default: "v1.1.0"
   release-repo:
     description: GitHub repository hosting the release binaries.
     required: false

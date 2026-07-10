@@ -1,0 +1,16 @@
+schema_version = 1
+mode = "coach"
+capture = "auto"
+hermetic = true
+privacy = "local-redacted"
+persist_raw_content = false
+artifact_dir = ".tracerazor/runs"
+min_steps = 5
+
+[quality]
+# Set to a deterministic command that exits zero when the task still passes.
+verifier = ""
+
+[enforcement]
+# Hard gates remain disabled until usage provenance and a verifier are present.
+enabled = false

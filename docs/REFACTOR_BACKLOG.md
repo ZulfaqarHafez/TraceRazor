@@ -49,10 +49,10 @@ git-ignored via `*.db` so harmless, but delete it to keep the tree clean, and co
 Re-confirm and fix, or stamp "point-in-time" headers on:
 - `docs/external_agent_audits.md`, `docs/huggingface_agentinstruct_audit.md`: reportedly
   describe a "9-signal composite" (5 weight-0 diagnostics) pinned to tracerazor 0.5.0;
-  current model is 8-composite/6-diagnostic at 1.0.3. Either regenerate the numbers or add a
+  current model is 8-composite/6-diagnostic at 1.1.0. Either regenerate the numbers or add a
   "generated under v0.5.0 scorer" banner so an agent doesn't read them as current.
 - `docs/figures_manifest.json`: reportedly declares `tracerazor_version: 1.1.0` (repo is
-  1.0.3). Fix the version or regenerate.
+  1.1.0). Fix the version or regenerate.
 - Distinguish *generated point-in-time* proof cards (`docs/trice_*`) from *reference* docs so
   an agent doesn't quote a stale snapshot as fact — a one-line header on generated cards, or a
   `docs/README.md` index that labels each. **M / low.**
@@ -236,6 +236,6 @@ Add a docker job to `release.yml`. **M / — (your accounts).**
   re-confirm the specific `file:line` before acting; the finding direction is reliable, exact
   line numbers may have shifted).
 - Do **not** touch protected paths while cleaning: `target/`, `.git/`, `.claude/worktrees/`,
-  `benchmark/trice/results/`, `dist/`, `paper/`, `.env`, version numbers (stay 1.0.3), and the
+  `benchmark/trice/results/`, `dist/`, `paper/`, `.env`, version numbers (stay aligned with 1.1.0), and the
   generated `docs/trice_*` proof cards (regenerate via the `tracerazor-trice` commands, never
   hand-edit — the full regen chain is in the README's TRICE section).

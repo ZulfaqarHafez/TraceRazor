@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tracerazor.dev/schemas/agent-native-task-catalog-v1.json",
+  "title": "TraceRazor agent-native private task catalog",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "tasks"],
+  "properties": {
+    "schema_version": {
+      "const": "tracerazor-agent-task-catalog/v1"
+    },
+    "tasks": {
+      "type": "array",
+      "minItems": 50,
+      "items": {
+        "$ref": "#/$defs/task"
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "content_sha256",
+        "host_category",
+        "workload_stratum",
+        "verifier_id"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "host_category": {
+          "enum": ["codex", "claude_code", "gemini_cli"]
+        },
+        "workload_stratum": {
+          "enum": ["coding", "tool_heavy_research", "support"]
+        },
+        "verifier_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    }
+  }
+}

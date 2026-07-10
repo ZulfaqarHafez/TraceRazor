@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .evidence import canonical_json
+from .evidence import canonical_json, write_text_lf
 from .readiness import build_suite_readiness
 from .suite import load_suite_manifest
 
@@ -226,13 +226,13 @@ def render_protocol_svg(card: dict[str, Any]) -> str:
 
 def write_protocol_outputs(card: dict[str, Any], out: Path) -> dict[str, str]:
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps(card, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    write_text_lf(out, json.dumps(card, indent=2, sort_keys=True) + "\n")
     md = out.with_suffix(".md")
     tex = out.with_suffix(".tex")
     svg = out.with_suffix(".svg")
-    md.write_text(render_protocol_markdown(card), encoding="utf-8")
-    tex.write_text(render_protocol_tex(card), encoding="utf-8")
-    svg.write_text(render_protocol_svg(card), encoding="utf-8")
+    write_text_lf(md, render_protocol_markdown(card))
+    write_text_lf(tex, render_protocol_tex(card))
+    write_text_lf(svg, render_protocol_svg(card))
     return {"json": str(out), "markdown": str(md), "tex": str(tex), "svg": str(svg)}
 
 

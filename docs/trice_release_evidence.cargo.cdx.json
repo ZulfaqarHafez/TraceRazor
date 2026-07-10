@@ -137,13 +137,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
+          "content": "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
         }
       ],
       "name": "anyhow",
-      "purl": "pkg:cargo/anyhow@1.0.102",
+      "purl": "pkg:cargo/anyhow@1.0.103",
       "type": "library",
-      "version": "1.0.102"
+      "version": "1.0.103"
     },
     {
       "hashes": [
@@ -540,6 +540,18 @@
       "purl": "pkg:cargo/colorchoice@1.0.5",
       "type": "library",
       "version": "1.0.5"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "33e2a781ebdf4467d1428dc4593067825fb646f6871475098d8577421af73558"
+        }
+      ],
+      "name": "const-hex",
+      "purl": "pkg:cargo/const-hex@1.19.1",
+      "type": "library",
+      "version": "1.19.1"
     },
     {
       "hashes": [
@@ -2069,6 +2081,42 @@
       "hashes": [
         {
           "alg": "SHA-256",
+          "content": "b0142c63252a9e054e68a4c61a5778f7b14f576274d593f8ce883d191a099682"
+        }
+      ],
+      "name": "opentelemetry",
+      "purl": "pkg:cargo/opentelemetry@0.32.0",
+      "type": "library",
+      "version": "0.32.0"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "56d658ba1faf63f7b9c492cfbe6e0ec365440a16132d3270c1065f7b33f1b638"
+        }
+      ],
+      "name": "opentelemetry-proto",
+      "purl": "pkg:cargo/opentelemetry-proto@0.32.0",
+      "type": "library",
+      "version": "0.32.0"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "9b59f80e1ac4d5ff7a2db8fb6c80badb7f0f3f858211fba08dd9aaec750894f9"
+        }
+      ],
+      "name": "opentelemetry_sdk",
+      "purl": "pkg:cargo/opentelemetry_sdk@0.32.1",
+      "type": "library",
+      "version": "0.32.1"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
           "content": "93857453250e3077bd71ff98b6a65ea6621a19bb0f559a85248955ac12c45a1a"
         }
       ],
@@ -2172,6 +2220,18 @@
       "purl": "pkg:cargo/pkg-config@0.3.32",
       "type": "library",
       "version": "0.3.32"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
+        }
+      ],
+      "name": "portable-atomic",
+      "purl": "pkg:cargo/portable-atomic@1.13.1",
+      "type": "library",
+      "version": "1.13.1"
     },
     {
       "hashes": [
@@ -2285,6 +2345,42 @@
       "hashes": [
         {
           "alg": "SHA-256",
+          "content": "4b45fcc2344c680f5025fe57779faef368840d0bd1f42f216291f0dc4ace4744"
+        }
+      ],
+      "name": "proptest",
+      "purl": "pkg:cargo/proptest@1.11.0",
+      "type": "library",
+      "version": "1.11.0"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "528ac67416ff8646872a3c02cad9cc4ee5dc9f9540c9b10771855c95cb2e5ae1"
+        }
+      ],
+      "name": "prost",
+      "purl": "pkg:cargo/prost@0.14.4",
+      "type": "library",
+      "version": "0.14.4"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b570b25f7617e43d59005d0990ccb79e950a423952cea19671b7a876da390adf"
+        }
+      ],
+      "name": "prost-derive",
+      "purl": "pkg:cargo/prost-derive@0.14.4",
+      "type": "library",
+      "version": "0.14.4"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
           "content": "b9e20a958963c291dc322d98411f541009df2ced7b5a4f2bd52337638cfccf20"
         }
       ],
@@ -2297,13 +2393,13 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "434b42fec591c96ef50e21e886936e66d3cc3f737104fdb9b737c40ffb94c098"
+          "content": "4fcb935c5bec503c2f0e306bdd3e58bb9029dcb14fa8d9ac76e3a5256ac0763e"
         }
       ],
       "name": "quinn-proto",
-      "purl": "pkg:cargo/quinn-proto@0.11.14",
+      "purl": "pkg:cargo/quinn-proto@0.11.15",
       "type": "library",
-      "version": "0.11.14"
+      "version": "0.11.15"
     },
     {
       "hashes": [
@@ -2424,6 +2520,18 @@
       "purl": "pkg:cargo/rand_core@0.9.5",
       "type": "library",
       "version": "0.9.5"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "513962919efc330f829edb2535844d1b912b0fbe2ca165d613e4e8788bb05a5a"
+        }
+      ],
+      "name": "rand_xorshift",
+      "purl": "pkg:cargo/rand_xorshift@0.4.0",
+      "type": "library",
+      "version": "0.4.0"
     },
     {
       "hashes": [
@@ -2760,6 +2868,18 @@
       "purl": "pkg:cargo/serde_path_to_error@0.1.20",
       "type": "library",
       "version": "0.1.20"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bf41e0cfaf7226dca15e8197172c295a782857fcb97fad1808a166870dee75a3"
+        }
+      ],
+      "name": "serde_spanned",
+      "purl": "pkg:cargo/serde_spanned@0.6.9",
+      "type": "library",
+      "version": "0.6.9"
     },
     {
       "hashes": [
@@ -3233,6 +3353,54 @@
       "hashes": [
         {
           "alg": "SHA-256",
+          "content": "dc1beb996b9d83529a9e75c17a1686767d148d70663143c7854d8b4a09ced362"
+        }
+      ],
+      "name": "toml",
+      "purl": "pkg:cargo/toml@0.8.23",
+      "type": "library",
+      "version": "0.8.23"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "22cddaf88f4fbc13c51aebbf5f8eceb5c7c5a9da2ac40a13519eb5b0a0e8f11c"
+        }
+      ],
+      "name": "toml_datetime",
+      "purl": "pkg:cargo/toml_datetime@0.6.11",
+      "type": "library",
+      "version": "0.6.11"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "41fe8c660ae4257887cf66394862d21dbca4a6ddd26f04a3560410406a2f819a"
+        }
+      ],
+      "name": "toml_edit",
+      "purl": "pkg:cargo/toml_edit@0.22.27",
+      "type": "library",
+      "version": "0.22.27"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
+        }
+      ],
+      "name": "toml_write",
+      "purl": "pkg:cargo/toml_write@0.1.2",
+      "type": "library",
+      "version": "0.1.2"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
           "content": "b8fa9be0de6cf49e536ce1851f987bd21a43b771b09473c3549a6c853db37c1c"
         }
       ],
@@ -3303,39 +3471,39 @@
     },
     {
       "name": "tracerazor",
-      "purl": "pkg:cargo/tracerazor@1.0.3",
+      "purl": "pkg:cargo/tracerazor@1.1.0",
       "type": "library",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     {
       "name": "tracerazor-core",
-      "purl": "pkg:cargo/tracerazor-core@1.0.3",
+      "purl": "pkg:cargo/tracerazor-core@1.1.0",
       "type": "library",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     {
       "name": "tracerazor-ingest",
-      "purl": "pkg:cargo/tracerazor-ingest@1.0.3",
+      "purl": "pkg:cargo/tracerazor-ingest@1.1.0",
       "type": "library",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     {
       "name": "tracerazor-semantic",
-      "purl": "pkg:cargo/tracerazor-semantic@1.0.3",
+      "purl": "pkg:cargo/tracerazor-semantic@1.1.0",
       "type": "library",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     {
       "name": "tracerazor-server",
-      "purl": "pkg:cargo/tracerazor-server@1.0.3",
+      "purl": "pkg:cargo/tracerazor-server@1.1.0",
       "type": "library",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     {
       "name": "tracerazor-store",
-      "purl": "pkg:cargo/tracerazor-store@1.0.3",
+      "purl": "pkg:cargo/tracerazor-store@1.1.0",
       "type": "library",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     {
       "hashes": [
@@ -3396,6 +3564,18 @@
       "purl": "pkg:cargo/typenum@1.19.0",
       "type": "library",
       "version": "1.19.0"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "eaea85b334db583fe3274d12b4cd1880032beab409c0d774be044d4480ab9a94"
+        }
+      ],
+      "name": "unarray",
+      "purl": "pkg:cargo/unarray@0.1.4",
+      "type": "library",
+      "version": "0.1.4"
     },
     {
       "hashes": [
@@ -4085,6 +4265,18 @@
       "hashes": [
         {
           "alg": "SHA-256",
+          "content": "df79d97927682d2fd8adb29682d1140b343be4ac0f08fd68b7765d9c059d3945"
+        }
+      ],
+      "name": "winnow",
+      "purl": "pkg:cargo/winnow@0.7.15",
+      "type": "library",
+      "version": "0.7.15"
+    },
+    {
+      "hashes": [
+        {
+          "alg": "SHA-256",
           "content": "08db1edfb05d9b3c1542e521aea074442088292f00b5f28e435c714a98f85031"
         }
       ],
@@ -4374,7 +4566,7 @@
     "component": {
       "name": "tracerazor",
       "type": "application",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     "tools": [
       {
@@ -4383,7 +4575,7 @@
       }
     ]
   },
-  "serialNumber": "urn:uuid:2b7b6838-6a4e-ee29-db55-fc984c0cc2b6",
+  "serialNumber": "urn:uuid:8d5140b0-87de-0f3b-6ab6-9a897bc69787",
   "specVersion": "1.6",
   "version": 1
 }

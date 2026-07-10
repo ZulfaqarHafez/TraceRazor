@@ -7,9 +7,11 @@
 - [README](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/README.md): Project overview, install, the audit→apply→measure→verify loop, and the metric catalog.
 - [AGENTS.md](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/AGENTS.md): Cross-agent convention — when to reach for TraceRazor, command reference, the exit-code contract, and the honesty rules.
 - [Agent guide](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/docs/AGENT_GUIDE.md): The single machine-oriented end-to-end recipe — locate/convert input per source, audit, and interpret every report field.
+- [Agent-native setup](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/docs/agent-native.md): Trusted host bootstrap, policy modes, runtime events, spawned-agent propagation, privacy, and run artifacts.
 - [Trace format](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/docs/trace-format.md): The native trace format, supported source formats, and validation rules.
 - [Trace JSON Schema](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/schemas/trace.schema.json): Machine-readable schema for a native input trace.
 - [Report JSON Schema](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/schemas/report.schema.json): Machine-readable schema for the `audit --format json` report output.
+- [Runtime Event JSON Schema](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/schemas/tracerazor_event.schema.json): Machine-readable `tracerazor-event/v1` capture contract.
 - [Python API](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/docs/python_api.md): The `tracerazor` package — `Tracer`, client, report objects, and sampling helpers.
 - [TRICE library](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/docs/trice_library.md): The pure-Python deterministic context-control library and its public contract.
 - [MCP server](https://raw.githubusercontent.com/ZulfaqarHafez/tracerazor/main/docs/MCP.md): Running TraceRazor as a Model Context Protocol server (`tracerazor-mcp`) for MCP-capable agents.

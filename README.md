@@ -1,6 +1,13 @@
 # TraceRazor
 
-**An offline auditor that decomposes AI-agent token waste into 8 composite efficiency signals (1 evidence-validated against real recoverable waste + 7 statistically-screened; plus 6 detection-only diagnostics), emits risk-tagged fix patches, and produces tamper-evident (Ed25519-signed) reports.**
+**A local-first efficiency supervisor for AI agents. TraceRazor captures runs,
+diagnoses structural token waste, recommends risk-labelled improvements, and
+recognizes savings only after a task-preserving rerun.**
+
+TraceRazor is not another hosted tracing dashboard. Its stable product is
+offline efficiency QA: deterministic audits, same-workload regression checks,
+advisory coaching, and tamper-evident verification. TAS is ordinal and projected
+token or dollar savings remain estimates until measured with `tracerazor bench`.
 
 [![CI](https://github.com/ZulfaqarHafez/tracerazor/actions/workflows/tracerazor.yml/badge.svg)](https://github.com/ZulfaqarHafez/tracerazor/actions)
 [![PyPI](https://img.shields.io/pypi/v/tracerazor)](https://pypi.org/project/tracerazor/)
@@ -10,15 +17,17 @@ Public trust status: [trust matrix](docs/public_trust_matrix.md) · [security po
 
 ## 60-second start
 
-```bash
-pip install tracerazor            # Python package + tracerazor-trice proof tools
-# If `tracerazor --version` reports no bundled auditor binary, build the Rust CLI:
-cargo build --release -p tracerazor
-# or: docker compose up           # REST API + dashboard on :8080
+The following is the 1.1 distribution contract. Use it after the
+[trust matrix](docs/public_trust_matrix.md) marks the platform artifacts
+published; until then, build the current checkout with `cargo build --release
+-p tracerazor` and set `TRACERAZOR_BIN` to that binary.
 
-tracerazor-trice doctor --format text
-tracerazor audit traces/support-agent-run-2847.json     # bundled sample trace
-tracerazor audit my-trace.json --threshold 75           # CI gate: exit 1 below 75
+```bash
+pip install "tracerazor[mcp]>=1.1,<2"  # platform wheel bundles the native auditor
+
+tracerazor agent doctor --format json
+tracerazor agent install --host auto --scope project --mode coach --dry-run
+tracerazor audit my-trace.json --hermetic --format json
 ```
 
 **Exit codes:** `0` pass · `1` threshold gate failed (only with `--threshold`) · `2` error (unreadable/invalid input).
@@ -28,36 +37,53 @@ tracerazor audit my-trace.json --threshold 75           # CI gate: exit 1 below 
 plain OpenAI/Anthropic chat logs convert with `python tools/convert_openai.py chat.json -o trace.json`.
 Native schema: [docs/trace-format.md](docs/trace-format.md) ([JSON Schema](schemas/trace.schema.json)).
 
-**Claude Code coach:** install a local SessionEnd hook and TraceRazor will convert
-each Claude Code transcript, audit it hermetically, and write `trace.json`,
-`report.json`, `fixes.json`, `coach.md`, and `summary.json` under
-`.tracerazor/claude-code/<session-id>/`:
+**Trusted agent setup:** previewing `agent install` changes nothing. Re-run without
+`--dry-run` only after reviewing the detected host and paths. Coach mode captures
+and advises but never edits prompts, tools, settings, or working files. Completed
+runs use the common `.tracerazor/runs/<run-id>/` envelope.
 
 ```bash
-tracerazor claude install --scope local --mode coach
-tracerazor claude convert ~/.claude/projects/.../session.jsonl --out trace.json
+tracerazor agent install --host auto --scope project --mode coach
+tracerazor agent status --format json
+tracerazor agent verify-receipt .tracerazor/runs/<run-id>/run-receipt.json \
+  --verify-key "$TRACERAZOR_VERIFY_KEY" --format json
 ```
 
-Coach mode is advisory: it never edits `CLAUDE.md`, prompts, settings, or tools.
+The legacy `tracerazor claude install` command remains available during the 1.x
+compatibility window.
 
 ---
 
 ## For AI agents
 
-TraceRazor is built to be driven by coding agents: point it at a trace and it returns a
-scored, decomposed, machine-applicable audit — offline, deterministic, no API keys.
+TraceRazor can be discovered by a coding agent and configured once by a trusted
+user. Automatic capture consumes the transcript path supplied by each host:
+Claude Code at SessionEnd/SubagentStop, Codex at Stop/SubagentStop, and Gemini
+CLI at AfterAgent with a best-effort SessionEnd fallback. Missing, unreadable,
+or unrecognized transcripts produce an explicit partial receipt, never a false
+successful audit.
 
-- **Skill:** after publishing, `npx skills add ZulfaqarHafez/tracerazor`; or copy
-  [`skills/tracerazor`](skills/tracerazor) into `~/.claude/skills/` (or your agent's
-  skill dir).
+- **Agent Skill:** the canonical workflow is checked into
+  [`.agents/skills/tracerazor`](.agents/skills/tracerazor) for repo discovery and
+  packaged into every supported host bundle.
+- **Codex plugin:** [`plugins/tracerazor`](plugins/tracerazor) bundles the skill,
+  local MCP server, and review-before-trust lifecycle hooks.
+- **Claude Code plugin:** [`extensions/claude-code/tracerazor`](extensions/claude-code/tracerazor)
+  packages the same skill, MCP server, and session/subagent hooks.
+- **Gemini CLI extension:** [`extensions/gemini-cli/tracerazor`](extensions/gemini-cli/tracerazor)
+  packages the skill, MCP server, and JSON-only lifecycle hooks.
 - **Conventions:** [`AGENTS.md`](AGENTS.md) (command reference + exit-code contract +
   honesty rules) and [`llms.txt`](llms.txt) (doc index) are in the repo root; the
-  end-to-end recipe is [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md).
-- **Claude Code coach:** `tracerazor claude install --scope local --mode coach` audits
-  every session into `.tracerazor/claude-code/<session-id>/` (add `--with-skill` to also
-  drop the skill into the project).
-- **MCP:** `pip install "tracerazor[mcp]"` then run `tracerazor-mcp` to expose auditing
-  over the Model Context Protocol — see [`docs/MCP.md`](docs/MCP.md).
+  end-to-end recipe is [`docs/AGENT_GUIDE.md`](docs/AGENT_GUIDE.md), and trusted
+  host/runtime setup is documented in [`docs/agent-native.md`](docs/agent-native.md).
+- **Portable bootstrap:** `tracerazor agent install --host auto --scope project
+  --mode coach` detects Codex, Claude Code, Gemini CLI, or the generic wrapper.
+- **MCP:** `tracerazor-mcp` exposes diagnosis, comparison, policy checks, fix
+  previews, and evidence verification; see [`docs/MCP.md`](docs/MCP.md).
+- **Spawned machines:** after the 1.1 release gate passes, use the signed
+  platform wheel, standalone release binary, or
+  `ghcr.io/zulfaqarhafez/tracerazor-agent:v1.1.0`. Image provisioning is the
+  explicit trust event; no package post-install modifies host configuration.
 
 For machine runs always use `--hermetic --format json`; exit code `1` means only an
 explicit gate failed, never a low score.
@@ -66,7 +92,7 @@ explicit gate failed, never a low score.
 
 ## What TraceRazor Does
 
-TraceRazor v1.0.3 closes a full loop: **audit** a trace offline, **apply** the
+TraceRazor v1.1.0 closes a full loop: **audit** a trace offline, **apply** the
 emitted fixes, **measure** the real before/after delta at constant task
 outcome, and let anyone **verify** the report cryptographically.
 
@@ -103,10 +129,11 @@ Experimental sampling and substitutability work is demoted to
 
 ---
 
-## TRICE: deterministic live context control
+## TRICE (Labs): deterministic live context control
 
-TRICE is the emerging TraceRazor library for **decision-preserving context
-control under a live verifier**. It is deliberately stricter than replay-only
+TRICE is an experimental engine behind TraceRazor for **decision-preserving
+context control under a live verifier**. It is not the public product and has
+no efficacy claim yet. It is deliberately stricter than replay-only
 prompt compression: a policy is accepted only when a fresh workspace run keeps
 the task passing, emits a deterministic evidence manifest, and meets the
 user-conditioned input-token target.
@@ -403,11 +430,11 @@ artifact review score: `100/100`; claim allowed: `false`.
 
 The generated [TRICE Installability Card](docs/trice_install_card.md) proves the
 built wheel in a clean virtual environment. It installs the wheel with
-`pip install --no-deps`, imports packaged TRICE schemas and public APIs, runs
-the installed `tracerazor-trice` console script, and separately checks whether
-the `tracerazor` Rust CLI can find a bundled binary. Current level is expected
-to be `python_trice_install_ready` for the generic wheel until platform-wheel
-release assets carry bundled CLI proof.
+its MCP dependencies, imports packaged schemas and public APIs, starts the MCP
+self-test, runs the installed `tracerazor-trice` console script, audits the
+packaged sample outside the checkout, and proves the `tracerazor` launcher
+resolved its bundled binary. Platform release wheels must reach
+`full_cli_install_ready`.
 
 ```bash
 tracerazor-trice install --out docs/trice_install_card.json --dist-dir dist
@@ -415,7 +442,7 @@ tracerazor-trice verify-install docs/trice_install_card.json
 ```
 
 The generated [TRICE Release Evidence](docs/trice_release_evidence.md) packet
-binds the built wheel, sdist, Rust CLI binary, proof cards including the crates
+binds the platform wheel, Rust CLI binary, proof cards including the crates
 publish card, installability card, and research card, paper artifacts, broad and remote evidence bundles, SHA-256
 checksums, CycloneDX-style Python and Cargo SBOMs, and an in-toto/SLSA-shaped
 provenance statement. It can be checked with
@@ -425,11 +452,12 @@ provenance statement. It can be checked with
 The generated [TRICE Release Card](docs/trice_release_card.md) is the
 distribution trust gate. It snapshots `tracerazor-trice doctor`, binds the
 Artifact, Reproduction, Contract, and Installability Cards, and refuses
-`public_release_ready` until PyPI, piwheels, crates.io, GitHub tag, GitHub
-Actions, and OpenSSF Scorecard are all green.
+`public_release_ready` until the clean platform install card, PyPI, GitHub tag,
+GitHub Actions, and OpenSSF Scorecard are green. piwheels and crates.io are
+informational rather than part of the 1.1 GA distribution contract.
 Current level: `local_release_candidate`; public release ready: `false`.
 The release workflow also generates release-evidence assets and GitHub artifact
-attestations for wheels, sdists, binaries, and release-evidence sidecars, but
+attestations for wheels, binaries, checksums, and release-evidence sidecars, but
 those public attestations remain pending until the next GitHub release run.
 
 The generated [TRICE Crates Publish Card](docs/trice_crates_card.md) is the
@@ -533,7 +561,7 @@ flowchart TD
 
     P --> D
     M --> W["Weighted Score 0-100 (ordinal)"]
-    W --> TAS["TAS - Token Audit Score"]
+    W --> TAS["TAS - Token Alignment Score"]
     TAS --> G["Grade: Excellent / Good / Fair / Poor"]
     D --> AVS["Verbosity Alert if AVS > 0.40"]
     D --> FX["Per-step annotations + fix patches"]
@@ -819,10 +847,11 @@ with Tracer(agent_name="support-agent", framework="openai") as t:
 
 report = t.analyse()
 print(report.summary())
-# TAS <score>/100 [<grade>] | 6 steps, 800 tokens | Saved <n> tokens
+# TAS <score>/100 [<grade>] | 6 steps, 800 tokens | Estimated <n> tokens
 # (exact numbers shift between scorer versions — the shape is the contract)
 
-report.assert_passes()   # raises AssertionError in CI if TAS < 70
+# For CI, compare this workload with its declared baseline. Do not treat a
+# library-default TAS value as a universal quality threshold.
 ```
 
 Or via CLI:
@@ -831,39 +860,28 @@ Or via CLI:
 # Build the binary
 cargo build --release
 
-# Audit a shipped sample trace (gate CI by adding --threshold 75)
+# Audit a shipped sample trace. Add --threshold only for an explicitly
+# documented project-local floor.
 tracerazor audit traces/support-agent-run-2847.json
 
 # Hermetic + verifiable: pure function of (trace, config, version)
 tracerazor audit traces/support-agent-run-2847.json --hermetic --format json > report.json
 tracerazor verify report.json traces/support-agent-run-2847.json
 
-# Compare two traces per-metric
-tracerazor compare traces/external/tau_bench/gpt-4o_airline_task0.json traces/external/tau_bench/gpt-4o_retail_task0.json
+# Compare the same workload before and after a change
+tracerazor compare baseline-run.json candidate-run.json --regression-threshold 10
 ```
 
-### Audits on Real Public Agent Trajectories
+### Historical public-trajectory calibration
 
-We ran TraceRazor's audit over **24 real public agent runs** sourced from
-two well-known benchmarks, τ-bench (Sierra Research) and SWE-agent
-(Princeton NLP), to calibrate expectations against artefacts you have
-likely already seen.
-
-| Model | Domain | n | Avg TAS | Avg step redundancy |
-|---|---|---|---|---|
-| GPT-4o | τ-bench airline | 5 | **53** (Fair/Poor) | **36%** |
-| GPT-4o | τ-bench retail | 5 | 85 (Good) | 14% |
-| Claude Sonnet 3.5 (new) | τ-bench airline | 5 | 67 (Fair) | **41%** |
-| Claude Sonnet 3.5 (new) | τ-bench retail | 5 | 81 (Good) | 17% |
-| SWE-agent (4 prompt variants) | marshmallow#1867 | 4 | 70 (Good/Fair) | 22% |
-
-Highlights: GPT-4o's worst airline trace scores 47/100 with **57% step
-redundancy**; SWE-agent's XML prompt variant uses ~52% fewer tokens than
-the cursors variant for the same successful patch. Full table, methodology,
-and the 24 converted trace JSONs live at
-[`docs/external_agent_audits.md`](docs/external_agent_audits.md) and
-[`traces/external/`](traces/external/). Converters in
-[`tools/`](tools/).
+The repository includes converted τ-bench and SWE-agent trajectories as
+ingestion and detector-regression fixtures. Their historical report is kept at
+[`docs/external_agent_audits.md`](docs/external_agent_audits.md), with the JSON
+inputs under [`traces/external/`](traces/external/). It is not a model ranking:
+TAS is ordinal, those token counts were character estimates, and results from
+different models or domains must not be averaged or compared as product
+quality. Use them to reproduce individual findings; use paired, provider-
+reported, task-preserving reruns for an efficiency claim.
 
 #### Real ReAct trajectories from Hugging Face (AgentInstruct)
 
@@ -877,10 +895,9 @@ assistants — we also audit trajectories sourced from the Hugging Face dataset
 and summarised in
 [`docs/huggingface_agentinstruct_audit.md`](docs/huggingface_agentinstruct_audit.md)
 (reproduce with `python -m benchmark.hf_audit_stats`; every audit runs in a
-fresh state directory so measurements are order-independent). On the
-de-contaminated corpus mean TAS is **78.0** at the default floor (4 analysable
-traces) and **82.9** over the full 13-trace corpus with `--min-steps 2`. The
-exercise mattered because it surfaced — and fixed — a data-fidelity hazard plus
+fresh state directory so measurements are order-independent). These are
+coverage fixtures, not an absolute TAS benchmark. The exercise mattered
+because it surfaced — and fixed — a data-fidelity hazard plus
 four product blind spots that the τ-bench traces did not:
 
 | Finding on real ReAct data | Fix |
@@ -1263,7 +1280,7 @@ Full findings and methodology: [`docs/findings_v5.md`](docs/findings_v5.md)
 ## Install
 
 ```bash
-pip install tracerazor                    # core: audit + adaptive sampling
+pip install tracerazor                    # core: audit + agent runtime
 pip install "tracerazor[openai]"          # OpenAI adapter for AdaptiveKNode
 pip install "tracerazor[anthropic]"       # Anthropic adapter
 pip install "tracerazor[langgraph]"       # LangGraph integration
@@ -1293,16 +1310,16 @@ with Tracer(agent_name="support-agent", framework="openai") as t:
 
 report = t.analyse()
 print(report.summary())
-report.assert_passes()   # CI gate
+# Gate the same workload with `tracerazor compare` after declaring a baseline.
 
-# Step 2: Improve sampling reliability
+# Step 2 (Labs): experiment with adaptive sampling; no general efficacy claim
 from tracerazor import AdaptiveKNode, openai_llm, SelfConsistencyBaseline
 
 llm_node = openai_llm(AsyncOpenAI(), model="gpt-4.1")
 node = AdaptiveKNode(llm=llm_node, tools=my_tools, k_max=5)
 # ... wire into LangGraph graph ...
 
-# Step 3: Predict substitutability before each LLM call
+# Step 3 (Labs): experiment with substitutability before each LLM call
 from tracerazor.redundancy.substitutability import build_features
 import pandas as pd
 
@@ -1322,12 +1339,12 @@ else:
 
 ## Integrations
 
-Framework adapters live under `tracerazor.integrations.*` and ship with the
-main package. Each is opt-in: install the matching extra to pull the framework
-deps in.
+The supported agent-native adapters feed `tracerazor.runtime` so provider usage
+keeps its provenance and missing counts are never replaced with character
+estimates. Install the matching extra for the framework SDK.
 
 ```bash
-pip install tracerazor                    # core: audit + sampling
+pip install tracerazor                    # core: audit + agent runtime
 pip install "tracerazor[langgraph]"       # adds TraceRazorCallback
 pip install "tracerazor[crewai]"
 pip install "tracerazor[agents]"          # OpenAI Agents SDK
@@ -1338,33 +1355,41 @@ pip install "tracerazor[all]"
 ### LangGraph
 
 ```python
-from tracerazor.integrations.langgraph import TraceRazorCallback
+from tracerazor.runtime import auto_instrument, configure
 
-callback = TraceRazorCallback(agent_name="support-graph", threshold=70)
-result = graph.invoke({"messages": [...]}, config={"callbacks": [callback]})
-callback.analyse().markdown()
+runtime = configure(policy_path="tracerazor.toml", framework="langgraph")
+handle = auto_instrument("langgraph", processor=runtime).handles["langgraph"]
+result = handle.invoke(graph, {"messages": [...]})
 ```
 
 ### CrewAI
 
 ```python
-from tracerazor.integrations.crewai import TraceRazorCallback
+from tracerazor.runtime import auto_instrument, configure
 
-callback = TraceRazorCallback(agent_name="support-crew", threshold=70)
-crew = Crew(agents=[...], tasks=[...], callbacks=[callback])
-crew.kickoff()
-callback.assert_passes()
+runtime = configure(policy_path="tracerazor.toml", framework="crewai")
+handle = auto_instrument("crewai", processor=runtime).handles["crewai"]
+handle.attach(crew)
+try:
+    output = crew.kickoff()
+    handle.finish(output=output)
+finally:
+    handle.detach()
 ```
 
 ### OpenAI Agents SDK
 
 ```python
-from tracerazor.integrations.openai_agents import TraceRazorHooks
+from tracerazor.runtime import auto_instrument, configure
 
-hooks = TraceRazorHooks(agent_name="support-agent", threshold=70)
-await Runner.run(agent, "I need a refund for order ORD-9182", hooks=hooks)
-hooks.assert_passes()
+runtime = configure(policy_path="tracerazor.toml", framework="openai-agents")
+result = auto_instrument("openai_agents", processor=runtime)
+await Runner.run(agent, "I need a refund for order ORD-9182")
 ```
+
+The older `tracerazor.integrations.*` callbacks remain import-compatible during
+1.x, but may estimate usage and use their historical absolute-threshold helper;
+their output is advisory and not enforcement-grade.
 
 ### GitHub Actions CI Gate
 
@@ -1377,26 +1402,25 @@ the JSON report as an artifact.
 permissions:
   pull-requests: write # for the sticky PR comment
 
-- uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v1.0.3
+- uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v1.1.0
   with:
     trace-file: traces/latest-run.json
-    threshold: '75'
-    # Optional regression gate vs a known-good baseline:
+    # Preferred gate: compare the same workload to a declared baseline.
     baseline-trace: traces/support-agent-run-2847.json
     regression-threshold: '10' # fail on any metric dropping >10%
 ```
 
 Outputs: `tas-score`, `grade`, `passes`, `regression-detected`,
-`tokens-saved`, `report`, `report-json-path`. Exits 1 if TAS < threshold or
-a per-metric regression exceeds the threshold; exits 2 (without inventing a
-score) on broken input.
+`tokens-saved`, `report`, `report-json-path`. Exits 1 if an explicitly supplied
+project TAS floor fails or a same-workload metric regression exceeds the
+threshold; exits 2 (without inventing a score) on broken input.
 
 | Framework | Adapter |
 |---|---|
-| LangGraph / LangChain | Native callback + LangSmith / OTEL ingest |
-| OpenAI Agents SDK | Native `RunHooks` |
-| CrewAI | Native `CrewCallbackHandler` |
-| OTEL-instrumented agents | OTEL JSON ingest |
+| LangGraph / LangChain | Per-invocation runtime callback handle + LangSmith / OTLP ingest |
+| OpenAI Agents SDK | Process-global tracing processor with per-trace runtime isolation |
+| CrewAI | Explicit, detachable event-bus runtime handle |
+| OTLP-instrumented agents | Authenticated local OTLP/HTTP JSON receiver |
 | Raw / custom | Python SDK or JSON file |
 
 ---
@@ -1412,26 +1436,27 @@ Commands:
   claude     Install/run Claude Code coach hooks and convert transcripts
   verify     Verify a report (or evidence bundle .zip) — signature, hash, re-score
   keygen     Generate an Ed25519 keypair for report signing
-  optimize   Rewrite the system prompt with an LLM to eliminate detected waste
+  optimize   Labs-only prompt experiment; does not prove an improvement
   apply      Patch a system prompt file with safe, non-functional fixes
   bench      Compare before/after traces and verify actual savings
   compare    Per-metric delta table between two trace files
   simulate   Project TAS impact of removing or merging steps
-  cost       Monthly savings estimate across a set of traces
+  cost       Estimated monthly cost projection across a set of traces
   export     Forward a report to OTEL/webhook, or pack an evidence bundle
-  serve      Start the HTTP server (REST API + dashboard)
+  serve      Start the REST API, dashboard, and local OTLP/HTTP JSON receiver
   list       List traces stored in the current session
 ```
 
 ```bash
-# Fleet/batch mode: a directory (or several files) produces one aggregate
-# report — mean/median TAS, worst-5 list — hermetic per file. Gate on mean:
-tracerazor audit traces/external/ --min-steps 2 --threshold 70
+# Batch mode is diagnostic only. Do not gate on fleet-average TAS or compare
+# unrelated agents; declare same-workload baselines instead.
+tracerazor audit traces/external/ --min-steps 2 --hermetic --format json
 
 tracerazor compare before.json after.json
 tracerazor simulate trace.json --remove 3,8 --merge 6,7
 tracerazor cost trace*.json --provider anthropic-claude-3-5-sonnet --runs 50000
-tracerazor optimize trace.json --system-prompt agent.txt --output agent_v2.txt --target-tas 85
+# Labs only; accept nothing until a task-preserving rerun verifies it.
+tracerazor optimize trace.json --system-prompt agent.txt --output agent_v2.txt
 
 # Universal import + coach artifacts:
 tracerazor import exports/langfuse.json --from langfuse --out trace.json --audit
@@ -1483,14 +1508,20 @@ curl -s -X POST http://127.0.0.1:8080/api/audit \
 
 **Auth:** set `TRACERAZOR_API_TOKEN` to require
 `Authorization: Bearer <token>` on every `/api` route and `/ws`; requests
-without it get `401`. The server binds loopback by default — set a token
-*before* exposing it (`--bind 0.0.0.0`), and the server warns if you don't.
+without it get `401`. The server binds loopback by default. A non-loopback bind
+is refused unless both bearer auth and a real TLS-terminating reverse-proxy
+boundary are configured.
 Health probes (`/healthz`, `/readyz`) stay open for orchestrators.
 
 ```bash
-TRACERAZOR_API_TOKEN=s3cret tracerazor serve --bind 0.0.0.0 --port 8080 &
+TRACERAZOR_API_TOKEN=s3cret tracerazor serve --bind 127.0.0.1 --port 8080 &
 curl -s -H "Authorization: Bearer s3cret" http://127.0.0.1:8080/api/traces
 ```
+
+For the local HTTPS dashboard container, use the fail-closed
+[Compose setup](docs/container.md). Do not set `TRACERAZOR_TLS_TERMINATED=true`
+unless a real proxy is already terminating TLS and direct backend access is
+blocked.
 
 | Method | Path | Description |
 |---|---|---|

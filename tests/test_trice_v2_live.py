@@ -836,8 +836,7 @@ def test_suite_scaffold_generates_locked_remote_git_manifest(tmp_path):
 
     dist = tmp_path / "dist"
     dist.mkdir()
-    (dist / "tracerazor-1.0.3-py3-none-any.whl").write_bytes(b"fake wheel for release evidence\n")
-    (dist / "tracerazor-1.0.3.tar.gz").write_bytes(b"fake sdist for release evidence\n")
+    (dist / "tracerazor-1.1.0-py3-none-any.whl").write_bytes(b"fake wheel for release evidence\n")
     cli_binary = tmp_path / ("tracerazor.exe" if sys.platform.startswith("win") else "tracerazor")
     cli_binary.write_bytes(b"fake cli binary for release evidence\n")
     release_evidence = build_release_evidence_card(dist_dir=dist, cli_binary_path=cli_binary, sidecar_stem="release-evidence")

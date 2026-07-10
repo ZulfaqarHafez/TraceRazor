@@ -17,11 +17,11 @@ name = "tracerazor"
 path = "src/main.rs"
 
 [dependencies]
-tracerazor-core = { path = "../tracerazor-core", version = "1.0.3" }
-tracerazor-ingest = { path = "../tracerazor-ingest", version = "1.0.3" }
-tracerazor-semantic = { path = "../tracerazor-semantic", version = "1.0.3" }
-tracerazor-store = { path = "../tracerazor-store", version = "1.0.3" }
-tracerazor-server = { path = "../tracerazor-server", version = "1.0.3" }
+tracerazor-core = { path = "../tracerazor-core", version = "1.1.0" }
+tracerazor-ingest = { path = "../tracerazor-ingest", version = "1.1.0" }
+tracerazor-semantic = { path = "../tracerazor-semantic", version = "1.1.0" }
+tracerazor-store = { path = "../tracerazor-store", version = "1.1.0" }
+tracerazor-server = { path = "../tracerazor-server", version = "1.1.0" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
@@ -33,6 +33,10 @@ chrono = { workspace = true }
 ed25519-dalek = { workspace = true }
 rand = { workspace = true }
 zip = "0.6"
+toml = "0.8"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
 
 [dev-dependencies]
 assert_cmd = "2"

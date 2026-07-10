@@ -188,9 +188,7 @@ mod tests {
 
         // Steps have different content → novelty > 0.10 for all.
         let result = compute_from_similarities(&trace, |a, b| {
-            let shared = a.split_whitespace()
-                .filter(|w| b.contains(*w))
-                .count();
+            let shared = a.split_whitespace().filter(|w| b.contains(*w)).count();
             let total = a.split_whitespace().count().max(1);
             shared as f64 / total as f64
         });

@@ -1,39 +1,39 @@
-pub mod srr;
-pub mod ldi;
-pub mod tca;
-pub mod tur;
-pub mod cce;
-pub mod rda;
-pub mod isr;
-pub mod dbo;
-mod verbosity_data;
-pub mod vdi;
-pub mod shl;
-pub mod ccr;
-pub mod reformulation;
-pub mod gar;
-pub mod csd;
-pub mod obs;
-pub mod tpe;
 pub mod agf;
+pub mod cce;
+pub mod ccr;
+pub mod csd;
+pub mod dbo;
+pub mod gar;
+pub mod isr;
+pub mod ldi;
+pub mod obs;
+pub mod rda;
+pub mod reformulation;
+pub mod shl;
+pub mod srr;
+pub mod tca;
+pub mod tpe;
+pub mod tur;
+pub mod vdi;
+mod verbosity_data;
 
-pub use srr::{SrrResult, SrrRedundantPair};
-pub use ldi::{LdiResult, DetectedLoop};
-pub use tca::{TcaResult, ToolMisfire};
-pub use tur::TurResult;
-pub use cce::{CceResult, ContextBloatStep};
-pub use rda::{RdaResult, TaskComplexity};
-pub use isr::{IsrResult, LowNoveltyStep};
-pub use dbo::{DboResult, BranchDecision, HistoricalSequence};
-pub use vdi::{VdiResult, VdiStepResult};
-pub use shl::ShlResult;
-pub use ccr::{CcrResult, CcrStepResult};
-pub use reformulation::ReformulationStep;
-pub use gar::{GarResult, GarStepResult};
-pub use csd::{CsdResult, CsdStepResult};
-pub use obs::ObsResult;
-pub use tpe::{GoalOrigin, TpeResult};
 pub use agf::{AgfResult, UngroundedLiteral};
+pub use cce::{CceResult, ContextBloatStep};
+pub use ccr::{CcrResult, CcrStepResult};
+pub use csd::{CsdResult, CsdStepResult};
+pub use dbo::{BranchDecision, DboResult, HistoricalSequence};
+pub use gar::{GarResult, GarStepResult};
+pub use isr::{IsrResult, LowNoveltyStep};
+pub use ldi::{DetectedLoop, LdiResult};
+pub use obs::ObsResult;
+pub use rda::{RdaResult, TaskComplexity};
+pub use reformulation::ReformulationStep;
+pub use shl::ShlResult;
+pub use srr::{SrrRedundantPair, SrrResult};
+pub use tca::{TcaResult, ToolMisfire};
+pub use tpe::{GoalOrigin, TpeResult};
+pub use tur::TurResult;
+pub use vdi::{VdiResult, VdiStepResult};
 
 use crate::types::{StepType, TraceStep};
 
@@ -50,9 +50,7 @@ pub(crate) const MIN_TOOL_REASONING_WORDS: usize = 12;
 pub(crate) fn carries_reasoning(step: &TraceStep) -> bool {
     match step.step_type {
         StepType::Reasoning => true,
-        StepType::ToolCall => {
-            step.content.split_whitespace().count() >= MIN_TOOL_REASONING_WORDS
-        }
+        StepType::ToolCall => step.content.split_whitespace().count() >= MIN_TOOL_REASONING_WORDS,
         _ => false,
     }
 }
@@ -177,7 +175,10 @@ mod shared_tests {
         let text = reasoning_text(&s);
         assert!(text.contains("count the files"), "prose kept: {text}");
         assert!(text.contains("Linux"), "quoted literal kept: {text}");
-        assert!(text.contains("/home/user/notes.txt"), "path literal kept: {text}");
+        assert!(
+            text.contains("/home/user/notes.txt"),
+            "path literal kept: {text}"
+        );
         assert!(!text.contains("grep"), "command syntax dropped: {text}");
         assert!(!text.contains("-c"), "flags dropped: {text}");
         assert!(!text.contains("wc"), "command syntax dropped: {text}");
