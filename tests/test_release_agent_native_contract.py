@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import subprocess
 import sys
+import textwrap
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -201,8 +202,11 @@ def test_agent_image_release_smokes_both_architectures_before_signed_promotion()
     assert "VCS_REF=${{ needs.tag.outputs.commit }}" in image_job
     assert "provenance: mode=max" in image_job
     assert "sbom: true" in image_job
-    assert 'smoke_agent_image.sh "$IMAGE_NAME@$IMAGE_DIGEST" linux/amd64' in image_job
-    assert 'smoke_agent_image.sh "$IMAGE_NAME@$IMAGE_DIGEST" linux/arm64' in image_job
+    assert 'children[("linux", "amd64")]' in image_job
+    assert 'children[("linux", "arm64")]' in image_job
+    assert 'test "$AMD64_DIGEST" != "$ARM64_DIGEST"' in image_job
+    assert 'smoke_agent_image.sh "$IMAGE_NAME@$AMD64_DIGEST" linux/amd64' in image_job
+    assert 'smoke_agent_image.sh "$IMAGE_NAME@$ARM64_DIGEST" linux/arm64' in image_job
     assert "uses: actions/attest@v4" in image_job
     assert "subject-digest: ${{ steps.push.outputs.digest }}" in image_job
     assert "push-to-registry: true" in image_job
@@ -243,6 +247,58 @@ def test_agent_image_release_smokes_both_architectures_before_signed_promotion()
     assert "Bind the image receipt into the release checksum manifest" in publish
     assert "artifacts/**/agent-image-release.json" in publish
     assert "-name 'agent-image-release.json'" in publish
+
+
+def test_agent_image_manifest_selector_uses_bound_child_digests(tmp_path):
+    workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(
+        encoding="utf-8"
+    )
+    marker = (
+        '          python3 - "$RUNNER_TEMP/agent-image-manifest.json" '
+        '"$RUNNER_TEMP" <<\'PY\'\n'
+    )
+    selector = workflow.split(marker, 1)[1].split("\n          PY", 1)[0]
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "mediaType": "application/vnd.oci.image.index.v1+json",
+                "manifests": [
+                    {
+                        "digest": "sha256:" + "a" * 64,
+                        "platform": {"os": "linux", "architecture": "amd64"},
+                    },
+                    {
+                        "digest": "sha256:" + "b" * 64,
+                        "platform": {"os": "linux", "architecture": "arm64"},
+                    },
+                    {
+                        "digest": "sha256:" + "c" * 64,
+                        "platform": {"os": "unknown", "architecture": "unknown"},
+                    },
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            textwrap.dedent(selector),
+            str(manifest_path),
+            str(tmp_path),
+        ],
+        check=True,
+    )
+
+    assert (tmp_path / "agent-image-amd64.digest").read_text(
+        encoding="utf-8"
+    ) == "sha256:" + "a" * 64 + "\n"
+    assert (tmp_path / "agent-image-arm64.digest").read_text(
+        encoding="utf-8"
+    ) == "sha256:" + "b" * 64 + "\n"
 
 
 def test_release_keeps_all_five_native_platform_wheels():

@@ -351,9 +351,10 @@ jobs:
           test -n "$IMAGE_DIGEST"
           docker buildx imagetools inspect --raw \
             "$IMAGE_NAME@$IMAGE_DIGEST" > "$RUNNER_TEMP/agent-image-manifest.json"
-          python3 - "$RUNNER_TEMP/agent-image-manifest.json" <<'PY'
+          python3 - "$RUNNER_TEMP/agent-image-manifest.json" "$RUNNER_TEMP" <<'PY'
           import json
           import pathlib
+          import re
           import sys
 
           manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
@@ -369,9 +370,32 @@ jobs:
           assert required <= platforms, (required, platforms)
           real_platforms = {item for item in platforms if item[0] not in {None, "unknown"}}
           assert real_platforms == required, real_platforms
+          children = {}
+          for item in manifest.get("manifests", []):
+              platform = (
+                  item.get("platform", {}).get("os"),
+                  item.get("platform", {}).get("architecture"),
+              )
+              if platform not in required:
+                  continue
+              digest = item.get("digest", "")
+              assert re.fullmatch(r"sha256:[0-9a-f]{64}", digest), digest
+              assert platform not in children, platform
+              children[platform] = digest
+          assert set(children) == required, children
+          output_dir = pathlib.Path(sys.argv[2])
+          output_dir.joinpath("agent-image-amd64.digest").write_text(
+              children[("linux", "amd64")] + "\n", encoding="utf-8"
+          )
+          output_dir.joinpath("agent-image-arm64.digest").write_text(
+              children[("linux", "arm64")] + "\n", encoding="utf-8"
+          )
           PY
-          bash scripts/smoke_agent_image.sh "$IMAGE_NAME@$IMAGE_DIGEST" linux/amd64
-          bash scripts/smoke_agent_image.sh "$IMAGE_NAME@$IMAGE_DIGEST" linux/arm64
+          AMD64_DIGEST=$(cat "$RUNNER_TEMP/agent-image-amd64.digest")
+          ARM64_DIGEST=$(cat "$RUNNER_TEMP/agent-image-arm64.digest")
+          test "$AMD64_DIGEST" != "$ARM64_DIGEST"
+          bash scripts/smoke_agent_image.sh "$IMAGE_NAME@$AMD64_DIGEST" linux/amd64
+          bash scripts/smoke_agent_image.sh "$IMAGE_NAME@$ARM64_DIGEST" linux/arm64
       - name: Sign image provenance
         id: attest-image
         uses: actions/attest@v4
