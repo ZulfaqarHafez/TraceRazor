@@ -26,6 +26,7 @@ jobs:
       contents: write
     outputs:
       tag: ${{ steps.resolve.outputs.tag }}
+      commit: ${{ steps.resolve.outputs.commit }}
     steps:
       - uses: actions/checkout@v4
       - name: Resolve or create tag
@@ -57,7 +58,15 @@ jobs:
               -f ref="refs/tags/$TAG" -f sha="$GITHUB_SHA"
             echo "created tag $TAG at $GITHUB_SHA"
           fi
+          git fetch --force --no-tags origin "refs/tags/$TAG:refs/tags/$TAG"
+          TAG_COMMIT=$(git rev-list -n 1 "$TAG")
+          test -n "$TAG_COMMIT"
+          if [[ "$GITHUB_REF" == refs/tags/* ]] && [ "$TAG_COMMIT" != "$GITHUB_SHA" ]; then
+            echo "tag event commit mismatch: tag=$TAG_COMMIT event=$GITHUB_SHA" >&2
+            exit 1
+          fi
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "commit=$TAG_COMMIT" >> "$GITHUB_OUTPUT"
 
   quality:
     name: Release quality (Python ${{ matrix.python-version }})
@@ -75,11 +84,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - uses: dtolnay/rust-toolchain@stable
-        if: matrix.python-version == '3.12'
         with:
           components: rustfmt, clippy
       - name: Install Python test and audit dependencies
         run: python -m pip install --upgrade pip '.[dev,mcp]' pip-audit
+      - name: Build native CLI for release-readiness tests
+        run: cargo build --release -p tracerazor
       - name: Python tests
         run: python -m pytest -q
       - name: Python dependency audit
@@ -324,10 +334,10 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           pull: true
-          tags: ${{ env.IMAGE_NAME }}:build-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          tags: ${{ env.IMAGE_NAME }}:build-${{ needs.tag.outputs.commit }}-${{ github.run_id }}-${{ github.run_attempt }}
           build-args: |
             TRACERAZOR_VERSION=${{ needs.tag.outputs.tag }}
-            VCS_REF=${{ github.sha }}
+            VCS_REF=${{ needs.tag.outputs.commit }}
             SOURCE_DATE_EPOCH=${{ steps.source-date.outputs.epoch }}
           cache-from: type=gha,scope=tracerazor-agent-image
           cache-to: type=gha,mode=max,scope=tracerazor-agent-image
@@ -395,6 +405,7 @@ jobs:
         env:
           IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
           RELEASE_TAG: ${{ needs.tag.outputs.tag }}
+          TAG_COMMIT: ${{ needs.tag.outputs.commit }}
           SOURCE_DATE_EPOCH: ${{ steps.source-date.outputs.epoch }}
         run: |
           mkdir -p agent-image-release
@@ -413,7 +424,7 @@ jobs:
               "version_tag": os.environ["RELEASE_TAG"],
               "platforms": ["linux/amd64", "linux/arm64"],
               "source_repository": os.environ["GITHUB_REPOSITORY"],
-              "source_revision": os.environ["GITHUB_SHA"],
+              "source_revision": os.environ["TAG_COMMIT"],
               "source_date_epoch": int(os.environ["SOURCE_DATE_EPOCH"]),
               "signer_workflow": ".github/workflows/release.yml",
               "registry_attestation_verified": True,

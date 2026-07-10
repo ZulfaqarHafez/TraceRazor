@@ -27,6 +27,9 @@ def test_release_is_evidence_gated_platform_only_and_immutable():
     assert "--clobber" not in workflow
     assert "refusing to replace changed asset" in workflow
     assert '"$TAG" != "v$PY_VERSION"' in workflow
+    assert 'commit: ${{ steps.resolve.outputs.commit }}' in workflow
+    assert 'git rev-list -n 1 "$TAG"' in workflow
+    assert "Build native CLI for release-readiness tests" in workflow
 
 
 def test_action_has_no_default_absolute_gate_and_verifies_release_checksum():
@@ -193,7 +196,8 @@ def test_agent_image_release_smokes_both_architectures_before_signed_promotion()
     )[0]
 
     assert "platforms: linux/amd64,linux/arm64" in image_job
-    assert "build-${{ github.sha }}" in image_job
+    assert "build-${{ needs.tag.outputs.commit }}" in image_job
+    assert "VCS_REF=${{ needs.tag.outputs.commit }}" in image_job
     assert "provenance: mode=max" in image_job
     assert "sbom: true" in image_job
     assert 'smoke_agent_image.sh "$IMAGE_NAME@$IMAGE_DIGEST" linux/amd64' in image_job
@@ -208,6 +212,7 @@ def test_agent_image_release_smokes_both_architectures_before_signed_promotion()
     assert "refusing to replace changed image" in image_job
     assert '"schema_version": "tracerazor-agent-image-release/v1"' in image_job
     assert '"immutable_ref": f"{image}@{digest}"' in image_job
+    assert '"source_revision": os.environ["TAG_COMMIT"]' in image_job
     assert "name: agent-image-release-receipt" in image_job
     assert "SOURCE_DATE_EPOCH=${{ steps.source-date.outputs.epoch }}" in image_job
     assert "Prove GHCR is publicly readable at the exact digest" in image_job
