@@ -43,8 +43,17 @@ fi
 
 if [[ "$PLAT" == manylinux_* ]]; then
   # Check the imported symbol ceiling as well as the builder's libc version.
+  GLIBC_BASELINE="${TRACERAZOR_EXPECTED_GLIBC:-}"
+  if [[ -z "$GLIBC_BASELINE" ]]; then
+    if [[ "$PLAT" =~ ^manylinux_([0-9]+)_([0-9]+)_ ]]; then
+      GLIBC_BASELINE="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+    else
+      echo "unable to derive GLIBC baseline from $PLAT" >&2
+      exit 1
+    fi
+  fi
   python scripts/verify_glibc_baseline.py \
-    tracerazor/bin/tracerazor "${TRACERAZOR_EXPECTED_GLIBC:?}"
+    tracerazor/bin/tracerazor "$GLIBC_BASELINE"
 fi
 
 WHEEL=$(ls -t dist/tracerazor-*-py3-none-any.whl | head -1)

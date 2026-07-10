@@ -71,6 +71,11 @@ def test_platform_builds_remove_foreign_host_binaries_before_packaging():
         "Remove-Item tracerazor/bin/tracerazor,tracerazor/bin/tracerazor.exe"
         in release
     )
+    assert 'GLIBC_BASELINE="${TRACERAZOR_EXPECTED_GLIBC:-}"' in unix_builder
+    assert "BASH_REMATCH[1]" in unix_builder
+    assert "BASH_REMATCH[2]" in unix_builder
+    assert 'tracerazor/bin/tracerazor "$GLIBC_BASELINE"' in unix_builder
+    assert "${TRACERAZOR_EXPECTED_GLIBC:?}" not in unix_builder
 
 
 def test_agent_image_uses_supported_rust_and_non_root_runtime():
@@ -255,6 +260,22 @@ def test_release_keeps_all_five_native_platform_wheels():
     assert "wheel-platform: manylinux_2_39_aarch64" in wheels
     assert "TRACERAZOR_EXPECTED_GLIBC" in wheels
     assert "Clean-room smoke on declared platform baseline" in wheels
+
+
+def test_trice_integrity_uses_the_linux_release_wheel_baseline():
+    workflow = (ROOT / ".github" / "workflows" / "tracerazor.yml").read_text(
+        encoding="utf-8"
+    )
+    integrity = workflow.split("  trice-integrity:\n", 1)[1].split(
+        "\n  #", 1
+    )[0]
+
+    assert "runs-on: ubuntu-22.04" in integrity
+    assert 'TRACERAZOR_EXPECTED_GLIBC: "2.35"' in integrity
+    assert (
+        "TRACERAZOR_EXPECTED_WHEEL_PLATFORM: manylinux_2_35_x86_64"
+        in integrity
+    )
 
 
 def test_release_fails_on_existing_pypi_files_and_evidence_uses_downloaded_cli():
