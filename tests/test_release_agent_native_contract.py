@@ -259,6 +259,8 @@ def test_release_keeps_all_five_native_platform_wheels():
     ):
         assert f"artifact: {artifact}" in wheels
     assert wheels.count("          - os:") == 5
+    assert "macos-13" not in workflow
+    assert workflow.count("          - os: macos-15-intel") == 2
     assert 'glibc: "2.35"' in wheels
     assert "wheel-platform: manylinux_2_35_x86_64" in wheels
     assert 'glibc: "2.39"' in wheels
