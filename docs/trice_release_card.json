@@ -68,7 +68,7 @@
     },
     {
       "name": "github_tag",
-      "observed": "pending: head=c6f2062e8d56 local_tag=False remote_tag=False",
+      "observed": "pending: head=eeb98780be51 local_tag=False remote_tag=False",
       "passed": false,
       "required": "local version tag points at current commit locally and remotely"
     },
@@ -80,7 +80,7 @@
     },
     {
       "name": "openssf_scorecard",
-      "observed": "below-threshold: score=3.8 minimum=7.0 date=2026-07-10T11:22:50Z commit=c6f2062e8d56",
+      "observed": "below-threshold: score=3.8 minimum=7.0 date=2026-07-10T11:36:56Z commit=eeb98780be51",
       "passed": false,
       "required": "OpenSSF Scorecard is published with score >= 7.0"
     },
@@ -165,7 +165,7 @@
         "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
       },
       "github_tag": {
-        "detail": "head=c6f2062e8d56 local_tag=False remote_tag=False",
+        "detail": "head=eeb98780be51 local_tag=False remote_tag=False",
         "ok": false,
         "status": "pending"
       },
@@ -175,7 +175,7 @@
         "status": "installed"
       },
       "openssf_scorecard": {
-        "detail": "score=3.8 minimum=7.0 date=2026-07-10T11:22:50Z commit=c6f2062e8d56",
+        "detail": "score=3.8 minimum=7.0 date=2026-07-10T11:36:56Z commit=eeb98780be51",
         "ok": false,
         "status": "below-threshold",
         "url": "https://api.scorecard.dev/projects/github.com/ZulfaqarHafez/TraceRazor"
@@ -218,25 +218,25 @@
       ]
     }
   },
-  "doctor_snapshot_sha256": "f30ad0aa4f1ad39941677c7184edae0e94f51216a8d87e7cf70a86b286adc77f",
+  "doctor_snapshot_sha256": "620ddef07226d267410a33a455191703dbc0b2ae6b6f9fe636cd8701bb5821b8",
   "inputs": {
     "artifact_card": {
-      "bytes": 16188,
+      "bytes": 16185,
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
+      "sha256": "9f28fe165889580da35c2aff05ce217d3efba1bb74289c090a447efc8a63724e"
     },
     "contract_card": {
       "bytes": 19194,
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
+      "sha256": "9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11"
     },
     "install_card": {
       "bytes": 13941,
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
+      "sha256": "77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180"
     },
     "public_trust_matrix": {
       "bytes": 11804,
@@ -263,10 +263,10 @@
       "sha256": "e4b843f18203cc2adc28d4f76af61c566d4052631edf804063ee4a53715af475"
     },
     "reproduction_card": {
-      "bytes": 7296,
+      "bytes": 7294,
       "path": "docs/trice_reproduction_card.json",
       "present": true,
-      "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
+      "sha256": "ed4a21787b9120ec50dfb223f98bffa20b1a97c4ccad78001f83f8b59e209c44"
     }
   },
   "next_actions": [
@@ -285,7 +285,7 @@
     "python": "3.11.6"
   },
   "public_release_ready": false,
-  "release_card_sha256": "3720a16b8b6778061f6d5b2986fb759c928bc4b148c555a189a76737d1f4d952",
+  "release_card_sha256": "2bd033f1cd686f819256bdec4680d488dfde02774c9833eb4968ae1d82ad5b21",
   "release_level": "local_release_candidate",
   "release_score": 74,
   "research_basis": [

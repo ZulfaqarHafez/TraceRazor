@@ -27,18 +27,23 @@
   ],
   "command": [
     "python",
-    "C:/Users/zulfa/TraceRazor/examples/trice_repair_bundled_tasks.py"
+    "C:/Users/zulfa/TraceRazor/build/ci-repro-lf-writers/examples/trice_repair_bundled_tasks.py"
   ],
-  "command_sha256": "139b9d4c62e2b06b3a9c93798eebd2c4f9496e1c26a6bf86dd9c8074e257bc9f",
+  "command_sha256": "4307acaf190286da7d5de6bbfc4e37889e8d7186eb37a471ce9c6a31f3403281",
   "env_keys": [],
   "exit_code": 0,
   "expected_exit_codes": [
     0
   ],
   "forbidden_changed_files": [],
+  "forbidden_prefixes": [
+    "tests/",
+    "test/"
+  ],
   "metadata": {
     "purpose": "Deterministic command adapter for TraceRazor bundled live tasks"
   },
+  "output_redacted": false,
   "prompt_sha256": "9db4ac600e838cebfea13cbc3525e7a6b8a757eed03b9845c0681d6efd219418",
   "reserved_env_keys": [
     "TRICE_AGENT_RECEIPT",
@@ -73,7 +78,7 @@
     "condition": "baseline-full-context",
     "context_mode": "full_context",
     "decision_trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\csv-filter\\replicate-1\\csv-filter\\round-1\\baseline-full-context\\decision_trace.json",
-    "decision_trace_sha256": "d8e740c98d29e3fcc1816d5dea9fe48c62fe66f8ce23a5af5be6684ef0d06a8e",
+    "decision_trace_sha256": "d27047f672cfa604f6084719c6e46c7224f2151822229cd5e9dbf8df7709f1bb",
     "evidence_recall": {
       "evidence_recall": 1.0,
       "missing": [],
@@ -102,6 +107,6 @@
       "--tb=short"
     ]
   },
-  "workspace_after_sha256": "03777fc3ea82eac7ba5c03a834a12535ab4d498902094d340a4d32a20b3fa60e",
-  "workspace_before_sha256": "6f5dfb669d81d426453ba8c1892c8c9e2130bb9413c52057b82c10d8bd0f2b2d"
+  "workspace_after_sha256": "eb9c3a8d02e8414d17712815d490f6f5f4aabf86a1dc408efa60bc91784429b9",
+  "workspace_before_sha256": "9495c28495a45f9e975811092042a6cb85d8128e1ab2aab93d92302e92d9a437"
 }

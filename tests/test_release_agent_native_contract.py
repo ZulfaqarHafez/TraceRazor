@@ -306,6 +306,11 @@ def test_proof_bound_worktree_bytes_match_the_git_index():
         for path in sorted((ROOT / "examples").glob("trice_*"))
         if path.is_file()
     )
+    paths.extend(
+        path.relative_to(ROOT).as_posix()
+        for path in sorted((ROOT / "benchmark" / "live" / "tasks").rglob("*"))
+        if path.is_file()
+    )
 
     mismatches = []
     for relative in paths:

@@ -1,16 +1,16 @@
 # TRICE Claim Card
 
 - Scope: `python software-repair/context-control tasks on held-out Git repositories`
-- Claim level: `failed`
+- Claim level: `smoke`
 - Claim allowed: `false`
-- Determinism contract score: **88/100**
+- Determinism contract score: **100/100**
 - Mean input-token savings: **81.5%**
 - Clustered CI lower bound: **79.0%**
 - Pass regressions: **0**
 - Evidence recall minimum: **100.0%**
 - Evidence recall failures: **0**
 - Accepted runs: **6/6**
-- Evidence verification: **failed**
+- Evidence verification: **ok**
 
 ## Requirements
 
@@ -31,12 +31,11 @@
 ## Non-Claims
 
 - Not an S-tier claim; missing task_clusters, replicates_per_task, locked_git_sources, remote_git_sources.
-- Evidence verification did not pass.
 - Does not claim universal all-language or all-agent performance.
 - Does not certify replay-only savings as live savings.
 
 ## Hashes
 
-- suite result: `1622ffb36464e6e41cbadecd1c5ed6cceb678af89a2a5a5a3c999258559c3f2d`
-- suite manifest: `1a564b4756d0d2432a0e40ba279fa2e23577b040168fa40961f547a0ded4941a`
-- claim card: `5c03bc9f6da19d7cabc89e654a93eacfc6d25021ddec5ac9922877be6d771aaa`
+- suite result: `73717655c94009153c47254c548f28650144df0aa3649d6e791eef6868992c5b`
+- suite manifest: `f3e9c745cec2d5493f65f8b626c0959652b1cf45b7d7cc3c3912f6a4452be730`
+- claim card: `70990191b89a3e506eeecd5d1326e1541bb831ec7cfe12990439f6df59e7c549`

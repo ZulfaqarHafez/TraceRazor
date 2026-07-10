@@ -37,13 +37,14 @@
       "user requires live rollout evidence, not replay-only acceptance",
       "replay is allowed only as a preflight, not as final proof",
       "prefer aggressive compression when live pass preservation holds",
-      "round 1: accepted 84% savings with pass preservation"
+      "round 1: accepted 84% savings with pass preservation",
+      "round 2: accepted 84% savings with pass preservation"
     ],
     "max_rounds": 3,
     "pass_noninferiority_margin_pp": -2.0,
     "prefer_receipts": true,
     "require_live_rollout": true,
-    "rounds_seen": 1,
+    "rounds_seen": 2,
     "target_savings": 0.6,
     "user_id": "local"
   },
@@ -81,7 +82,7 @@
         "policy": null,
         "policy_path": null,
         "receipt_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\baseline-full-context\\run_receipt.json",
-        "receipt_sha256": "007c6784bda8655eaee8e45760bc26fe83df5279ba46818f302644aacb8a4bcf",
+        "receipt_sha256": "aeb25c69b336a656872d02bffbb3f04c034c3c000c306c41e9bb4fee8e4e307e",
         "task_id": "rename-api",
         "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\baseline-full-context\\trace.json",
         "verify_exit_code": 0,
@@ -237,7 +238,7 @@
         },
         "policy_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\context_policy.json",
         "receipt_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\run_receipt.json",
-        "receipt_sha256": "c9780bdfd5521cab520a190ed75c0108e12d2bbd4b696abe6f94f3fb1179e96f",
+        "receipt_sha256": "5e77064ffa03546316b17f32b5c9fe31b74ad47911580519bb4068a1639a2eb4",
         "task_id": "rename-api",
         "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\trace.json",
         "verify_exit_code": 0,
@@ -253,13 +254,14 @@
           "user requires live rollout evidence, not replay-only acceptance",
           "replay is allowed only as a preflight, not as final proof",
           "prefer aggressive compression when live pass preservation holds",
-          "round 1: accepted 84% savings with pass preservation"
+          "round 1: accepted 84% savings with pass preservation",
+          "round 2: accepted 84% savings with pass preservation"
         ],
         "max_rounds": 3,
         "pass_noninferiority_margin_pp": -2.0,
         "prefer_receipts": true,
         "require_live_rollout": true,
-        "rounds_seen": 1,
+        "rounds_seen": 2,
         "target_savings": 0.6,
         "user_id": "local"
       },

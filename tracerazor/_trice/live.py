@@ -160,9 +160,9 @@ class ManagedPythonRepairAdapter:
         if task.task_id == "fix-imports":
             changed = []
             changed += self._replace(workspace / "mypkg" / "api.py", "from loaders import read_rows", "from .loaders import read_rows")
-            (workspace / "mypkg" / "__init__.py").write_text(
+            write_text_lf(
+                workspace / "mypkg" / "__init__.py",
                 "from .api import run_pipeline\n\n__all__ = [\"run_pipeline\"]\n",
-                encoding="utf-8",
             )
             changed.append("mypkg/__init__.py")
             return sorted(set(changed))
@@ -181,7 +181,7 @@ class ManagedPythonRepairAdapter:
                 "                out.append({\"name\": row[\"name\"], \"score\": score})\n"
                 "    return out\n"
             )
-            (workspace / "filt.py").write_text(code, encoding="utf-8")
+            write_text_lf(workspace / "filt.py", code)
             return ["filt.py"]
         if task.task_id == "implement-median":
             return self._replace(
@@ -202,18 +202,18 @@ class ManagedPythonRepairAdapter:
                 "def normalize_name(name):\n"
                 "    return \" \".join(str(name).split()).strip().lower()\n"
             )
-            (workspace / "textutil.py").write_text(textutil, encoding="utf-8")
-            (workspace / "utils_a.py").write_text(
+            write_text_lf(workspace / "textutil.py", textutil)
+            write_text_lf(
+                workspace / "utils_a.py",
                 "from textutil import normalize_name\n\n\n"
                 "def label_for(name):\n"
                 "    return f\"user:{normalize_name(name)}\"\n",
-                encoding="utf-8",
             )
-            (workspace / "utils_b.py").write_text(
+            write_text_lf(
+                workspace / "utils_b.py",
                 "from textutil import normalize_name\n\n\n"
                 "def greeting(name):\n"
                 "    return f\"hello {normalize_name(name)}\"\n",
-                encoding="utf-8",
             )
             return ["textutil.py", "utils_a.py", "utils_b.py"]
         if task.task_id == "rename-api":
@@ -229,7 +229,7 @@ class ManagedPythonRepairAdapter:
         text = path.read_text(encoding="utf-8")
         if old not in text:
             return []
-        path.write_text(text.replace(old, new), encoding="utf-8")
+        write_text_lf(path, text.replace(old, new))
         return [path.name]
 
 

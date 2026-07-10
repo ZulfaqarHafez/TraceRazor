@@ -37,13 +37,14 @@
       "user requires live rollout evidence, not replay-only acceptance",
       "replay is allowed only as a preflight, not as final proof",
       "prefer aggressive compression when live pass preservation holds",
-      "round 1: accepted 80% savings with pass preservation"
+      "round 1: accepted 80% savings with pass preservation",
+      "round 2: accepted 80% savings with pass preservation"
     ],
     "max_rounds": 3,
     "pass_noninferiority_margin_pp": -2.0,
     "prefer_receipts": true,
     "require_live_rollout": true,
-    "rounds_seen": 1,
+    "rounds_seen": 2,
     "target_savings": 0.6,
     "user_id": "local"
   },
@@ -79,7 +80,7 @@
         "policy": null,
         "policy_path": null,
         "receipt_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\implement-median\\replicate-1\\implement-median\\round-1\\baseline-full-context\\run_receipt.json",
-        "receipt_sha256": "f1dd9391434a22bee74199ef32e407fa42cb68bc647062fa6fc42c8b2f067964",
+        "receipt_sha256": "7ffaab6041d7a3e0a231ccad958e318474c51c4e287f0366996c9907d47afc41",
         "task_id": "implement-median",
         "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\implement-median\\replicate-1\\implement-median\\round-1\\baseline-full-context\\trace.json",
         "verify_exit_code": 0,
@@ -233,7 +234,7 @@
         },
         "policy_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\implement-median\\replicate-1\\implement-median\\round-1\\trice-v2\\context_policy.json",
         "receipt_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\implement-median\\replicate-1\\implement-median\\round-1\\trice-v2\\run_receipt.json",
-        "receipt_sha256": "362ef7b2c813ed611c41a8f5e2649e4b149b4ee23854001aae3407d23be19332",
+        "receipt_sha256": "beebd53e732f9a36390d8dce4de8dab66a36580e0df4692cf8cda3cfba31ac1d",
         "task_id": "implement-median",
         "trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\implement-median\\replicate-1\\implement-median\\round-1\\trice-v2\\trace.json",
         "verify_exit_code": 0,
@@ -249,13 +250,14 @@
           "user requires live rollout evidence, not replay-only acceptance",
           "replay is allowed only as a preflight, not as final proof",
           "prefer aggressive compression when live pass preservation holds",
-          "round 1: accepted 80% savings with pass preservation"
+          "round 1: accepted 80% savings with pass preservation",
+          "round 2: accepted 80% savings with pass preservation"
         ],
         "max_rounds": 3,
         "pass_noninferiority_margin_pp": -2.0,
         "prefer_receipts": true,
         "require_live_rollout": true,
-        "rounds_seen": 1,
+        "rounds_seen": 2,
         "target_savings": 0.6,
         "user_id": "local"
       },

@@ -35,6 +35,7 @@ Evidence manifest: `trice_v2_evidence_manifest.json`
 - round 5: accepted 77% savings with pass preservation
 - round 6: accepted 77% savings with pass preservation
 - round 7: accepted 77% savings with pass preservation
+- round 8: accepted 77% savings with pass preservation
 
 ## Interpretation
 

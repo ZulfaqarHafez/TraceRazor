@@ -1,5 +1,6 @@
 ﻿import hashlib
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -250,6 +251,66 @@ def test_json_patch_adapter_refuses_test_edits_and_path_escape(tmp_path):
     )
     with pytest.raises(ValueError, match="inside workspace"):
         escape.apply_fix(object(), workspace)
+
+
+def test_repair_adapters_emit_platform_independent_lf(tmp_path):
+    workspace = tmp_path / "repo"
+    workspace.mkdir()
+    target = workspace / "app.py"
+    target.write_bytes(b"VALUE = 1\r\n")
+    adapter = JsonPatchAdapter.from_dict(
+        {"edits": [{"op": "replace", "path": "app.py", "old": "1", "new": "2"}]}
+    )
+    assert adapter.apply_fix(object(), workspace) == ["app.py"]
+    assert target.read_bytes() == b"VALUE = 2\n"
+    writer = JsonPatchAdapter.from_dict(
+        {
+            "edits": [
+                {
+                    "op": "write",
+                    "path": "generated.py",
+                    "content": "FIRST = 1\r\nSECOND = 2\r",
+                }
+            ]
+        }
+    )
+    assert writer.apply_fix(object(), workspace) == ["generated.py"]
+    assert (workspace / "generated.py").read_bytes() == b"FIRST = 1\nSECOND = 2\n"
+
+    chunker = workspace / "chunker.py"
+    chunker.write_bytes(b"def chunk(xs, size):\r\n    return xs[: size - 1]\r\n")
+    env = os.environ.copy()
+    env.update(
+        {
+            "TRICE_TASK_ID": "fix-offby-one",
+            "TRICE_AGENT_RECEIPT": str(workspace / ".trice" / "agent_receipt.json"),
+        }
+    )
+    subprocess.run(
+        [sys.executable, str(REPO / "examples" / "trice_repair_bundled_tasks.py")],
+        cwd=workspace,
+        env=env,
+        check=True,
+    )
+    assert b"\r" not in chunker.read_bytes()
+    assert b"\r" not in (workspace / ".trice" / "agent_receipt.json").read_bytes()
+
+    created = tmp_path / "created"
+    created.mkdir()
+    env.update(
+        {
+            "TRICE_TASK_ID": "csv-filter",
+            "TRICE_AGENT_RECEIPT": str(created / ".trice" / "agent_receipt.json"),
+        }
+    )
+    subprocess.run(
+        [sys.executable, str(REPO / "examples" / "trice_repair_bundled_tasks.py")],
+        cwd=created,
+        env=env,
+        check=True,
+    )
+    assert b"\r" not in (created / "filt.py").read_bytes()
+    assert b"\r" not in (created / ".trice" / "agent_receipt.json").read_bytes()
 
 
 def test_patch_policy_forbidden_prefixes_cannot_be_weakened(tmp_path):

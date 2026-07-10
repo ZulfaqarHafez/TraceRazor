@@ -20,6 +20,8 @@ Evidence manifest: `trice_suite_evidence_manifest.json`
 - Task clusters: 1
 - Replicates: 3
 - Pass regressions: 0
+- Evidence recall minimum: 100.0%
+- Evidence recall failures: 0
 - Local smoke gate passed: yes
 - Broad claim allowed: no
 - Rationale: local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals

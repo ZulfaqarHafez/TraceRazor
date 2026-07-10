@@ -12,12 +12,19 @@ import os
 from pathlib import Path
 
 
+def write_text_lf(path: Path, text: str) -> None:
+    normalized = text.replace("\r\n", "\n").replace("\r", "\n")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(normalized.encode("utf-8"))
+
+
 def main() -> int:
     task_id = os.environ.get("TRICE_TASK_ID", "")
     changed = repair(task_id, Path.cwd())
     receipt_path = Path(os.environ.get("TRICE_AGENT_RECEIPT", ".trice/agent_receipt.json"))
     receipt_path.parent.mkdir(parents=True, exist_ok=True)
-    receipt_path.write_text(
+    write_text_lf(
+        receipt_path,
         json.dumps(
             {
                 "schema_version": "trice-agent-receipt/v1",
@@ -39,7 +46,6 @@ def main() -> int:
             sort_keys=True,
         )
         + "\n",
-        encoding="utf-8",
     )
     return 0
 
@@ -57,32 +63,32 @@ def repair(task_id: str, root: Path) -> list[str]:
             "                out.append({\"name\": row[\"name\"], \"score\": score})\n"
             "    return out\n"
         )
-        (root / "filt.py").write_text(code, encoding="utf-8")
+        write_text_lf(root / "filt.py", code)
         return ["filt.py"]
     if task_id == "dedupe-helpers":
-        (root / "textutil.py").write_text(
+        write_text_lf(
+            root / "textutil.py",
             "def normalize_name(name):\n"
             "    return \" \".join(str(name).split()).strip().lower()\n",
-            encoding="utf-8",
         )
-        (root / "utils_a.py").write_text(
+        write_text_lf(
+            root / "utils_a.py",
             "from textutil import normalize_name\n\n\n"
             "def label_for(name):\n"
             "    return f\"user:{normalize_name(name)}\"\n",
-            encoding="utf-8",
         )
-        (root / "utils_b.py").write_text(
+        write_text_lf(
+            root / "utils_b.py",
             "from textutil import normalize_name\n\n\n"
             "def greeting(name):\n"
             "    return f\"hello {normalize_name(name)}\"\n",
-            encoding="utf-8",
         )
         return ["textutil.py", "utils_a.py", "utils_b.py"]
     if task_id == "fix-imports":
         replace(root / "mypkg" / "api.py", "from loaders import read_rows", "from .loaders import read_rows")
-        (root / "mypkg" / "__init__.py").write_text(
+        write_text_lf(
+            root / "mypkg" / "__init__.py",
             "from .api import run_pipeline\n\n__all__ = [\"run_pipeline\"]\n",
-            encoding="utf-8",
         )
         return ["mypkg/__init__.py", "mypkg/api.py"]
     if task_id == "fix-offby-one":
@@ -115,7 +121,7 @@ def replace(path: Path, old: str, new: str) -> None:
     text = path.read_text(encoding="utf-8")
     if old not in text:
         raise SystemExit(f"old text not found in {path}")
-    path.write_text(text.replace(old, new), encoding="utf-8")
+    write_text_lf(path, text.replace(old, new))
 
 
 if __name__ == "__main__":

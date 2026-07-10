@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "trice-v2",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "cd5d360d196074bc979205194afe9364157b5b307f5f9955ed2bcec7b006e9bb",
+    "run_receipt_sha256": "18352e8dd74e3266816c466608e34431a38e189424f4174eedd63db23af0fbf4",
     "task": "Fix chunker.py without editing tests.",
     "task_id": "fix-offby-one"
   },

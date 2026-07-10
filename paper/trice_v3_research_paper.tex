@@ -210,7 +210,7 @@ protocol\_claim\_ready & no & claim\_protocol\_ready \\
 
 
         \section{Deterministic Claim Card}
-Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{failed}. Claim allowed: no. Determinism contract score: 88/100.
+Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{smoke}. Claim allowed: no. Determinism contract score: 100/100.
 
 \begin{table}[h]
 \centering
@@ -234,12 +234,11 @@ task\_clusters & no & >= 50 \\
 \caption{Machine-readable claim gate distilled from the suite result and evidence manifest.}
 \end{table}
 
-Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{5c03bc9f6da19d7c...}.
+Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{70990191b89a3e50...}.
 
 \noindent Non-claims:
 \begin{itemize}
 \item Not an S-tier claim; missing task\_clusters, replicates\_per\_task, locked\_git\_sources, remote\_git\_sources.
-\item Evidence verification did not pass.
 \item Does not claim universal all-language or all-agent performance.
 \item Does not certify replay-only savings as live savings.
 \end{itemize}
@@ -386,10 +385,10 @@ The generated installability card reports level \texttt{full\_cli\_install\_read
         \cite{mlperfpolicies,pypasample}.
 
         \section{Portable Artifact Bundle}
-        The public bundle \texttt{trice_suite_evidence.trice.zip} contains 35 hashed entries, root manifest \texttt{trice_suite_evidence_manifest.json}, and root result \texttt{trice_suite_results.json}. Verification replays aggregate and child-manifest checks after safe extraction.
+        The public bundle \texttt{trice_suite_evidence.trice.zip} contains 41 hashed entries, root manifest \texttt{trice_suite_evidence_manifest.json}, and root result \texttt{trice_suite_results.json}. Verification replays aggregate and child-manifest checks after safe extraction.
 
         \section{Source Provenance}
-        The suite source manifest records repo tree digest \texttt{604addf4070c...} over 3 files and patch SHA-256 \texttt{de5bd5e413ec...} before execution. Suite tasks may use either local paths or locked Git sources with URL, revision, optional subdirectory, and resolved commit recorded.
+        The suite source manifest records repo tree digest \texttt{4a031eca0568...} over 3 files and patch SHA-256 \texttt{de5bd5e413ec...} before execution. Suite tasks may use either local paths or locked Git sources with URL, revision, optional subdirectory, and resolved commit recorded.
 
         \section{Product Definition}
         TRICE is ship-worthy only when the library produces stable manifests,

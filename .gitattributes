@@ -10,6 +10,7 @@ Cargo.lock text eol=lf
 crates/**/Cargo.toml text eol=lf
 schemas/*.json text eol=lf
 examples/trice_* text eol=lf
+benchmark/live/tasks/** text eol=lf
 docs/public_trust_matrix.md text eol=lf
 docs/release_checklist.md text eol=lf
 

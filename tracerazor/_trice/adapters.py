@@ -12,6 +12,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from .evidence import write_text_lf
+
 
 DEFAULT_FORBIDDEN_PREFIXES = ("tests/", "test/")
 SECRET_VALUE_RE = re.compile(
@@ -99,13 +101,13 @@ class JsonPatchAdapter:
                     if self.applied_empty_ok:
                         continue
                     raise ValueError(f"old text not found in {rel}")
-                target.write_text(text.replace(edit.old, edit.new), encoding="utf-8")
+                write_text_lf(target, text.replace(edit.old, edit.new))
                 changed.append(rel)
             elif edit.op == "write":
                 if edit.content is None:
                     raise ValueError(f"write edit for {rel} needs content")
                 target.parent.mkdir(parents=True, exist_ok=True)
-                target.write_text(edit.content, encoding="utf-8")
+                write_text_lf(target, edit.content)
                 changed.append(rel)
             else:
                 raise ValueError(f"unsupported patch op: {edit.op!r}")

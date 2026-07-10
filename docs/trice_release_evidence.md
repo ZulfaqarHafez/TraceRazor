@@ -26,15 +26,15 @@
 | Artifact | Kind | Present | Path | SHA-256 |
 |---|---|---:|---|---|
 | rust_cli | binary | yes | `target/release/tracerazor.exe` | `7548683efc5aa9b7a20f5b6a2dabd3ca5d3326ac57b9bc53a1af1d7126c21ae1` |
-| paper_pdf | paper | yes | `paper/trice_v3_research_paper.pdf` | `c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d` |
-| paper_manifest | paper-manifest | yes | `paper/trice_v3_research_manifest.json` | `47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b` |
-| artifact_card | proof-card | yes | `docs/trice_artifact_card.json` | `1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33` |
-| contract_card | proof-card | yes | `docs/trice_contract_card.json` | `bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1` |
+| paper_pdf | paper | yes | `paper/trice_v3_research_paper.pdf` | `2c2e8a764fec74e1a9a9b5b3146b375eb9aec39054fdfa4e86468913a64b3467` |
+| paper_manifest | paper-manifest | yes | `paper/trice_v3_research_manifest.json` | `564eb14772d42ef613a5def3a7f18ec6a5d50f378f8d8789fde1d46f0897d8cc` |
+| artifact_card | proof-card | yes | `docs/trice_artifact_card.json` | `9f28fe165889580da35c2aff05ce217d3efba1bb74289c090a447efc8a63724e` |
+| contract_card | proof-card | yes | `docs/trice_contract_card.json` | `9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11` |
 | crates_card | proof-card | yes | `docs/trice_crates_card.json` | `c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0` |
-| install_card | proof-card | yes | `docs/trice_install_card.json` | `350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969` |
-| reproduction_card | proof-card | yes | `docs/trice_reproduction_card.json` | `e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce` |
+| install_card | proof-card | yes | `docs/trice_install_card.json` | `77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180` |
+| reproduction_card | proof-card | yes | `docs/trice_reproduction_card.json` | `ed4a21787b9120ec50dfb223f98bffa20b1a97c4ccad78001f83f8b59e209c44` |
 | research_card | proof-card | yes | `docs/trice_research_card.json` | `2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18` |
-| broad_evidence_bundle | trice-bundle | yes | `benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip` | `a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564` |
+| broad_evidence_bundle | trice-bundle | yes | `benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip` | `08ee5538891932f64e5c4e80ac63833257802b533d5b4a5a50adbe860b65a37c` |
 | remote_smoke_bundle | trice-bundle | yes | `benchmark/trice/results/v2-remote-smoke/trice_remote_smoke_evidence.trice.zip` | `93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d` |
 | tracerazor-1.1.0-py3-none-win_amd64.whl | wheel | yes | `dist/tracerazor-1.1.0-py3-none-win_amd64.whl` | `2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f` |
 
@@ -42,10 +42,10 @@
 
 | Sidecar | File | SHA-256 |
 |---|---|---|
-| checksums | `trice_release_evidence.checksums.txt` | `79688b9be66798f2bb02c0333038e79f0a3a701ba56ec03a690baabd41b36759` |
+| checksums | `trice_release_evidence.checksums.txt` | `5dc2a2a58f34221bc37043a597910c028c23a5feeb816c31b28bdb677c09022a` |
 | python_sbom | `trice_release_evidence.python.cdx.json` | `d32c8d276cfea0d9aeb3e3589abddbf003f4b9d14ec4b7b16bc8e2c5dc2c79cb` |
 | cargo_sbom | `trice_release_evidence.cargo.cdx.json` | `796ad45d98665e70e1f0487374893cc87787cf5f25a7324c51377c081da304b2` |
-| provenance | `trice_release_evidence.intoto.json` | `2b5dc4403a08bdc3f5c35db7a92ae8a016e6017501d59e15c4af993053d3296c` |
+| provenance | `trice_release_evidence.intoto.json` | `acc5632f61a5d6f9297ad0589dd9801f292003e2a50ad3a1e5336ce862a7b26b` |
 
 ## Next Actions
 
@@ -55,4 +55,4 @@
 
 ## Hash
 
-- release evidence: `be303111e02dcaaa62373dd790df029427fdcff22f852c3b44f89048d16dc0f3`
+- release evidence: `eb8d29014eb7082c50f324769454d6c78ce8c9d0a10ed8b33b3ec63e79c06625`

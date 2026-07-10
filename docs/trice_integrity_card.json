@@ -97,7 +97,7 @@
         "status": "skipped"
       },
       "github_tag": {
-        "detail": "head=c6f2062e8d56 local_tag=False remote_tag=False",
+        "detail": "head=eeb98780be51 local_tag=False remote_tag=False",
         "ok": false,
         "status": "pending"
       },
@@ -147,21 +147,21 @@
       ]
     }
   },
-  "doctor_snapshot_sha256": "5bd4522d3fc0cdd272885aed97a951390ac9438ac44bb0a826814c5b9f8bf75e",
+  "doctor_snapshot_sha256": "f1a37c2b4954d2054d7236f8eabed7d719d1f144128b7d9aa1408519184fb361",
   "inputs": {
     "artifact_card": {
-      "bytes": 16188,
+      "bytes": 16185,
       "name": "trice_artifact_card.json",
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
+      "sha256": "9f28fe165889580da35c2aff05ce217d3efba1bb74289c090a447efc8a63724e"
     },
     "contract_card": {
       "bytes": 19194,
       "name": "trice_contract_card.json",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
+      "sha256": "9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11"
     },
     "crates_card": {
       "bytes": 21475,
@@ -175,14 +175,14 @@
       "name": "trice_install_card.json",
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
+      "sha256": "77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180"
     },
     "paper_manifest": {
       "bytes": 7364,
       "name": "trice_v3_research_manifest.json",
       "path": "paper/trice_v3_research_manifest.json",
       "present": true,
-      "sha256": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b"
+      "sha256": "564eb14772d42ef613a5def3a7f18ec6a5d50f378f8d8789fde1d46f0897d8cc"
     },
     "paper_result": {
       "bytes": 45736,
@@ -196,21 +196,21 @@
       "name": "trice_release_card.json",
       "path": "docs/trice_release_card.json",
       "present": true,
-      "sha256": "d86f95ba7620a9ebfc2b931e3154583dc9591a2ab49c8e0f16219d5989cead24"
+      "sha256": "48ddb74b57f000cef0adb582383de37f062ef20637537a491fdcc0e51ace3d7d"
     },
     "release_evidence": {
       "bytes": 150495,
       "name": "trice_release_evidence.json",
       "path": "docs/trice_release_evidence.json",
       "present": true,
-      "sha256": "836de4f361b744b748485876ce301c7adfa7904b0fdb7e0ceab6fade2dafd06a"
+      "sha256": "7d216edd5ef0b2cfee8f96a91e0f105c6efec64e0cbd5e16a518d8763cd501b6"
     },
     "reproduction_card": {
-      "bytes": 7296,
+      "bytes": 7294,
       "name": "trice_reproduction_card.json",
       "path": "docs/trice_reproduction_card.json",
       "present": true,
-      "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
+      "sha256": "ed4a21787b9120ec50dfb223f98bffa20b1a97c4ccad78001f83f8b59e209c44"
     },
     "research_card": {
       "bytes": 69670,
@@ -220,7 +220,7 @@
       "sha256": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
     }
   },
-  "integrity_card_sha256": "44a5c7452b0c7f91b935de2021a73dd6d6ceadf3f7dcc5dae4eda788bd4674d1",
+  "integrity_card_sha256": "41b64e4fb18f4772e7f8a53aeb864a19a86e71f4e3e64ce2298174b67ca55722",
   "integrity_level": "proof_graph_integrity_locked",
   "integrity_score": 100,
   "next_actions": [
@@ -449,7 +449,7 @@
       "sha256": "ad29339f48e7bdc3a05de9c9b09b5a89b9eed5c3229b5aa707fd5b1a466184ef"
     },
     {
-      "bytes": 10162,
+      "bytes": 10193,
       "markers_present": true,
       "name": "ci_workflow",
       "path": ".github/workflows/tracerazor.yml",
@@ -459,7 +459,7 @@
         "tracerazor.trice integrity",
         "tracerazor.trice verify-integrity"
       ],
-      "sha256": "f71ef0d7b95bd5c446791b4a79033de6360ab96e6e445fb9dced2db5ea45fb4b"
+      "sha256": "da9f3dbb521a7c586e2856f9a46a8c7bbce6e67fc3ba1e7a7604b999d40aadde"
     },
     {
       "bytes": 788,

@@ -174,7 +174,7 @@
     "sha256": "9c6efa67e57069208d5436b7ae808188b412f49a71d3d9ef32800a3e384a18a1",
     "source": "tracerazor/trice/cli.py"
   },
-  "contract_card_sha256": "ae780be1a3615bb51fc97a849dd39178a6ceed47cb7145aa0c82eb5fe0e2c546",
+  "contract_card_sha256": "6357f7dcc80f341212dff89d6209ac84f97063b479fe84cb2fb44b16629a07df",
   "contract_level": "library_contract_locked",
   "contract_score": 100,
   "examples": [
@@ -221,11 +221,11 @@
       "sha256": "a5f595fa17212e05a59cbb3dce4bc18166db17dee063a592ef17236eac5fb319"
     },
     {
-      "bytes": 4758,
+      "bytes": 4866,
       "name": "trice_repair_bundled_tasks.py",
       "path": "examples/trice_repair_bundled_tasks.py",
       "present": true,
-      "sha256": "d5192c9284069bd6a49074726ea9769923d914bc58dac403e21e36c0572f9a66"
+      "sha256": "3abd61a3dc4166eff8e430a4427ebc28089723e0c0df024f68282da517651e00"
     },
     {
       "bytes": 2066,

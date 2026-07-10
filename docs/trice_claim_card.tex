@@ -1,5 +1,5 @@
 \section{Deterministic Claim Card}
-Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{failed}. Claim allowed: no. Determinism contract score: 88/100.
+Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{smoke}. Claim allowed: no. Determinism contract score: 100/100.
 
 \begin{table}[h]
 \centering
@@ -23,12 +23,11 @@ task\_clusters & no & >= 50 \\
 \caption{Machine-readable claim gate distilled from the suite result and evidence manifest.}
 \end{table}
 
-Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{5c03bc9f6da19d7c...}.
+Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{70990191b89a3e50...}.
 
 \noindent Non-claims:
 \begin{itemize}
 \item Not an S-tier claim; missing task\_clusters, replicates\_per\_task, locked\_git\_sources, remote\_git\_sources.
-\item Evidence verification did not pass.
 \item Does not claim universal all-language or all-agent performance.
 \item Does not certify replay-only savings as live savings.
 \end{itemize}

@@ -3,7 +3,7 @@
   "framework": "trice-live",
   "metadata": {
     "task": "Fix chunker.py without editing tests.",
-    "task_id": "fix-offby-one"
+    "task_id": "fix-offby-one-suite"
   },
   "steps": [
     {
@@ -66,5 +66,5 @@
     }
   ],
   "task_value_score": 0.0,
-  "trace_id": "fix-offby-one.decision"
+  "trace_id": "fix-offby-one-suite.decision"
 }

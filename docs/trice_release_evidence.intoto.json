@@ -44,25 +44,25 @@
     },
     {
       "digest": {
-        "sha256": "c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d"
+        "sha256": "2c2e8a764fec74e1a9a9b5b3146b375eb9aec39054fdfa4e86468913a64b3467"
       },
       "name": "paper/trice_v3_research_paper.pdf"
     },
     {
       "digest": {
-        "sha256": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b"
+        "sha256": "564eb14772d42ef613a5def3a7f18ec6a5d50f378f8d8789fde1d46f0897d8cc"
       },
       "name": "paper/trice_v3_research_manifest.json"
     },
     {
       "digest": {
-        "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
+        "sha256": "9f28fe165889580da35c2aff05ce217d3efba1bb74289c090a447efc8a63724e"
       },
       "name": "docs/trice_artifact_card.json"
     },
     {
       "digest": {
-        "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
+        "sha256": "9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11"
       },
       "name": "docs/trice_contract_card.json"
     },
@@ -74,13 +74,13 @@
     },
     {
       "digest": {
-        "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
+        "sha256": "77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180"
       },
       "name": "docs/trice_install_card.json"
     },
     {
       "digest": {
-        "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
+        "sha256": "ed4a21787b9120ec50dfb223f98bffa20b1a97c4ccad78001f83f8b59e209c44"
       },
       "name": "docs/trice_reproduction_card.json"
     },
@@ -92,7 +92,7 @@
     },
     {
       "digest": {
-        "sha256": "a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564"
+        "sha256": "08ee5538891932f64e5c4e80ac63833257802b533d5b4a5a50adbe860b65a37c"
       },
       "name": "benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip"
     },

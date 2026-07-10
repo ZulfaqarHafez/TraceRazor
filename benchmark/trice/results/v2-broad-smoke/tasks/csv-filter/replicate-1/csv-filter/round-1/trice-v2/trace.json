@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "trice-v2",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "64cb61a708711028588c21be0cfaad5408b0c931c9cd35eccdf7763f1a3ec7b4",
+    "run_receipt_sha256": "dfa4f3c2726348f3867729ca80811f48421248a2b2020f8024742c704e4eb56f",
     "task": "Implement CSV filtering without editing tests.",
     "task_id": "csv-filter"
   },

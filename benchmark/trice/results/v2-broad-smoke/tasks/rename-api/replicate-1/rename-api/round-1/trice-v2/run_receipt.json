@@ -31,18 +31,23 @@
   ],
   "command": [
     "python",
-    "C:/Users/zulfa/TraceRazor/examples/trice_repair_bundled_tasks.py"
+    "C:/Users/zulfa/TraceRazor/build/ci-repro-lf-writers/examples/trice_repair_bundled_tasks.py"
   ],
-  "command_sha256": "139b9d4c62e2b06b3a9c93798eebd2c4f9496e1c26a6bf86dd9c8074e257bc9f",
+  "command_sha256": "4307acaf190286da7d5de6bbfc4e37889e8d7186eb37a471ce9c6a31f3403281",
   "env_keys": [],
   "exit_code": 0,
   "expected_exit_codes": [
     0
   ],
   "forbidden_changed_files": [],
+  "forbidden_prefixes": [
+    "tests/",
+    "test/"
+  ],
   "metadata": {
     "purpose": "Deterministic command adapter for TraceRazor bundled live tasks"
   },
+  "output_redacted": false,
   "prompt_sha256": "c63a6e00e11642615b0d91a5b2adb0a49280b151dd1298afa3fe8c1d8a82d3c9",
   "reserved_env_keys": [
     "TRICE_AGENT_RECEIPT",
@@ -79,11 +84,11 @@
     "budget_ratio": 0.4,
     "budget_tokens": 697,
     "compressed_context_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\compressed_context.txt",
-    "compressed_context_sha256": "7ca32c41fb9cfcb413ee367b395de32db41fd455467a3d0769d40926a4bd9f2d",
+    "compressed_context_sha256": "c1faab2e3c4761beb52dd7cd88b84969016dcf3514811031f8d31226b1ad3177",
     "condition": "trice-v2",
     "context_mode": "trice_policy",
     "decision_trace_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\decision_trace.json",
-    "decision_trace_sha256": "5b332c0d713e5009dd5910836d9f7d7e7f4bc63e135405e4955ccae1e1197a59",
+    "decision_trace_sha256": "b3f5c5a78a4f3cffc8f3fea9ce4b1221cced3a104e6861b0c33b567a21297f0b",
     "evidence_recall": {
       "evidence_recall": 1.0,
       "missing": [],
@@ -102,7 +107,7 @@
       "mask_with_receipt": 4
     },
     "policy_path": "benchmark\\trice\\results\\v2-broad-smoke\\tasks\\rename-api\\replicate-1\\rename-api\\round-1\\trice-v2\\context_policy.json",
-    "policy_sha256": "6a565c0c62bbfaf132fe6edc75f7159c753072b927669b17a3d6218234efdfcd",
+    "policy_sha256": "345eff361ca87b0d01136b5cb670ce08e538c4aeeb37f530c045f44061dd268a",
     "policy_tokens": 277,
     "projected_input_savings_pct": 84.1,
     "realized_budget_ratio": 0.159013,
@@ -116,6 +121,6 @@
       "--tb=short"
     ]
   },
-  "workspace_after_sha256": "a1fa9c2adaa18195570b59c5bc4a7207a3c29a23bd19bf3093478e30173a32db",
-  "workspace_before_sha256": "87e9fa2f36f3143e4265d3a49ce2d9ec9b93e23cf93ccba3a39559b56c1effca"
+  "workspace_after_sha256": "c8e1586adf643033b92fa9bb51f3eee39332eb3f4c09f74399589545dd260200",
+  "workspace_before_sha256": "8080f9af57e150074992b45b31352a86315bbf6080692e8a13fc8ee2380dfdfb"
 }

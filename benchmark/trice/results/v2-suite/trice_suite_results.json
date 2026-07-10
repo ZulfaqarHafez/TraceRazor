@@ -19,6 +19,9 @@
       "low": 0.766397,
       "mean": 0.766397
     },
+    "evidence_recall_failures": 0,
+    "evidence_recall_minimum": 1.0,
+    "evidence_recall_required": 0.95,
     "failure_breakdown": {
       "failed_smoke_gate_runs": 0,
       "pass_regression_runs": 0,
@@ -33,6 +36,7 @@
       "config": {
         "max_pass_regressions": 0,
         "min_clustered_savings_ci_low": 0.6,
+        "min_evidence_recall": 0.95,
         "min_mean_savings": 0.6,
         "min_replicates_per_task": 3,
         "min_task_clusters": 50,
@@ -66,6 +70,14 @@
           "observed": 0.766397,
           "passed": true,
           "required": ">= 0.600"
+        },
+        "evidence_recall": {
+          "observed": {
+            "failures": 0,
+            "minimum": 1.0
+          },
+          "passed": true,
+          "required": ">= 0.950 on every accepted optimized run"
         },
         "locked_git_sources": {
           "observed": [
@@ -147,6 +159,8 @@
     {
       "accepted_rounds": 1,
       "adapter_profile": null,
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
       "manifest_path": "tasks/fix-offby-one-suite/replicate-1/trice_v2_evidence_manifest.json",
       "mean_savings": 0.766397,
       "pass_regressions": 0,
@@ -166,8 +180,8 @@
         "repo": "../benchmark/live/tasks/fix-offby-one/seed",
         "repo_tree": {
           "algorithm": "trice-tree-sha256/v1",
-          "bytes": 794,
-          "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+          "bytes": 767,
+          "digest": "4a031eca056895d55cedf52465e261f402fe975262883c20752376043080407d",
           "file_count": 3,
           "ignored_dirs": [
             ".git",
@@ -194,6 +208,8 @@
     {
       "accepted_rounds": 1,
       "adapter_profile": null,
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
       "manifest_path": "tasks/fix-offby-one-suite/replicate-2/trice_v2_evidence_manifest.json",
       "mean_savings": 0.766397,
       "pass_regressions": 0,
@@ -213,8 +229,8 @@
         "repo": "../benchmark/live/tasks/fix-offby-one/seed",
         "repo_tree": {
           "algorithm": "trice-tree-sha256/v1",
-          "bytes": 794,
-          "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+          "bytes": 767,
+          "digest": "4a031eca056895d55cedf52465e261f402fe975262883c20752376043080407d",
           "file_count": 3,
           "ignored_dirs": [
             ".git",
@@ -241,6 +257,8 @@
     {
       "accepted_rounds": 1,
       "adapter_profile": null,
+      "evidence_recall": 1.0,
+      "evidence_recall_passed": true,
       "manifest_path": "tasks/fix-offby-one-suite/replicate-3/trice_v2_evidence_manifest.json",
       "mean_savings": 0.766397,
       "pass_regressions": 0,
@@ -260,8 +278,8 @@
         "repo": "../benchmark/live/tasks/fix-offby-one/seed",
         "repo_tree": {
           "algorithm": "trice-tree-sha256/v1",
-          "bytes": 794,
-          "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+          "bytes": 767,
+          "digest": "4a031eca056895d55cedf52465e261f402fe975262883c20752376043080407d",
           "file_count": 3,
           "ignored_dirs": [
             ".git",

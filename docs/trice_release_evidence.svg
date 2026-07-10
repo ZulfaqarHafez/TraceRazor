@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1040" height="280" viewBox="0 0 1040 280">
 <rect width="100%" height="100%" fill="#ffffff"/>
 <text x="28" y="34" font-family="Inter,Segoe UI,Arial" font-size="20" font-weight="700" fill="#111827">TRICE release evidence</text>
-<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 100/100 | level release_evidence_ready | hash be303111e02dcaaa...</text>
+<text x="28" y="58" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#4b5563">Score 100/100 | level release_evidence_ready | hash eb8d29014eb7082c...</text>
 <rect x="28" y="96" width="126" height="58" rx="8" fill="#2563eb"/>
 <text x="91" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">packages</text>
 <line x1="164" y1="125" x2="184" y2="125" stroke="#9ca3af" stroke-width="3"/>

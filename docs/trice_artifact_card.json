@@ -1,5 +1,5 @@
 {
-  "artifact_card_sha256": "ddbfe97f2bd2a85ae0910e5b7412a62ad0d06efc3800079fc51289846383a0f9",
+  "artifact_card_sha256": "fc4dfe2194384110ad32a4c892eb93f8a424b08a87a235c4a878212016ce53ec",
   "artifact_level": "review_ready_smoke",
   "artifact_review_score": 100,
   "availability": [
@@ -22,28 +22,28 @@
       "name": "design_card",
       "path": "docs/trice_design_card.json",
       "present": true,
-      "sha256": "cbdbb49b901d8c51e6e76504cc7f664b86177dc84f1ee7879345bf8d98261a0b"
+      "sha256": "dffa666fb9ba1deff7ba467da24b68b7dd4c19d5f0b0fa2e8c0f3cb45be74d39"
     },
     {
-      "bytes": 7296,
+      "bytes": 7294,
       "name": "reproduction_card",
       "path": "docs/trice_reproduction_card.json",
       "present": true,
-      "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
+      "sha256": "ed4a21787b9120ec50dfb223f98bffa20b1a97c4ccad78001f83f8b59e209c44"
     },
     {
       "bytes": 19194,
       "name": "contract_card",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
+      "sha256": "9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11"
     },
     {
       "bytes": 13941,
       "name": "install_card",
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
+      "sha256": "77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180"
     },
     {
       "bytes": 69670,
@@ -53,11 +53,11 @@
       "sha256": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
     },
     {
-      "bytes": 4687,
+      "bytes": 3861,
       "name": "claim",
       "path": "docs/trice_claim_card.json",
       "present": true,
-      "sha256": "37c7be3e62be245a3bfad3a93302c9a761b0f6f31684150298d6ce90cb2eef77"
+      "sha256": "5bf4de6c6ae6c74b7bfcef12a924890ae633183ad8120d707f6531a9a1b8f9cf"
     },
     {
       "bytes": 3227,
@@ -67,11 +67,11 @@
       "sha256": "e296651963ef02ccfde115ab59f0cc87e5d938548878ed63ef8f8660113da641"
     },
     {
-      "bytes": 117496,
+      "bytes": 117764,
       "name": "evidence_bundle",
       "path": "benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip",
       "present": true,
-      "sha256": "a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564"
+      "sha256": "08ee5538891932f64e5c4e80ac63833257802b533d5b4a5a50adbe860b65a37c"
     },
     {
       "bytes": 25131,
@@ -85,7 +85,7 @@
       "name": "paper_manifest",
       "path": "paper/trice_v3_research_manifest.json",
       "present": true,
-      "sha256": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b"
+      "sha256": "564eb14772d42ef613a5def3a7f18ec6a5d50f378f8d8789fde1d46f0897d8cc"
     },
     {
       "bytes": 45736,
@@ -95,18 +95,18 @@
       "sha256": "edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a"
     },
     {
-      "bytes": 24390,
+      "bytes": 24348,
       "name": "paper_tex",
       "path": "paper/trice_v3_research_paper.tex",
       "present": true,
-      "sha256": "d47394c451a409da605ebcec0311429693920f711c4f3cc3546fdc3301d519d9"
+      "sha256": "d2b054232679cedf748ccf2a3b95c283e3a148a57e7c0cbaafbde0a3ef527709"
     },
     {
-      "bytes": 13390,
+      "bytes": 13384,
       "name": "paper_pdf",
       "path": "paper/trice_v3_research_paper.pdf",
       "present": true,
-      "sha256": "c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d"
+      "sha256": "2c2e8a764fec74e1a9a9b5b3146b375eb9aec39054fdfa4e86468913a64b3467"
     },
     {
       "bytes": 86734,
@@ -174,7 +174,7 @@
     },
     {
       "name": "claim_card_verifies",
-      "observed": "failed",
+      "observed": "smoke",
       "passed": true,
       "required": "claim-card hash and bound suite hashes verify"
     },
@@ -210,7 +210,7 @@
     },
     {
       "name": "claim_honesty",
-      "observed": "failed",
+      "observed": "smoke",
       "passed": true,
       "required": "non-S-tier evidence must not allow S-tier claim"
     },
@@ -229,22 +229,22 @@
   ],
   "claim_allowed": false,
   "input_sha256": {
-    "claim": "37c7be3e62be245a3bfad3a93302c9a761b0f6f31684150298d6ce90cb2eef77",
-    "contract_card": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1",
-    "design_card": "cbdbb49b901d8c51e6e76504cc7f664b86177dc84f1ee7879345bf8d98261a0b",
-    "evidence_bundle": "a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564",
-    "install_card": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969",
+    "claim": "5bf4de6c6ae6c74b7bfcef12a924890ae633183ad8120d707f6531a9a1b8f9cf",
+    "contract_card": "9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11",
+    "design_card": "dffa666fb9ba1deff7ba467da24b68b7dd4c19d5f0b0fa2e8c0f3cb45be74d39",
+    "evidence_bundle": "08ee5538891932f64e5c4e80ac63833257802b533d5b4a5a50adbe860b65a37c",
+    "install_card": "77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180",
     "library_doc": "a256eb788c0dc9c04a976e19e1ca0f8a788c2c5b03e2b8433f3114cff55524bf",
-    "paper_manifest": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b",
-    "paper_pdf": "c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d",
+    "paper_manifest": "564eb14772d42ef613a5def3a7f18ec6a5d50f378f8d8789fde1d46f0897d8cc",
+    "paper_pdf": "2c2e8a764fec74e1a9a9b5b3146b375eb9aec39054fdfa4e86468913a64b3467",
     "paper_result": "edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a",
-    "paper_tex": "d47394c451a409da605ebcec0311429693920f711c4f3cc3546fdc3301d519d9",
+    "paper_tex": "d2b054232679cedf748ccf2a3b95c283e3a148a57e7c0cbaafbde0a3ef527709",
     "protocol_lock": "3e71413180ad94f43be0b6a35717ced48359b75ea382035c524a9b91e5e8296e",
     "readiness": "f98e2481ce47a262e618f0adee5481ee7227347e900613bfc68115cc420be1d7",
     "readme": "9e4785baab70f8818940e90ee01050074048d7bd73c9dbca2416699cd59f9638",
     "remote_smoke_bundle": "93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d",
     "remote_smoke_claim": "e296651963ef02ccfde115ab59f0cc87e5d938548878ed63ef8f8660113da641",
-    "reproduction_card": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce",
+    "reproduction_card": "ed4a21787b9120ec50dfb223f98bffa20b1a97c4ccad78001f83f8b59e209c44",
     "research_card": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
   },
   "next_actions": [
@@ -401,7 +401,7 @@
   "verdicts": {
     "claim": {
       "claim_allowed": false,
-      "claim_level": "failed",
+      "claim_level": "smoke",
       "errors": [],
       "ok": true
     },

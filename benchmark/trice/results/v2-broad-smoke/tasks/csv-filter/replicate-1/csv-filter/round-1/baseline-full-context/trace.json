@@ -4,7 +4,7 @@
   "metadata": {
     "condition": "baseline-full-context",
     "run_receipt": "run_receipt.json",
-    "run_receipt_sha256": "b52d976f5806fe0eb3ba6415a9ae8d3b5d76d1efaf0a001d9fbb646c94642cac",
+    "run_receipt_sha256": "665c2c133e666d316cf77b03f534ed81df4bcbe733f2d55b260160db987039a0",
     "task": "Implement CSV filtering without editing tests.",
     "task_id": "csv-filter"
   },

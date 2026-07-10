@@ -4,6 +4,9 @@
     "accepted_rounds": 1,
     "baseline_pass_rate": 1.0,
     "broad_claim_allowed": false,
+    "evidence_recall_failures": 0,
+    "evidence_recall_minimum": 1.0,
+    "evidence_recall_required": 0.95,
     "mean_savings": 0.766397,
     "pass_regressions": 0,
     "rationale": "local deterministic smoke passed; broad claim still requires held-out provider runs with repeated trials and clustered confidence intervals",
@@ -40,13 +43,14 @@
       "round 4: accepted 77% savings with pass preservation",
       "round 5: accepted 77% savings with pass preservation",
       "round 6: accepted 77% savings with pass preservation",
-      "round 7: accepted 77% savings with pass preservation"
+      "round 7: accepted 77% savings with pass preservation",
+      "round 8: accepted 77% savings with pass preservation"
     ],
     "max_rounds": 3,
     "pass_noninferiority_margin_pp": -2.0,
     "prefer_receipts": true,
     "require_live_rollout": true,
-    "rounds_seen": 7,
+    "rounds_seen": 8,
     "target_savings": 0.6,
     "user_id": "local"
   },
@@ -60,6 +64,20 @@
         "adapter_type": "json_patch",
         "condition": "baseline-full-context",
         "context_path": null,
+        "decision_trace_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\baseline-full-context\\decision_trace.json",
+        "evidence_recall": 1.0,
+        "evidence_recall_passed": true,
+        "evidence_recall_report": {
+          "evidence_recall": 1.0,
+          "missing": [],
+          "obligation_count": 0,
+          "obligation_tokens": 0,
+          "passed": true,
+          "recalled_count": 0,
+          "recalled_tokens": 0,
+          "required_min": 0.95,
+          "schema_version": "trice-evidence-recall/v1"
+        },
         "input_tokens": 2470,
         "modified_files": [
           "chunker.py"
@@ -68,7 +86,7 @@
         "policy": null,
         "policy_path": null,
         "receipt_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\baseline-full-context\\run_receipt.json",
-        "receipt_sha256": "44a01fd534410183691353d820b7b3c7462d99270883a77118e9d3b41f7b2302",
+        "receipt_sha256": "60c95464ec10790efb1c6e40b3e23f42a25cbc5f4fb9c19d19a00f2841895472",
         "task_id": "fix-offby-one-suite",
         "trace_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\baseline-full-context\\trace.json",
         "verify_exit_code": 0,
@@ -93,6 +111,20 @@
         "adapter_type": "json_patch",
         "condition": "trice-v2",
         "context_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\trice-v2\\compressed_context.txt",
+        "decision_trace_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\trice-v2\\decision_trace.json",
+        "evidence_recall": 1.0,
+        "evidence_recall_passed": true,
+        "evidence_recall_report": {
+          "evidence_recall": 1.0,
+          "missing": [],
+          "obligation_count": 3,
+          "obligation_tokens": 437,
+          "passed": true,
+          "recalled_count": 3,
+          "recalled_tokens": 437,
+          "required_min": 0.95,
+          "schema_version": "trice-evidence-recall/v1"
+        },
         "input_tokens": 577,
         "modified_files": [
           "chunker.py"
@@ -208,7 +240,7 @@
         },
         "policy_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\trice-v2\\context_policy.json",
         "receipt_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\trice-v2\\run_receipt.json",
-        "receipt_sha256": "d2e257b85c486c4c5a13b8bed0372ce6c608be4443f1c29a94936bfa383ded51",
+        "receipt_sha256": "89e4daf57d75347a5fc60fbff65074e6fe3b299f605913660ebcad7446bc1b5e",
         "task_id": "fix-offby-one-suite",
         "trace_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-1\\fix-offby-one-suite\\round-1\\trice-v2\\trace.json",
         "verify_exit_code": 0,
@@ -230,13 +262,14 @@
           "round 4: accepted 77% savings with pass preservation",
           "round 5: accepted 77% savings with pass preservation",
           "round 6: accepted 77% savings with pass preservation",
-          "round 7: accepted 77% savings with pass preservation"
+          "round 7: accepted 77% savings with pass preservation",
+          "round 8: accepted 77% savings with pass preservation"
         ],
         "max_rounds": 3,
         "pass_noninferiority_margin_pp": -2.0,
         "prefer_receipts": true,
         "require_live_rollout": true,
-        "rounds_seen": 7,
+        "rounds_seen": 8,
         "target_savings": 0.6,
         "user_id": "local"
       },

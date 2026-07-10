@@ -8,6 +8,10 @@
     "chunker.py"
   ],
   "edit_count": 1,
+  "forbidden_prefixes": [
+    "tests/",
+    "test/"
+  ],
   "metadata": {},
   "prompt_sha256": "e971cabff20b9d7a984c26428fb9b13a1d494a2382491d014d5f8a9ce4ed72da",
   "schema_version": "trice-run-receipt/v1",
@@ -21,6 +25,19 @@
     "compressed_context_sha256": null,
     "condition": "baseline-full-context",
     "context_mode": "full_context",
+    "decision_trace_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-3\\fix-offby-one-suite\\round-1\\baseline-full-context\\decision_trace.json",
+    "decision_trace_sha256": "48391704d129ee41040c59a3d74841eafb8a2849cb2d9db4e40738cf80550ac5",
+    "evidence_recall": {
+      "evidence_recall": 1.0,
+      "missing": [],
+      "obligation_count": 0,
+      "obligation_tokens": 0,
+      "passed": true,
+      "recalled_count": 0,
+      "recalled_tokens": 0,
+      "required_min": 0.95,
+      "schema_version": "trice-evidence-recall/v1"
+    },
     "input_tokens": 2470,
     "policy_action_counts": {},
     "policy_path": null,
@@ -28,6 +45,14 @@
     "policy_tokens": null,
     "projected_input_savings_pct": 0.0,
     "realized_budget_ratio": 1.0,
-    "schema_version": "trice-context-envelope/v1"
+    "schema_version": "trice-context-envelope/v1",
+    "trace_path": "benchmark\\trice\\results\\v2-suite\\tasks\\fix-offby-one-suite\\replicate-3\\fix-offby-one-suite\\round-1\\baseline-full-context\\decision_trace.json",
+    "verify_cmd": [
+      "python",
+      "-m",
+      "pytest",
+      "-q",
+      "--tb=short"
+    ]
   }
 }

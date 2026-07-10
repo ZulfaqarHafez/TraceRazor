@@ -207,8 +207,8 @@
         "repo": "../benchmark/live/tasks/csv-filter/seed",
         "repo_tree": {
           "algorithm": "trice-tree-sha256/v1",
-          "bytes": 1150,
-          "digest": "ee31859ce46e8aef7baecf1e8f72c318e4b21d7347094afb1cd1e252c5713c6f",
+          "bytes": 1115,
+          "digest": "ee4ca5a0825894bc3b677e40c0bc259032c0bc55f7aa56f143c4c7c14dfb689a",
           "file_count": 3,
           "ignored_dirs": [
             ".git",
@@ -263,8 +263,8 @@
         "repo": "../benchmark/live/tasks/dedupe-helpers/seed",
         "repo_tree": {
           "algorithm": "trice-tree-sha256/v1",
-          "bytes": 1028,
-          "digest": "84c85f0a2d255c7a80327f337d7977c62a9ae8c95e6e17a9f2f19836508a08e2",
+          "bytes": 996,
+          "digest": "fe4f93ab5bc977748ef4f0ffca537514b397522eca993f1c70e5a8c1f42349eb",
           "file_count": 4,
           "ignored_dirs": [
             ".git",
@@ -319,8 +319,8 @@
         "repo": "../benchmark/live/tasks/fix-imports/seed",
         "repo_tree": {
           "algorithm": "trice-tree-sha256/v1",
-          "bytes": 665,
-          "digest": "1fcab5d06e93462d49bda98265df67fa935513ce0c1b91ea3257678e93ebf714",
+          "bytes": 644,
+          "digest": "b12e94d60040897ae4fe4f766c49e645bc11b496954ebcd9b5f54d8860ab7c5d",
           "file_count": 5,
           "ignored_dirs": [
             ".git",
@@ -375,8 +375,8 @@
         "repo": "../benchmark/live/tasks/fix-offby-one/seed",
         "repo_tree": {
           "algorithm": "trice-tree-sha256/v1",
-          "bytes": 794,
-          "digest": "604addf4070c90c15871ae2681388f2e5c439256910a02aa0bbcb20e3314da10",
+          "bytes": 767,
+          "digest": "4a031eca056895d55cedf52465e261f402fe975262883c20752376043080407d",
           "file_count": 3,
           "ignored_dirs": [
             ".git",
@@ -431,8 +431,8 @@
         "repo": "../benchmark/live/tasks/implement-median/seed",
         "repo_tree": {
           "algorithm": "trice-tree-sha256/v1",
-          "bytes": 762,
-          "digest": "520f516628a2fce319e4cb9ec7c1a205a6a47c25b2fb7dbc82735d1b8523f5f4",
+          "bytes": 729,
+          "digest": "a01d99603ecafab0dd2ec4d1cbc4641df2f9f02bbf0902a4d597f033bccb9dc9",
           "file_count": 3,
           "ignored_dirs": [
             ".git",
@@ -487,8 +487,8 @@
         "repo": "../benchmark/live/tasks/rename-api/seed",
         "repo_tree": {
           "algorithm": "trice-tree-sha256/v1",
-          "bytes": 1257,
-          "digest": "0789284970001b7bd10751bc6d0ec529fd6fdc5a648669867e364aed493c960e",
+          "bytes": 1206,
+          "digest": "c20468b22242b1a82eee99357ae40ce90974d7ae7e54b048fedfc451d3afca3f",
           "file_count": 5,
           "ignored_dirs": [
             ".git",

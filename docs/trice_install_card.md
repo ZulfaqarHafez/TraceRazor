@@ -25,7 +25,7 @@
 | agent_console_works | yes | exit=0; {
   "auto_host": "generic",
   "command": "doctor",
-  "executable": "C:\\Users\\zulfa\\AppData\\Local\\Temp\\trice-install-card-fzu0ma7q\\venv\\Lib\\site-packages\\tracerazor\\bin\\ | tracerazor agent doctor works after wheel install |
+  "executable": "C:\\Users\\zulfa\\AppData\\Local\\Temp\\trice-install-card-nfxt6txp\\venv\\Lib\\site-packages\\tracerazor\\bin\\ | tracerazor agent doctor works after wheel install |
 | mcp_selftest_works | yes | exit=0; [
   {
     "name": "audit_trace",
@@ -60,4 +60,4 @@
 
 ## Hash
 
-- install card: `e47643b505474927df1eceb793f20b2a74c94b9b99dce60a857a4b1204fcb364`
+- install card: `912d52ec9613334504acbf420e8876e956bc5eba691e19eaa935bb4ff50632a9`
