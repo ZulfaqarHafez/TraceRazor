@@ -64,9 +64,27 @@ def _audit(binary: str, trace: Path,
     if not out.stdout.strip():
         return None
     try:
-        return json.loads(out.stdout)
-    except json.JSONDecodeError:
-        raise RuntimeError(f"audit for {trace} did not emit JSON: {out.stdout[:500]}")
+        payload = json.loads(out.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"audit for {trace} did not emit JSON: {out.stdout[:500]}"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"audit for {trace} emitted an unexpected JSON contract: "
+            f"{out.stdout[:500]}"
+        )
+    if payload.get("status") == "skipped":
+        return None
+    score = payload.get("score")
+    if not isinstance(score, dict) or not isinstance(
+        score.get("score"), (int, float)
+    ):
+        raise RuntimeError(
+            f"audit for {trace} emitted an unexpected JSON contract: "
+            f"{out.stdout[:500]}"
+        )
+    return payload
 
 
 def collect() -> Dict[str, Any]:

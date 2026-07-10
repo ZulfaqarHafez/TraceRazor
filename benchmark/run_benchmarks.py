@@ -62,11 +62,27 @@ def audit(binary: str, trace_path: Path) -> dict | None:
     if not result.stdout.strip():
         return None  # e.g. fewer than the minimum steps
     try:
-        return json.loads(result.stdout)
+        payload = json.loads(result.stdout)
     except json.JSONDecodeError as exc:
         raise RuntimeError(
             f"audit for {trace_path} did not emit valid JSON: {result.stdout[:500]}"
         ) from exc
+    if not isinstance(payload, dict):
+        raise RuntimeError(
+            f"audit for {trace_path} emitted an unexpected JSON contract: "
+            f"{result.stdout[:500]}"
+        )
+    if payload.get("status") == "skipped":
+        return None
+    score = payload.get("score")
+    if not isinstance(score, dict) or not isinstance(
+        score.get("score"), (int, float)
+    ):
+        raise RuntimeError(
+            f"audit for {trace_path} emitted an unexpected JSON contract: "
+            f"{result.stdout[:500]}"
+        )
+    return payload
 
 
 def main() -> None:
