@@ -198,6 +198,9 @@ def test_agent_image_release_smokes_both_architectures_before_signed_promotion()
     )[0]
 
     assert "platforms: linux/amd64,linux/arm64" in image_job
+    assert "Resolve existing immutable image" in image_job
+    assert "if: steps.existing-image.outputs.exists != 'true'" in image_job
+    assert "Select immutable image digest" in image_job
     assert "build-${{ needs.tag.outputs.commit }}" in image_job
     assert "VCS_REF=${{ needs.tag.outputs.commit }}" in image_job
     assert "provenance: mode=max" in image_job
@@ -208,7 +211,8 @@ def test_agent_image_release_smokes_both_architectures_before_signed_promotion()
     assert 'smoke_agent_image.sh "$IMAGE_NAME@$AMD64_DIGEST" linux/amd64' in image_job
     assert 'smoke_agent_image.sh "$IMAGE_NAME@$ARM64_DIGEST" linux/arm64' in image_job
     assert "uses: actions/attest@v4" in image_job
-    assert "subject-digest: ${{ steps.push.outputs.digest }}" in image_job
+    assert "if: steps.image.outputs.built == 'true'" in image_job
+    assert "subject-digest: ${{ steps.image.outputs.digest }}" in image_job
     assert "push-to-registry: true" in image_job
     assert 'gh attestation verify "oci://$IMAGE_NAME@$IMAGE_DIGEST"' in image_job
     assert "--bundle-from-oci" in image_job
@@ -227,6 +231,9 @@ def test_agent_image_release_smokes_both_architectures_before_signed_promotion()
     assert "404)" in image_job
     assert "refusing to treat it as absent" in image_job
 
+    existing_position = image_job.index("Resolve existing immutable image")
+    build_position = image_job.index("Build and push unpromoted")
+    select_position = image_job.index("Select immutable image digest")
     smoke_position = image_job.index("Verify manifest and smoke the exact digest")
     attest_position = image_job.index("Sign image provenance")
     receipt_position = image_job.index("Write deterministic image release receipt")
@@ -234,7 +241,10 @@ def test_agent_image_release_smokes_both_architectures_before_signed_promotion()
     public_position = image_job.index("Prove GHCR is publicly readable")
     promote_position = image_job.index("Promote tested digest")
     assert (
-        smoke_position
+        existing_position
+        < build_position
+        < select_position
+        < smoke_position
         < attest_position
         < receipt_position
         < upload_position

@@ -355,8 +355,61 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Resolve existing immutable image
+        id: existing-image
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.tag.outputs.tag }}
+        run: |
+          set -euo pipefail
+          package_path=${IMAGE_NAME#ghcr.io/}
+          manifest_url="https://ghcr.io/v2/$package_path/manifests/$RELEASE_TAG"
+          token_json=$(curl --fail-with-body --silent --show-error --location \
+            --user "$GITHUB_ACTOR:$GH_TOKEN" \
+            --get 'https://ghcr.io/token' \
+            --data-urlencode 'service=ghcr.io' \
+            --data-urlencode "scope=repository:$package_path:pull")
+          registry_token=$(python3 -c \
+            'import json,sys; data=json.load(sys.stdin); print(data.get("token") or data.get("access_token") or "")' \
+            <<< "$token_json")
+          test -n "$registry_token"
+          set +e
+          http_code=$(curl --silent --show-error --location \
+            --connect-timeout 15 --max-time 45 \
+            --header "Authorization: Bearer $registry_token" \
+            --header 'Accept: application/vnd.oci.image.index.v1+json, application/vnd.docker.distribution.manifest.list.v2+json' \
+            --dump-header "$RUNNER_TEMP/existing-agent-image.headers" \
+            --output "$RUNNER_TEMP/existing-agent-image.json" \
+            --write-out '%{http_code}' \
+            "$manifest_url")
+          curl_status=$?
+          set -e
+          if [ "$curl_status" -ne 0 ]; then
+            echo "GHCR version-tag lookup failed before an HTTP response" >&2
+            exit "$curl_status"
+          fi
+          case "$http_code" in
+            200)
+              digest=$(awk -F': ' \
+                'tolower($1) == "docker-content-digest" { gsub("\\r", "", $2); print $2; exit }' \
+                "$RUNNER_TEMP/existing-agent-image.headers")
+              [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+              echo "exists=true" >> "$GITHUB_OUTPUT"
+              echo "digest=$digest" >> "$GITHUB_OUTPUT"
+              ;;
+            404)
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              echo "digest=" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "GHCR version-tag lookup returned HTTP $http_code" >&2
+              cat "$RUNNER_TEMP/existing-agent-image.json" >&2
+              exit 1
+              ;;
+          esac
       - name: Build and push unpromoted multi-architecture digest
         id: push
+        if: steps.existing-image.outputs.exists != 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -373,9 +426,27 @@ jobs:
           cache-to: type=gha,mode=max,scope=tracerazor-agent-image
           provenance: mode=max
           sbom: true
+      - name: Select immutable image digest
+        id: image
+        env:
+          BUILT_DIGEST: ${{ steps.push.outputs.digest }}
+          EXISTING_DIGEST: ${{ steps.existing-image.outputs.digest }}
+          IMAGE_EXISTS: ${{ steps.existing-image.outputs.exists }}
+        run: |
+          set -euo pipefail
+          if [ "$IMAGE_EXISTS" = "true" ]; then
+            digest="$EXISTING_DIGEST"
+            built=false
+          else
+            digest="$BUILT_DIGEST"
+            built=true
+          fi
+          [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "built=$built" >> "$GITHUB_OUTPUT"
       - name: Verify manifest and smoke the exact digest
         env:
-          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         run: |
           set -euo pipefail
           test -n "$IMAGE_DIGEST"
@@ -428,16 +499,17 @@ jobs:
           bash scripts/smoke_agent_image.sh "$IMAGE_NAME@$ARM64_DIGEST" linux/arm64
       - name: Sign image provenance
         id: attest-image
+        if: steps.image.outputs.built == 'true'
         uses: actions/attest@v4
         with:
           subject-name: ${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.push.outputs.digest }}
+          subject-digest: ${{ steps.image.outputs.digest }}
           push-to-registry: true
           create-storage-record: false
       - name: Verify signed provenance at the digest
         env:
           GH_TOKEN: ${{ github.token }}
-          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         run: |
           set -euo pipefail
           verified=false
@@ -457,7 +529,7 @@ jobs:
           test "$verified" = true
       - name: Write deterministic image release receipt
         env:
-          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
           RELEASE_TAG: ${{ needs.tag.outputs.tag }}
           TAG_COMMIT: ${{ needs.tag.outputs.commit }}
           SOURCE_DATE_EPOCH: ${{ steps.source-date.outputs.epoch }}
@@ -496,7 +568,7 @@ jobs:
           if-no-files-found: error
       - name: Prove GHCR is publicly readable at the exact digest
         env:
-          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
         run: |
           set -euo pipefail
           docker logout ghcr.io
@@ -512,7 +584,7 @@ jobs:
       - name: Promote tested digest without replacing an immutable version tag
         env:
           GH_TOKEN: ${{ github.token }}
-          IMAGE_DIGEST: ${{ steps.push.outputs.digest }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
           RELEASE_TAG: ${{ needs.tag.outputs.tag }}
         run: |
           set -euo pipefail
