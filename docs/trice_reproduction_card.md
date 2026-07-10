@@ -12,7 +12,7 @@
 | readiness_reproduces | yes | smoke_ready | readiness verifier ok |
 | protocol_reproduces | yes | smoke_protocol_locked | protocol verifier ok |
 | design_reproduces | yes | smoke_design_observed | design verifier ok |
-| claim_reproduces | yes | smoke | claim-card verifier ok |
+| claim_reproduces | yes | failed | claim-card verifier ok |
 | bundle_reproduces | yes | 77 | bundle verifier ok |
 | paper_reproduces | yes | 43 | paper manifest verifier ok |
 
@@ -28,4 +28,4 @@
 
 ## Hash
 
-- reproduction card: `1586024154ea20c70d404cdd8da8a6d0f07efdbf7294762bb6f676053d4deffc`
+- reproduction card: `b3b1a4c19f469e75aed0ea6be95a1830e697ecb215019b392742d1a4cd372c2d`

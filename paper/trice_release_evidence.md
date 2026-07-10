@@ -1,7 +1,7 @@
 # TRICE Release Evidence
 
 - Package: `tracerazor`
-- Version: `1.0.3`
+- Version: `1.1.0`
 - Evidence level: `release_evidence_ready`
 - Evidence score: **100/100**
 
@@ -10,50 +10,49 @@
 | Check | Passed | Observed | Required |
 |---|---:|---|---|
 | wheel_present | yes | 1 | at least one wheel artifact |
-| sdist_present | yes | 1 | one source distribution artifact |
+| sdist_absent | yes | 0 | no source distribution until it can satisfy the bundled-auditor contract |
 | cli_binary_present | yes | 1 | one built CLI binary |
 | proof_cards_present | yes | 6/6 | contract, artifact, reproduction, crates, installability, and research cards |
 | evidence_bundles_present | yes | 2/2 | broad and remote smoke evidence bundles |
 | paper_artifacts_present | yes | 2/2 | paper PDF and paper manifest |
-| artifact_hashes_present | yes | 13/13 | every present artifact has a SHA-256 digest |
-| python_sbom_generated | yes | 17 | CycloneDX-style Python SBOM |
-| cargo_sbom_generated | yes | 367 | CycloneDX-style Cargo SBOM |
-| provenance_statement_generated | yes | 13 | in-toto/SLSA-shaped provenance statement |
+| artifact_hashes_present | yes | 12/12 | every present artifact has a SHA-256 digest |
+| python_sbom_generated | yes | 19 | CycloneDX-style Python SBOM |
+| cargo_sbom_generated | yes | 383 | CycloneDX-style Cargo SBOM |
+| provenance_statement_generated | yes | 12 | in-toto/SLSA-shaped provenance statement |
 | sidecars_hashed | yes | 4/4 | checksums, SBOMs, and provenance sidecars have hashes |
 
 ## Release Artifacts
 
 | Artifact | Kind | Present | Path | SHA-256 |
 |---|---|---:|---|---|
-| rust_cli | binary | yes | `target/release/tracerazor.exe` | `623f468108d970eaf918362d50c44db4670906f00341733a9336d0d4fdc90855` |
-| paper_pdf | paper | yes | `paper/trice_v3_research_paper.pdf` | `a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45` |
-| paper_manifest | paper-manifest | yes | `paper/trice_v3_research_manifest.json` | `b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e` |
-| artifact_card | proof-card | yes | `docs/trice_artifact_card.json` | `273a1df9a8542526243ed59fbc78032886e66a100c62d5bb33cdab432c1d2f36` |
-| contract_card | proof-card | yes | `docs/trice_contract_card.json` | `2a6e22b58c2ab3af68bf77cea900c758d1e0e687a70a10eefd74743d6d303126` |
-| crates_card | proof-card | yes | `docs/trice_crates_card.json` | `f16c2a70c6b97b0bb311b5dc1cc4398eeb2d7a974f0e00255bda33a122fb16cf` |
-| install_card | proof-card | yes | `docs/trice_install_card.json` | `5ce2df710d1d8763ed25bdf6ab79464ada6e22b45982a0b37efbd7eb7a5244f6` |
-| reproduction_card | proof-card | yes | `docs/trice_reproduction_card.json` | `34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54` |
-| research_card | proof-card | yes | `docs/trice_research_card.json` | `2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1` |
-| tracerazor-1.0.3.tar.gz | sdist | yes | `dist/tracerazor-1.0.3.tar.gz` | `2be33fcbc0dad91032d6f5c15df1fc5f0e40816f6e88cc3b7bee7c9e0e347095` |
+| rust_cli | binary | yes | `target/release/tracerazor.exe` | `7548683efc5aa9b7a20f5b6a2dabd3ca5d3326ac57b9bc53a1af1d7126c21ae1` |
+| paper_pdf | paper | yes | `paper/trice_v3_research_paper.pdf` | `c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d` |
+| paper_manifest | paper-manifest | yes | `paper/trice_v3_research_manifest.json` | `47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b` |
+| artifact_card | proof-card | yes | `docs/trice_artifact_card.json` | `1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33` |
+| contract_card | proof-card | yes | `docs/trice_contract_card.json` | `bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1` |
+| crates_card | proof-card | yes | `docs/trice_crates_card.json` | `c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0` |
+| install_card | proof-card | yes | `docs/trice_install_card.json` | `350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969` |
+| reproduction_card | proof-card | yes | `docs/trice_reproduction_card.json` | `e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce` |
+| research_card | proof-card | yes | `docs/trice_research_card.json` | `2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18` |
 | broad_evidence_bundle | trice-bundle | yes | `benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip` | `a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564` |
 | remote_smoke_bundle | trice-bundle | yes | `benchmark/trice/results/v2-remote-smoke/trice_remote_smoke_evidence.trice.zip` | `93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d` |
-| tracerazor-1.0.3-py3-none-any.whl | wheel | yes | `dist/tracerazor-1.0.3-py3-none-any.whl` | `bda47590b13ab949078d45f866ff2ae61ae2f736f2211945a66cba098facad36` |
+| tracerazor-1.1.0-py3-none-win_amd64.whl | wheel | yes | `dist/tracerazor-1.1.0-py3-none-win_amd64.whl` | `2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f` |
 
 ## Sidecars
 
 | Sidecar | File | SHA-256 |
 |---|---|---|
-| checksums | `trice_release_evidence.checksums.txt` | `f3883c618534f9487c65cf56563715ad7f4120b488eb49eea15260b2f54ae32b` |
-| python_sbom | `trice_release_evidence.python.cdx.json` | `d91ea8a2b868d5e3be5b983e3a2215ab1076181318cffb5e0d83fa2d3c30a26f` |
-| cargo_sbom | `trice_release_evidence.cargo.cdx.json` | `636f4f9876ae0d80fd9e0951ececa3fc31e827f36d0a8452b8f16cf32bc3de6d` |
-| provenance | `trice_release_evidence.intoto.json` | `72450124d448ac4ee3cbfd7426d994aae43c6deb96aa9f6d0ada711766502be8` |
+| checksums | `trice_release_evidence.checksums.txt` | `79688b9be66798f2bb02c0333038e79f0a3a701ba56ec03a690baabd41b36759` |
+| python_sbom | `trice_release_evidence.python.cdx.json` | `d32c8d276cfea0d9aeb3e3589abddbf003f4b9d14ec4b7b16bc8e2c5dc2c79cb` |
+| cargo_sbom | `trice_release_evidence.cargo.cdx.json` | `796ad45d98665e70e1f0487374893cc87787cf5f25a7324c51377c081da304b2` |
+| provenance | `trice_release_evidence.intoto.json` | `2b5dc4403a08bdc3f5c35db7a92ae8a016e6017501d59e15c4af993053d3296c` |
 
 ## Next Actions
 
-- Attach the release evidence card, checksums, SBOMs, provenance statement, wheel, sdist, binary, paper, and evidence bundles to the GitHub release.
+- Attach the release evidence card, checksums, SBOMs, provenance statement, platform wheels, binaries, paper, and evidence bundles to the GitHub release.
 - Regenerate this packet after every package rebuild, proof-card change, or evidence-bundle change.
 - Publish registry attestations through trusted publishing where supported.
 
 ## Hash
 
-- release evidence: `794f08e1a203bce0f420f7616d2445b1205f6e25d44daaa0c1531f757819363c`
+- release evidence: `be303111e02dcaaa62373dd790df029427fdcff22f852c3b44f89048d16dc0f3`

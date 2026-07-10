@@ -9,7 +9,7 @@
 
 | Check | Passed | Observed | Required |
 |---|---:|---|---|
-| wheel_present | yes | build/final-release-1.1.0-agent-native/tracerazor-1.1.0-py3-none-win_amd64.whl | built wheel exists |
+| wheel_present | yes | dist/tracerazor-1.1.0-py3-none-win_amd64.whl | built wheel exists |
 | venv_created | yes | 0 | clean virtual environment can be created |
 | wheel_installs | yes | 0 | wheel and MCP runtime dependencies install cleanly |
 | version_matches | yes | 1.1.0 | 1.1.0 |
@@ -25,7 +25,7 @@
 | agent_console_works | yes | exit=0; {
   "auto_host": "generic",
   "command": "doctor",
-  "executable": "C:\\Users\\zulfa\\AppData\\Local\\Temp\\trice-install-card-wwu66b5b\\venv\\Lib\\site-packages\\tracerazor\\bin\\ | tracerazor agent doctor works after wheel install |
+  "executable": "C:\\Users\\zulfa\\AppData\\Local\\Temp\\trice-install-card-fzu0ma7q\\venv\\Lib\\site-packages\\tracerazor\\bin\\ | tracerazor agent doctor works after wheel install |
 | mcp_selftest_works | yes | exit=0; [
   {
     "name": "audit_trace",
@@ -60,4 +60,4 @@
 
 ## Hash
 
-- install card: `f1577bc22beb94bba66072225809ecb790b345ebc5e9b2e3f786ae377d40d921`
+- install card: `e47643b505474927df1eceb793f20b2a74c94b9b99dce60a857a4b1204fcb364`

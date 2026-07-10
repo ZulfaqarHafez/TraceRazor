@@ -13,7 +13,7 @@
       "resolvedDependencies": [
         {
           "digest": {
-            "sha256": "6b22be0023ad0020fdd461467c053c888e0d1ec2e673dc72ea8fbfcac4f81323"
+            "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
           },
           "uri": "pyproject.toml"
         },
@@ -44,43 +44,43 @@
     },
     {
       "digest": {
-        "sha256": "a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45"
+        "sha256": "c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d"
       },
       "name": "paper/trice_v3_research_paper.pdf"
     },
     {
       "digest": {
-        "sha256": "b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e"
+        "sha256": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b"
       },
       "name": "paper/trice_v3_research_manifest.json"
     },
     {
       "digest": {
-        "sha256": "2ca622a1999b25d27ecf92af85d4549d0d0bac5f9d663fef84cb8ae4851af10a"
+        "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
       },
       "name": "docs/trice_artifact_card.json"
     },
     {
       "digest": {
-        "sha256": "1837de7eda82dc02abf5d9568d307431aac5749ba3eefdbf5a0d2c20a85c4461"
+        "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
       },
       "name": "docs/trice_contract_card.json"
     },
     {
       "digest": {
-        "sha256": "92f9bb02700bca505e64a665431e9b0e9c46458c87519d9d8cfd87538e412420"
+        "sha256": "c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0"
       },
       "name": "docs/trice_crates_card.json"
     },
     {
       "digest": {
-        "sha256": "7855087064b41c51e9f41e160d8aa977c3a5baddbcaa1cea0ed3c7b2e8a1b618"
+        "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
       },
       "name": "docs/trice_install_card.json"
     },
     {
       "digest": {
-        "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
+        "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
       },
       "name": "docs/trice_reproduction_card.json"
     },
@@ -106,7 +106,7 @@
       "digest": {
         "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
       },
-      "name": "build/final-release-1.1.0-agent-native/tracerazor-1.1.0-py3-none-win_amd64.whl"
+      "name": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl"
     }
   ]
 }

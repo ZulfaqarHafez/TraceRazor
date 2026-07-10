@@ -2,14 +2,14 @@
   "checks": [
     {
       "name": "semver_version",
-      "observed": "1.0.3",
+      "observed": "1.1.0",
       "passed": true,
       "required": "MAJOR.MINOR.PATCH"
     },
     {
       "name": "top_level_api",
       "observed": {
-        "count": 20,
+        "count": 25,
         "missing": []
       },
       "passed": true,
@@ -171,10 +171,10 @@
       "validate-receipt",
       "validate-suite"
     ],
-    "sha256": "8fd82b16299fb1eef8dc6138d0e8f68031bb7a8fe9f6edd880ab0d969fac7ccb",
+    "sha256": "9c6efa67e57069208d5436b7ae808188b412f49a71d3d9ef32800a3e384a18a1",
     "source": "tracerazor/trice/cli.py"
   },
-  "contract_card_sha256": "dc9a3946bd06877f1585eb57075043b5ed4d3cc1d9a0d06134e09994a524a4f6",
+  "contract_card_sha256": "ae780be1a3615bb51fc97a849dd39178a6ceed47cb7145aa0c82eb5fe0e2c546",
   "contract_level": "library_contract_locked",
   "contract_score": 100,
   "examples": [
@@ -251,25 +251,25 @@
       "sha256": "a256eb788c0dc9c04a976e19e1ca0f8a788c2c5b03e2b8433f3114cff55524bf"
     },
     "public_trust_matrix": {
-      "bytes": 11212,
+      "bytes": 11804,
       "name": "public_trust_matrix.md",
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "c5b0b5173a8efbe35ce1526401a5a6b88c0813d92d6625eac7d3055813b614b5"
+      "sha256": "c41b0d813a04e357834cf2a0c88a39a4d665cb8ea858145cd665f7cd76a53416"
     },
     "pyproject": {
-      "bytes": 5850,
+      "bytes": 7274,
       "name": "pyproject.toml",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "a59e14dfdd4c752e93403818f1a4b32c2ccb1bae577132d7f6e6aef53865d1a3"
+      "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
     },
     "readme": {
-      "bytes": 84701,
+      "bytes": 86734,
       "name": "README.md",
       "path": "README.md",
       "present": true,
-      "sha256": "61cb955903b1ef2a0c3684407111a836b8a130c8d6f36f1280bdd2994fbe478b"
+      "sha256": "9e4785baab70f8818940e90ee01050074048d7bd73c9dbca2416699cd59f9638"
     },
     "research_ledger": {
       "bytes": 35605,
@@ -287,12 +287,17 @@
   "package": "tracerazor",
   "public_api": {
     "tracerazor": {
-      "count": 20,
+      "count": 25,
       "exports": [
         "Tracer",
         "TraceRazorClient",
         "TraceRazorReport",
         "TraceStep",
+        "TraceRazorError",
+        "BinaryNotFoundError",
+        "AuditError",
+        "BelowMinStepsError",
+        "VerificationError",
         "AdaptiveKNode",
         "ExactMatchConsensus",
         "ConsensusReport",
@@ -609,8 +614,8 @@
   "scope": "TraceRazor/TRICE public library contract",
   "semver": {
     "major": 1,
-    "minor": 0,
-    "patch": 3
+    "minor": 1,
+    "patch": 0
   },
-  "version": "1.0.3"
+  "version": "1.1.0"
 }

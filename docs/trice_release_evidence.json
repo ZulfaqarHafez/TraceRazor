@@ -9,28 +9,28 @@
       "sha256": "7548683efc5aa9b7a20f5b6a2dabd3ca5d3326ac57b9bc53a1af1d7126c21ae1"
     },
     {
-      "bytes": 13382,
+      "bytes": 13390,
       "kind": "paper",
       "name": "paper_pdf",
       "path": "paper/trice_v3_research_paper.pdf",
       "present": true,
-      "sha256": "a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45"
+      "sha256": "c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d"
     },
     {
-      "bytes": 7591,
+      "bytes": 7364,
       "kind": "paper-manifest",
       "name": "paper_manifest",
       "path": "paper/trice_v3_research_manifest.json",
       "present": true,
-      "sha256": "b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e"
+      "sha256": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b"
     },
     {
-      "bytes": 16185,
+      "bytes": 16188,
       "kind": "proof-card",
       "name": "artifact_card",
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "2ca622a1999b25d27ecf92af85d4549d0d0bac5f9d663fef84cb8ae4851af10a"
+      "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
     },
     {
       "bytes": 19194,
@@ -38,31 +38,31 @@
       "name": "contract_card",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "1837de7eda82dc02abf5d9568d307431aac5749ba3eefdbf5a0d2c20a85c4461"
+      "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
     },
     {
-      "bytes": 20152,
+      "bytes": 21475,
       "kind": "proof-card",
       "name": "crates_card",
       "path": "docs/trice_crates_card.json",
       "present": true,
-      "sha256": "92f9bb02700bca505e64a665431e9b0e9c46458c87519d9d8cfd87538e412420"
+      "sha256": "c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0"
     },
     {
-      "bytes": 14071,
+      "bytes": 13941,
       "kind": "proof-card",
       "name": "install_card",
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "7855087064b41c51e9f41e160d8aa977c3a5baddbcaa1cea0ed3c7b2e8a1b618"
+      "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
     },
     {
-      "bytes": 7494,
+      "bytes": 7296,
       "kind": "proof-card",
       "name": "reproduction_card",
       "path": "docs/trice_reproduction_card.json",
       "present": true,
-      "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
+      "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
     },
     {
       "bytes": 69670,
@@ -92,7 +92,7 @@
       "bytes": 6859719,
       "kind": "wheel",
       "name": "tracerazor-1.1.0-py3-none-win_amd64.whl",
-      "path": "build/final-release-1.1.0-agent-native/tracerazor-1.1.0-py3-none-win_amd64.whl",
+      "path": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl",
       "present": true,
       "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
     }
@@ -4769,16 +4769,16 @@
       "sha256": "7548683efc5aa9b7a20f5b6a2dabd3ca5d3326ac57b9bc53a1af1d7126c21ae1"
     },
     "dist_dir": {
-      "path": "build/final-release-1.1.0-agent-native",
+      "path": "dist",
       "present": true
     },
     "pyproject": {
-      "bytes": 7372,
+      "bytes": 7274,
       "kind": "source-metadata",
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "6b22be0023ad0020fdd461467c053c888e0d1ec2e673dc72ea8fbfcac4f81323"
+      "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
     }
   },
   "next_actions": [
@@ -4802,7 +4802,7 @@
         "resolvedDependencies": [
           {
             "digest": {
-              "sha256": "6b22be0023ad0020fdd461467c053c888e0d1ec2e673dc72ea8fbfcac4f81323"
+              "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
             },
             "uri": "pyproject.toml"
           },
@@ -4833,43 +4833,43 @@
       },
       {
         "digest": {
-          "sha256": "a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45"
+          "sha256": "c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d"
         },
         "name": "paper/trice_v3_research_paper.pdf"
       },
       {
         "digest": {
-          "sha256": "b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e"
+          "sha256": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b"
         },
         "name": "paper/trice_v3_research_manifest.json"
       },
       {
         "digest": {
-          "sha256": "2ca622a1999b25d27ecf92af85d4549d0d0bac5f9d663fef84cb8ae4851af10a"
+          "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
         },
         "name": "docs/trice_artifact_card.json"
       },
       {
         "digest": {
-          "sha256": "1837de7eda82dc02abf5d9568d307431aac5749ba3eefdbf5a0d2c20a85c4461"
+          "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
         },
         "name": "docs/trice_contract_card.json"
       },
       {
         "digest": {
-          "sha256": "92f9bb02700bca505e64a665431e9b0e9c46458c87519d9d8cfd87538e412420"
+          "sha256": "c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0"
         },
         "name": "docs/trice_crates_card.json"
       },
       {
         "digest": {
-          "sha256": "7855087064b41c51e9f41e160d8aa977c3a5baddbcaa1cea0ed3c7b2e8a1b618"
+          "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
         },
         "name": "docs/trice_install_card.json"
       },
       {
         "digest": {
-          "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
+          "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
         },
         "name": "docs/trice_reproduction_card.json"
       },
@@ -4895,7 +4895,7 @@
         "digest": {
           "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
         },
-        "name": "build/final-release-1.1.0-agent-native/tracerazor-1.1.0-py3-none-win_amd64.whl"
+        "name": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl"
       }
     ]
   },
@@ -5143,7 +5143,7 @@
   },
   "release_evidence_level": "release_evidence_ready",
   "release_evidence_score": 100,
-  "release_evidence_sha256": "6d45938f447d4a699cbbed6faa7fe4549db5246b22e0b36c4c4ee276cb743004",
+  "release_evidence_sha256": "be303111e02dcaaa62373dd790df029427fdcff22f852c3b44f89048d16dc0f3",
   "research_basis": [
     "SLSA provenance separates release trust from local tests by naming subjects, builders, materials, and build parameters.",
     "in-toto statements provide a portable envelope with subjects and predicateType for supply-chain attestations.",
@@ -5155,10 +5155,10 @@
   "schema_version": "trice-release-evidence/v1",
   "sidecars": [
     {
-      "bytes": 1308,
+      "bytes": 1274,
       "filename": "trice_release_evidence.checksums.txt",
       "name": "checksums",
-      "sha256": "23002e6662f03294c0283ace8d46b453f52c7a06b110a1f7f91a0bacd3c50b45"
+      "sha256": "79688b9be66798f2bb02c0333038e79f0a3a701ba56ec03a690baabd41b36759"
     },
     {
       "bytes": 4841,
@@ -5173,10 +5173,10 @@
       "sha256": "796ad45d98665e70e1f0487374893cc87787cf5f25a7324c51377c081da304b2"
     },
     {
-      "bytes": 3213,
+      "bytes": 3179,
       "filename": "trice_release_evidence.intoto.json",
       "name": "provenance",
-      "sha256": "ac8f7f96009fb08b24a712303fcf59c478e1bd7b29aadc91c03ff66850d5ad62"
+      "sha256": "2b5dc4403a08bdc3f5c35db7a92ae8a016e6017501d59e15c4af993053d3296c"
     }
   ],
   "version": "1.1.0"

@@ -17,12 +17,12 @@
 | contract_card_verifies | yes | library_contract_locked | public API/CLI/schema contract card verifies |
 | install_card_verifies | yes | full_cli_install_ready | clean-wheel installability card verifies |
 | release_docs_present | yes | 8/8 | README, trust matrix, release checklist, pyproject, contract card, and install card present |
-| pypi | no | skipped: offline mode | PyPI latest version matches local version |
-| piwheels | no | skipped: offline mode | piwheels exposes the local version file |
-| crates_io | no | skipped: offline mode | crates.io package is published |
-| github_tag | no | pending: head=6be5ac5b8677 local_tag=False remote_tag=False | local version tag points at current commit locally and remotely |
-| github_actions | no | skipped: offline mode | required public workflows are green |
-| openssf_scorecard | no | skipped: offline mode | OpenSSF Scorecard is published with score >= 7.0 |
+| pypi | no | mismatch: latest=1.0.3 local=1.1.0 | PyPI latest version matches local version |
+| piwheels | no | missing: files=0 local=1.1.0 | piwheels exposes the local version file |
+| crates_io | no | missing: crate tracerazor is not published | crates.io package is published |
+| github_tag | no | pending: head=c6f2062e8d56 local_tag=False remote_tag=False | local version tag points at current commit locally and remotely |
+| github_actions | no | unknown: HTTP 403 | required public workflows are green |
+| openssf_scorecard | no | below-threshold: score=3.8 minimum=7.0 date=2026-07-10T11:22:50Z commit=c6f2062e8d56 | OpenSSF Scorecard is published with score >= 7.0 |
 | provenance_plan_documented | yes | trusted publishing/OIDC | trusted publishing and OIDC documented |
 | attestation_plan_documented | yes | GitHub artifact attestations | GitHub release artifact attestation documented |
 | sbom_plan_documented | yes | CycloneDX/SHA-256 | SBOM and checksum release assets documented |
@@ -38,4 +38,4 @@
 
 ## Hash
 
-- release card: `0ee102e519af5d215fb1722d34dcfcdc4ebd9abcedccee081c3f31afe0c80a68`
+- release card: `3720a16b8b6778061f6d5b2986fb759c928bc4b148c555a189a76737d1f4d952`

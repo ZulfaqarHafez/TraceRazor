@@ -16,6 +16,6 @@
 <line x1="736" y1="125" x2="764" y2="125" stroke="#9ca3af" stroke-width="3"/>
 <rect x="772" y="96" width="138" height="58" rx="8" fill="#059669"/>
 <text x="841" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="16" font-weight="700" fill="#ffffff">honest</text>
-<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Readiness smoke_ready | artifact card hash 29f9a68d6df53afc...</text>
+<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Readiness smoke_ready | artifact card hash ddbfe97f2bd2a85a...</text>
 <text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Review packet only: S-tier still requires held-out remote live suite results and a passing claim card.</text>
 </svg>

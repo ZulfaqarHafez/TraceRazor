@@ -276,6 +276,48 @@ def test_trice_integrity_uses_the_linux_release_wheel_baseline():
         "TRACERAZOR_EXPECTED_WHEEL_PLATFORM: manylinux_2_35_x86_64"
         in integrity
     )
+    for card in ("crates", "install", "research"):
+        assert f"--out /tmp/trice_{card}_card.json" in integrity
+        assert f"--{card} /tmp/trice_{card}_card.json" in integrity
+        assert f"--out docs/trice_{card}_card.json" not in integrity
+    assert "git diff --exit-code" in integrity
+
+
+def test_proof_bound_worktree_bytes_match_the_git_index():
+    if not (ROOT / ".git").exists():
+        return
+
+    paths = [
+        "README.md",
+        "pyproject.toml",
+        "Cargo.toml",
+        "crates/tracerazor-cli/Cargo.toml",
+        "crates/tracerazor-core/Cargo.toml",
+        "crates/tracerazor-ingest/Cargo.toml",
+        "crates/tracerazor-semantic/Cargo.toml",
+        "crates/tracerazor-server/Cargo.toml",
+        "crates/tracerazor-store/Cargo.toml",
+        "docs/public_trust_matrix.md",
+        "docs/release_checklist.md",
+        "benchmark/trice/results/v2-smoke/trice_v2_live_results.json",
+    ]
+    paths.extend(
+        path.relative_to(ROOT).as_posix()
+        for path in sorted((ROOT / "examples").glob("trice_*"))
+        if path.is_file()
+    )
+
+    mismatches = []
+    for relative in paths:
+        indexed = subprocess.run(
+            ["git", "show", f":{relative}"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        ).stdout
+        if (ROOT / relative).read_bytes() != indexed:
+            mismatches.append(relative)
+    assert mismatches == []
 
 
 def test_release_fails_on_existing_pypi_files_and_evidence_uses_downloaded_cli():

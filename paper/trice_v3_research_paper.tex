@@ -210,7 +210,7 @@ protocol\_claim\_ready & no & claim\_protocol\_ready \\
 
 
         \section{Deterministic Claim Card}
-Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{smoke}. Claim allowed: no. Determinism contract score: 100/100.
+Scope: \texttt{python software-repair/context-control tasks on held-out Git repositories}. Claim level: \texttt{failed}. Claim allowed: no. Determinism contract score: 88/100.
 
 \begin{table}[h]
 \centering
@@ -234,11 +234,12 @@ task\_clusters & no & >= 50 \\
 \caption{Machine-readable claim gate distilled from the suite result and evidence manifest.}
 \end{table}
 
-Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{8abf1b3576b41be1...}.
+Mean input-token savings is 81.5\%; clustered CI lower bound is 79.0\%; pass regressions: 0; evidence recall minimum is 100.0\%. Claim-card hash: \texttt{5c03bc9f6da19d7c...}.
 
 \noindent Non-claims:
 \begin{itemize}
 \item Not an S-tier claim; missing task\_clusters, replicates\_per\_task, locked\_git\_sources, remote\_git\_sources.
+\item Evidence verification did not pass.
 \item Does not claim universal all-language or all-agent performance.
 \item Does not certify replay-only savings as live savings.
 \end{itemize}
@@ -249,7 +250,7 @@ TRICE emits a separate reproduction card after the paper manifest is written. Th
 
 
         \section{Contract Card}
-Package \texttt{tracerazor} version \texttt{1.0.3} has contract level \texttt{library\_contract\_locked} and score 100/100.
+Package \texttt{tracerazor} version \texttt{1.1.0} has contract level \texttt{library\_contract\_locked} and score 100/100.
 
 \begin{tabular}{lll}
 Check & Pass & Required \\
@@ -285,19 +286,26 @@ docs\_shipped & yes & README/library/research/trust docs are present \\
 
 
         \section{Installability Card}
-Install level: \texttt{full\_cli\_install\_ready}; score: 100/100; expected version: \texttt{1.0.3}.
+Install level: \texttt{full\_cli\_install\_ready}; score: 100/100; expected version: \texttt{1.1.0}.
 
 \begin{tabular}{lrl}
 Check & Passed & Required \\
 \hline
 wheel\_present & yes & built wheel exists \\
 venv\_created & yes & clean virtual environment can be created \\
-wheel\_installs & yes & wheel installs with pip --no-deps \\
-version\_matches & yes & 1.0.3 \\
+wheel\_installs & yes & wheel and MCP runtime dependencies install cleanly \\
+version\_matches & yes & 1.1.0 \\
 schemas\_importable & yes & install, crates, and research schemas import from wheel \\
 trice\_api\_importable & yes & public tracerazor.trice install/crates/research APIs import \\
+runtime\_api\_importable & yes & runtime API and tracerazor-event/v1 schema import from wheel \\
+agent\_assets\_shipped & yes & policy, sample trace, and Codex/Claude/Gemini assets ship in wheel \\
+mcp\_catalog\_importable & yes & versioned MCP tool catalog imports without the optional SDK \\
 trice\_console\_works & yes & tracerazor-trice console script works after wheel install \\
 rust\_cli\_bundled & yes & tracerazor console script can find a bundled Rust auditor binary \\
+rust\_cli\_from\_distribution & yes & resolved auditor binary lives inside the installed distribution \\
+agent\_console\_works & yes & tracerazor agent doctor works after wheel install \\
+mcp\_selftest\_works & yes & installed MCP server constructs and exposes its tool catalog \\
+sample\_audit\_works & yes & installed bundled sample audits outside the source checkout \\
 \end{tabular}
 
 
@@ -351,7 +359,7 @@ trice\_internal & 5 \\
 
 
         \section{Release Trust Card}
-TRICE treats distribution readiness as a separate machine-readable contract from benchmark evidence. The release card snapshots \texttt{tracerazor-trice doctor}, binds the artifact, reproduction, and contract cards, records package metadata, and refuses \texttt{public\_release\_ready} until PyPI, piwheels, crates.io, GitHub tag alignment, GitHub Actions, and OpenSSF Scorecard are green. This follows supply-chain guidance that provenance, public project health, trusted publishing, attestations, SBOMs, and checksums should be release artifacts rather than prose-only claims \cite{slsa,openssfscorecard,pypitrust,pypiattest,intoto,cyclonedx}. The separate \texttt{tracerazor-trice release-evidence} packet binds the wheel, source distribution, CLI binary, installability card, proof cards, paper artifacts, evidence bundles, SHA-256 checksums, CycloneDX-style Python and Cargo SBOMs, and an in-toto/SLSA-shaped provenance statement. The GitHub release workflow then generates release-evidence sidecars and hosted artifact attestations for release assets produced by Actions. A separate \texttt{tracerazor-trice integrity} card binds offline doctor output, proof-card verifiers, release evidence, the crates publish card, the research card, the paper manifest, schemas, and workflow hooks as one top-level proof graph. The contract card follows SemVer, Python package-versioning, JSON Schema, and reproducible-input practice by declaring the API boundary before release claims \cite{semver,pyversion,jsonschema2020,reprobuilds}.
+TRICE treats distribution readiness as a separate machine-readable contract from benchmark evidence. The release card snapshots \texttt{tracerazor-trice doctor}, binds the artifact, reproduction, and contract cards, records package metadata, and refuses \texttt{public\_release\_ready} until PyPI, piwheels, crates.io, GitHub tag alignment, GitHub Actions, and OpenSSF Scorecard are green. This follows supply-chain guidance that provenance, public project health, trusted publishing, attestations, SBOMs, and checksums should be release artifacts rather than prose-only claims \cite{slsa,openssfscorecard,pypitrust,pypiattest,intoto,cyclonedx}. The separate \texttt{tracerazor-trice release-evidence} packet binds the platform wheel, CLI binary, installability card, proof cards, paper artifacts, evidence bundles, SHA-256 checksums, CycloneDX-style Python and Cargo SBOMs, and an in-toto/SLSA-shaped provenance statement. The GitHub release workflow then generates release-evidence sidecars and hosted artifact attestations for release assets produced by Actions. A separate \texttt{tracerazor-trice integrity} card binds offline doctor output, proof-card verifiers, release evidence, the crates publish card, the research card, the paper manifest, schemas, and workflow hooks as one top-level proof graph. The contract card follows SemVer, Python package-versioning, JSON Schema, and reproducible-input practice by declaring the API boundary before release claims \cite{semver,pyversion,jsonschema2020,reprobuilds}.
 
 
         \section{Crates Publish Card}

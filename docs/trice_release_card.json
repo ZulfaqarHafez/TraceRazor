@@ -50,37 +50,37 @@
     },
     {
       "name": "pypi",
-      "observed": "skipped: offline mode",
+      "observed": "mismatch: latest=1.0.3 local=1.1.0",
       "passed": false,
       "required": "PyPI latest version matches local version"
     },
     {
       "name": "piwheels",
-      "observed": "skipped: offline mode",
+      "observed": "missing: files=0 local=1.1.0",
       "passed": false,
       "required": "piwheels exposes the local version file"
     },
     {
       "name": "crates_io",
-      "observed": "skipped: offline mode",
+      "observed": "missing: crate tracerazor is not published",
       "passed": false,
       "required": "crates.io package is published"
     },
     {
       "name": "github_tag",
-      "observed": "pending: head=6be5ac5b8677 local_tag=False remote_tag=False",
+      "observed": "pending: head=c6f2062e8d56 local_tag=False remote_tag=False",
       "passed": false,
       "required": "local version tag points at current commit locally and remotely"
     },
     {
       "name": "github_actions",
-      "observed": "skipped: offline mode",
+      "observed": "unknown: HTTP 403",
       "passed": false,
       "required": "required public workflows are green"
     },
     {
       "name": "openssf_scorecard",
-      "observed": "skipped: offline mode",
+      "observed": "below-threshold: score=3.8 minimum=7.0 date=2026-07-10T11:22:50Z commit=c6f2062e8d56",
       "passed": false,
       "required": "OpenSSF Scorecard is published with score >= 7.0"
     },
@@ -153,17 +153,19 @@
         "status": "on-path"
       },
       "crates_io": {
-        "detail": "offline mode",
-        "ok": null,
-        "status": "skipped"
+        "detail": "crate tracerazor is not published",
+        "ok": false,
+        "status": "missing",
+        "url": "https://crates.io/api/v1/crates/tracerazor"
       },
       "github_actions": {
-        "detail": "offline mode",
+        "detail": "HTTP 403",
         "ok": null,
-        "status": "skipped"
+        "status": "unknown",
+        "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
       },
       "github_tag": {
-        "detail": "head=6be5ac5b8677 local_tag=False remote_tag=False",
+        "detail": "head=c6f2062e8d56 local_tag=False remote_tag=False",
         "ok": false,
         "status": "pending"
       },
@@ -173,19 +175,22 @@
         "status": "installed"
       },
       "openssf_scorecard": {
-        "detail": "offline mode",
-        "ok": null,
-        "status": "skipped"
+        "detail": "score=3.8 minimum=7.0 date=2026-07-10T11:22:50Z commit=c6f2062e8d56",
+        "ok": false,
+        "status": "below-threshold",
+        "url": "https://api.scorecard.dev/projects/github.com/ZulfaqarHafez/TraceRazor"
       },
       "piwheels": {
-        "detail": "offline mode",
-        "ok": null,
-        "status": "skipped"
+        "detail": "files=0 local=1.1.0",
+        "ok": false,
+        "status": "missing",
+        "url": "https://www.piwheels.org/project/tracerazor/json"
       },
       "pypi": {
-        "detail": "offline mode",
-        "ok": null,
-        "status": "skipped"
+        "detail": "latest=1.0.3 local=1.1.0",
+        "ok": false,
+        "status": "mismatch",
+        "url": "https://pypi.org/pypi/tracerazor/json"
       },
       "schemas": {
         "detail": "19 schemas",
@@ -194,44 +199,44 @@
       }
     },
     "local_version": "1.1.0",
-    "offline": true,
+    "offline": false,
     "package": "tracerazor",
     "platform": "Windows-10-10.0.26200-SP0",
     "python": "3.11.6",
     "schema_version": "trice-doctor/v1",
     "summary": {
       "failed": [
-        "github_tag"
-      ],
-      "ok": false,
-      "unknown": [
         "pypi",
         "piwheels",
         "crates_io",
-        "github_actions",
+        "github_tag",
         "openssf_scorecard"
+      ],
+      "ok": false,
+      "unknown": [
+        "github_actions"
       ]
     }
   },
-  "doctor_snapshot_sha256": "58e6790c3fad4ad9837def4c320a2d76b1b05eb3806bbc62b95544e1f8cf8a35",
+  "doctor_snapshot_sha256": "f30ad0aa4f1ad39941677c7184edae0e94f51216a8d87e7cf70a86b286adc77f",
   "inputs": {
     "artifact_card": {
-      "bytes": 16185,
+      "bytes": 16188,
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "2ca622a1999b25d27ecf92af85d4549d0d0bac5f9d663fef84cb8ae4851af10a"
+      "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
     },
     "contract_card": {
       "bytes": 19194,
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "1837de7eda82dc02abf5d9568d307431aac5749ba3eefdbf5a0d2c20a85c4461"
+      "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
     },
     "install_card": {
-      "bytes": 14071,
+      "bytes": 13941,
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "7855087064b41c51e9f41e160d8aa977c3a5baddbcaa1cea0ed3c7b2e8a1b618"
+      "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
     },
     "public_trust_matrix": {
       "bytes": 11804,
@@ -240,16 +245,16 @@
       "sha256": "c41b0d813a04e357834cf2a0c88a39a4d665cb8ea858145cd665f7cd76a53416"
     },
     "pyproject": {
-      "bytes": 7372,
+      "bytes": 7274,
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "6b22be0023ad0020fdd461467c053c888e0d1ec2e673dc72ea8fbfcac4f81323"
+      "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
     },
     "readme": {
-      "bytes": 88240,
+      "bytes": 86734,
       "path": "README.md",
       "present": true,
-      "sha256": "717f69be9e4273e8a9def7b6de2326c4f94b9353eb67b79a62fe48a53c502b7f"
+      "sha256": "9e4785baab70f8818940e90ee01050074048d7bd73c9dbca2416699cd59f9638"
     },
     "release_checklist": {
       "bytes": 8455,
@@ -258,10 +263,10 @@
       "sha256": "e4b843f18203cc2adc28d4f76af61c566d4052631edf804063ee4a53715af475"
     },
     "reproduction_card": {
-      "bytes": 7494,
+      "bytes": 7296,
       "path": "docs/trice_reproduction_card.json",
       "present": true,
-      "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
+      "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
     }
   },
   "next_actions": [
@@ -275,12 +280,12 @@
   "package": {
     "local_version": "1.1.0",
     "name": "tracerazor",
-    "offline": true,
+    "offline": false,
     "platform": "Windows-10-10.0.26200-SP0",
     "python": "3.11.6"
   },
   "public_release_ready": false,
-  "release_card_sha256": "0ee102e519af5d215fb1722d34dcfcdc4ebd9abcedccee081c3f31afe0c80a68",
+  "release_card_sha256": "3720a16b8b6778061f6d5b2986fb759c928bc4b148c555a189a76737d1f4d952",
   "release_level": "local_release_candidate",
   "release_score": 74,
   "research_basis": [

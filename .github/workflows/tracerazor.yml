@@ -240,32 +240,33 @@ jobs:
         run: |
           python -m tracerazor.trice crates \
             --offline \
-            --out docs/trice_crates_card.json \
+            --out /tmp/trice_crates_card.json \
             --format tex
-          python -m tracerazor.trice verify-crates docs/trice_crates_card.json
+          python -m tracerazor.trice verify-crates /tmp/trice_crates_card.json
           python -m tracerazor.trice install \
-            --out docs/trice_install_card.json \
+            --out /tmp/trice_install_card.json \
             --dist-dir dist \
             --format tex
-          python -m tracerazor.trice verify-install docs/trice_install_card.json
+          python -m tracerazor.trice verify-install /tmp/trice_install_card.json
           python -m tracerazor.trice research \
-            --out docs/trice_research_card.json \
+            --out /tmp/trice_research_card.json \
             --format tex
-          python -m tracerazor.trice verify-research docs/trice_research_card.json
+          python -m tracerazor.trice verify-research /tmp/trice_research_card.json
           python -m tracerazor.trice release-evidence \
             --out /tmp/trice_release_evidence.json \
             --dist-dir dist \
             --cli-binary target/release/tracerazor \
             --format tex
           python -m tracerazor.trice verify-release-evidence /tmp/trice_release_evidence.json
+          git diff --exit-code
 
       - name: Verify TRICE proof graph integrity
         run: |
           python -m tracerazor.trice integrity \
             --release-evidence /tmp/trice_release_evidence.json \
-            --crates docs/trice_crates_card.json \
-            --install docs/trice_install_card.json \
-            --research docs/trice_research_card.json \
+            --crates /tmp/trice_crates_card.json \
+            --install /tmp/trice_install_card.json \
+            --research /tmp/trice_research_card.json \
             --out /tmp/trice_integrity_card.json \
             --format tex
           python -m tracerazor.trice verify-integrity /tmp/trice_integrity_card.json

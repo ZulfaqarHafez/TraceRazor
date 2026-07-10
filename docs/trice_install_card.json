@@ -2,7 +2,7 @@
   "checks": [
     {
       "name": "wheel_present",
-      "observed": "build/final-release-1.1.0-agent-native/tracerazor-1.1.0-py3-none-win_amd64.whl",
+      "observed": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl",
       "passed": true,
       "required": "built wheel exists"
     },
@@ -107,7 +107,7 @@
     },
     {
       "name": "agent_console_works",
-      "observed": "exit=0; {\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-wwu66b5b\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\",
+      "observed": "exit=0; {\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-fzu0ma7q\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\",
       "passed": true,
       "required": "tracerazor agent doctor works after wheel install"
     },
@@ -132,8 +132,8 @@
       "status": "ok",
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_excerpt": "{\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-wwu66b5b\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\tracerazor.exe\",\n  \"hosts\": [\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"codex\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"claude\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null",
-      "stdout_sha256": "f24155c685775fd694223d56382f32c99e3d8633725462d5f539ef9c31a10ac1"
+      "stdout_excerpt": "{\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-fzu0ma7q\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\tracerazor.exe\",\n  \"hosts\": [\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"codex\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"claude\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null",
+      "stdout_sha256": "dce8df7cf00e256f4fbc4ca440fc44372d951b6ddd9e287281d399e579ac5ede"
     },
     "create_venv": {
       "command_sha256": "4f3ab3ed0132810037204e2c53e18b4a70854934c1a1f8413a4e57ae75c514e4",
@@ -156,7 +156,7 @@
       "stdout_sha256": "b32dc14eac29675e4d7a84346e680fd75472bf23fcfef2037801ef93f4a32885"
     },
     "install_wheel": {
-      "command_sha256": "15e0997b3c84baa178e515b30234307b6e606709f73d94294dd5ff925b71ad59",
+      "command_sha256": "41a241fab87bbc287797841303356f18601b85a03012fa2e18fcd427668d9435",
       "exit_code": 0,
       "ok": true,
       "status": "ok",
@@ -192,8 +192,8 @@
       "status": "ok",
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_excerpt": "{\n  \"schema_version\": \"tracerazor-report/v1\",\n  \"trace_id\": \"support-agent-run-2847\",\n  \"agent_name\": \"customer-support-v3\",\n  \"framework\": \"langgraph\",\n  \"total_steps\": 11,\n  \"total_tokens\": 14280,\n  \"analysis_duration_ms\": 4,\n  \"score\": {\n    \"score\": 83.1,\n    \"raw_tas\": 85.7,\n    \"task_value_score\": 0.9,\n    \"grade\": \"Good\",\n    \"vae\": 0.77,\n    \"passes_threshold\": true,\n    \"avs\": 0.263,\n    \"metric_normalised\": {\n      \"cce\": 0.613,\n      \"ccr\": 0.6162790697674418,\n      \"csd\": 0.438,\n    ",
-      "stdout_sha256": "1e6288aab7dbeba8275a9dbcac9eac039cb7336afa09ec7d21245d0fe79c5cd9"
+      "stdout_excerpt": "{\n  \"schema_version\": \"tracerazor-report/v1\",\n  \"trace_id\": \"support-agent-run-2847\",\n  \"agent_name\": \"customer-support-v3\",\n  \"framework\": \"langgraph\",\n  \"total_steps\": 11,\n  \"total_tokens\": 14280,\n  \"analysis_duration_ms\": 6,\n  \"score\": {\n    \"score\": 83.1,\n    \"raw_tas\": 85.7,\n    \"task_value_score\": 0.9,\n    \"grade\": \"Good\",\n    \"vae\": 0.77,\n    \"passes_threshold\": true,\n    \"avs\": 0.263,\n    \"metric_normalised\": {\n      \"cce\": 0.613,\n      \"ccr\": 0.6162790697674418,\n      \"csd\": 0.438,\n    ",
+      "stdout_sha256": "599d8d75f47fda558f097edb55a569e2e68b270317b7244764693dded6a70e4f"
     },
     "trice_console": {
       "command_sha256": "5695e414efa414eab6cc88b639b84dcff848720ac1f9f1b61a421cff27afc8d6",
@@ -210,20 +210,20 @@
   "inputs": {
     "dist_dir": {
       "kind": "directory",
-      "name": "final-release-1.1.0-agent-native",
-      "path": "build/final-release-1.1.0-agent-native",
+      "name": "dist",
+      "path": "dist",
       "present": true
     },
     "pyproject": {
-      "bytes": 7372,
+      "bytes": 7274,
       "kind": "file",
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "6b22be0023ad0020fdd461467c053c888e0d1ec2e673dc72ea8fbfcac4f81323"
+      "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
     }
   },
-  "install_card_sha256": "f1577bc22beb94bba66072225809ecb790b345ebc5e9b2e3f786ae377d40d921",
+  "install_card_sha256": "e47643b505474927df1eceb793f20b2a74c94b9b99dce60a857a4b1204fcb364",
   "install_level": "full_cli_install_ready",
   "install_score": 100,
   "next_actions": [
@@ -278,7 +278,7 @@
     "bytes": 6859719,
     "kind": "file",
     "name": "wheel",
-    "path": "build/final-release-1.1.0-agent-native/tracerazor-1.1.0-py3-none-win_amd64.whl",
+    "path": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl",
     "present": true,
     "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
   }

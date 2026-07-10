@@ -26,26 +26,26 @@
 | Artifact | Kind | Present | Path | SHA-256 |
 |---|---|---:|---|---|
 | rust_cli | binary | yes | `target/release/tracerazor.exe` | `7548683efc5aa9b7a20f5b6a2dabd3ca5d3326ac57b9bc53a1af1d7126c21ae1` |
-| paper_pdf | paper | yes | `paper/trice_v3_research_paper.pdf` | `a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45` |
-| paper_manifest | paper-manifest | yes | `paper/trice_v3_research_manifest.json` | `b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e` |
-| artifact_card | proof-card | yes | `docs/trice_artifact_card.json` | `2ca622a1999b25d27ecf92af85d4549d0d0bac5f9d663fef84cb8ae4851af10a` |
-| contract_card | proof-card | yes | `docs/trice_contract_card.json` | `1837de7eda82dc02abf5d9568d307431aac5749ba3eefdbf5a0d2c20a85c4461` |
-| crates_card | proof-card | yes | `docs/trice_crates_card.json` | `92f9bb02700bca505e64a665431e9b0e9c46458c87519d9d8cfd87538e412420` |
-| install_card | proof-card | yes | `docs/trice_install_card.json` | `7855087064b41c51e9f41e160d8aa977c3a5baddbcaa1cea0ed3c7b2e8a1b618` |
-| reproduction_card | proof-card | yes | `docs/trice_reproduction_card.json` | `34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54` |
+| paper_pdf | paper | yes | `paper/trice_v3_research_paper.pdf` | `c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d` |
+| paper_manifest | paper-manifest | yes | `paper/trice_v3_research_manifest.json` | `47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b` |
+| artifact_card | proof-card | yes | `docs/trice_artifact_card.json` | `1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33` |
+| contract_card | proof-card | yes | `docs/trice_contract_card.json` | `bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1` |
+| crates_card | proof-card | yes | `docs/trice_crates_card.json` | `c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0` |
+| install_card | proof-card | yes | `docs/trice_install_card.json` | `350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969` |
+| reproduction_card | proof-card | yes | `docs/trice_reproduction_card.json` | `e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce` |
 | research_card | proof-card | yes | `docs/trice_research_card.json` | `2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18` |
 | broad_evidence_bundle | trice-bundle | yes | `benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip` | `a43eeac3ba5239031376aa7b3be97e01ccada6c36648faa15e1c2b3e2d2d2564` |
 | remote_smoke_bundle | trice-bundle | yes | `benchmark/trice/results/v2-remote-smoke/trice_remote_smoke_evidence.trice.zip` | `93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d` |
-| tracerazor-1.1.0-py3-none-win_amd64.whl | wheel | yes | `build/final-release-1.1.0-agent-native/tracerazor-1.1.0-py3-none-win_amd64.whl` | `2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f` |
+| tracerazor-1.1.0-py3-none-win_amd64.whl | wheel | yes | `dist/tracerazor-1.1.0-py3-none-win_amd64.whl` | `2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f` |
 
 ## Sidecars
 
 | Sidecar | File | SHA-256 |
 |---|---|---|
-| checksums | `trice_release_evidence.checksums.txt` | `23002e6662f03294c0283ace8d46b453f52c7a06b110a1f7f91a0bacd3c50b45` |
+| checksums | `trice_release_evidence.checksums.txt` | `79688b9be66798f2bb02c0333038e79f0a3a701ba56ec03a690baabd41b36759` |
 | python_sbom | `trice_release_evidence.python.cdx.json` | `d32c8d276cfea0d9aeb3e3589abddbf003f4b9d14ec4b7b16bc8e2c5dc2c79cb` |
 | cargo_sbom | `trice_release_evidence.cargo.cdx.json` | `796ad45d98665e70e1f0487374893cc87787cf5f25a7324c51377c081da304b2` |
-| provenance | `trice_release_evidence.intoto.json` | `ac8f7f96009fb08b24a712303fcf59c478e1bd7b29aadc91c03ff66850d5ad62` |
+| provenance | `trice_release_evidence.intoto.json` | `2b5dc4403a08bdc3f5c35db7a92ae8a016e6017501d59e15c4af993053d3296c` |
 
 ## Next Actions
 
@@ -55,4 +55,4 @@
 
 ## Hash
 
-- release evidence: `6d45938f447d4a699cbbed6faa7fe4549db5246b22e0b36c4c4ee276cb743004`
+- release evidence: `be303111e02dcaaa62373dd790df029427fdcff22f852c3b44f89048d16dc0f3`

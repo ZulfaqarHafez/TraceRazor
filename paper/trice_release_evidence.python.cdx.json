@@ -3,9 +3,9 @@
   "components": [
     {
       "name": "tracerazor",
-      "purl": "pkg:pypi/tracerazor@1.0.3",
+      "purl": "pkg:pypi/tracerazor@1.1.0",
       "type": "application",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     {
       "name": "anthropic",
@@ -66,6 +66,18 @@
       "purl": "pkg:pypi/langgraph",
       "type": "library",
       "version": ">=0.2"
+    },
+    {
+      "name": "mcp",
+      "properties": [
+        {
+          "name": "trice:optional_group",
+          "value": "all"
+        }
+      ],
+      "purl": "pkg:pypi/mcp",
+      "type": "library",
+      "version": ">=1.0"
     },
     {
       "name": "numpy",
@@ -198,13 +210,19 @@
       "purl": "pkg:pypi/sentence-transformers",
       "type": "library",
       "version": ">=2.7"
+    },
+    {
+      "name": "tomli",
+      "purl": "pkg:pypi/tomli",
+      "type": "library",
+      "version": ">=2; python_version < '3.11'"
     }
   ],
   "metadata": {
     "component": {
       "name": "tracerazor",
       "type": "application",
-      "version": "1.0.3"
+      "version": "1.1.0"
     },
     "tools": [
       {
@@ -213,7 +231,7 @@
       }
     ]
   },
-  "serialNumber": "urn:uuid:eeb03cab-6c11-c3c7-5a6c-4ae618ecfb33",
+  "serialNumber": "urn:uuid:f0e8f13d-b488-0864-1088-0afbda76f4a5",
   "specVersion": "1.6",
   "version": 1
 }

@@ -38,4 +38,4 @@
 
 ## Hash
 
-- integrity card: `8fbc88a0fbbac04e08d80c972aaccce335ceaac03b6eddc3ebef6d0b0d69a58b`
+- integrity card: `44a5c7452b0c7f91b935de2021a73dd6d6ceadf3f7dcc5dae4eda788bd4674d1`

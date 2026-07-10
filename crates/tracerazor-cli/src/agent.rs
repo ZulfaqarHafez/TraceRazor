@@ -3600,7 +3600,7 @@ fn latest_coach_context(loaded: &LoadedPolicy) -> Result<Option<String>> {
             Some((modified, path))
         })
         .collect::<Vec<_>>();
-    candidates.sort_by(|a, b| b.0.cmp(&a.0));
+    candidates.sort_by_key(|candidate| std::cmp::Reverse(candidate.0));
     let Some((_, report_path)) = candidates.into_iter().next() else {
         return Ok(None);
     };

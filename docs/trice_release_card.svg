@@ -16,6 +16,6 @@
 <line x1="736" y1="125" x2="764" y2="125" stroke="#9ca3af" stroke-width="3"/>
 <rect x="772" y="96" width="138" height="58" rx="8" fill="#0f766e"/>
 <text x="841" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="16" font-weight="700" fill="#ffffff">install</text>
-<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Local version 1.1.0 | blockers 6 | hash 0ee102e519af5d21...</text>
+<text x="28" y="202" font-family="Inter,Segoe UI,Arial" font-size="13" fill="#111827">Local version 1.1.0 | blockers 6 | hash 3720a16b8b677806...</text>
 <text x="28" y="228" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Release card only: 1.1 public readiness requires platform artifacts, PyPI, tag, CI, and Scorecard to be green.</text>
 </svg>

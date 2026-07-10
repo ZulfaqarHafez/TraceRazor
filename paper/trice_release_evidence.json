@@ -1,84 +1,76 @@
 {
   "artifacts": [
     {
-      "bytes": 14992896,
+      "bytes": 16929792,
       "kind": "binary",
       "name": "rust_cli",
       "path": "target/release/tracerazor.exe",
       "present": true,
-      "sha256": "623f468108d970eaf918362d50c44db4670906f00341733a9336d0d4fdc90855"
+      "sha256": "7548683efc5aa9b7a20f5b6a2dabd3ca5d3326ac57b9bc53a1af1d7126c21ae1"
     },
     {
-      "bytes": 13382,
+      "bytes": 13390,
       "kind": "paper",
       "name": "paper_pdf",
       "path": "paper/trice_v3_research_paper.pdf",
       "present": true,
-      "sha256": "a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45"
+      "sha256": "c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d"
     },
     {
-      "bytes": 7591,
+      "bytes": 7364,
       "kind": "paper-manifest",
       "name": "paper_manifest",
       "path": "paper/trice_v3_research_manifest.json",
       "present": true,
-      "sha256": "b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e"
+      "sha256": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b"
     },
     {
-      "bytes": 16653,
+      "bytes": 16188,
       "kind": "proof-card",
       "name": "artifact_card",
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "273a1df9a8542526243ed59fbc78032886e66a100c62d5bb33cdab432c1d2f36"
+      "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
     },
     {
-      "bytes": 19671,
+      "bytes": 19194,
       "kind": "proof-card",
       "name": "contract_card",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "2a6e22b58c2ab3af68bf77cea900c758d1e0e687a70a10eefd74743d6d303126"
+      "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
     },
     {
-      "bytes": 22152,
+      "bytes": 21475,
       "kind": "proof-card",
       "name": "crates_card",
       "path": "docs/trice_crates_card.json",
       "present": true,
-      "sha256": "f16c2a70c6b97b0bb311b5dc1cc4398eeb2d7a974f0e00255bda33a122fb16cf"
+      "sha256": "c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0"
     },
     {
-      "bytes": 7300,
+      "bytes": 13941,
       "kind": "proof-card",
       "name": "install_card",
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "5ce2df710d1d8763ed25bdf6ab79464ada6e22b45982a0b37efbd7eb7a5244f6"
+      "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
     },
     {
-      "bytes": 7494,
+      "bytes": 7296,
       "kind": "proof-card",
       "name": "reproduction_card",
       "path": "docs/trice_reproduction_card.json",
       "present": true,
-      "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
+      "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
     },
     {
-      "bytes": 71467,
+      "bytes": 69670,
       "kind": "proof-card",
       "name": "research_card",
       "path": "docs/trice_research_card.json",
       "present": true,
-      "sha256": "2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1"
-    },
-    {
-      "bytes": 1459300,
-      "kind": "sdist",
-      "name": "tracerazor-1.0.3.tar.gz",
-      "path": "dist/tracerazor-1.0.3.tar.gz",
-      "present": true,
-      "sha256": "2be33fcbc0dad91032d6f5c15df1fc5f0e40816f6e88cc3b7bee7c9e0e347095"
+      "sha256": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
     },
     {
       "bytes": 117496,
@@ -97,12 +89,12 @@
       "sha256": "93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d"
     },
     {
-      "bytes": 607460,
+      "bytes": 6859719,
       "kind": "wheel",
-      "name": "tracerazor-1.0.3-py3-none-any.whl",
-      "path": "dist/tracerazor-1.0.3-py3-none-any.whl",
+      "name": "tracerazor-1.1.0-py3-none-win_amd64.whl",
+      "path": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl",
       "present": true,
-      "sha256": "bda47590b13ab949078d45f866ff2ae61ae2f736f2211945a66cba098facad36"
+      "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
     }
   ],
   "cargo_sbom": {
@@ -245,13 +237,13 @@
           "hashes": [
             {
               "alg": "SHA-256",
-              "content": "7f202df86484c868dbad7eaa557ef785d5c66295e41b460ef922eca0723b842c"
+              "content": "2a4385e2e34eb35d6b3efe798b9eb88096925d87726c0798709bf56d9ed84af3"
             }
           ],
           "name": "anyhow",
-          "purl": "pkg:cargo/anyhow@1.0.102",
+          "purl": "pkg:cargo/anyhow@1.0.103",
           "type": "library",
-          "version": "1.0.102"
+          "version": "1.0.103"
         },
         {
           "hashes": [
@@ -648,6 +640,18 @@
           "purl": "pkg:cargo/colorchoice@1.0.5",
           "type": "library",
           "version": "1.0.5"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "33e2a781ebdf4467d1428dc4593067825fb646f6871475098d8577421af73558"
+            }
+          ],
+          "name": "const-hex",
+          "purl": "pkg:cargo/const-hex@1.19.1",
+          "type": "library",
+          "version": "1.19.1"
         },
         {
           "hashes": [
@@ -2177,6 +2181,42 @@
           "hashes": [
             {
               "alg": "SHA-256",
+              "content": "b0142c63252a9e054e68a4c61a5778f7b14f576274d593f8ce883d191a099682"
+            }
+          ],
+          "name": "opentelemetry",
+          "purl": "pkg:cargo/opentelemetry@0.32.0",
+          "type": "library",
+          "version": "0.32.0"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "56d658ba1faf63f7b9c492cfbe6e0ec365440a16132d3270c1065f7b33f1b638"
+            }
+          ],
+          "name": "opentelemetry-proto",
+          "purl": "pkg:cargo/opentelemetry-proto@0.32.0",
+          "type": "library",
+          "version": "0.32.0"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "9b59f80e1ac4d5ff7a2db8fb6c80badb7f0f3f858211fba08dd9aaec750894f9"
+            }
+          ],
+          "name": "opentelemetry_sdk",
+          "purl": "pkg:cargo/opentelemetry_sdk@0.32.1",
+          "type": "library",
+          "version": "0.32.1"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
               "content": "93857453250e3077bd71ff98b6a65ea6621a19bb0f559a85248955ac12c45a1a"
             }
           ],
@@ -2280,6 +2320,18 @@
           "purl": "pkg:cargo/pkg-config@0.3.32",
           "type": "library",
           "version": "0.3.32"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "c33a9471896f1c69cecef8d20cbe2f7accd12527ce60845ff44c153bb2a21b49"
+            }
+          ],
+          "name": "portable-atomic",
+          "purl": "pkg:cargo/portable-atomic@1.13.1",
+          "type": "library",
+          "version": "1.13.1"
         },
         {
           "hashes": [
@@ -2393,6 +2445,42 @@
           "hashes": [
             {
               "alg": "SHA-256",
+              "content": "4b45fcc2344c680f5025fe57779faef368840d0bd1f42f216291f0dc4ace4744"
+            }
+          ],
+          "name": "proptest",
+          "purl": "pkg:cargo/proptest@1.11.0",
+          "type": "library",
+          "version": "1.11.0"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "528ac67416ff8646872a3c02cad9cc4ee5dc9f9540c9b10771855c95cb2e5ae1"
+            }
+          ],
+          "name": "prost",
+          "purl": "pkg:cargo/prost@0.14.4",
+          "type": "library",
+          "version": "0.14.4"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "b570b25f7617e43d59005d0990ccb79e950a423952cea19671b7a876da390adf"
+            }
+          ],
+          "name": "prost-derive",
+          "purl": "pkg:cargo/prost-derive@0.14.4",
+          "type": "library",
+          "version": "0.14.4"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
               "content": "b9e20a958963c291dc322d98411f541009df2ced7b5a4f2bd52337638cfccf20"
             }
           ],
@@ -2405,13 +2493,13 @@
           "hashes": [
             {
               "alg": "SHA-256",
-              "content": "434b42fec591c96ef50e21e886936e66d3cc3f737104fdb9b737c40ffb94c098"
+              "content": "4fcb935c5bec503c2f0e306bdd3e58bb9029dcb14fa8d9ac76e3a5256ac0763e"
             }
           ],
           "name": "quinn-proto",
-          "purl": "pkg:cargo/quinn-proto@0.11.14",
+          "purl": "pkg:cargo/quinn-proto@0.11.15",
           "type": "library",
-          "version": "0.11.14"
+          "version": "0.11.15"
         },
         {
           "hashes": [
@@ -2532,6 +2620,18 @@
           "purl": "pkg:cargo/rand_core@0.9.5",
           "type": "library",
           "version": "0.9.5"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "513962919efc330f829edb2535844d1b912b0fbe2ca165d613e4e8788bb05a5a"
+            }
+          ],
+          "name": "rand_xorshift",
+          "purl": "pkg:cargo/rand_xorshift@0.4.0",
+          "type": "library",
+          "version": "0.4.0"
         },
         {
           "hashes": [
@@ -2868,6 +2968,18 @@
           "purl": "pkg:cargo/serde_path_to_error@0.1.20",
           "type": "library",
           "version": "0.1.20"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "bf41e0cfaf7226dca15e8197172c295a782857fcb97fad1808a166870dee75a3"
+            }
+          ],
+          "name": "serde_spanned",
+          "purl": "pkg:cargo/serde_spanned@0.6.9",
+          "type": "library",
+          "version": "0.6.9"
         },
         {
           "hashes": [
@@ -3341,6 +3453,54 @@
           "hashes": [
             {
               "alg": "SHA-256",
+              "content": "dc1beb996b9d83529a9e75c17a1686767d148d70663143c7854d8b4a09ced362"
+            }
+          ],
+          "name": "toml",
+          "purl": "pkg:cargo/toml@0.8.23",
+          "type": "library",
+          "version": "0.8.23"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "22cddaf88f4fbc13c51aebbf5f8eceb5c7c5a9da2ac40a13519eb5b0a0e8f11c"
+            }
+          ],
+          "name": "toml_datetime",
+          "purl": "pkg:cargo/toml_datetime@0.6.11",
+          "type": "library",
+          "version": "0.6.11"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "41fe8c660ae4257887cf66394862d21dbca4a6ddd26f04a3560410406a2f819a"
+            }
+          ],
+          "name": "toml_edit",
+          "purl": "pkg:cargo/toml_edit@0.22.27",
+          "type": "library",
+          "version": "0.22.27"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "5d99f8c9a7727884afe522e9bd5edbfc91a3312b36a77b5fb8926e4c31a41801"
+            }
+          ],
+          "name": "toml_write",
+          "purl": "pkg:cargo/toml_write@0.1.2",
+          "type": "library",
+          "version": "0.1.2"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
               "content": "b8fa9be0de6cf49e536ce1851f987bd21a43b771b09473c3549a6c853db37c1c"
             }
           ],
@@ -3411,39 +3571,39 @@
         },
         {
           "name": "tracerazor",
-          "purl": "pkg:cargo/tracerazor@1.0.3",
+          "purl": "pkg:cargo/tracerazor@1.1.0",
           "type": "library",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         {
           "name": "tracerazor-core",
-          "purl": "pkg:cargo/tracerazor-core@1.0.3",
+          "purl": "pkg:cargo/tracerazor-core@1.1.0",
           "type": "library",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         {
           "name": "tracerazor-ingest",
-          "purl": "pkg:cargo/tracerazor-ingest@1.0.3",
+          "purl": "pkg:cargo/tracerazor-ingest@1.1.0",
           "type": "library",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         {
           "name": "tracerazor-semantic",
-          "purl": "pkg:cargo/tracerazor-semantic@1.0.3",
+          "purl": "pkg:cargo/tracerazor-semantic@1.1.0",
           "type": "library",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         {
           "name": "tracerazor-server",
-          "purl": "pkg:cargo/tracerazor-server@1.0.3",
+          "purl": "pkg:cargo/tracerazor-server@1.1.0",
           "type": "library",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         {
           "name": "tracerazor-store",
-          "purl": "pkg:cargo/tracerazor-store@1.0.3",
+          "purl": "pkg:cargo/tracerazor-store@1.1.0",
           "type": "library",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         {
           "hashes": [
@@ -3504,6 +3664,18 @@
           "purl": "pkg:cargo/typenum@1.19.0",
           "type": "library",
           "version": "1.19.0"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
+              "content": "eaea85b334db583fe3274d12b4cd1880032beab409c0d774be044d4480ab9a94"
+            }
+          ],
+          "name": "unarray",
+          "purl": "pkg:cargo/unarray@0.1.4",
+          "type": "library",
+          "version": "0.1.4"
         },
         {
           "hashes": [
@@ -4193,6 +4365,18 @@
           "hashes": [
             {
               "alg": "SHA-256",
+              "content": "df79d97927682d2fd8adb29682d1140b343be4ac0f08fd68b7765d9c059d3945"
+            }
+          ],
+          "name": "winnow",
+          "purl": "pkg:cargo/winnow@0.7.15",
+          "type": "library",
+          "version": "0.7.15"
+        },
+        {
+          "hashes": [
+            {
+              "alg": "SHA-256",
               "content": "08db1edfb05d9b3c1542e521aea074442088292f00b5f28e435c714a98f85031"
             }
           ],
@@ -4482,7 +4666,7 @@
         "component": {
           "name": "tracerazor",
           "type": "application",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         "tools": [
           {
@@ -4491,11 +4675,11 @@
           }
         ]
       },
-      "serialNumber": "urn:uuid:2b7b6838-6a4e-ee29-db55-fc984c0cc2b6",
+      "serialNumber": "urn:uuid:8d5140b0-87de-0f3b-6ab6-9a897bc69787",
       "specVersion": "1.6",
       "version": 1
     },
-    "component_count": 367,
+    "component_count": 383,
     "format": "CycloneDX",
     "spec_version": "1.6"
   },
@@ -4507,10 +4691,10 @@
       "required": "at least one wheel artifact"
     },
     {
-      "name": "sdist_present",
-      "observed": 1,
+      "name": "sdist_absent",
+      "observed": 0,
       "passed": true,
-      "required": "one source distribution artifact"
+      "required": "no source distribution until it can satisfy the bundled-auditor contract"
     },
     {
       "name": "cli_binary_present",
@@ -4538,25 +4722,25 @@
     },
     {
       "name": "artifact_hashes_present",
-      "observed": "13/13",
+      "observed": "12/12",
       "passed": true,
       "required": "every present artifact has a SHA-256 digest"
     },
     {
       "name": "python_sbom_generated",
-      "observed": 17,
+      "observed": 19,
       "passed": true,
       "required": "CycloneDX-style Python SBOM"
     },
     {
       "name": "cargo_sbom_generated",
-      "observed": 367,
+      "observed": 383,
       "passed": true,
       "required": "CycloneDX-style Cargo SBOM"
     },
     {
       "name": "provenance_statement_generated",
-      "observed": 13,
+      "observed": 12,
       "passed": true,
       "required": "in-toto/SLSA-shaped provenance statement"
     },
@@ -4569,36 +4753,36 @@
   ],
   "inputs": {
     "cargo_lock": {
-      "bytes": 89936,
+      "bytes": 94184,
       "kind": "source-metadata",
       "name": "cargo_lock",
       "path": "Cargo.lock",
       "present": true,
-      "sha256": "be1fa5443d0903ea7baa5f7b1b066f03b8e014583da766f60fc7305eefafa031"
+      "sha256": "3473d70db96fe7383c51afe1bff13cc7c6fd0f3f39bcd6a7ae9a6ce9967c5d5f"
     },
     "cli_binary": {
-      "bytes": 14992896,
+      "bytes": 16929792,
       "kind": "binary",
       "name": "rust_cli",
       "path": "target/release/tracerazor.exe",
       "present": true,
-      "sha256": "623f468108d970eaf918362d50c44db4670906f00341733a9336d0d4fdc90855"
+      "sha256": "7548683efc5aa9b7a20f5b6a2dabd3ca5d3326ac57b9bc53a1af1d7126c21ae1"
     },
     "dist_dir": {
       "path": "dist",
       "present": true
     },
     "pyproject": {
-      "bytes": 5850,
+      "bytes": 7274,
       "kind": "source-metadata",
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "a59e14dfdd4c752e93403818f1a4b32c2ccb1bae577132d7f6e6aef53865d1a3"
+      "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
     }
   },
   "next_actions": [
-    "Attach the release evidence card, checksums, SBOMs, provenance statement, wheel, sdist, binary, paper, and evidence bundles to the GitHub release.",
+    "Attach the release evidence card, checksums, SBOMs, provenance statement, platform wheels, binaries, paper, and evidence bundles to the GitHub release.",
     "Regenerate this packet after every package rebuild, proof-card change, or evidence-bundle change.",
     "Publish registry attestations through trusted publishing where supported."
   ],
@@ -4610,7 +4794,7 @@
         "buildType": "https://tracerazor.dev/trice/release-evidence/v1",
         "externalParameters": {
           "package": "tracerazor",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         "internalParameters": {
           "generator": "tracerazor-trice release-evidence"
@@ -4618,13 +4802,13 @@
         "resolvedDependencies": [
           {
             "digest": {
-              "sha256": "a59e14dfdd4c752e93403818f1a4b32c2ccb1bae577132d7f6e6aef53865d1a3"
+              "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
             },
             "uri": "pyproject.toml"
           },
           {
             "digest": {
-              "sha256": "be1fa5443d0903ea7baa5f7b1b066f03b8e014583da766f60fc7305eefafa031"
+              "sha256": "3473d70db96fe7383c51afe1bff13cc7c6fd0f3f39bcd6a7ae9a6ce9967c5d5f"
             },
             "uri": "Cargo.lock"
           }
@@ -4643,63 +4827,57 @@
     "subject": [
       {
         "digest": {
-          "sha256": "623f468108d970eaf918362d50c44db4670906f00341733a9336d0d4fdc90855"
+          "sha256": "7548683efc5aa9b7a20f5b6a2dabd3ca5d3326ac57b9bc53a1af1d7126c21ae1"
         },
         "name": "target/release/tracerazor.exe"
       },
       {
         "digest": {
-          "sha256": "a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45"
+          "sha256": "c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d"
         },
         "name": "paper/trice_v3_research_paper.pdf"
       },
       {
         "digest": {
-          "sha256": "b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e"
+          "sha256": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b"
         },
         "name": "paper/trice_v3_research_manifest.json"
       },
       {
         "digest": {
-          "sha256": "273a1df9a8542526243ed59fbc78032886e66a100c62d5bb33cdab432c1d2f36"
+          "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
         },
         "name": "docs/trice_artifact_card.json"
       },
       {
         "digest": {
-          "sha256": "2a6e22b58c2ab3af68bf77cea900c758d1e0e687a70a10eefd74743d6d303126"
+          "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
         },
         "name": "docs/trice_contract_card.json"
       },
       {
         "digest": {
-          "sha256": "f16c2a70c6b97b0bb311b5dc1cc4398eeb2d7a974f0e00255bda33a122fb16cf"
+          "sha256": "c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0"
         },
         "name": "docs/trice_crates_card.json"
       },
       {
         "digest": {
-          "sha256": "5ce2df710d1d8763ed25bdf6ab79464ada6e22b45982a0b37efbd7eb7a5244f6"
+          "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
         },
         "name": "docs/trice_install_card.json"
       },
       {
         "digest": {
-          "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
+          "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
         },
         "name": "docs/trice_reproduction_card.json"
       },
       {
         "digest": {
-          "sha256": "2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1"
+          "sha256": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
         },
         "name": "docs/trice_research_card.json"
-      },
-      {
-        "digest": {
-          "sha256": "2be33fcbc0dad91032d6f5c15df1fc5f0e40816f6e88cc3b7bee7c9e0e347095"
-        },
-        "name": "dist/tracerazor-1.0.3.tar.gz"
       },
       {
         "digest": {
@@ -4715,9 +4893,9 @@
       },
       {
         "digest": {
-          "sha256": "bda47590b13ab949078d45f866ff2ae61ae2f736f2211945a66cba098facad36"
+          "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
         },
-        "name": "dist/tracerazor-1.0.3-py3-none-any.whl"
+        "name": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl"
       }
     ]
   },
@@ -4727,9 +4905,9 @@
       "components": [
         {
           "name": "tracerazor",
-          "purl": "pkg:pypi/tracerazor@1.0.3",
+          "purl": "pkg:pypi/tracerazor@1.1.0",
           "type": "application",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         {
           "name": "anthropic",
@@ -4790,6 +4968,18 @@
           "purl": "pkg:pypi/langgraph",
           "type": "library",
           "version": ">=0.2"
+        },
+        {
+          "name": "mcp",
+          "properties": [
+            {
+              "name": "trice:optional_group",
+              "value": "all"
+            }
+          ],
+          "purl": "pkg:pypi/mcp",
+          "type": "library",
+          "version": ">=1.0"
         },
         {
           "name": "numpy",
@@ -4922,13 +5112,19 @@
           "purl": "pkg:pypi/sentence-transformers",
           "type": "library",
           "version": ">=2.7"
+        },
+        {
+          "name": "tomli",
+          "purl": "pkg:pypi/tomli",
+          "type": "library",
+          "version": ">=2; python_version < '3.11'"
         }
       ],
       "metadata": {
         "component": {
           "name": "tracerazor",
           "type": "application",
-          "version": "1.0.3"
+          "version": "1.1.0"
         },
         "tools": [
           {
@@ -4937,17 +5133,17 @@
           }
         ]
       },
-      "serialNumber": "urn:uuid:eeb03cab-6c11-c3c7-5a6c-4ae618ecfb33",
+      "serialNumber": "urn:uuid:f0e8f13d-b488-0864-1088-0afbda76f4a5",
       "specVersion": "1.6",
       "version": 1
     },
-    "component_count": 17,
+    "component_count": 19,
     "format": "CycloneDX",
     "spec_version": "1.6"
   },
   "release_evidence_level": "release_evidence_ready",
   "release_evidence_score": 100,
-  "release_evidence_sha256": "794f08e1a203bce0f420f7616d2445b1205f6e25d44daaa0c1531f757819363c",
+  "release_evidence_sha256": "be303111e02dcaaa62373dd790df029427fdcff22f852c3b44f89048d16dc0f3",
   "research_basis": [
     "SLSA provenance separates release trust from local tests by naming subjects, builders, materials, and build parameters.",
     "in-toto statements provide a portable envelope with subjects and predicateType for supply-chain attestations.",
@@ -4959,29 +5155,29 @@
   "schema_version": "trice-release-evidence/v1",
   "sidecars": [
     {
-      "bytes": 1363,
+      "bytes": 1274,
       "filename": "trice_release_evidence.checksums.txt",
       "name": "checksums",
-      "sha256": "f3883c618534f9487c65cf56563715ad7f4120b488eb49eea15260b2f54ae32b"
+      "sha256": "79688b9be66798f2bb02c0333038e79f0a3a701ba56ec03a690baabd41b36759"
     },
     {
-      "bytes": 4468,
+      "bytes": 4841,
       "filename": "trice_release_evidence.python.cdx.json",
       "name": "python_sbom",
-      "sha256": "d91ea8a2b868d5e3be5b983e3a2215ab1076181318cffb5e0d83fa2d3c30a26f"
+      "sha256": "d32c8d276cfea0d9aeb3e3589abddbf003f4b9d14ec4b7b16bc8e2c5dc2c79cb"
     },
     {
-      "bytes": 109928,
+      "bytes": 114748,
       "filename": "trice_release_evidence.cargo.cdx.json",
       "name": "cargo_sbom",
-      "sha256": "636f4f9876ae0d80fd9e0951ececa3fc31e827f36d0a8452b8f16cf32bc3de6d"
+      "sha256": "796ad45d98665e70e1f0487374893cc87787cf5f25a7324c51377c081da304b2"
     },
     {
-      "bytes": 3343,
+      "bytes": 3179,
       "filename": "trice_release_evidence.intoto.json",
       "name": "provenance",
-      "sha256": "72450124d448ac4ee3cbfd7426d994aae43c6deb96aa9f6d0ada711766502be8"
+      "sha256": "2b5dc4403a08bdc3f5c35db7a92ae8a016e6017501d59e15c4af993053d3296c"
     }
   ],
-  "version": "1.0.3"
+  "version": "1.1.0"
 }

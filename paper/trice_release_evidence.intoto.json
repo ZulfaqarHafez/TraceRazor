@@ -5,7 +5,7 @@
       "buildType": "https://tracerazor.dev/trice/release-evidence/v1",
       "externalParameters": {
         "package": "tracerazor",
-        "version": "1.0.3"
+        "version": "1.1.0"
       },
       "internalParameters": {
         "generator": "tracerazor-trice release-evidence"
@@ -13,13 +13,13 @@
       "resolvedDependencies": [
         {
           "digest": {
-            "sha256": "a59e14dfdd4c752e93403818f1a4b32c2ccb1bae577132d7f6e6aef53865d1a3"
+            "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
           },
           "uri": "pyproject.toml"
         },
         {
           "digest": {
-            "sha256": "be1fa5443d0903ea7baa5f7b1b066f03b8e014583da766f60fc7305eefafa031"
+            "sha256": "3473d70db96fe7383c51afe1bff13cc7c6fd0f3f39bcd6a7ae9a6ce9967c5d5f"
           },
           "uri": "Cargo.lock"
         }
@@ -38,63 +38,57 @@
   "subject": [
     {
       "digest": {
-        "sha256": "623f468108d970eaf918362d50c44db4670906f00341733a9336d0d4fdc90855"
+        "sha256": "7548683efc5aa9b7a20f5b6a2dabd3ca5d3326ac57b9bc53a1af1d7126c21ae1"
       },
       "name": "target/release/tracerazor.exe"
     },
     {
       "digest": {
-        "sha256": "a63a553d01c2ff0e2fe4be7658334d05f74bf4adf64f7eb373ae01fb29a02a45"
+        "sha256": "c5d1982b11f4f5746d9147c89085fb1bc378ef7c64bd1b2221ba830a1cc96a3d"
       },
       "name": "paper/trice_v3_research_paper.pdf"
     },
     {
       "digest": {
-        "sha256": "b7bd76063e5b53b98d934562f642e4778a59e1c0b03b229de03d3aa9701ef19e"
+        "sha256": "47cb26cfe76abb0a70ea159d610abd9460cb1b7d6ee5fdefee03d710b9cf890b"
       },
       "name": "paper/trice_v3_research_manifest.json"
     },
     {
       "digest": {
-        "sha256": "273a1df9a8542526243ed59fbc78032886e66a100c62d5bb33cdab432c1d2f36"
+        "sha256": "1a1a3255ae72f9f4dde8f285e37a7e1130e5839a5b7817716e6077df9afa6f33"
       },
       "name": "docs/trice_artifact_card.json"
     },
     {
       "digest": {
-        "sha256": "2a6e22b58c2ab3af68bf77cea900c758d1e0e687a70a10eefd74743d6d303126"
+        "sha256": "bb25751668e879c2580ce9ea3d818f29850daca679ecdab1f56d617d3d3fdba1"
       },
       "name": "docs/trice_contract_card.json"
     },
     {
       "digest": {
-        "sha256": "f16c2a70c6b97b0bb311b5dc1cc4398eeb2d7a974f0e00255bda33a122fb16cf"
+        "sha256": "c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0"
       },
       "name": "docs/trice_crates_card.json"
     },
     {
       "digest": {
-        "sha256": "5ce2df710d1d8763ed25bdf6ab79464ada6e22b45982a0b37efbd7eb7a5244f6"
+        "sha256": "350c93766564c5bf47ceb91d086474d275565395d6dbc17b2961038f79e90969"
       },
       "name": "docs/trice_install_card.json"
     },
     {
       "digest": {
-        "sha256": "34762f6ff0511476a038dd1d4bf52e6923aa1ca899280a717ecab15afd66df54"
+        "sha256": "e5f083ab4c57b95acbbdb10a1a83dfd3bca87b73d9c1904d4bdda2a264975fce"
       },
       "name": "docs/trice_reproduction_card.json"
     },
     {
       "digest": {
-        "sha256": "2613a20f18eeecc0e1430474c5ea1138a87b917182608275c41f714426df08e1"
+        "sha256": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
       },
       "name": "docs/trice_research_card.json"
-    },
-    {
-      "digest": {
-        "sha256": "2be33fcbc0dad91032d6f5c15df1fc5f0e40816f6e88cc3b7bee7c9e0e347095"
-      },
-      "name": "dist/tracerazor-1.0.3.tar.gz"
     },
     {
       "digest": {
@@ -110,9 +104,9 @@
     },
     {
       "digest": {
-        "sha256": "bda47590b13ab949078d45f866ff2ae61ae2f736f2211945a66cba098facad36"
+        "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
       },
-      "name": "dist/tracerazor-1.0.3-py3-none-any.whl"
+      "name": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl"
     }
   ]
 }

@@ -174,7 +174,7 @@
     "sha256": "9c6efa67e57069208d5436b7ae808188b412f49a71d3d9ef32800a3e384a18a1",
     "source": "tracerazor/trice/cli.py"
   },
-  "contract_card_sha256": "b7ede1a8a29fcafaeba3264d4668554d76edd3edb46a5d33f4efccd1b04fb51c",
+  "contract_card_sha256": "ae780be1a3615bb51fc97a849dd39178a6ceed47cb7145aa0c82eb5fe0e2c546",
   "contract_level": "library_contract_locked",
   "contract_score": 100,
   "examples": [
@@ -258,18 +258,18 @@
       "sha256": "c41b0d813a04e357834cf2a0c88a39a4d665cb8ea858145cd665f7cd76a53416"
     },
     "pyproject": {
-      "bytes": 7372,
+      "bytes": 7274,
       "name": "pyproject.toml",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "6b22be0023ad0020fdd461467c053c888e0d1ec2e673dc72ea8fbfcac4f81323"
+      "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
     },
     "readme": {
-      "bytes": 88240,
+      "bytes": 86734,
       "name": "README.md",
       "path": "README.md",
       "present": true,
-      "sha256": "717f69be9e4273e8a9def7b6de2326c4f94b9353eb67b79a62fe48a53c502b7f"
+      "sha256": "9e4785baab70f8818940e90ee01050074048d7bd73c9dbca2416699cd59f9638"
     },
     "research_ledger": {
       "bytes": 35605,

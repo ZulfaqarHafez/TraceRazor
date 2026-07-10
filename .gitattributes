@@ -7,7 +7,11 @@ README.md text eol=lf
 pyproject.toml text eol=lf
 Cargo.toml text eol=lf
 Cargo.lock text eol=lf
+crates/**/Cargo.toml text eol=lf
 schemas/*.json text eol=lf
+examples/trice_* text eol=lf
+docs/public_trust_matrix.md text eol=lf
+docs/release_checklist.md text eol=lf
 
 # TRICE evidence is content-addressed: manifests record the exact sha256 and
 # byte-size of every artifact (see benchmark/trice/evidence.py). Those files

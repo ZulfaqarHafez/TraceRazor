@@ -18,20 +18,20 @@
 | dependency_versions_pinned | yes | {"tracerazor": {"tracerazor-core": "1.1.0", "tracerazor-ingest": "1.1.0", "tracerazor-semantic": "1.1.0", "tracerazor-server": "1.1.0", "tracerazor-store": "1.1.0"}, "tracerazor-core": {}, "tracerazor-ingest": {"tracerazor-core": "1.1.0"}, "tracerazor-semantic": {}, "tracerazor-server": {"tracerazor-core": "1.1.0", "tracerazor-ingest": "1.1.0", "tracerazor-semantic": "1.1.0", "tracerazor-store": "1.1.0"}, "tracerazor-store": {"tracerazor-core": "1.1.0"}} | all local crate dependencies pin the workspace version |
 | metadata_complete | yes | {"tracerazor": [], "tracerazor-core": [], "tracerazor-ingest": [], "tracerazor-semantic": [], "tracerazor-server": [], "tracerazor-store": []} | description, license, repository, readme, keywords, and categories are present |
 | stage_one_publishable | yes | {"tracerazor-core": true, "tracerazor-semantic": true} | first-stage crates have no unpublished local dependencies |
-| readme_install_honesty | yes | contains_cargo_install=False; skipped: target=1.1.0 latest=none | README does not claim cargo install until tracerazor is live on crates.io |
-| public_crates_live | no | {"tracerazor": "skipped", "tracerazor-core": "skipped", "tracerazor-ingest": "skipped", "tracerazor-semantic": "skipped", "tracerazor-server": "skipped", "tracerazor-store": "skipped"} | all six crates are published at the local version |
-| cargo_install_truth | no | skipped: target=1.1.0 latest=none | cargo install tracerazor is true for the local version |
+| readme_install_honesty | yes | contains_cargo_install=False; missing: target=1.1.0 latest=none | README does not claim cargo install until tracerazor is live on crates.io |
+| public_crates_live | no | {"tracerazor": "missing", "tracerazor-core": "missing", "tracerazor-ingest": "missing", "tracerazor-semantic": "missing", "tracerazor-server": "missing", "tracerazor-store": "missing"} | all six crates are published at the local version |
+| cargo_install_truth | no | missing: target=1.1.0 latest=none | cargo install tracerazor is true for the local version |
 
 ## Publish Order
 
 | Stage | Crate | Local dependencies | Registry | Currently publishable |
 |---:|---|---|---|---:|
-| 1 | `tracerazor-core` | none | skipped | yes |
-| 1 | `tracerazor-semantic` | none | skipped | yes |
-| 2 | `tracerazor-ingest` | tracerazor-core | skipped | no |
-| 2 | `tracerazor-store` | tracerazor-core | skipped | no |
-| 3 | `tracerazor-server` | tracerazor-core, tracerazor-ingest, tracerazor-semantic, tracerazor-store | skipped | no |
-| 4 | `tracerazor` | tracerazor-core, tracerazor-ingest, tracerazor-semantic, tracerazor-server, tracerazor-store | skipped | no |
+| 1 | `tracerazor-core` | none | missing | yes |
+| 1 | `tracerazor-semantic` | none | missing | yes |
+| 2 | `tracerazor-ingest` | tracerazor-core | missing | no |
+| 2 | `tracerazor-store` | tracerazor-core | missing | no |
+| 3 | `tracerazor-server` | tracerazor-core, tracerazor-ingest, tracerazor-semantic, tracerazor-store | missing | no |
+| 4 | `tracerazor` | tracerazor-core, tracerazor-ingest, tracerazor-semantic, tracerazor-server, tracerazor-store | missing | no |
 
 ## Commands
 
@@ -57,4 +57,4 @@
 
 ## Hash
 
-- crates card: `4ac820e72bae910669212235a9c888888cb42df8c105f32f4fb8b93235427d5c`
+- crates card: `2c03ff6c4d458cab4d0789c7bcc6dfcf7c50cc8fda823f01b623f6ed782bf198`
