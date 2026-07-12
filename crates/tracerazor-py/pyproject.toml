@@ -1,12 +1,13 @@
 [build-system]
-requires = ["maturin>=1.5,<2.0"]
+requires = ["maturin>=1.9.2,<2.0"]
 build-backend = "maturin"
 
 [project]
 name = "tracerazor-native"
 description = "Native PyO3 bindings for the TraceRazor auditor core."
 requires-python = ">=3.8"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",

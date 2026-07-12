@@ -13,7 +13,7 @@
       "resolvedDependencies": [
         {
           "digest": {
-            "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
+            "sha256": "4be7a3b566399a326c20039ffb391cff133d1ad0ac9b1f475f97095dc3f042c5"
           },
           "uri": "pyproject.toml"
         },
@@ -44,49 +44,61 @@
     },
     {
       "digest": {
-        "sha256": "2c2e8a764fec74e1a9a9b5b3146b375eb9aec39054fdfa4e86468913a64b3467"
+        "sha256": "3dcfbb340c8cf8be36a907935370813acfca0adfc29be5049798140931b7591d"
+      },
+      "name": "LICENSE"
+    },
+    {
+      "digest": {
+        "sha256": "6e1ad2d2451c1e4e854e34d83fccde037a2a523d5e846646b33ae91bf4b3c0dc"
+      },
+      "name": "THIRD_PARTY_NOTICES.md"
+    },
+    {
+      "digest": {
+        "sha256": "238219dcdb923f0e35ef1f24772b4bda13ae4f40ac453bf347eca24196c831ca"
       },
       "name": "paper/trice_v3_research_paper.pdf"
     },
     {
       "digest": {
-        "sha256": "564eb14772d42ef613a5def3a7f18ec6a5d50f378f8d8789fde1d46f0897d8cc"
+        "sha256": "4ca9de56f71c5498f84fdda4fdbc955bd5b0adcc45f7bb64869aa032010fb60a"
       },
       "name": "paper/trice_v3_research_manifest.json"
     },
     {
       "digest": {
-        "sha256": "9f28fe165889580da35c2aff05ce217d3efba1bb74289c090a447efc8a63724e"
+        "sha256": "dbf86de28860a8a23d59e049ad43122a65dfc338cea423e715502461fb7b42df"
       },
       "name": "docs/trice_artifact_card.json"
     },
     {
       "digest": {
-        "sha256": "9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11"
+        "sha256": "f4635c58f7f396076b119fbe1e1bae5e14385ec7493c4142fd4e66840ca733b3"
       },
       "name": "docs/trice_contract_card.json"
     },
     {
       "digest": {
-        "sha256": "c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0"
+        "sha256": "b18bbabb2e7d04a380ba68cdd8d99b96c0208fadff9942371d05d294c4a77d75"
       },
       "name": "docs/trice_crates_card.json"
     },
     {
       "digest": {
-        "sha256": "77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180"
+        "sha256": "d5528d855bd86026b9f6279e4f4eaa23605e92209b56ad6f3f3c6775ce5f0892"
       },
       "name": "docs/trice_install_card.json"
     },
     {
       "digest": {
-        "sha256": "ed4a21787b9120ec50dfb223f98bffa20b1a97c4ccad78001f83f8b59e209c44"
+        "sha256": "74ec65592fa039648a1b78fd73f133b6abf8a528ceb848fab35416ca02436cfa"
       },
       "name": "docs/trice_reproduction_card.json"
     },
     {
       "digest": {
-        "sha256": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
+        "sha256": "c1753dfa8b6c68b9bb2a1ebda01a3e37bd022a6801d2b5e136b2e94e8d77b804"
       },
       "name": "docs/trice_research_card.json"
     },
@@ -104,9 +116,9 @@
     },
     {
       "digest": {
-        "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
+        "sha256": "e0bca1a49cf564e3373cfa2dbd6ef761a9cfefeb115b24c129d67ff833b9998e"
       },
-      "name": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl"
+      "name": "C:/Users/zulfa/AppData/Local/Temp/tracerazor-readme-final-4f9708d1c6b84b009d6254bde70f7218/tracerazor-1.1.0-py3-none-win_amd64.whl"
     }
   ]
 }

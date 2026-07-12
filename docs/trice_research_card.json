@@ -102,11 +102,11 @@
     "www.acm.org": 2
   },
   "ledger": {
-    "bytes": 35605,
+    "bytes": 35638,
     "name": "trice_research_ledger.md",
     "path": "docs/trice_research_ledger.md",
     "present": true,
-    "sha256": "fd4bd4a9e466a6ce3100cb0ebc9e10f17b307109eafed2f1f1aaff4c7e5f5236"
+    "sha256": "0e9728b834c676d7399b3de80f10b6dd651198d75b783ffb6ca28fc0699b53d0"
   },
   "next_actions": [
     "Regenerate this card whenever the ledger, paper, README, or proof graph changes.",
@@ -125,7 +125,7 @@
     "Reproducible-build and supply-chain practice motivates hash-bound research, package, release, and provenance artifacts.",
     "TRICE treats its literature base as a versioned product input: if the ledger drifts, the paper, README, and integrity proof must be regenerated."
   ],
-  "research_card_sha256": "8fc4acd4bbfc30a06263602dcd44cdb2eb58a59cfcf03d337a9e38894e91b07b",
+  "research_card_sha256": "26b2c2025b9ad14b554df22ad150b50d56af53733c353c7d2b0c217e52b9af9b",
   "research_level": "research_basis_locked",
   "research_score": 100,
   "schema_version": "trice-research-card/v1",
@@ -1507,8 +1507,8 @@
       "category": "public_trust",
       "domain": "local",
       "index": 138,
-      "row_sha256": "628d519ee86e27e34b6792046c443deb8c73d8053097c229243c31525a56a24d",
-      "takeaway": "Wheels, sdist, CLI binary, SBOMs, checksums, provenance, proof cards, paper, and evidence bundles should verify together before publication.",
+      "row_sha256": "42fbb46f357e8efad5d134d96e146b95fa50cfb3b19ed49c7a94baab55c2ac20",
+      "takeaway": "Platform wheels, standalone binaries, legal-boundary files, SBOMs, checksums, provenance, proof cards, paper, and evidence bundles should verify together before publication.",
       "title": "TRICE release evidence packet",
       "url": "trice_release_evidence.md"
     },

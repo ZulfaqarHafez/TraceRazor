@@ -5,6 +5,7 @@ import sys
 
 from tracerazor._trice.release_evidence import build_release_evidence_card
 from tracerazor._trice.install import _install_score, _run_probe
+from tracerazor._trice.release import _next_actions
 
 
 def _check(card, name):
@@ -95,3 +96,18 @@ def test_import_probe_scrubs_structured_paths_after_parsing(tmp_path):
     assert probe["nested"]["artifact"].replace("\\", "/") == "<tmp>/private/wheel.whl"
     assert str(tmp_path).lower() not in json.dumps(receipt).lower()
     assert str(tmp_path).lower() not in json.dumps(probe).lower()
+
+
+def test_release_advice_never_reuses_an_existing_remote_tag() -> None:
+    checks = [
+        {
+            "name": "github_tag",
+            "passed": False,
+            "observed": "head=a97eb122463e local_tag=False remote_tag=True",
+        }
+    ]
+
+    actions = _next_actions(checks, "1.1.0")
+
+    assert any("must not be reused" in action for action in actions)
+    assert all("Create and push the v1.1.0 tag" not in action for action in actions)

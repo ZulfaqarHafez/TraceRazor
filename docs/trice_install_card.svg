@@ -17,5 +17,5 @@
 <rect x="772" y="96" width="138" height="58" rx="8" fill="#7c3aed"/>
 <text x="841" y="132" text-anchor="middle" font-family="Inter,Segoe UI,Arial" font-size="15" font-weight="700" fill="#ffffff">rust cli</text>
 <text x="28" y="214" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">Generic wheels may be Python/TRICE-ready while full Rust CLI bundling remains a platform-wheel release task.</text>
-<text x="28" y="238" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">hash 912d52ec96133345...</text>
+<text x="28" y="238" font-family="Inter,Segoe UI,Arial" font-size="12" fill="#6b7280">hash 1037e3b89ac0eef9...</text>
 </svg>

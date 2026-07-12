@@ -12,6 +12,7 @@ cargo fmt --all -- --check
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo audit
+cargo deny check licenses
 python -m pip_audit --progress-spinner off .
 python -m pytest -q
 git diff --check
@@ -68,7 +69,8 @@ tracerazor audit <sample> --hermetic --format json
 
 The installed distribution must resolve its own native binary and contain the
 event schema, canonical Agent Skill, Codex plugin, Claude plugin, Gemini
-extension, policy template, and MCP catalog.
+extension, policy template, MCP catalog, project license, and third-party
+notices.
 
 Generate the install receipt against the Linux x86-64 wheel explicitly; never
 let an alphabetical wheel selection choose a foreign platform wheel:
@@ -93,6 +95,8 @@ artifacts are:
 
 - five platform wheels;
 - five matching standalone archives;
+- the project license and third-party notices inside every wheel, standalone
+  archive, and runtime image;
 - `SHA256SUMS` covering every wheel, archive, and evidence file;
 - CycloneDX SBOMs plus SHA-256 checksums for the staged release artifacts;
 - GitHub artifact attestations;

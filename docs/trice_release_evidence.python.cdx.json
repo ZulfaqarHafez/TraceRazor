@@ -2,6 +2,11 @@
   "bomFormat": "CycloneDX",
   "components": [
     {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
       "name": "tracerazor",
       "purl": "pkg:pypi/tracerazor@1.1.0",
       "type": "application",
@@ -231,7 +236,7 @@
       }
     ]
   },
-  "serialNumber": "urn:uuid:f0e8f13d-b488-0864-1088-0afbda76f4a5",
+  "serialNumber": "urn:uuid:021d70da-2487-2f87-8efd-fd6b27a9dd6e",
   "specVersion": "1.6",
   "version": 1
 }

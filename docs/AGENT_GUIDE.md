@@ -324,8 +324,9 @@ sessions without opening each folder.
 
 - **Below minimum steps** (skip, not error): exits **0**, prints to stderr
   `Notice: Trace '<id>' has <n> steps (minimum 5 required). Use --min-steps to audit
-  short traces.` and emits **no report** (in JSON mode, stdout is empty). Recovery: pass
-  `--min-steps 2`, or accept that the run is too short to audit.
+  short traces.` Text mode emits no report body; JSON mode emits a structured
+  `{"status":"skipped"}` object. Recovery: pass `--min-steps 2`, or accept that
+  the run is too short to audit.
 - **Unreadable / missing input**: exits **2**, `Error: Cannot read file: <path>: The
   system cannot find the file specified. (os error 2)`. Recovery: fix the path; check
   it is JSON (or JSONL for Claude Code).

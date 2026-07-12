@@ -123,7 +123,7 @@
       "bytes": 7364,
       "path": "paper/trice_v3_research_manifest.json",
       "present": true,
-      "sha256": "564eb14772d42ef613a5def3a7f18ec6a5d50f378f8d8789fde1d46f0897d8cc"
+      "sha256": "4ca9de56f71c5498f84fdda4fdbc955bd5b0adcc45f7bb64869aa032010fb60a"
     },
     "paper_result": {
       "bytes": 45736,
@@ -156,7 +156,7 @@
     "Do not claim S-tier until held-out claim evidence and claim card pass."
   ],
   "python_executable": "python",
-  "reproduction_card_sha256": "13ec81b29cdc5a3f16680c69cf040d4b0dca074d538aec2079e5addcfa6f294c",
+  "reproduction_card_sha256": "625f954a822e6e79eac8a4b96432c8b9fcf534ee48bdd14fbc04ce491552a971",
   "reproduction_level": "reviewer_replay_ready_smoke",
   "reproduction_score": 100,
   "research_basis": [

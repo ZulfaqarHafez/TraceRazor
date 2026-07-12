@@ -134,15 +134,15 @@
     }
   ],
   "crates_card_level": "publish_plan_locked",
-  "crates_card_sha256": "2c03ff6c4d458cab4d0789c7bcc6dfcf7c50cc8fda823f01b623f6ed782bf198",
+  "crates_card_sha256": "3a483eabe56934916f6c06b704a601c0cee601a14a31aacabfc386385ac0d358",
   "crates_publish_score": 80,
   "inputs": {
     "readme": {
-      "bytes": 86734,
+      "bytes": 20271,
       "name": "README.md",
       "path": "README.md",
       "present": true,
-      "sha256": "9e4785baab70f8818940e90ee01050074048d7bd73c9dbca2416699cd59f9638"
+      "sha256": "15fb513d3f5452528ce3ccacf7e625369064165973382c658ab59b239efde629"
     },
     "tracerazor": {
       "bytes": 1245,

@@ -913,6 +913,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--remote-suite-manifest", type=Path, default=DEFAULT_REMOTE_SUITE_MANIFEST)
     ap.add_argument("--remote-suite-bundle", type=Path, default=DEFAULT_REMOTE_SUITE_BUNDLE)
     ap.add_argument("--readiness-manifest", type=Path, default=DEFAULT_READINESS_MANIFEST)
+    ap.add_argument("--dist-dir", type=Path, default=REPO / "dist")
     ap.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
     ap.add_argument("--docs-dir", type=Path, default=DEFAULT_DOCS_DIR)
     args = ap.parse_args(argv)
@@ -939,7 +940,7 @@ def main(argv: list[str] | None = None) -> int:
     protocol_card = build_protocol_lock(args.readiness_manifest)
     contract_card = build_contract_card()
     crates_card = build_crates_card()
-    install_card = build_install_card()
+    install_card = build_install_card(dist_dir=args.dist_dir)
     research_card = build_research_card()
     args.out_dir.mkdir(parents=True, exist_ok=True)
     args.docs_dir.mkdir(parents=True, exist_ok=True)
@@ -1089,7 +1090,10 @@ def main(argv: list[str] | None = None) -> int:
     artifact_card = build_artifact_card(reproduction_path=docs_reproduction_path, contract_path=docs_contract_path)
     write_artifact_outputs(artifact_card, paper_artifact_path)
     write_artifact_outputs(artifact_card, docs_artifact_path)
-    release_evidence_card = build_release_evidence_card(sidecar_stem=docs_release_evidence_path.stem)
+    release_evidence_card = build_release_evidence_card(
+        dist_dir=args.dist_dir,
+        sidecar_stem=docs_release_evidence_path.stem,
+    )
     write_release_evidence_outputs(release_evidence_card, paper_release_evidence_path)
     write_release_evidence_outputs(release_evidence_card, docs_release_evidence_path)
     print(f"tex: {tex_path}")

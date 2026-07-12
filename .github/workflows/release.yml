@@ -105,6 +105,8 @@ jobs:
         run: |
           cargo install cargo-audit --locked
           cargo audit
+          cargo install cargo-deny --locked
+          cargo deny check licenses
 
   wheels:
     name: Platform wheel (${{ matrix.os }})
@@ -170,6 +172,8 @@ jobs:
           python -m build --wheel
           $wheel = Get-ChildItem dist\tracerazor-*-py3-none-any.whl | Sort-Object LastWriteTime -Descending | Select-Object -First 1
           python -m wheel tags --platform-tag win_amd64 --remove $wheel.FullName
+      - name: Verify wheel legal files
+        run: python scripts/verify_wheel_licenses.py dist
       - name: Clean-room smoke on declared platform baseline (Unix)
         if: runner.os != 'Windows'
         run: |
@@ -268,13 +272,18 @@ jobs:
       - name: Package (Unix)
         if: runner.os != 'Windows'
         run: |
-          tar -czf tracerazor-${{ matrix.target }}.tar.gz \
-            -C target/${{ matrix.target }}/release tracerazor
+          mkdir -p standalone-package
+          cp target/${{ matrix.target }}/release/tracerazor standalone-package/
+          cp LICENSE THIRD_PARTY_NOTICES.md standalone-package/
+          tar -czf tracerazor-${{ matrix.target }}.tar.gz -C standalone-package .
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Compress-Archive -Path target\${{ matrix.target }}\release\tracerazor.exe `
+          New-Item -ItemType Directory -Force standalone-package | Out-Null
+          Copy-Item target\${{ matrix.target }}\release\tracerazor.exe standalone-package\
+          Copy-Item LICENSE,THIRD_PARTY_NOTICES.md standalone-package\
+          Compress-Archive -Path standalone-package\* `
             -DestinationPath tracerazor-${{ matrix.target }}.zip
       - uses: actions/upload-artifact@v4
         with:

@@ -35,20 +35,20 @@
 | readiness | yes | `docs/trice_suite_readiness.json` | `f98e2481ce47a262e618f0adee5481ee7227347e900613bfc68115cc420be1d7` |
 | protocol_lock | yes | `docs/trice_protocol_lock.json` | `3e71413180ad94f43be0b6a35717ced48359b75ea382035c524a9b91e5e8296e` |
 | design_card | yes | `docs/trice_design_card.json` | `dffa666fb9ba1deff7ba467da24b68b7dd4c19d5f0b0fa2e8c0f3cb45be74d39` |
-| reproduction_card | yes | `docs/trice_reproduction_card.json` | `ed4a21787b9120ec50dfb223f98bffa20b1a97c4ccad78001f83f8b59e209c44` |
-| contract_card | yes | `docs/trice_contract_card.json` | `9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11` |
-| install_card | yes | `docs/trice_install_card.json` | `77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180` |
-| research_card | yes | `docs/trice_research_card.json` | `2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18` |
+| reproduction_card | yes | `docs/trice_reproduction_card.json` | `74ec65592fa039648a1b78fd73f133b6abf8a528ceb848fab35416ca02436cfa` |
+| contract_card | yes | `docs/trice_contract_card.json` | `f4635c58f7f396076b119fbe1e1bae5e14385ec7493c4142fd4e66840ca733b3` |
+| install_card | yes | `docs/trice_install_card.json` | `d5528d855bd86026b9f6279e4f4eaa23605e92209b56ad6f3f3c6775ce5f0892` |
+| research_card | yes | `docs/trice_research_card.json` | `c1753dfa8b6c68b9bb2a1ebda01a3e37bd022a6801d2b5e136b2e94e8d77b804` |
 | claim | yes | `docs/trice_claim_card.json` | `5bf4de6c6ae6c74b7bfcef12a924890ae633183ad8120d707f6531a9a1b8f9cf` |
 | remote_smoke_claim | yes | `docs/trice_remote_smoke_claim_card.json` | `e296651963ef02ccfde115ab59f0cc87e5d938548878ed63ef8f8660113da641` |
 | evidence_bundle | yes | `benchmark/trice/results/v2-broad-smoke/trice_broad_smoke_evidence.trice.zip` | `08ee5538891932f64e5c4e80ac63833257802b533d5b4a5a50adbe860b65a37c` |
 | remote_smoke_bundle | yes | `benchmark/trice/results/v2-remote-smoke/trice_remote_smoke_evidence.trice.zip` | `93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d` |
-| paper_manifest | yes | `paper/trice_v3_research_manifest.json` | `564eb14772d42ef613a5def3a7f18ec6a5d50f378f8d8789fde1d46f0897d8cc` |
+| paper_manifest | yes | `paper/trice_v3_research_manifest.json` | `4ca9de56f71c5498f84fdda4fdbc955bd5b0adcc45f7bb64869aa032010fb60a` |
 | paper_result | yes | `benchmark/trice/results/v2-smoke/trice_v2_live_results.json` | `edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a` |
 | paper_tex | yes | `paper/trice_v3_research_paper.tex` | `d2b054232679cedf748ccf2a3b95c283e3a148a57e7c0cbaafbde0a3ef527709` |
-| paper_pdf | yes | `paper/trice_v3_research_paper.pdf` | `2c2e8a764fec74e1a9a9b5b3146b375eb9aec39054fdfa4e86468913a64b3467` |
-| readme | yes | `README.md` | `9e4785baab70f8818940e90ee01050074048d7bd73c9dbca2416699cd59f9638` |
-| library_doc | yes | `docs/trice_library.md` | `a256eb788c0dc9c04a976e19e1ca0f8a788c2c5b03e2b8433f3114cff55524bf` |
+| paper_pdf | yes | `paper/trice_v3_research_paper.pdf` | `238219dcdb923f0e35ef1f24772b4bda13ae4f40ac453bf347eca24196c831ca` |
+| readme | yes | `README.md` | `15fb513d3f5452528ce3ccacf7e625369064165973382c658ab59b239efde629` |
+| library_doc | yes | `docs/trice_library.md` | `09b3e7346ec3df51769f1d7719174f6a9c5b075eb6cb51f7bb9715a426905d90` |
 
 ## Next Actions
 
@@ -58,4 +58,4 @@
 
 ## Hash
 
-- artifact card: `fc4dfe2194384110ad32a4c892eb93f8a424b08a87a235c4a878212016ce53ec`
+- artifact card: `112bcf35b63d187538fe2e6034035fec25e6a545315c312adfd08be42e0c22ae`

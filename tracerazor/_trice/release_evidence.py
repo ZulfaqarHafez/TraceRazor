@@ -6,6 +6,8 @@ import argparse
 import hashlib
 import json
 import re
+import shutil
+import subprocess
 import sys
 try:
     import tomllib
@@ -21,6 +23,8 @@ REPO = Path(__file__).resolve().parents[2]
 DEFAULT_OUT = REPO / "docs" / "trice_release_evidence.json"
 DEFAULT_DIST = REPO / "dist"
 DEFAULT_ARTIFACT_PATHS = {
+    "project_license": ("legal", REPO / "LICENSE"),
+    "third_party_notices": ("legal", REPO / "THIRD_PARTY_NOTICES.md"),
     "contract_card": ("proof-card", REPO / "docs" / "trice_contract_card.json"),
     "artifact_card": ("proof-card", REPO / "docs" / "trice_artifact_card.json"),
     "reproduction_card": ("proof-card", REPO / "docs" / "trice_reproduction_card.json"),
@@ -66,11 +70,14 @@ def build_release_evidence_card(
         _check("sdist_absent", _kind_count(artifacts, "sdist") == 0, _kind_count(artifacts, "sdist"), "no source distribution until it can satisfy the bundled-auditor contract"),
         _check("cli_binary_present", _kind_count(artifacts, "binary") >= 1, _kind_count(artifacts, "binary"), "one built CLI binary"),
         _check("proof_cards_present", _all_named_present(artifacts, ["contract_card", "artifact_card", "reproduction_card", "crates_card", "install_card", "research_card"]), _present_named(artifacts, ["contract_card", "artifact_card", "reproduction_card", "crates_card", "install_card", "research_card"]), "contract, artifact, reproduction, crates, installability, and research cards"),
+        _check("license_notices_present", _all_named_present(artifacts, ["project_license", "third_party_notices"]), _present_named(artifacts, ["project_license", "third_party_notices"]), "project license and third-party notices"),
         _check("evidence_bundles_present", _all_named_present(artifacts, ["broad_evidence_bundle", "remote_smoke_bundle"]), _present_named(artifacts, ["broad_evidence_bundle", "remote_smoke_bundle"]), "broad and remote smoke evidence bundles"),
         _check("paper_artifacts_present", _all_named_present(artifacts, ["paper_pdf", "paper_manifest"]), _present_named(artifacts, ["paper_pdf", "paper_manifest"]), "paper PDF and paper manifest"),
         _check("artifact_hashes_present", all(row.get("sha256") for row in artifacts if row.get("present")), _hash_count(artifacts), "every present artifact has a SHA-256 digest"),
         _check("python_sbom_generated", python_sbom["component_count"] >= 1, python_sbom["component_count"], "CycloneDX-style Python SBOM"),
         _check("cargo_sbom_generated", cargo_sbom["component_count"] >= 1, cargo_sbom["component_count"], "CycloneDX-style Cargo SBOM"),
+        _check("python_project_license_in_sbom", python_sbom["licensed_component_count"] >= 1, python_sbom["licensed_component_count"], "the TraceRazor Python component carries its SPDX license expression"),
+        _check("cargo_sbom_license_coverage", cargo_sbom["component_count"] > 0 and cargo_sbom["licensed_component_count"] == cargo_sbom["component_count"], cargo_sbom["licensed_component_count"], "every Cargo component carries a resolved license expression"),
         _check("provenance_statement_generated", len(provenance_statement["subject"]) >= 1, len(provenance_statement["subject"]), "in-toto/SLSA-shaped provenance statement"),
         _check("sidecars_hashed", all(row.get("sha256") for row in sidecars), _hash_count(sidecars), "checksums, SBOMs, and provenance sidecars have hashes"),
     ]
@@ -331,13 +338,20 @@ def _dir_row(path: Path) -> dict[str, Any]:
 
 def _python_sbom(pyproject: dict[str, Any], package_name: str, version: str) -> dict[str, Any]:
     project = pyproject.get("project") if isinstance(pyproject.get("project"), dict) else {}
+    license_expression = project.get("license")
+    if isinstance(license_expression, dict):
+        license_expression = license_expression.get("text")
+    license_expression = str(license_expression or "").strip()
+    application = {
+        "type": "application",
+        "name": package_name,
+        "version": version,
+        "purl": f"pkg:pypi/{package_name}@{version}" if version else f"pkg:pypi/{package_name}",
+    }
+    if license_expression:
+        application["licenses"] = [{"expression": license_expression}]
     components = [
-        {
-            "type": "application",
-            "name": package_name,
-            "version": version,
-            "purl": f"pkg:pypi/{package_name}@{version}" if version else f"pkg:pypi/{package_name}",
-        }
+        application
     ]
     for dep in project.get("dependencies") or []:
         name = _requirement_name(str(dep))
@@ -367,7 +381,13 @@ def _python_sbom(pyproject: dict[str, Any], package_name: str, version: str) -> 
         },
         "components": components,
     }
-    return {"format": "CycloneDX", "spec_version": "1.6", "component_count": len(components), "bom": bom}
+    return {
+        "format": "CycloneDX",
+        "spec_version": "1.6",
+        "component_count": len(components),
+        "licensed_component_count": _licensed_component_count(components),
+        "bom": bom,
+    }
 
 
 def _cargo_sbom(cargo_lock: Path) -> dict[str, Any]:
@@ -375,6 +395,7 @@ def _cargo_sbom(cargo_lock: Path) -> dict[str, Any]:
     if cargo_lock.is_file():
         data = tomllib.loads(cargo_lock.read_text(encoding="utf-8"))
         packages = data.get("package") if isinstance(data.get("package"), list) else []
+    license_map = _cargo_license_map()
     components = []
     for pkg in packages:
         if not isinstance(pkg, dict):
@@ -384,6 +405,9 @@ def _cargo_sbom(cargo_lock: Path) -> dict[str, Any]:
         if not name:
             continue
         row = {"type": "library", "name": name, "version": version, "purl": f"pkg:cargo/{name}@{version}"}
+        license_expression = license_map.get((name, version))
+        if license_expression:
+            row["licenses"] = [{"expression": license_expression}]
         checksum = pkg.get("checksum")
         if checksum:
             row["hashes"] = [{"alg": "SHA-256", "content": str(checksum)}]
@@ -400,7 +424,66 @@ def _cargo_sbom(cargo_lock: Path) -> dict[str, Any]:
         },
         "components": components,
     }
-    return {"format": "CycloneDX", "spec_version": "1.6", "component_count": len(components), "bom": bom}
+    return {
+        "format": "CycloneDX",
+        "spec_version": "1.6",
+        "component_count": len(components),
+        "licensed_component_count": _licensed_component_count(components),
+        "bom": bom,
+    }
+
+
+def _cargo_license_map() -> dict[tuple[str, str], str]:
+    """Resolve Cargo license expressions without consulting a network service."""
+
+    cargo_toml = REPO / "Cargo.toml"
+    cargo_lock = REPO / "Cargo.lock"
+    if not cargo_toml.is_file() or not cargo_lock.is_file():
+        return {}
+    cargo = shutil.which("cargo")
+    if cargo is None:
+        candidate = Path.home() / ".cargo" / "bin" / ("cargo.exe" if sys.platform.startswith("win") else "cargo")
+        cargo = str(candidate) if candidate.is_file() else None
+    if cargo is None:
+        return {}
+    try:
+        completed = subprocess.run(
+            [cargo, "metadata", "--locked", "--format-version", "1"],
+            cwd=REPO,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return {}
+    if completed.returncode != 0:
+        return {}
+    try:
+        metadata = json.loads(completed.stdout)
+    except json.JSONDecodeError:
+        return {}
+    packages = metadata.get("packages") if isinstance(metadata, dict) else []
+    licenses: dict[tuple[str, str], str] = {}
+    for package in packages if isinstance(packages, list) else []:
+        if not isinstance(package, dict):
+            continue
+        name = str(package.get("name") or "")
+        version = str(package.get("version") or "")
+        expression = _normalise_license_expression(str(package.get("license") or ""))
+        if name and version and expression:
+            licenses[(name, version)] = expression
+    return licenses
+
+
+def _licensed_component_count(components: list[dict[str, Any]]) -> int:
+    return sum(1 for component in components if component.get("licenses"))
+
+
+def _normalise_license_expression(expression: str) -> str:
+    """Normalise legacy Cargo slash separators to SPDX `OR` syntax."""
+
+    return re.sub(r"\s*/\s*", " OR ", expression.strip())
 
 
 def _provenance_statement(package_name: str, version: str, artifacts: list[dict[str, Any]], pyproject: Path, cargo_lock: Path) -> dict[str, Any]:

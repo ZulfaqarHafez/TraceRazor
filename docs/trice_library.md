@@ -394,7 +394,7 @@ TRICE separates preflight, outcome, and artifact-review claims:
   hash, and deterministic rebuild. Public release readiness requires PyPI,
   piwheels, crates.io, GitHub tag, and GitHub Actions to be green.
 - `release-evidence` emits `trice-release-evidence/v1`, a release asset packet
-  that binds wheels, sdist, Rust CLI binary, proof cards including the crates
+  that binds platform wheels, Rust CLI binary, legal-boundary files, proof cards including the crates
   publish card and installability card, paper artifacts, evidence bundles, SHA-256 checksums,
   CycloneDX-style Python and Cargo SBOMs, and an in-toto/SLSA-shaped provenance
   statement.

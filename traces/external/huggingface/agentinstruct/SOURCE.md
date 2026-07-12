@@ -4,8 +4,14 @@ These traces are converted from the Hugging Face dataset
 [`zai-org/AgentInstruct`](https://huggingface.co/datasets/zai-org/AgentInstruct)
 — the renamed `THUDM/AgentInstruct` corpus of **1,866 real ReAct agent
 trajectories** (28.5K downloads, 235 likes), introduced in *AgentTuning:
-Enabling Generalized Agent Abilities for LLMs* (arXiv:2310.12823). License:
-Apache-2.0.
+Enabling Generalized Agent Abilities for LLMs* (arXiv:2310.12823).
+
+**License status:** unconfirmed as of 2026-07-12. The Hugging Face dataset
+card/API does not declare a license, and the linked upstream AgentTuning
+repository does not publish a repository license. Do not assume Apache-2.0 or
+redistribute this sample as a TraceRazor product asset without resolving
+permission. The sample and converted traces are excluded from distribution
+artifacts; they remain source-tree research inputs with provenance retained.
 
 ## What is here
 

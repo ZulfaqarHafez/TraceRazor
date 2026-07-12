@@ -14,7 +14,7 @@
     {
       "bytes": 13384,
       "path": "trice_v3_research_paper.pdf",
-      "sha256": "2c2e8a764fec74e1a9a9b5b3146b375eb9aec39054fdfa4e86468913a64b3467"
+      "sha256": "238219dcdb923f0e35ef1f24772b4bda13ae4f40ac453bf347eca24196c831ca"
     },
     {
       "bytes": 2943,
@@ -124,12 +124,12 @@
     {
       "bytes": 19194,
       "path": "trice_contract_card.json",
-      "sha256": "9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11"
+      "sha256": "f4635c58f7f396076b119fbe1e1bae5e14385ec7493c4142fd4e66840ca733b3"
     },
     {
       "bytes": 3073,
       "path": "trice_contract_card.md",
-      "sha256": "6f06c0b1b0f3c3027fe5a18d8a5159e2ba443748a578c3b78b2ebabced258678"
+      "sha256": "022d56cb4edfc30707d6368b4b8f20ab4d7e86af5bb9f80ab05e816953daad7d"
     },
     {
       "bytes": 2281,
@@ -144,12 +144,12 @@
     {
       "bytes": 21475,
       "path": "trice_crates_card.json",
-      "sha256": "c91d94c89917648a342f296684973e638cc820863025800e316d3bb3c39d6ef0"
+      "sha256": "b18bbabb2e7d04a380ba68cdd8d99b96c0208fadff9942371d05d294c4a77d75"
     },
     {
       "bytes": 4314,
       "path": "trice_crates_card.md",
-      "sha256": "99e8f2ad5e99a449535de0c79f8a794b06a21d7a1ce9e923f41e8ec6c7a5fd12"
+      "sha256": "0c680f5a9e06bcb1d12d9c331be4ef34357d4c6eeb6abafa6cf051e05ef67497"
     },
     {
       "bytes": 1586,
@@ -159,17 +159,17 @@
     {
       "bytes": 2098,
       "path": "trice_crates_card.svg",
-      "sha256": "2894bb9c8fb51272c8e456c467fdeffb36c4401dc1b6962bf3ea2384f9a41fba"
+      "sha256": "7895491da9c5d2c1db593ba975d671bacf07070539584623276edd84d3939ccd"
     },
     {
-      "bytes": 13941,
+      "bytes": 14035,
       "path": "trice_install_card.json",
-      "sha256": "77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180"
+      "sha256": "d5528d855bd86026b9f6279e4f4eaa23605e92209b56ad6f3f3c6775ce5f0892"
     },
     {
-      "bytes": 3340,
+      "bytes": 3335,
       "path": "trice_install_card.md",
-      "sha256": "8989afa1e13b01b47c195c4cce063ca59dff19f4755e43accb1f9a3cacf9531d"
+      "sha256": "c36859ba25e66f08b3e60232f1d0fceedf540b0680dfc5e82b305f5d9152e051"
     },
     {
       "bytes": 1460,
@@ -179,17 +179,17 @@
     {
       "bytes": 2115,
       "path": "trice_install_card.svg",
-      "sha256": "9ff5877ca7dfb8c45ef20e6876938d841a54c07719c3b638ecdc2cf7de4e2a10"
+      "sha256": "7df0553b413ebefe5b7839dc0f158586c2dd81b29219404d4999b25774e36d9e"
     },
     {
-      "bytes": 69670,
+      "bytes": 69703,
       "path": "trice_research_card.json",
-      "sha256": "2095432965bb86bb3a559aa2bd2ef3375d688910ea4f00315fb75ac4c6019e18"
+      "sha256": "c1753dfa8b6c68b9bb2a1ebda01a3e37bd022a6801d2b5e136b2e94e8d77b804"
     },
     {
       "bytes": 2976,
       "path": "trice_research_card.md",
-      "sha256": "4e80e58ca503e9b2231cd3872492d8a62580c221e2c0eab0809de1d40e4a6a6d"
+      "sha256": "6e8a1fd61b3c82c131f00882ecc629016fe58ff4ecad6e2d11731a71d33448f9"
     },
     {
       "bytes": 1934,

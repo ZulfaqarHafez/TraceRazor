@@ -38,13 +38,13 @@ whole traces, and auditing multi-agent reasoning trees. See sources below.
 
 | Capability | Observability platforms (LangSmith, Langfuse, Phoenix, Weave, ...) | TraceRazor |
 |---|---|---|
-| Trace capture, token/cost/latency | Yes, mature | Ingests their JSON; not its own collector |
+| Trace capture, token/cost/latency | Yes, mature | Agent hooks, runtime API, local OTLP/HTTP receiver, and external JSON import |
 | Hosted dashboard / live monitoring / alerting | Yes | No (offline CLI + library; embedded dashboard is optional) |
-| Decomposed waste categories (redundancy, loops, verbosity, ...) | No (TruLens has some redundancy/coherence evals) | Yes, 13 sub-metrics |
+| Decomposed waste categories (redundancy, loops, verbosity, ...) | No (TruLens has some redundancy/coherence evals) | Yes, 8 weighted signals + 6 diagnostics, with TPE and AGF reported separately |
 | Single efficiency score per run | No | Yes (TAS), calibratable to recoverable waste |
 | Machine-applicable fix patches + optimal-path diff | No | Yes |
 | Estimated token/$ savings per fix | Cost shown, not per-fix savings | Yes (estimates; `bench` for measured) |
-| Consensus / adaptive sampling helpers | No | Yes (LangGraph drop-ins) |
+| Consensus / adaptive sampling helpers | No | Labs only (LangGraph drop-ins) |
 | Runs fully offline, no API key, no SaaS | Rarely | Yes (core analysis) |
 | Hosted SaaS, large integration ecosystem, funded team | Yes | No (single-author, library-first) |
 
@@ -53,7 +53,7 @@ whole traces, and auditing multi-agent reasoning trees. See sources below.
 - **Decomposition and fixes.** It is built to answer "which tokens are
   recoverable and what do I change," not just "what did this cost."
 - **Offline and embeddable.** The core has zero network dependencies and ships
-  as a Rust CLI plus a zero-dependency Python package. It fits in CI and in a
+  as a Rust CLI plus a lightweight Python package. It fits in CI and in a
   subprocess, not only in a hosted UI.
 - **Calibratable.** The efficiency score can be fit to measured recoverable
   waste on your own data (see `calibration/`), rather than being a fixed vendor

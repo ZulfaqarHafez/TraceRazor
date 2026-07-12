@@ -33,6 +33,7 @@ TraceRazor_PRD*
 # The agent wheel is built inside Docker and requires its package readme and
 # canonical skill/plugin Markdown even though the rest of the docs stay out.
 !README.md
+!THIRD_PARTY_NOTICES.md
 !skills/tracerazor/SKILL.md
 !.agents/skills/tracerazor/SKILL.md
 !plugins/tracerazor/skills/tracerazor/SKILL.md

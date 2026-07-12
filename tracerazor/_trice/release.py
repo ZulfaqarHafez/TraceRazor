@@ -415,11 +415,18 @@ def _next_actions(checks: list[dict[str, Any]], version: str) -> list[str]:
             "Run the held-out claim suite before any S-tier wording.",
         ]
     actions = []
+    tag_check = next((row for row in checks if row["name"] == "github_tag"), {})
+    remote_tag_exists = "remote_tag=True" in str(tag_check.get("observed") or "")
     mapping = {
         "pypi": f"Publish {version} to PyPI only after local release gates pass.",
         "piwheels": "Informational only for 1.1: do not add an sdist solely for piwheels.",
         "crates_io": "Optional: publish Rust crates only after declaring a stable public Rust API; keep cargo-install claims out of the README meanwhile.",
-        "github_tag": f"Create and push the v{version} tag only after local gates pass.",
+        "github_tag": (
+            f"The remote v{version} tag already exists and must not be reused; fetch it for verification, "
+            "or bump the version and create a new immutable tag for the next release."
+            if remote_tag_exists
+            else f"Create and push the v{version} tag only after local gates pass."
+        ),
         "github_actions": "Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.",
         "openssf_scorecard": "Run and publish OpenSSF Scorecard until the public score is at least 7.0.",
         "artifact_card_verifies": "Regenerate and verify the artifact card.",

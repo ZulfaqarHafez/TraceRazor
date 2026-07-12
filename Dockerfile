@@ -47,7 +47,10 @@ WORKDIR /app
 COPY --from=builder /build/target/release/tracerazor-server ./
 COPY --from=builder /build/target/release/tracerazor ./
 COPY --from=dashboard /build/dashboard/dist ./dashboard/dist
-COPY traces/ ./traces/
+COPY LICENSE THIRD_PARTY_NOTICES.md ./licenses/
+# Only the project-owned support trace is a runtime asset. External research
+# corpora remain source-tree inputs and are not redistributed in the image.
+COPY traces/support-agent-run-2847.json ./traces/support-agent-run-2847.json
 
 # Data directory for the persistent SQLite database file.
 RUN mkdir -p /app/data

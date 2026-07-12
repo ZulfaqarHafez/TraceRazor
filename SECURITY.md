@@ -3,7 +3,7 @@
 ## Supported Versions
 
 Security fixes are accepted for the latest published minor line. At the time of
-this policy, the active line is 1.0.x.
+this policy, the active line is 1.1.x.
 
 ## Reporting a Vulnerability
 
@@ -51,8 +51,8 @@ cargo audit
 cargo deny check
 python -m pip_audit --progress-spinner off .
 python -m pytest
-python -m build --sdist --wheel
-python -m twine check dist/*
+bash scripts/build_platform_wheel.sh
+python -m twine check dist/*.whl
 tracerazor-trice doctor --format json
 ```
 

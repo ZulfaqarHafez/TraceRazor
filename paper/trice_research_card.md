@@ -69,4 +69,4 @@
 
 ## Hash
 
-- research card: `8fc4acd4bbfc30a06263602dcd44cdb2eb58a59cfcf03d337a9e38894e91b07b`
+- research card: `26b2c2025b9ad14b554df22ad150b50d56af53733c353c7d2b0c217e52b9af9b`

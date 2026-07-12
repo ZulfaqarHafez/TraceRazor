@@ -8,11 +8,14 @@ wheel\_present & yes & at least one wheel artifact \\
 sdist\_absent & yes & no source distribution until it can satisfy the bundled-auditor contract \\
 cli\_binary\_present & yes & one built CLI binary \\
 proof\_cards\_present & yes & contract, artifact, reproduction, crates, installability, and research cards \\
+license\_notices\_present & yes & project license and third-party notices \\
 evidence\_bundles\_present & yes & broad and remote smoke evidence bundles \\
 paper\_artifacts\_present & yes & paper PDF and paper manifest \\
 artifact\_hashes\_present & yes & every present artifact has a SHA-256 digest \\
 python\_sbom\_generated & yes & CycloneDX-style Python SBOM \\
 cargo\_sbom\_generated & yes & CycloneDX-style Cargo SBOM \\
+python\_project\_license\_in\_sbom & yes & the TraceRazor Python component carries its SPDX license expression \\
+cargo\_sbom\_license\_coverage & yes & every Cargo component carries a resolved license expression \\
 provenance\_statement\_generated & yes & in-toto/SLSA-shaped provenance statement \\
 sidecars\_hashed & yes & checksums, SBOMs, and provenance sidecars have hashes \\
 \end{tabular}

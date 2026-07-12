@@ -56,17 +56,15 @@ fi
 if [[ "$PYTHON" == "1" ]]; then
     echo "==> Building Python artifacts (PyPI)"
     rm -rf dist build *.egg-info
-    # sdist first, then the platform wheel with the bundled CLI binary —
-    # `python -m build` alone produces a binary-less wheel whose `tracerazor`
-    # command cannot work after install.
-    python -m build --sdist
+    # TraceRazor 1.1 is platform-wheel only. A source distribution cannot
+    # satisfy the bundled-auditor contract and must not be uploaded.
     bash scripts/build_platform_wheel.sh
     echo "NOTE: this builds only THIS machine's platform wheel; the"
     echo "      release.yml matrix (tag push / release-cut branch) is the"
     echo "      real multi-platform publish path."
     if [[ "$DRY_RUN" == "0" ]]; then
         echo "==> Uploading to PyPI"
-        twine upload dist/*
+        twine upload dist/*.whl
     fi
 fi
 

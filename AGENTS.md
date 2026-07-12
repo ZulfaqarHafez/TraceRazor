@@ -36,9 +36,10 @@ tracerazor --version            # confirms the native auditor binary is present
 tracerazor agent doctor --format json
 ```
 
-These commands describe the 1.1 release contract. Before the public trust
-matrix marks 1.1 artifacts published, use a source build and
-`TRACERAZOR_BIN`; do not infer availability from this repository version.
+These commands describe the published 1.1 release contract. PyPI provides five
+platform wheels with the native auditor; GitHub Releases provides the matching
+standalone archives. Use a source build and `TRACERAZOR_BIN` only for an
+unsupported platform or checkout development.
 
 Release platform wheels bundle the native Rust auditor. Source distributions are
 not published in 1.1. If `tracerazor --version` exits 2, reinstall a supported platform wheel or
@@ -100,8 +101,8 @@ The `claude` commands remain a 1.x compatibility alias; prefer `agent install`.
 - **2** — bad input or usage: unreadable/invalid trace, unknown flag, missing binary.
 
 A below-minimum-steps trace is a **skip, not a failure**: it prints a `Notice:` to
-stderr and exits **0** with no report. In text mode this is easy to miss — always
-check for a report body, or pass `--min-steps`.
+stderr and exits **0**. Text mode has no report body; JSON mode emits a structured
+`{"status":"skipped"}` object. Check the status, or pass `--min-steps`.
 
 ## Programmatic checks (agents: run these)
 

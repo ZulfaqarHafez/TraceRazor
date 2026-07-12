@@ -1,7 +1,7 @@
 # TRICE Release Card
 
 - Release level: `local_release_candidate`
-- Release score: **74/100**
+- Release score: **90/100**
 - Public release ready: `false`
 - Local version: `1.1.0`
 
@@ -17,25 +17,23 @@
 | contract_card_verifies | yes | library_contract_locked | public API/CLI/schema contract card verifies |
 | install_card_verifies | yes | full_cli_install_ready | clean-wheel installability card verifies |
 | release_docs_present | yes | 8/8 | README, trust matrix, release checklist, pyproject, contract card, and install card present |
-| pypi | no | mismatch: latest=1.0.3 local=1.1.0 | PyPI latest version matches local version |
+| pypi | yes | matched: latest=1.1.0 local=1.1.0 | PyPI latest version matches local version |
 | piwheels | no | missing: files=0 local=1.1.0 | piwheels exposes the local version file |
 | crates_io | no | missing: crate tracerazor is not published | crates.io package is published |
-| github_tag | no | pending: head=eeb98780be51 local_tag=False remote_tag=False | local version tag points at current commit locally and remotely |
-| github_actions | no | unknown: HTTP 403 | required public workflows are green |
-| openssf_scorecard | no | below-threshold: score=3.8 minimum=7.0 date=2026-07-10T11:36:56Z commit=eeb98780be51 | OpenSSF Scorecard is published with score >= 7.0 |
+| github_tag | no | pending: head=a97eb122463e local_tag=False remote_tag=True | local version tag points at current commit locally and remotely |
+| github_actions | yes | green: Agent Efficiency Gate=completed/success; Release=completed/success; TraceRazor CI=completed/success | required public workflows are green |
+| openssf_scorecard | no | below-threshold: score=3.8 minimum=7.0 date=2026-07-10T15:06:50Z commit=a97eb122463e | OpenSSF Scorecard is published with score >= 7.0 |
 | provenance_plan_documented | yes | trusted publishing/OIDC | trusted publishing and OIDC documented |
 | attestation_plan_documented | yes | GitHub artifact attestations | GitHub release artifact attestation documented |
 | sbom_plan_documented | yes | CycloneDX/SHA-256 | SBOM and checksum release assets documented |
 
 ## Next Actions
 
-- Publish 1.1.0 to PyPI only after local release gates pass.
 - Informational only for 1.1: do not add an sdist solely for piwheels.
 - Optional: publish Rust crates only after declaring a stable public Rust API; keep cargo-install claims out of the README meanwhile.
-- Create and push the v1.1.0 tag only after local gates pass.
-- Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.
+- The remote v1.1.0 tag already exists and must not be reused; fetch it for verification, or bump the version and create a new immutable tag for the next release.
 - Run and publish OpenSSF Scorecard until the public score is at least 7.0.
 
 ## Hash
 
-- release card: `2bd033f1cd686f819256bdec4680d488dfde02774c9833eb4968ae1d82ad5b21`
+- release card: `c4e6701823735792ed9de60e7edf3ac3a17ac424b40ec7079db01a325ae5747a`

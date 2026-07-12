@@ -50,8 +50,8 @@
     },
     {
       "name": "pypi",
-      "observed": "mismatch: latest=1.0.3 local=1.1.0",
-      "passed": false,
+      "observed": "matched: latest=1.1.0 local=1.1.0",
+      "passed": true,
       "required": "PyPI latest version matches local version"
     },
     {
@@ -68,19 +68,19 @@
     },
     {
       "name": "github_tag",
-      "observed": "pending: head=eeb98780be51 local_tag=False remote_tag=False",
+      "observed": "pending: head=a97eb122463e local_tag=False remote_tag=True",
       "passed": false,
       "required": "local version tag points at current commit locally and remotely"
     },
     {
       "name": "github_actions",
-      "observed": "unknown: HTTP 403",
-      "passed": false,
+      "observed": "green: Agent Efficiency Gate=completed/success; Release=completed/success; TraceRazor CI=completed/success",
+      "passed": true,
       "required": "required public workflows are green"
     },
     {
       "name": "openssf_scorecard",
-      "observed": "below-threshold: score=3.8 minimum=7.0 date=2026-07-10T11:36:56Z commit=eeb98780be51",
+      "observed": "below-threshold: score=3.8 minimum=7.0 date=2026-07-10T15:06:50Z commit=a97eb122463e",
       "passed": false,
       "required": "OpenSSF Scorecard is published with score >= 7.0"
     },
@@ -159,13 +159,13 @@
         "url": "https://crates.io/api/v1/crates/tracerazor"
       },
       "github_actions": {
-        "detail": "HTTP 403",
-        "ok": null,
-        "status": "unknown",
+        "detail": "Agent Efficiency Gate=completed/success; Release=completed/success; TraceRazor CI=completed/success",
+        "ok": true,
+        "status": "green",
         "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
       },
       "github_tag": {
-        "detail": "head=eeb98780be51 local_tag=False remote_tag=False",
+        "detail": "head=a97eb122463e local_tag=False remote_tag=True",
         "ok": false,
         "status": "pending"
       },
@@ -175,7 +175,7 @@
         "status": "installed"
       },
       "openssf_scorecard": {
-        "detail": "score=3.8 minimum=7.0 date=2026-07-10T11:36:56Z commit=eeb98780be51",
+        "detail": "score=3.8 minimum=7.0 date=2026-07-10T15:06:50Z commit=a97eb122463e",
         "ok": false,
         "status": "below-threshold",
         "url": "https://api.scorecard.dev/projects/github.com/ZulfaqarHafez/TraceRazor"
@@ -187,9 +187,9 @@
         "url": "https://www.piwheels.org/project/tracerazor/json"
       },
       "pypi": {
-        "detail": "latest=1.0.3 local=1.1.0",
-        "ok": false,
-        "status": "mismatch",
+        "detail": "latest=1.1.0 local=1.1.0",
+        "ok": true,
+        "status": "matched",
         "url": "https://pypi.org/pypi/tracerazor/json"
       },
       "schemas": {
@@ -206,75 +206,70 @@
     "schema_version": "trice-doctor/v1",
     "summary": {
       "failed": [
-        "pypi",
         "piwheels",
         "crates_io",
         "github_tag",
         "openssf_scorecard"
       ],
       "ok": false,
-      "unknown": [
-        "github_actions"
-      ]
+      "unknown": []
     }
   },
-  "doctor_snapshot_sha256": "620ddef07226d267410a33a455191703dbc0b2ae6b6f9fe636cd8701bb5821b8",
+  "doctor_snapshot_sha256": "98a2ad9d1baed6f717d98ea0a137fdbe616324c354c9854aa895dd03dcd0b1b5",
   "inputs": {
     "artifact_card": {
       "bytes": 16185,
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "9f28fe165889580da35c2aff05ce217d3efba1bb74289c090a447efc8a63724e"
+      "sha256": "dbf86de28860a8a23d59e049ad43122a65dfc338cea423e715502461fb7b42df"
     },
     "contract_card": {
       "bytes": 19194,
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "9ad2dafb9665067dc652a713c2614829b1051729f607ae48d88597c9f363ae11"
+      "sha256": "f4635c58f7f396076b119fbe1e1bae5e14385ec7493c4142fd4e66840ca733b3"
     },
     "install_card": {
-      "bytes": 13941,
+      "bytes": 14035,
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "77f76c7ddbb3970f659c63c9c6c2cfa81cbe214e43470b4fcff8af6acaeb3180"
+      "sha256": "d5528d855bd86026b9f6279e4f4eaa23605e92209b56ad6f3f3c6775ce5f0892"
     },
     "public_trust_matrix": {
-      "bytes": 11804,
+      "bytes": 11320,
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "c41b0d813a04e357834cf2a0c88a39a4d665cb8ea858145cd665f7cd76a53416"
+      "sha256": "70351f0f99481ead09ad85200a11dbce0e21f536d1b9731c47499ae30845a4e3"
     },
     "pyproject": {
-      "bytes": 7274,
+      "bytes": 7355,
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
+      "sha256": "4be7a3b566399a326c20039ffb391cff133d1ad0ac9b1f475f97095dc3f042c5"
     },
     "readme": {
-      "bytes": 86734,
+      "bytes": 20271,
       "path": "README.md",
       "present": true,
-      "sha256": "9e4785baab70f8818940e90ee01050074048d7bd73c9dbca2416699cd59f9638"
+      "sha256": "15fb513d3f5452528ce3ccacf7e625369064165973382c658ab59b239efde629"
     },
     "release_checklist": {
-      "bytes": 8455,
+      "bytes": 8626,
       "path": "docs/release_checklist.md",
       "present": true,
-      "sha256": "e4b843f18203cc2adc28d4f76af61c566d4052631edf804063ee4a53715af475"
+      "sha256": "417ec51643916e57c669d88494cd1eec9cd4e81a9e2e4bc01743411426c61a3b"
     },
     "reproduction_card": {
       "bytes": 7294,
       "path": "docs/trice_reproduction_card.json",
       "present": true,
-      "sha256": "ed4a21787b9120ec50dfb223f98bffa20b1a97c4ccad78001f83f8b59e209c44"
+      "sha256": "74ec65592fa039648a1b78fd73f133b6abf8a528ceb848fab35416ca02436cfa"
     }
   },
   "next_actions": [
-    "Publish 1.1.0 to PyPI only after local release gates pass.",
     "Informational only for 1.1: do not add an sdist solely for piwheels.",
     "Optional: publish Rust crates only after declaring a stable public Rust API; keep cargo-install claims out of the README meanwhile.",
-    "Create and push the v1.1.0 tag only after local gates pass.",
-    "Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.",
+    "The remote v1.1.0 tag already exists and must not be reused; fetch it for verification, or bump the version and create a new immutable tag for the next release.",
     "Run and publish OpenSSF Scorecard until the public score is at least 7.0."
   ],
   "package": {
@@ -285,9 +280,9 @@
     "python": "3.11.6"
   },
   "public_release_ready": false,
-  "release_card_sha256": "2bd033f1cd686f819256bdec4680d488dfde02774c9833eb4968ae1d82ad5b21",
+  "release_card_sha256": "c4e6701823735792ed9de60e7edf3ac3a17ac424b40ec7079db01a325ae5747a",
   "release_level": "local_release_candidate",
-  "release_score": 74,
+  "release_score": 90,
   "research_basis": [
     "SLSA frames provenance as a release property: consumers need to know what built an artifact, how, and from which inputs.",
     "OpenSSF Scorecard treats public project health as a set of automated checks rather than maintainer promises.",

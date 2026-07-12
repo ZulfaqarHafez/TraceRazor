@@ -174,7 +174,7 @@
     "sha256": "9c6efa67e57069208d5436b7ae808188b412f49a71d3d9ef32800a3e384a18a1",
     "source": "tracerazor/trice/cli.py"
   },
-  "contract_card_sha256": "6357f7dcc80f341212dff89d6209ac84f97063b479fe84cb2fb44b16629a07df",
+  "contract_card_sha256": "c61123c58d43071ca52faddf2c025cfff125ec83ed40c32d63eea3bcacb39f38",
   "contract_level": "library_contract_locked",
   "contract_score": 100,
   "examples": [
@@ -244,39 +244,39 @@
   ],
   "inputs": {
     "library_doc": {
-      "bytes": 24295,
+      "bytes": 24319,
       "name": "trice_library.md",
       "path": "docs/trice_library.md",
       "present": true,
-      "sha256": "a256eb788c0dc9c04a976e19e1ca0f8a788c2c5b03e2b8433f3114cff55524bf"
+      "sha256": "09b3e7346ec3df51769f1d7719174f6a9c5b075eb6cb51f7bb9715a426905d90"
     },
     "public_trust_matrix": {
-      "bytes": 11804,
+      "bytes": 11320,
       "name": "public_trust_matrix.md",
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "c41b0d813a04e357834cf2a0c88a39a4d665cb8ea858145cd665f7cd76a53416"
+      "sha256": "70351f0f99481ead09ad85200a11dbce0e21f536d1b9731c47499ae30845a4e3"
     },
     "pyproject": {
-      "bytes": 7274,
+      "bytes": 7355,
       "name": "pyproject.toml",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
+      "sha256": "4be7a3b566399a326c20039ffb391cff133d1ad0ac9b1f475f97095dc3f042c5"
     },
     "readme": {
-      "bytes": 86734,
+      "bytes": 20271,
       "name": "README.md",
       "path": "README.md",
       "present": true,
-      "sha256": "9e4785baab70f8818940e90ee01050074048d7bd73c9dbca2416699cd59f9638"
+      "sha256": "15fb513d3f5452528ce3ccacf7e625369064165973382c658ab59b239efde629"
     },
     "research_ledger": {
-      "bytes": 35605,
+      "bytes": 35638,
       "name": "trice_research_ledger.md",
       "path": "docs/trice_research_ledger.md",
       "present": true,
-      "sha256": "fd4bd4a9e466a6ce3100cb0ebc9e10f17b307109eafed2f1f1aaff4c7e5f5236"
+      "sha256": "0e9728b834c676d7399b3de80f10b6dd651198d75b783ffb6ca28fc0699b53d0"
     }
   },
   "next_actions": [

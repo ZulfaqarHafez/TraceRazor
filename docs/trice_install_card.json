@@ -2,7 +2,7 @@
   "checks": [
     {
       "name": "wheel_present",
-      "observed": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl",
+      "observed": "tracerazor-1.1.0-py3-none-win_amd64.whl",
       "passed": true,
       "required": "built wheel exists"
     },
@@ -107,7 +107,7 @@
     },
     {
       "name": "agent_console_works",
-      "observed": "exit=0; {\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-nfxt6txp\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\",
+      "observed": "exit=0; {\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-odnlbnfi\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\",
       "passed": true,
       "required": "tracerazor agent doctor works after wheel install"
     },
@@ -132,8 +132,8 @@
       "status": "ok",
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_excerpt": "{\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-nfxt6txp\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\tracerazor.exe\",\n  \"hosts\": [\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"codex\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"claude\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null",
-      "stdout_sha256": "49a54c5af7b71525179c946968d8d2113b828358599738c38f6f52ad67f46e8d"
+      "stdout_excerpt": "{\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"C:\\\\Users\\\\zulfa\\\\AppData\\\\Local\\\\Temp\\\\trice-install-card-odnlbnfi\\\\venv\\\\Lib\\\\site-packages\\\\tracerazor\\\\bin\\\\tracerazor.exe\",\n  \"hosts\": [\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"codex\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"claude\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null",
+      "stdout_sha256": "3b84324575902002b942aa5cb4e15b774d26ea6005f2adb907ee8f3c133736b8"
     },
     "create_venv": {
       "command_sha256": "4f3ab3ed0132810037204e2c53e18b4a70854934c1a1f8413a4e57ae75c514e4",
@@ -156,7 +156,7 @@
       "stdout_sha256": "b32dc14eac29675e4d7a84346e680fd75472bf23fcfef2037801ef93f4a32885"
     },
     "install_wheel": {
-      "command_sha256": "41a241fab87bbc287797841303356f18601b85a03012fa2e18fcd427668d9435",
+      "command_sha256": "3308943278c28c7868332fea1066966a379942507323f9d08582e15866556f64",
       "exit_code": 0,
       "ok": true,
       "status": "ok",
@@ -192,8 +192,8 @@
       "status": "ok",
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_excerpt": "{\n  \"schema_version\": \"tracerazor-report/v1\",\n  \"trace_id\": \"support-agent-run-2847\",\n  \"agent_name\": \"customer-support-v3\",\n  \"framework\": \"langgraph\",\n  \"total_steps\": 11,\n  \"total_tokens\": 14280,\n  \"analysis_duration_ms\": 3,\n  \"score\": {\n    \"score\": 83.1,\n    \"raw_tas\": 85.7,\n    \"task_value_score\": 0.9,\n    \"grade\": \"Good\",\n    \"vae\": 0.77,\n    \"passes_threshold\": true,\n    \"avs\": 0.263,\n    \"metric_normalised\": {\n      \"cce\": 0.613,\n      \"ccr\": 0.6162790697674418,\n      \"csd\": 0.438,\n    ",
-      "stdout_sha256": "fea3492f48e417075818ad1502cba35c97a33725ccdcdc1ea7fd7450617a086a"
+      "stdout_excerpt": "{\n  \"schema_version\": \"tracerazor-report/v1\",\n  \"trace_id\": \"support-agent-run-2847\",\n  \"agent_name\": \"customer-support-v3\",\n  \"framework\": \"langgraph\",\n  \"total_steps\": 11,\n  \"total_tokens\": 14280,\n  \"analysis_duration_ms\": 4,\n  \"score\": {\n    \"score\": 83.1,\n    \"raw_tas\": 85.7,\n    \"task_value_score\": 0.9,\n    \"grade\": \"Good\",\n    \"vae\": 0.77,\n    \"passes_threshold\": true,\n    \"avs\": 0.263,\n    \"metric_normalised\": {\n      \"cce\": 0.613,\n      \"ccr\": 0.6162790697674418,\n      \"csd\": 0.438,\n    ",
+      "stdout_sha256": "d4797b02edfa3a90f6063b8228ca59aab67c66a6d6e11d6807eb056442223df0"
     },
     "trice_console": {
       "command_sha256": "5695e414efa414eab6cc88b639b84dcff848720ac1f9f1b61a421cff27afc8d6",
@@ -210,20 +210,20 @@
   "inputs": {
     "dist_dir": {
       "kind": "directory",
-      "name": "dist",
-      "path": "dist",
+      "name": "tracerazor-readme-final-4f9708d1c6b84b009d6254bde70f7218",
+      "path": "tracerazor-readme-final-4f9708d1c6b84b009d6254bde70f7218",
       "present": true
     },
     "pyproject": {
-      "bytes": 7274,
+      "bytes": 7355,
       "kind": "file",
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "06dcffb995781225a736a9f4918479e138ff51d236a6d80953305319e8c02017"
+      "sha256": "4be7a3b566399a326c20039ffb391cff133d1ad0ac9b1f475f97095dc3f042c5"
     }
   },
-  "install_card_sha256": "912d52ec9613334504acbf420e8876e956bc5eba691e19eaa935bb4ff50632a9",
+  "install_card_sha256": "1037e3b89ac0eef94c4919e9de78a655f5a049a4d6b1da5af72ac09d940271bf",
   "install_level": "full_cli_install_ready",
   "install_score": 100,
   "next_actions": [
@@ -275,11 +275,11 @@
   "schema_version": "trice-install-card/v1",
   "scope": "TraceRazor wheel installability",
   "wheel": {
-    "bytes": 6859719,
+    "bytes": 6842710,
     "kind": "file",
     "name": "wheel",
-    "path": "dist/tracerazor-1.1.0-py3-none-win_amd64.whl",
+    "path": "tracerazor-1.1.0-py3-none-win_amd64.whl",
     "present": true,
-    "sha256": "2a87bc3c2d6c2bd2a029724203f22591d1eeb6e12f1c8aea360b3808afb99f1f"
+    "sha256": "e0bca1a49cf564e3373cfa2dbd6ef761a9cfefeb115b24c129d67ff833b9998e"
   }
 }
