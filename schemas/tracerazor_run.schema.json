@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ZulfaqarHafez/TraceRazor/schemas/tracerazor_run.schema.json",
+  "title": "TraceRazor run manifest (tracerazor-run/v1)",
+  "description": "manifest.json in .tracerazor/runs/<run-id>/. Written by the lifecycle hook (`tracerazor agent hook`) and the Python runtime (`tracerazor.runtime`); both emit every field below.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version", "status", "run_id", "trace_id", "session_id", "agent_id",
+    "parent_agent_id", "host", "host_version", "framework", "framework_version",
+    "started_at", "ended_at", "agent_ids", "child_agent_ids", "child_receipt_count",
+    "event_count", "step_count", "total_tokens", "capture_quality", "degraded_ingest",
+    "ingest_quality", "lifecycle_issues", "privacy", "raw_content_persisted",
+    "replayable", "verification_mode", "audit_trace_sha256", "persisted_trace_sha256",
+    "policy", "enforcement_eligible", "enforcement_ineligible_reasons", "audit", "files"
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "strings": { "type": "array", "items": { "type": "string" } }
+  },
+  "properties": {
+    "schema_version": { "const": "tracerazor-run/v1" },
+    "status": { "enum": ["running", "completed", "partial", "cancelled", "error"] },
+    "run_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "trace_id": { "type": "string" },
+    "session_id": { "type": "string" },
+    "agent_id": { "type": "string" },
+    "parent_agent_id": { "type": ["string", "null"] },
+    "host": { "type": ["string", "null"] },
+    "host_version": { "type": ["string", "null"] },
+    "framework": { "type": ["string", "null"] },
+    "framework_version": { "type": ["string", "null"] },
+    "started_at": { "type": "string" },
+    "ended_at": { "type": ["string", "null"] },
+    "agent_ids": { "$ref": "#/$defs/strings" },
+    "child_agent_ids": { "$ref": "#/$defs/strings" },
+    "child_receipt_count": { "type": "integer", "minimum": 0 },
+    "event_count": { "type": "integer", "minimum": 0 },
+    "step_count": { "type": "integer", "minimum": 0 },
+    "total_tokens": { "type": "integer", "minimum": 0 },
+    "capture_quality": { "enum": ["complete", "degraded", "partial"] },
+    "degraded_ingest": { "type": "boolean" },
+    "ingest_quality": {
+      "type": "object",
+      "required": ["status", "provider_token_coverage", "issues"],
+      "properties": {
+        "status": { "type": "string" },
+        "provider_token_coverage": { "type": "number", "minimum": 0, "maximum": 1 },
+        "issues": { "$ref": "#/$defs/strings" }
+      }
+    },
+    "lifecycle_issues": { "$ref": "#/$defs/strings" },
+    "privacy": { "enum": ["local-redacted", "raw"] },
+    "raw_content_persisted": { "type": "boolean" },
+    "replayable": { "type": "boolean" },
+    "verification_mode": { "enum": ["hermetic_replay", "non_replayable_receipt"] },
+    "audit_trace_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+    "persisted_trace_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+    "policy": {
+      "type": "object",
+      "required": [
+        "mode", "capture", "hermetic", "min_steps", "path", "verifier",
+        "enforcement_enabled", "enforcement_executed"
+      ],
+      "properties": {
+        "mode": { "enum": ["off", "passive", "coach", "enforce"] },
+        "capture": { "enum": ["auto", "manual", "off"] },
+        "hermetic": { "type": "boolean" },
+        "min_steps": { "type": "integer", "minimum": 0 },
+        "path": { "type": ["string", "null"] },
+        "verifier": { "type": "string" },
+        "enforcement_enabled": { "type": "boolean" },
+        "enforcement_executed": { "const": false }
+      }
+    },
+    "enforcement_eligible": { "type": "boolean" },
+    "enforcement_ineligible_reasons": { "$ref": "#/$defs/strings" },
+    "audit": {
+      "type": "object",
+      "required": [
+        "status", "hermetic", "absolute_tas_gate_used", "source_trace_sha256",
+        "issues", "report_available"
+      ],
+      "properties": {
+        "status": { "enum": ["not_started", "completed", "skipped", "failed"] },
+        "hermetic": { "type": "boolean" },
+        "absolute_tas_gate_used": { "const": false },
+        "source_trace_sha256": { "oneOf": [{ "$ref": "#/$defs/sha256" }, { "type": "null" }] },
+        "issues": { "$ref": "#/$defs/strings" },
+        "report_available": { "type": "boolean" }
+      }
+    },
+    "files": { "$ref": "#/$defs/strings" }
+  }
+}

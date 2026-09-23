@@ -107,6 +107,43 @@ pub(crate) enum AgentCommand {
         #[arg(long)]
         event: AgentHookEvent,
     },
+    /// Write `run-receipt.json` for an audited run directory. The Python
+    /// runtime uses this so every receipt comes from one implementation.
+    WriteReceipt {
+        /// Run directory containing the persisted `trace.json` and `report.json`.
+        #[arg(long)]
+        run_dir: PathBuf,
+        /// Run identifier recorded in the run manifest.
+        #[arg(long)]
+        run_id: String,
+        /// W3C trace ID (32 lowercase hex characters).
+        #[arg(long)]
+        trace_id: Option<String>,
+        /// Session identifier.
+        #[arg(long)]
+        session_id: Option<String>,
+        /// Agent identifier.
+        #[arg(long)]
+        agent_id: Option<String>,
+        /// Parent agent identifier, for child runs.
+        #[arg(long)]
+        parent_agent_id: Option<String>,
+        /// Privacy mode recorded in the run manifest (`local-redacted` or `raw`).
+        #[arg(long)]
+        privacy: String,
+        /// The audit ran as a pure function of trace, config, and version.
+        #[arg(long)]
+        hermetic: bool,
+        /// `trace.json` holds the exact audited bytes (not a redacted copy).
+        #[arg(long)]
+        raw_content_persisted: bool,
+        /// SHA-256 of the exact trace bytes that were audited.
+        #[arg(long)]
+        audit_trace_sha256: String,
+        /// Output format.
+        #[arg(long, default_value = "text")]
+        format: AgentOutputFormat,
+    },
     /// Verify an offline run receipt and any sibling artifacts that are present.
     VerifyReceipt {
         /// Path to `run-receipt.json`.
@@ -538,6 +575,33 @@ pub(crate) fn cmd_agent(command: AgentCommand) -> Result<Option<i32>> {
             }
             Ok(None)
         }
+        AgentCommand::WriteReceipt {
+            run_dir,
+            run_id,
+            trace_id,
+            session_id,
+            agent_id,
+            parent_agent_id,
+            privacy,
+            hermetic,
+            raw_content_persisted,
+            audit_trace_sha256,
+            format,
+        } => Ok(Some(cmd_write_receipt(
+            WriteReceiptArgs {
+                run_dir,
+                run_id,
+                trace_id,
+                session_id,
+                agent_id,
+                parent_agent_id,
+                privacy,
+                hermetic,
+                raw_content_persisted,
+                audit_trace_sha256,
+            },
+            format,
+        ))),
         AgentCommand::VerifyReceipt {
             receipt,
             verify_key,
@@ -1786,6 +1850,22 @@ fn record_hook_event(host: AgentHost, event: AgentHookEvent, loaded: &LoadedPoli
             | AgentHookEvent::SubagentStop
             | AgentHookEvent::Stop
     );
+    // Same `audit` vocabulary as the Python runtime writer (tracerazor-run/v1).
+    let (audit_status, audit_issues) = if complete {
+        ("completed", Vec::new())
+    } else if !terminal {
+        ("not_started", Vec::new())
+    } else if capture.reason.as_deref() == Some("below_min_steps") {
+        ("skipped", capture.reason.iter().cloned().collect())
+    } else {
+        ("failed", capture.reason.iter().cloned().collect::<Vec<_>>())
+    };
+    let source_trace_sha256 = audit_trace_sha256.clone();
+    let child_agent_ids = if event_value["parent_agent_id"].is_null() {
+        json!([])
+    } else {
+        json!([event_value["agent_id"]])
+    };
     let mut files = vec!["manifest.json"];
     files.extend(
         [
@@ -1813,6 +1893,9 @@ fn record_hook_event(host: AgentHost, event: AgentHookEvent, loaded: &LoadedPoli
         "framework_version": null,
         "started_at": started_at,
         "ended_at": if terminal { Some(now.clone()) } else { None::<String> },
+        "agent_ids": [event_value["agent_id"]],
+        "child_agent_ids": child_agent_ids,
+        "child_receipt_count": 0,
         "event_count": event_count,
         "step_count": step_count,
         "total_tokens": total_tokens,
@@ -1838,6 +1921,14 @@ fn record_hook_event(host: AgentHost, event: AgentHookEvent, loaded: &LoadedPoli
         },
         "enforcement_eligible": false,
         "enforcement_ineligible_reasons": ["task_outcome_not_verified", "verifier_not_run"],
+        "audit": {
+            "status": audit_status,
+            "hermetic": loaded.policy.hermetic,
+            "absolute_tas_gate_used": false,
+            "source_trace_sha256": source_trace_sha256,
+            "issues": audit_issues,
+            "report_available": run_dir.join("report.json").exists(),
+        },
         "files": files,
     });
     safe_atomic_write(
@@ -2065,16 +2156,23 @@ fn audit_host_transcript(
         findings_json.as_bytes(),
         "findings artifact",
     )?;
+    // Same field set as the Python runtime and MCP `record_validation` writers.
     let validation_json = serde_json::to_string_pretty(&json!({
         "schema_version": "tracerazor-validation/v1",
         "run_id": identity.run_id,
         "status": "not_run",
+        "trust_level": "not_verified",
+        "task": null,
         "task_quality_verified": false,
         "verifier": if policy.quality.verifier.is_empty() { None } else { Some(policy.quality.verifier.as_str()) },
         "enforcement": {
             "enabled": policy.enforcement.enabled,
             "executed": false
-        }
+        },
+        "audit_status": "completed",
+        "audit_issues": [],
+        "enforcement_eligible": false,
+        "ineligible_reasons": ["task_outcome_not_verified", "verifier_not_run"]
     }))?;
     safe_atomic_write(
         artifact_root,
@@ -2082,28 +2180,87 @@ fn audit_host_transcript(
         validation_json.as_bytes(),
         "validation artifact",
     )?;
-    let mut receipt = RunReceiptV1 {
+    write_run_receipt(
+        artifact_root,
+        run_dir,
+        build_run_receipt(ReceiptFields {
+            run_id: identity.run_id.to_string(),
+            trace_id: Some(identity.trace_id.to_string()),
+            session_id: Some(identity.session_id.to_string()),
+            agent_id: Some(identity.agent_id.to_string()),
+            parent_agent_id: identity.parent_agent_id.map(str::to_string),
+            privacy: policy.privacy_str().to_string(),
+            hermetic: policy.hermetic,
+            raw_content_persisted: policy.persist_raw_content,
+            audit_trace_sha256: audit_trace_sha256.clone(),
+            persisted_trace_sha256: persisted_trace_sha256.clone(),
+            report_sha256: sha256_hex(report_json.as_bytes()),
+        }),
+    )?;
+    Ok(Some(AuditSummary {
+        step_count: trace.steps.len(),
+        total_tokens: trace.effective_total_tokens(),
+        ingest_status,
+        provider_token_coverage,
+        issues,
+        audit_trace_sha256,
+        persisted_trace_sha256,
+        replayable,
+    }))
+}
+
+/// Inputs for [`write_run_receipt`]. Identity fields are optional exactly as
+/// in the `tracerazor-run-receipt/v1` contract.
+struct ReceiptFields {
+    run_id: String,
+    trace_id: Option<String>,
+    session_id: Option<String>,
+    agent_id: Option<String>,
+    parent_agent_id: Option<String>,
+    privacy: String,
+    hermetic: bool,
+    raw_content_persisted: bool,
+    audit_trace_sha256: String,
+    persisted_trace_sha256: String,
+    report_sha256: String,
+}
+
+fn build_run_receipt(fields: ReceiptFields) -> RunReceiptV1 {
+    let replayable =
+        fields.raw_content_persisted && fields.audit_trace_sha256 == fields.persisted_trace_sha256;
+    RunReceiptV1 {
         schema_version: RunReceiptV1::SCHEMA_VERSION.to_string(),
-        run_id: identity.run_id.to_string(),
-        trace_id: Some(identity.trace_id.to_string()),
-        session_id: Some(identity.session_id.to_string()),
-        agent_id: Some(identity.agent_id.to_string()),
-        parent_agent_id: identity.parent_agent_id.map(str::to_string),
+        run_id: fields.run_id,
+        trace_id: fields.trace_id,
+        session_id: fields.session_id,
+        agent_id: fields.agent_id,
+        parent_agent_id: fields.parent_agent_id,
         created_at: Utc::now().to_rfc3339(),
-        privacy: policy.privacy_str().to_string(),
-        hermetic: policy.hermetic,
+        privacy: fields.privacy,
+        hermetic: fields.hermetic,
         replayable,
         verification_mode: if replayable {
             "hermetic_replay".to_string()
         } else {
             "non_replayable_receipt".to_string()
         },
-        audit_trace_sha256: audit_trace_sha256.clone(),
-        persisted_trace_sha256: persisted_trace_sha256.clone(),
-        report_sha256: sha256_hex(report_json.as_bytes()),
+        audit_trace_sha256: fields.audit_trace_sha256,
+        persisted_trace_sha256: fields.persisted_trace_sha256,
+        report_sha256: fields.report_sha256,
         signed: false,
         signature: None,
-    };
+    }
+}
+
+/// The single writer of `run-receipt.json`, shared by the lifecycle hook and
+/// `agent write-receipt` (which the Python runtime calls). Signs with
+/// `TRACERAZOR_SIGNING_KEY` when set; a missing or invalid key leaves the
+/// receipt explicitly unsigned and warns on stderr.
+fn write_run_receipt(
+    artifact_root: &Path,
+    run_dir: &Path,
+    mut receipt: RunReceiptV1,
+) -> Result<RunReceiptV1> {
     if let Some(key_hex) = env_nonempty("TRACERAZOR_SIGNING_KEY") {
         match hex_decode_32(&key_hex)
             .context("TRACERAZOR_SIGNING_KEY must be 64 hex chars (32-byte Ed25519 seed)")
@@ -2126,16 +2283,89 @@ fn audit_host_transcript(
         receipt_json.as_bytes(),
         "run receipt",
     )?;
-    Ok(Some(AuditSummary {
-        step_count: trace.steps.len(),
-        total_tokens: trace.effective_total_tokens(),
-        ingest_status,
-        provider_token_coverage,
-        issues,
-        audit_trace_sha256,
-        persisted_trace_sha256,
-        replayable,
-    }))
+    Ok(receipt)
+}
+
+/// Arguments of `agent write-receipt`.
+pub(crate) struct WriteReceiptArgs {
+    pub run_dir: PathBuf,
+    pub run_id: String,
+    pub trace_id: Option<String>,
+    pub session_id: Option<String>,
+    pub agent_id: Option<String>,
+    pub parent_agent_id: Option<String>,
+    pub privacy: String,
+    pub hermetic: bool,
+    pub raw_content_persisted: bool,
+    pub audit_trace_sha256: String,
+}
+
+/// `agent write-receipt`: bind an already-audited run directory's persisted
+/// `trace.json` and `report.json` into `run-receipt.json`.
+fn cmd_write_receipt(args: WriteReceiptArgs, format: AgentOutputFormat) -> i32 {
+    let run_dir = args.run_dir.clone();
+    let result = (|| -> Result<RunReceiptV1> {
+        reject_symlink(&run_dir, "run directory")?;
+        if !run_dir.is_dir() {
+            bail!("run directory does not exist: {}", run_dir.display());
+        }
+        let root = run_dir.canonicalize()?;
+        let digest = |name: &str| -> Result<String> {
+            let path = root.join(name);
+            reject_symlink(&path, name)?;
+            let bytes = fs::read(&path)
+                .with_context(|| format!("cannot read {} for the receipt", path.display()))?;
+            Ok(sha256_hex(&bytes))
+        };
+        let receipt = build_run_receipt(ReceiptFields {
+            persisted_trace_sha256: digest("trace.json")?,
+            report_sha256: digest("report.json")?,
+            run_id: args.run_id,
+            trace_id: args.trace_id,
+            session_id: args.session_id,
+            agent_id: args.agent_id,
+            parent_agent_id: args.parent_agent_id,
+            privacy: args.privacy,
+            hermetic: args.hermetic,
+            raw_content_persisted: args.raw_content_persisted,
+            audit_trace_sha256: args.audit_trace_sha256,
+        });
+        // Refuse to write a receipt that `verify-receipt` would reject.
+        receipt
+            .validate_identity()
+            .map_err(|error| anyhow::anyhow!(error.to_string()))?;
+        write_run_receipt(&root, &root, receipt)
+    })();
+    let path = run_dir.join("run-receipt.json");
+    match result {
+        Ok(receipt) => {
+            let signed = if receipt.signed { "signed" } else { "unsigned" };
+            emit_receipt_verification(
+                format,
+                &json!({
+                    "schema_version": "tracerazor-receipt-write/v1",
+                    "status": "written",
+                    "receipt": path.to_string_lossy(),
+                    "signed": receipt.signed,
+                }),
+                &format!("WROTE {} ({signed})", path.display()),
+            );
+            0
+        }
+        Err(error) => {
+            emit_receipt_verification(
+                format,
+                &json!({
+                    "schema_version": "tracerazor-receipt-write/v1",
+                    "status": "malformed",
+                    "receipt": path.to_string_lossy(),
+                    "error": format!("{error:#}"),
+                }),
+                &format!("MALFORMED: {error:#}"),
+            );
+            2
+        }
+    }
 }
 
 fn read_trusted_transcript(path: &Path) -> Result<String> {

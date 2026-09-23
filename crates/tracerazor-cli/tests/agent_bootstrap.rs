@@ -1464,6 +1464,80 @@ fn claude_installer_uses_agent_native_hook_commands() {
     assert_eq!(mcp["mcpServers"]["tracerazor"]["command"], "tracerazor-mcp");
 }
 
+#[test]
+fn write_receipt_binds_an_audited_run_directory_for_the_python_runtime() {
+    let home = TempDir::new().unwrap();
+    let project = TempDir::new().unwrap();
+    let run_dir = project.path().join("run-py");
+    std::fs::create_dir_all(&run_dir).unwrap();
+    std::fs::write(run_dir.join("trace.json"), b"{\"steps\":[]}").unwrap();
+    std::fs::write(run_dir.join("report.json"), b"{\"score\":{}}").unwrap();
+    let audit_sha = "a".repeat(64);
+    let written = run_json(
+        &home,
+        &project,
+        &[
+            "agent",
+            "write-receipt",
+            "--run-dir",
+            run_dir.to_str().unwrap(),
+            "--run-id",
+            "run-py",
+            "--trace-id",
+            "0af7651916cd43dd8448eb211c80319c",
+            "--agent-id",
+            "py-agent",
+            "--privacy",
+            "local-redacted",
+            "--hermetic",
+            "--audit-trace-sha256",
+            &audit_sha,
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(written["status"], "written");
+    assert_eq!(written["signed"], false);
+    let receipt: Value =
+        serde_json::from_str(&std::fs::read_to_string(run_dir.join("run-receipt.json")).unwrap())
+            .unwrap();
+    assert_eq!(receipt["schema_version"], "tracerazor-run-receipt/v1");
+    assert_eq!(receipt["audit_trace_sha256"], audit_sha);
+    assert_eq!(receipt["replayable"], false);
+    let verified = run_json(
+        &home,
+        &project,
+        &[
+            "agent",
+            "verify-receipt",
+            run_dir.join("run-receipt.json").to_str().unwrap(),
+            "--format",
+            "json",
+        ],
+    );
+    assert_eq!(verified["status"], "unsigned");
+    assert_eq!(verified["hash_checks"]["persisted_trace"], "verified");
+    assert_eq!(verified["hash_checks"]["report"], "verified");
+
+    // A run_id the receipt contract rejects is refused, not written.
+    cli(&home)
+        .current_dir(project.path())
+        .args([
+            "agent",
+            "write-receipt",
+            "--run-dir",
+            run_dir.to_str().unwrap(),
+            "--run-id",
+            "run.with.dots",
+            "--privacy",
+            "local-redacted",
+            "--audit-trace-sha256",
+            &audit_sha,
+        ])
+        .assert()
+        .code(2);
+}
+
 fn claude_transcript(messages: usize) -> String {
     claude_transcript_with_text(messages, "inspect carefully")
 }

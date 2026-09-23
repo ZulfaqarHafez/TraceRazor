@@ -8,6 +8,7 @@ import re
 import subprocess
 import tempfile
 import threading
+import warnings
 from dataclasses import replace
 from hashlib import sha256
 from pathlib import Path
@@ -40,6 +41,15 @@ from .persistence import (
     report_for_persistence,
 )
 from .policy import AuditPolicy
+
+
+#: Receipt a spawned child processor hands to its parent (``receipts/<span>.json``).
+#: Distinct from the audit receipt ``run-receipt.json`` (``tracerazor-run-receipt/v1``).
+CHILD_RECEIPT_SCHEMA_VERSION = "tracerazor-child-receipt/v1"
+# Child receipts written before the rename; still accepted when a parent aggregates.
+_LEGACY_CHILD_RECEIPT_SCHEMA_VERSION = "tracerazor-run-receipt/v1"
+# Identifier charset accepted by the tracerazor-run-receipt/v1 contract.
+_RECEIPT_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
 
 
 class RuntimeAuditor(Protocol):
@@ -200,6 +210,7 @@ class TraceRazorProcessor:
         self._audit_issues: list[str] = []
         self._audit_error: BaseException | str | None = None
         self._source_trace_sha256: str | None = None
+        self._persisted_trace_sha256: str | None = None
         self._raw_trace_bytes: bytes | None = None
         self._auditor = auditor or _audit_with_installed_binary
         if self.policy.captures and not self.is_child:
@@ -351,9 +362,26 @@ class TraceRazorProcessor:
             eligible = False
             reasons = list(reasons) + ["truncated_event_spool"]
         files = ["manifest.json"]
-        for name in ("events.jsonl", "trace.json", "findings.json", "validation.json", "report.json"):
+        for name in (
+            "events.jsonl",
+            "trace.json",
+            "findings.json",
+            "validation.json",
+            "report.json",
+            "run-receipt.json",
+        ):
             if (self.run_dir / name).exists():
                 files.append(name)
+        # Hash bindings shared with the lifecycle hook's manifest and the
+        # run receipt; only set once a native audit report was persisted.
+        audited = self._audit_status == "completed" and (self.run_dir / "report.json").exists()
+        audit_trace_sha256 = self._source_trace_sha256 if audited else None
+        persisted_trace_sha256 = self._persisted_trace_sha256 if audited else None
+        replayable = bool(
+            self.policy.persist_raw_content
+            and audit_trace_sha256
+            and audit_trace_sha256 == persisted_trace_sha256
+        )
         receipt_files = []
         receipt_dir = self.run_dir / "receipts"
         if receipt_dir.exists():
@@ -394,13 +422,22 @@ class TraceRazorProcessor:
                 "provider_token_coverage": self._token_coverage(events),
                 "issues": issues,
             },
+            "lifecycle_issues": [],
             "privacy": self.policy.privacy.value,
             "raw_content_persisted": self.policy.persist_raw_content,
+            "replayable": replayable,
+            "verification_mode": "hermetic_replay" if replayable else "non_replayable_receipt",
+            "audit_trace_sha256": audit_trace_sha256,
+            "persisted_trace_sha256": persisted_trace_sha256,
             "policy": {
                 "mode": self.policy.mode,
+                "capture": self.policy.capture,
                 "hermetic": True,
                 "min_steps": self.policy.min_steps,
                 "path": os.fspath(self.policy_path) if self.policy_path else None,
+                "verifier": self.policy.verifier or "",
+                "enforcement_enabled": self.policy.enforcement_enabled,
+                "enforcement_executed": False,
             },
             "enforcement_eligible": eligible,
             "enforcement_ineligible_reasons": sorted(set(reasons)),
@@ -438,7 +475,7 @@ class TraceRazorProcessor:
     def _child_receipt(self) -> dict[str, Any]:
         quality = run_capture_quality(self._events, partial=self._status != "completed")
         return {
-            "schema_version": "tracerazor-run-receipt/v1",
+            "schema_version": CHILD_RECEIPT_SCHEMA_VERSION,
             "status": self._status,
             "run_id": self.context.run_id,
             "trace_id": self.context.trace_id,
@@ -523,7 +560,8 @@ class TraceRazorProcessor:
                 receipt_event_id_list = list(receipt.get("event_ids") or [])
                 receipt_event_ids = set(receipt_event_id_list)
                 structurally_valid = (
-                    receipt.get("schema_version") == "tracerazor-run-receipt/v1"
+                    receipt.get("schema_version")
+                    in {CHILD_RECEIPT_SCHEMA_VERSION, _LEGACY_CHILD_RECEIPT_SCHEMA_VERSION}
                     and receipt.get("status") == "completed"
                     and receipt.get("run_id") == self.context.run_id
                     and receipt.get("trace_id") == self.context.trace_id
@@ -577,12 +615,13 @@ class TraceRazorProcessor:
             if self.policy.persist_raw_content:
                 if self._raw_trace_bytes is None:
                     raise RuntimeError("raw trace audit bytes were not retained for persistence")
-                self.receiver.write_artifact_bytes("trace.json", self._raw_trace_bytes)
+                trace_path = self.receiver.write_artifact_bytes("trace.json", self._raw_trace_bytes)
             else:
-                self.receiver.write_artifact(
+                trace_path = self.receiver.write_artifact(
                     "trace.json",
                     native_trace_for_persistence(trace, self.policy),
                 )
+            self._persisted_trace_sha256 = sha256(trace_path.read_bytes()).hexdigest()
         if trace is not None and report is not None and self._source_trace_sha256 is not None:
             self.receiver.write_artifact(
                 "report.json",
@@ -672,10 +711,16 @@ class TraceRazorProcessor:
                 persisted_task["evidence"] = artifact_for_persistence(
                     persisted_task["evidence"], self.policy
                 )
+        # Same field set as the lifecycle hook and MCP `record_validation`.
         validation: dict[str, Any] = {
             "schema_version": "tracerazor-validation/v1",
             "run_id": self.context.run_id,
+            "status": persisted_task["outcome"] if persisted_task else "not_run",
+            "trust_level": "untrusted_runtime_record" if persisted_task else "not_verified",
             "task": persisted_task,
+            "task_quality_verified": False,
+            "verifier": self.policy.verifier,
+            "enforcement": {"enabled": self.policy.enforcement_enabled, "executed": False},
             "audit_status": self._audit_status,
             "audit_issues": sorted(set(self._audit_issues)),
             "enforcement_eligible": eligible,
@@ -697,6 +742,84 @@ class TraceRazorProcessor:
                 ),
             }
         self.receiver.write_artifact("validation.json", validation)
+
+    def _write_run_receipt(self) -> None:
+        """Bind the persisted trace.json and report.json into run-receipt.json.
+
+        The native ``tracerazor agent write-receipt`` is the single receipt
+        writer shared with the lifecycle hook, so both produce the same
+        ``tracerazor-run-receipt/v1`` document (signed when
+        ``TRACERAZOR_SIGNING_KEY`` is set) that ``agent verify-receipt`` checks.
+        """
+
+        if (
+            self._audit_status != "completed"
+            or self._source_trace_sha256 is None
+            or not (self.run_dir / "trace.json").is_file()
+            or not (self.run_dir / "report.json").is_file()
+        ):
+            return
+        if not _RECEIPT_ID_RE.fullmatch(self.context.run_id):
+            warnings.warn(
+                "run-receipt.json not written: run_id must use only letters, digits, "
+                "'-' or '_' for tracerazor-run-receipt/v1",
+                RuntimeWarning,
+                stacklevel=3,
+            )
+            return
+        binary = find_binary()
+        if binary is None:
+            warnings.warn(
+                "run-receipt.json not written: the native tracerazor binary was not found",
+                RuntimeWarning,
+                stacklevel=3,
+            )
+            return
+        command = [
+            binary,
+            "agent",
+            "write-receipt",
+            "--run-dir",
+            os.fspath(self.run_dir),
+            "--run-id",
+            self.context.run_id,
+            "--trace-id",
+            self.context.trace_id,
+            "--privacy",
+            self.policy.privacy.value,
+            "--audit-trace-sha256",
+            self._source_trace_sha256,
+            "--hermetic",
+            "--format",
+            "json",
+        ]
+        # Optional identity fields are bound only when they fit the receipt
+        # contract; the verifier cross-checks exactly the fields present.
+        for flag, value in (
+            ("--session-id", self.context.session_id),
+            ("--agent-id", self.context.agent_id),
+            ("--parent-agent-id", self.context.parent_agent_id),
+        ):
+            if value is not None and _RECEIPT_ID_RE.fullmatch(value):
+                command += [flag, value]
+        if self.policy.persist_raw_content:
+            command.append("--raw-content-persisted")
+        try:
+            result = subprocess.run(
+                command,
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+                timeout=60,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            warnings.warn(f"run-receipt.json not written: {exc}", RuntimeWarning, stacklevel=3)
+            return
+        if result.returncode != 0:
+            detail = (result.stdout or result.stderr).strip()[:500]
+            warnings.warn(
+                f"run-receipt.json not written: {detail}", RuntimeWarning, stacklevel=3
+            )
 
     def finalize(
         self,
@@ -796,6 +919,7 @@ class TraceRazorProcessor:
                     findings=findings,
                     error=error,
                 )
+                self._write_run_receipt()
                 self._finalized = True
                 self._write_manifest()
             return self._manifest()

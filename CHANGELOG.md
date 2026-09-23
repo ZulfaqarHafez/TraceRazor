@@ -8,6 +8,19 @@ Repository cleanup: remove unused and duplicated code, and fix shipped features
 that did not work.
 
 ### Fixed
+- One run-artifact contract. `manifest.json` (`tracerazor-run/v1`) and
+  `validation.json` (`tracerazor-validation/v1`) now carry the same field set
+  whichever writer produced them: the lifecycle hook, the Python runtime, or
+  (for validation) MCP `record_validation`, which also keeps the run's audit
+  facts instead of overwriting them. New `schemas/tracerazor_run`,
+  `tracerazor_validation` and `tracerazor_run_receipt` JSON Schemas and a
+  cross-language contract test enforce this.
+- The Python runtime now writes a real `run-receipt.json` through the new
+  `tracerazor agent write-receipt`, the same receipt writer the hook uses, so
+  its receipts pass `tracerazor agent verify-receipt` and are signed when
+  `TRACERAZOR_SIGNING_KEY` is set. Its child hand-off document, previously also
+  labelled `tracerazor-run-receipt/v1`, is now `tracerazor-child-receipt/v1`
+  (the old label is still accepted when a parent aggregates).
 - The `mcp` extra now pins `mcp>=1.2,<2`. `mcp>=1.0` resolved to mcp 2.x,
   which removed `mcp.server.fastmcp` and broke `tracerazor-mcp`. PR CI now
   installs the extra.

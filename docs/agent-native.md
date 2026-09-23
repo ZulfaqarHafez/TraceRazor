@@ -299,20 +299,34 @@ Each run uses:
 
 ```text
 .tracerazor/runs/<run-id>/
-  manifest.json
+  manifest.json      tracerazor-run/v1         schemas/tracerazor_run.schema.json
   events.jsonl
   trace.json
   findings.json
-  validation.json
+  validation.json    tracerazor-validation/v1  schemas/tracerazor_validation.schema.json
   report.json
+  run-receipt.json   tracerazor-run-receipt/v1 schemas/tracerazor_run_receipt.schema.json
+  receipts/<span-id>.json   tracerazor-child-receipt/v1 (Python runtime children only)
 ```
 
 Files are replaced atomically. An interrupted process leaves a recoverable
 partial run instead of a false successful report.
 
+The lifecycle hook and the Python runtime write the same contract: every
+`manifest.json` and `validation.json` field in the schemas above is present
+whichever writer produced it (the MCP `record_validation` tool also writes the
+full `validation.json` field set and keeps the run's audit facts), and
+`tests/test_run_artifact_contract.py` checks both writers against the schemas
+and each other. `run-receipt.json` has a single writer, the native CLI: the hook
+writes it directly, and the Python runtime calls
+`tracerazor agent write-receipt` after its audit. A child processor's hand-off
+to its parent is a separate `tracerazor-child-receipt/v1` document under
+`receipts/`; it is not an audit receipt.
+
 ## Offline run receipts
 
-Completed lifecycle audits write `run-receipt.json` using the public
+Completed audits, from the lifecycle hook or the Python runtime (when the
+native binary is available), write `run-receipt.json` using the public
 `tracerazor-run-receipt/v1` contract. The receipt binds the run identity,
 trace/session/agent/parent-agent linkage, privacy and replayability modes,
 normalized audit-trace hash, persisted-trace hash, and report hash. Its

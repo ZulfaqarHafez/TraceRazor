@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/ZulfaqarHafez/TraceRazor/schemas/tracerazor_validation.schema.json",
+  "title": "TraceRazor task validation (tracerazor-validation/v1)",
+  "description": "validation.json in .tracerazor/runs/<run-id>/. Written by the lifecycle hook, the Python runtime, and the MCP `record_validation` tool; all three emit every field below. Nothing in 1.x executes a trusted verifier, so task_quality_verified is always false.",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version", "run_id", "status", "trust_level", "task",
+    "task_quality_verified", "verifier", "enforcement", "audit_status",
+    "audit_issues", "enforcement_eligible", "ineligible_reasons"
+  ],
+  "properties": {
+    "schema_version": { "const": "tracerazor-validation/v1" },
+    "run_id": { "type": "string", "minLength": 1 },
+    "status": { "enum": ["not_run", "passed", "failed", "unknown", "cancelled"] },
+    "trust_level": {
+      "enum": [
+        "not_verified",
+        "untrusted_runtime_record",
+        "untrusted_mcp_record",
+        "trusted_executed_verifier"
+      ]
+    },
+    "task": { "type": ["object", "null"] },
+    "task_quality_verified": { "type": "boolean" },
+    "verifier": { "type": ["string", "null"] },
+    "enforcement": {
+      "type": "object",
+      "required": ["enabled", "executed"],
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "executed": { "const": false }
+      }
+    },
+    "audit_status": { "enum": ["not_started", "completed", "skipped", "failed", "unknown"] },
+    "audit_issues": { "type": "array", "items": { "type": "string" } },
+    "enforcement_eligible": { "type": "boolean" },
+    "ineligible_reasons": { "type": "array", "items": { "type": "string" } }
+  }
+}
