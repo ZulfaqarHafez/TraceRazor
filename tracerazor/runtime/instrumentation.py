@@ -115,15 +115,6 @@ def auto_instrument(
     return InstrumentationResult(tuple(enabled), unavailable, errors, handles)
 
 
-def _dig(value: Any, *names: str) -> Any:
-    for name in names:
-        if isinstance(value, dict) and name in value:
-            return value[name]
-        if hasattr(value, name):
-            return getattr(value, name)
-    return None
-
-
 def _as_mapping(value: Any) -> dict[str, Any]:
     if isinstance(value, dict):
         return value

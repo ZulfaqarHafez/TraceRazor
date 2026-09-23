@@ -33,7 +33,8 @@ const EVENT_SCHEMA_VERSION: &str = "tracerazor-event/v1";
 const STATE_RELATIVE_PATH: &str = ".tracerazor/agent-install.json";
 const MAX_HOST_TRANSCRIPT_BYTES: u64 = 64 * 1024 * 1024;
 const CODEX_MCP_BLOCK: &str = "# >>> tracerazor managed mcp >>>\n[mcp_servers.tracerazor]\ncommand = \"tracerazor-mcp\"\n# <<< tracerazor managed mcp <<<\n";
-const TRACERAZOR_SKILL: &str = include_str!(concat!(
+/// Compile-time-embedded canonical skill, shared with the legacy `claude` installer.
+pub(crate) const TRACERAZOR_SKILL: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/assets/tracerazor-skill/SKILL.md"
 ));

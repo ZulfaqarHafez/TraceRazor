@@ -11,8 +11,8 @@ LDI identical-call, SHL regex, RDA step-count) are independent algorithms that
 were NOT consulted to produce these labels.
 
 Output:
-    benchmark/labels/labelled_steps.jsonl  -- one step record per line
     benchmark/labels/labelled_traces.jsonl -- one trace record per line
+    (each record carries its labelled steps, so no separate step file is written)
 
 Usage:
     python -m benchmark.make_step_labels [--n-tasks N] [--output-dir DIR]
@@ -148,12 +148,8 @@ def main() -> None:
     print(f"Generating {args.n_tasks} labelled traces (MockAgent, baseline config)...")
     all_steps, all_traces = generate(args.n_tasks)
 
-    steps_path = out_dir / "labelled_steps.jsonl"
     traces_path = out_dir / "labelled_traces.jsonl"
 
-    with open(steps_path, "w") as fh:
-        for s in all_steps:
-            fh.write(json.dumps(s) + "\n")
     with open(traces_path, "w") as fh:
         for t in all_traces:
             fh.write(json.dumps(t) + "\n")
@@ -166,7 +162,6 @@ def main() -> None:
 
     print(f"  {n_total} steps total: {n_removable} removable, {n_total - n_removable} not")
     print(f"  Label breakdown: {json.dumps(label_counts, indent=None)}")
-    print(f"  Written to {steps_path}")
     print(f"  Written to {traces_path}")
 
 

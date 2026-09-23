@@ -219,6 +219,17 @@ pub(crate) fn expand_trace_paths(inputs: &[PathBuf]) -> Result<Vec<PathBuf>> {
 }
 
 pub(crate) async fn cmd_claude(command: ClaudeCommand) -> Result<()> {
+    // `claude hook` keeps running silently: existing user settings invoke it on
+    // every session. The interactive commands point at their replacements.
+    let replacement = match &command {
+        ClaudeCommand::Install { .. } => Some("tracerazor agent install --host claude"),
+        ClaudeCommand::Uninstall { .. } => Some("tracerazor agent uninstall --host claude"),
+        ClaudeCommand::Convert { .. } => Some("tracerazor import <transcript> --from claude-code"),
+        ClaudeCommand::Hook { .. } => None,
+    };
+    if let Some(replacement) = replacement {
+        eprintln!("note: `tracerazor claude` is deprecated in 1.x; use `{replacement}`.");
+    }
     match command {
         ClaudeCommand::Install {
             scope,
@@ -690,11 +701,7 @@ struct ClaudeSessionStartInput {
     cwd: Option<String>,
 }
 
-/// Compile-time-embedded canonical skill.
-const TRACERAZOR_SKILL: &str = include_str!(concat!(
-    env!("CARGO_MANIFEST_DIR"),
-    "/assets/tracerazor-skill/SKILL.md"
-));
+use crate::agent::TRACERAZOR_SKILL;
 
 fn claude_skill_path(scope: &ClaudeScope) -> Result<PathBuf> {
     let base = match scope {
@@ -2548,347 +2555,6 @@ pub(crate) async fn cmd_bench(
     Ok(())
 }
 
-// -- optimize ------------------------------------------------------------------
-
-// -- TRICE optimize/replay -----------------------------------------------------
-
-// TRICE optimize/replay commands live in trice_cmd.rs.
-
-pub(crate) async fn cmd_optimize(
-    file: PathBuf,
-    system_prompt_path: Option<PathBuf>,
-    output_path: Option<PathBuf>,
-    iterations: u8,
-    target_tas: f64,
-    format: OutputFormat,
-) -> Result<()> {
-    // -- 1. Audit the trace ---------------------------------------------------
-    let data = std::fs::read_to_string(&file)
-        .with_context(|| format!("Cannot read trace: {}", file.display()))?;
-    let mut trace = ingest_parse(&data, tracerazor_ingest::TraceFormat::Auto)
-        .with_context(|| format!("Failed to parse trace: {}", file.display()))?;
-
-    if !is_analysable(&trace) {
-        anyhow::bail!(
-            "Trace '{}' has {} steps (minimum {} required for analysis).",
-            trace.trace_id,
-            trace.steps.len(),
-            MIN_TRACE_STEPS
-        );
-    }
-
-    let sim_fn = default_similarity_fn();
-    let config = ScoringConfig::default();
-    let report = tracerazor_core::analyse(&mut trace, sim_fn, &config)?;
-
-    let original_tas = report.score.score;
-    let original_tokens = report.total_tokens;
-
-    // -- 2. Check if already optimal -----------------------------------------
-    if original_tas >= target_tas {
-        eprintln!(
-            "TAS {:.1} already meets target {:.1}. Nothing to do.",
-            original_tas, target_tas
-        );
-        return Ok(());
-    }
-
-    // -- 3. Require LLM credentials ------------------------------------------
-    let llm = LlmConfig::from_env().ok_or_else(|| {
-        anyhow::anyhow!(
-            "No LLM credentials found.\n\
-             Set one of: OPENAI_API_KEY, ANTHROPIC_API_KEY, or TRACERAZOR_LLM_* env vars.\n\
-             Example: OPENAI_API_KEY=sk-... tracerazor optimize trace.json"
-        )
-    })?;
-
-    // -- 4. Load existing system prompt (if any) ------------------------------
-    let current_prompt = match &system_prompt_path {
-        Some(p) => std::fs::read_to_string(p)
-            .with_context(|| format!("Cannot read system prompt: {}", p.display()))?,
-        None => String::new(),
-    };
-
-    // -- 5. Build waste summary for the LLM ----------------------------------
-    let mut fixes_by_savings = report.fixes.clone();
-    fixes_by_savings.sort_by_key(|b| std::cmp::Reverse(b.estimated_token_savings));
-    let waste_summary = build_waste_summary(&report, &fixes_by_savings);
-
-    // -- 6. Derive simulation spec from the diff ------------------------------
-    // Steps marked Delete in the diff are candidates the optimizer can eliminate.
-    let delete_ids: Vec<u32> = report
-        .diff
-        .iter()
-        .filter(|d| matches!(d.action, tracerazor_core::report::DiffAction::Delete))
-        .map(|d| d.step_id)
-        .collect();
-
-    // -- 7. Optimization loop --------------------------------------------------
-    let mut best_prompt = current_prompt.clone();
-    let mut best_projected_tas = original_tas;
-    let mut best_projected_tokens = original_tokens;
-    let mut iteration_log: Vec<IterationRow> = Vec::new();
-
-    eprintln!(
-        "Optimizing '{}' (TAS {:.1} -> target {:.1}) using {}...",
-        trace.agent_name, original_tas, target_tas, llm.model
-    );
-
-    for i in 1..=iterations {
-        eprint!("  Iteration {i}/{iterations} - calling LLM... ");
-
-        let new_prompt = match ask_llm_to_optimize(
-            &llm,
-            &best_prompt,
-            &waste_summary,
-            &trace.agent_name,
-            original_tas,
-            report.total_tokens,
-        )
-        .await
-        {
-            Ok(p) => p,
-            Err(e) => {
-                eprintln!("FAILED ({e})");
-                break;
-            }
-        };
-
-        // Project improvement: simulate removing the wasteful steps.
-        let spec = SimulationSpec {
-            remove: delete_ids.clone(),
-            merge: vec![],
-        };
-        let sim = simulate(&trace, &spec, &config, default_similarity_fn());
-        let projected_tas = sim.projected_tas;
-        let projected_tokens = sim.projected_tokens;
-        let token_delta = sim.token_delta;
-
-        eprintln!(
-            "projected TAS {:.1} ({:+.1}), tokens {:+}",
-            projected_tas,
-            projected_tas - original_tas,
-            token_delta
-        );
-
-        iteration_log.push(IterationRow {
-            iteration: i,
-            projected_tas,
-            projected_tokens,
-            token_delta,
-        });
-
-        // Keep the best prompt seen so far.
-        if projected_tas > best_projected_tas {
-            best_projected_tas = projected_tas;
-            best_projected_tokens = projected_tokens;
-        }
-        best_prompt = new_prompt;
-
-        if projected_tas >= target_tas {
-            eprintln!("  Target reached - stopping early.");
-            break;
-        }
-    }
-
-    // -- 8. Write the optimized prompt ----------------------------------------
-    match &output_path {
-        Some(p) => {
-            std::fs::write(p, &best_prompt)
-                .with_context(|| format!("Cannot write output: {}", p.display()))?;
-            eprintln!("Wrote optimised prompt -> {}", p.display());
-        }
-        None => {
-            // In JSON mode stdout must remain machine-readable; include the
-            // prompt in the JSON summary below instead of mixing streams.
-            if matches!(format, OutputFormat::Markdown) {
-                println!("{best_prompt}");
-            }
-        }
-    }
-
-    // -- 9. Print the summary report ------------------------------------------
-    match format {
-        OutputFormat::Markdown => {
-            eprintln!(
-                "{}",
-                render_optimize_markdown(
-                    &trace.agent_name,
-                    original_tas,
-                    original_tokens,
-                    best_projected_tas,
-                    best_projected_tokens,
-                    &iteration_log,
-                    &report.fixes,
-                )
-            );
-        }
-        OutputFormat::Json => {
-            let out = serde_json::json!({
-                "agent_name": trace.agent_name,
-                "original_tas": original_tas,
-                "original_tokens": original_tokens,
-                "projected_tas": best_projected_tas,
-                "projected_tokens": best_projected_tokens,
-                "tas_delta": best_projected_tas - original_tas,
-                "token_delta": best_projected_tokens as i64 - original_tokens as i64,
-                "iterations": iteration_log.len(),
-                "fixes_addressed": report.fixes.len(),
-                "model": llm.model,
-                "optimized_prompt": if output_path.is_none() { Some(best_prompt.as_str()) } else { None },
-                "output_path": output_path.as_ref().map(|p| p.display().to_string()),
-            });
-            println!("{}", serde_json::to_string_pretty(&out)?);
-        }
-    }
-
-    Ok(())
-}
-
-struct IterationRow {
-    iteration: u8,
-    projected_tas: f64,
-    projected_tokens: u32,
-    token_delta: i64,
-}
-
-/// Build a structured waste summary the LLM can act on.
-fn build_waste_summary(report: &tracerazor_core::report::TraceReport, fixes: &[Fix]) -> String {
-    use std::fmt::Write as FmtWrite;
-    let mut s = String::new();
-
-    let _ = writeln!(
-        s,
-        "Current TAS: {:.1}/100 ({})",
-        report.score.score, report.score.grade
-    );
-    let _ = writeln!(s, "Total tokens: {}", report.total_tokens);
-    let _ = writeln!(
-        s,
-        "Estimated waste: {} tokens ({:.0}%)",
-        report.savings.tokens_saved,
-        if report.total_tokens > 0 {
-            report.savings.tokens_saved as f64 / report.total_tokens as f64 * 100.0
-        } else {
-            0.0
-        }
-    );
-    let _ = writeln!(s, "\nTop waste patterns detected:");
-    for fix in fixes.iter().take(5) {
-        let _ = writeln!(
-            s,
-            "  - [{}] {} (est. {} tokens/run)",
-            fix.fix_type, fix.patch, fix.estimated_token_savings
-        );
-    }
-    s
-}
-
-/// Prompt the LLM to generate an optimised system prompt.
-async fn ask_llm_to_optimize(
-    llm: &LlmConfig,
-    current_prompt: &str,
-    waste_summary: &str,
-    agent_name: &str,
-    original_tas: f64,
-    total_tokens: u32,
-) -> Result<String> {
-    let system = "\
-You are an expert AI agent system-prompt optimizer. \
-Your sole job is to rewrite a system prompt so that the agent \
-produces shorter, more direct reasoning traces with less token waste - \
-without removing any existing capabilities or business logic.\n\
-Rules:\n\
-- Keep all tool descriptions and business constraints verbatim.\n\
-- Eliminate hedge phrases, preambles, and unnecessary meta-commentary.\n\
-- Add an EFFICIENCY RULES section with 3-5 concise bullet directives.\n\
-- Return ONLY the rewritten system prompt text - no explanation, no markdown fences.";
-
-    let user = format!(
-        "## Agent: {agent_name}\n\
-         ## Efficiency audit\n\
-         {waste_summary}\n\
-         ## Current system prompt\n\
-         {current}\n\
-         ## Task\n\
-         Rewrite the system prompt above to eliminate the detected waste patterns. \
-         The current TAS is {original_tas:.1}/100 with {total_tokens} tokens. \
-         Target: reduce token waste by at least 30% while keeping all capabilities.",
-        current = if current_prompt.is_empty() {
-            "(no system prompt - generate one from scratch based on the waste patterns)"
-        } else {
-            current_prompt
-        },
-    );
-
-    llm.complete(system, &user).await
-}
-
-fn render_optimize_markdown(
-    agent_name: &str,
-    original_tas: f64,
-    original_tokens: u32,
-    projected_tas: f64,
-    projected_tokens: u32,
-    iterations: &[IterationRow],
-    fixes: &[Fix],
-) -> String {
-    use std::fmt::Write as FmtWrite;
-    let mut s = String::new();
-    let _ = writeln!(s, "#  TraceRazor Optimize - {agent_name}");
-    let _ = writeln!(s);
-    let _ = writeln!(s, "| | Before | After (projected) | Delta |");
-    let _ = writeln!(s, "|---|---:|---:|---:|");
-    let _ = writeln!(
-        s,
-        "| TAS | {:.1} | {:.1} | {:+.1} |",
-        original_tas,
-        projected_tas,
-        projected_tas - original_tas
-    );
-    let _ = writeln!(
-        s,
-        "| Tokens | {} | {} | {:+} |",
-        original_tokens,
-        projected_tokens,
-        projected_tokens as i64 - original_tokens as i64
-    );
-    let waste_pct = if original_tokens > 0 {
-        // saturating_sub: a simulation can in principle project MORE tokens than
-        // the original; plain u32 subtraction would underflow and panic.
-        original_tokens.saturating_sub(projected_tokens) as f64 / original_tokens as f64 * 100.0
-    } else {
-        0.0
-    };
-    let _ = writeln!(s, "| Est. waste removed | - | - | {:.0}% |", waste_pct);
-    let _ = writeln!(s);
-    let _ = writeln!(s, "## Iteration log");
-    let _ = writeln!(s);
-    let _ = writeln!(
-        s,
-        "| Iter | Projected TAS | Projected tokens | Token delta |"
-    );
-    let _ = writeln!(s, "|---:|---:|---:|---:|");
-    for row in iterations {
-        let _ = writeln!(
-            s,
-            "| {} | {:.1} | {} | {:+} |",
-            row.iteration, row.projected_tas, row.projected_tokens, row.token_delta
-        );
-    }
-    let _ = writeln!(s);
-    let _ = writeln!(s, "## Waste patterns addressed ({})", fixes.len());
-    let _ = writeln!(s);
-    for fix in fixes {
-        let _ = writeln!(
-            s,
-            "- **{}**: {} *(est. {} tokens/run)*",
-            fix.fix_type, fix.patch, fix.estimated_token_savings
-        );
-    }
-    s
-}
-
 // -- export --------------------------------------------------------------------
 
 pub(crate) async fn cmd_export(
@@ -2982,9 +2648,25 @@ async fn export_webhook(report: &tracerazor_core::report::TraceReport, url: &str
         .json(&payload)
         .send()
         .await
+        .and_then(reqwest::Response::error_for_status)
         .with_context(|| format!("Webhook POST to {url} failed"))?;
 
     Ok(())
+}
+
+/// Stable, valid OTLP identifiers for a trace: a 16-byte trace ID and an
+/// 8-byte span ID taken from SHA-256 of the TraceRazor trace ID. OTLP rejects
+/// all-zero IDs, so the (practically impossible) zero case is nudged.
+fn otlp_ids(trace_id: &str) -> (String, String) {
+    let digest = sha256_hex(trace_id.as_bytes());
+    let nonzero = |hex: &str| {
+        if hex.bytes().all(|b| b == b'0') {
+            format!("{}1", &hex[..hex.len() - 1])
+        } else {
+            hex.to_string()
+        }
+    };
+    (nonzero(&digest[..32]), nonzero(&digest[32..48]))
 }
 
 /// Emit TraceRazor metrics as OTEL span attributes.
@@ -2997,19 +2679,7 @@ async fn export_otel(
     trace: &tracerazor_core::types::Trace,
     endpoint: &str,
 ) -> Result<()> {
-    // Clamp + saturating_mul: guard against a NaN/inf/out-of-range score
-    // producing an overflowing u64 multiply (panic in debug).
-    let span_id = format!(
-        "{:016x}",
-        (report.score.score.max(0.0) as u64).saturating_mul(100)
-    );
-    let trace_id_hex = report
-        .trace_id
-        .chars()
-        .filter(|c| c.is_ascii_hexdigit())
-        .take(32)
-        .collect::<String>();
-    let trace_id_padded = format!("{:0>32}", trace_id_hex);
+    let (otlp_trace_id, span_id) = otlp_ids(&report.trace_id);
 
     let attributes = serde_json::json!([
         {"key": "tracerazor.tas_score",   "value": {"doubleValue": report.score.score}},
@@ -3034,7 +2704,7 @@ async fn export_otel(
             },
             "scopeSpans": [{
                 "spans": [{
-                    "traceId": trace_id_padded,
+                    "traceId": otlp_trace_id,
                     "spanId": span_id,
                     "name": format!("tracerazor.audit.{}", trace.agent_name),
                     "kind": 1,
@@ -3053,6 +2723,7 @@ async fn export_otel(
         .json(&payload)
         .send()
         .await
+        .and_then(reqwest::Response::error_for_status)
         .with_context(|| format!("OTEL export to {otel_url} failed"))?;
 
     Ok(())
@@ -3062,20 +2733,20 @@ async fn export_otel(
 mod tests {
     use super::*;
 
-    /// Regression: a simulation can project MORE tokens than the original, so
-    /// the waste-percentage math must not underflow on u32 subtraction.
     #[test]
-    fn optimize_markdown_survives_projection_larger_than_original() {
-        let md = render_optimize_markdown("agent", 50.0, 100, 60.0, 500, &[], &[]);
-        assert!(md.contains("Est. waste removed"));
-        assert!(md.contains("0%"), "larger projection => 0% waste removed");
-    }
-
-    /// Zero original tokens must not divide by zero.
-    #[test]
-    fn optimize_markdown_survives_zero_original_tokens() {
-        let md = render_optimize_markdown("agent", 0.0, 0, 0.0, 0, &[], &[]);
-        assert!(md.contains("0%"));
+    fn otlp_ids_are_well_formed_nonzero_and_distinct() {
+        // The old IDs kept only hex chars of the trace id (all zeros for most
+        // names) and derived the span id from the score (collisions, zero at 0).
+        let (trace_a, span_a) = otlp_ids("support-agent-run-2847");
+        let (trace_b, span_b) = otlp_ids("support-agent-run-2848");
+        for (id, len) in [(&trace_a, 32), (&span_a, 16), (&trace_b, 32), (&span_b, 16)] {
+            assert_eq!(id.len(), len);
+            assert!(id.bytes().all(|b| b.is_ascii_hexdigit()));
+            assert!(id.bytes().any(|b| b != b'0'));
+        }
+        assert_ne!(trace_a, trace_b);
+        assert_ne!(span_a, span_b);
+        assert_eq!(otlp_ids("support-agent-run-2847"), (trace_a, span_a));
     }
 
     #[test]

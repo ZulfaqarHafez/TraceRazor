@@ -1,5 +1,10 @@
 # TAS Weight Calibration Report: `tb`
 
+> Produced before the `calibration/sources/from_messages.py` fix that stopped
+> OpenAI tool results from being emitted as separate, mis-named `tool_call`
+> steps. Rerun the tau-bench calibration in `calibration/README.md` before
+> quoting these numbers.
+
 - Samples: **233**
 - Target: efficiency = `1 - recoverable_token_fraction`
 - L2 ridge toward prior: `0.1`

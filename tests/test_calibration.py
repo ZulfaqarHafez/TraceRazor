@@ -200,8 +200,58 @@ def _convo(verbose: bool):
         {"role": "assistant", "content": "Apply the fix to the handler." + pad},
         {"role": "assistant", "content": "",
          "tool_calls": [{"function": {"name": "edit", "arguments": "patch"}}]},
+        {"role": "tool", "content": "patch applied"},
+        {"role": "assistant", "content": "Run the tests to confirm." + pad},
+        {"role": "assistant", "content": "",
+         "tool_calls": [{"function": {"name": "run_tests", "arguments": "-q"}}]},
         {"role": "tool", "content": "tests passed"},
     ]
+
+
+def test_messages_to_trace_folds_tool_results_into_their_calls():
+    # Regression: each role:tool message used to become its own tool_call step,
+    # named after the first identifier in the result text ("order_id", "Error").
+    msgs = [
+        {"role": "user", "content": "cancel my reservation"},
+        {"role": "assistant", "content": "Look up the reservation first."},
+        {"role": "assistant", "content": "", "tool_calls": [
+            {"id": "c1", "function": {"name": "get_reservation", "arguments": "{\"id\": 7}"}},
+            {"id": "c2", "function": {"name": "cancel_reservation", "arguments": "{\"id\": 7}"}},
+        ]},
+        # Results arrive out of order and are matched by tool_call_id.
+        {"role": "tool", "tool_call_id": "c2", "content": "Error: reservation_id not found"},
+        {"role": "tool", "tool_call_id": "c1", "content": "order_id 7, status booked"},
+        {"role": "assistant", "content": "The cancellation failed; report it."},
+        {"role": "assistant", "content": "", "tool_calls": [
+            {"function": {"name": "notify_user", "arguments": "{}"}}]},
+        {"role": "tool", "content": "sent"},  # no id: matched first-in-first-out
+    ]
+    rec = {"instance_id": "i1", "model": "m", "resolved": True, "messages": msgs}
+    ns = _argparse.Namespace(messages_field="messages", id_field="instance_id",
+                             model_field="model")
+    trace = messages_to_trace(rec, ns)
+    assert trace is not None
+    calls = [s for s in trace["steps"] if s["step_type"] == "tool_call"]
+    assert [c["tool_name"] for c in calls] == ["get_reservation", "cancel_reservation",
+                                                "notify_user"]
+    by_name = {c["tool_name"]: c for c in calls}
+    assert by_name["get_reservation"]["tool_success"] is True
+    assert by_name["cancel_reservation"]["tool_success"] is False
+    assert by_name["get_reservation"]["output"].startswith("order_id 7")
+
+
+def test_messages_to_trace_keeps_unstructured_observations():
+    # ShareGPT observations carry no recorded call, so they stay separate steps.
+    msgs = [{"from": "human", "value": "task"}]
+    for i in range(3):
+        msgs.append({"from": "gpt", "value": f"Thought {i}: run step {i}."})
+        msgs.append({"from": "observation", "value": f"result {i}"})
+    rec = {"instance_id": "i1", "model": "m", "resolved": True, "messages": msgs}
+    ns = _argparse.Namespace(messages_field="messages", id_field="instance_id",
+                             model_field="model")
+    trace = messages_to_trace(rec, ns)
+    assert trace is not None
+    assert sum(s["step_type"] == "tool_call" for s in trace["steps"]) == 3
 
 
 def test_messages_to_trace_maps_steps():

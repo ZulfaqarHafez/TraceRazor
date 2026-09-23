@@ -138,8 +138,9 @@ Both adapters isolate callback errors from the host and expose them through
 framework usage remains `missing`; a provider-only total is preserved but marked
 `estimated` because an exact input/output split is unavailable. CrewAI source filtering
 is best-effort when upstream events omit crew/agent/task identifiers, so do not
-run multiple unscoped listeners concurrently. These runtime handles are distinct
-from the older `tracerazor.integrations.*` trace-builder callbacks.
+run multiple unscoped listeners concurrently. These runtime handles replace the
+older `tracerazor.integrations.*` trace-builder callbacks, which are deprecated
+(importing them emits a `DeprecationWarning`) and kept only for 1.x compatibility.
 
 ---
 

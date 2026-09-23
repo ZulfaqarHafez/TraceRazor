@@ -650,11 +650,11 @@ def test_spool_rejects_leaf_link_before_open_even_when_links_are_unavailable(tmp
 
     context = RunContext.create()
     receiver = DiskSpoolReceiver(tmp_path / context.run_id)
-    original = persistence._is_link_or_reparse
+    original = persistence.is_link_or_reparse
 
     def simulated_link(path):
         return Path(path) == receiver.path or original(Path(path))
 
-    monkeypatch.setattr(persistence, "_is_link_or_reparse", simulated_link)
+    monkeypatch.setattr(persistence, "is_link_or_reparse", simulated_link)
     with pytest.raises(ValueError, match="symlink or junction"):
         receiver.receive(_event(context, 1))

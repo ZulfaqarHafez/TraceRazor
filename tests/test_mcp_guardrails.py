@@ -400,14 +400,13 @@ def test_policy_refuses_runtime_manifest_with_partial_provider_coverage(tmp_path
     assert "ingest quality is degraded" in result["data"]["refusal_reasons"]
 
 
-def test_policy_uses_dependency_free_parser_on_python_310(monkeypatch, tmp_path):
+def test_policy_is_read_through_the_validated_runtime_loader(tmp_path):
     (tmp_path / "tracerazor.toml").write_text(
         'schema_version = 1\nmode = "enforce"\nprivacy = "local-redacted"\n\n[quality]\nverifier = "pytest -q"\n\n[enforcement]\nenabled = true\n',
         encoding="utf-8",
     )
     run = _run_dir(tmp_path)
     (run / "report.json").write_text(json.dumps(_report()), encoding="utf-8")
-    monkeypatch.setattr(mcp, "tomllib", None)
     result = mcp.check_policy("run-1", str(tmp_path))
     _assert_envelope(result)
     assert result["data"]["policy"]["mode"] == "enforce"

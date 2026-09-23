@@ -43,8 +43,6 @@
 pub mod cost;
 pub mod features;
 pub mod fixes;
-pub mod graph;
-pub mod iar;
 pub mod metrics;
 pub mod minhash;
 pub mod provenance;

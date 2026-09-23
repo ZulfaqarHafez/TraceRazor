@@ -292,11 +292,13 @@ jobs:
             tracerazor-*.tar.gz
             tracerazor-*.zip
 
-  # Upload platform wheels to PyPI via trusted publishing (OIDC — no token
-  # stored in the repo). One-time setup on pypi.org: project "tracerazor" →
-  # Publishing → add GitHub publisher (owner ZulfaqarHafez, repo TraceRazor,
-  # workflow release.yml, environment pypi). publish.sh stays as the manual
-  # fallback.
+  # Upload platform wheels to PyPI. The intended path is trusted publishing
+  # (OIDC — no token stored in the repo), but while the PYPI_API_TOKEN secret is
+  # set the job uses the token fallback instead, WITHOUT PyPI attestations;
+  # v1.1.0 was published that way. To switch: on pypi.org, project
+  # "tracerazor" → Publishing → add GitHub publisher (owner ZulfaqarHafez, repo
+  # TraceRazor, workflow release.yml, environment pypi), then delete the secret.
+  # publish.sh stays as the manual fallback.
   pypi:
     name: Publish to PyPI
     needs: [tag, quality, wheels, binaries, release-evidence, agent-image]
@@ -661,8 +663,9 @@ jobs:
           test "$latest_digest" = "$IMAGE_DIGEST"
 
   # Generate deterministic release evidence sidecars from the exact release
-  # artifacts staged by the wheel jobs. PyPI Trusted Publishing covers index
-  # attestations; this packet covers GitHub release assets, SBOMs, checksums,
+  # artifacts staged by the wheel jobs. PyPI index attestations exist only on
+  # the trusted-publishing path (not the token fallback); this packet covers
+  # GitHub release assets, SBOMs, checksums,
   # proof cards, installability, the crates publish card, paper artifacts, and evidence bundles.
   release-evidence:
     name: Release evidence packet

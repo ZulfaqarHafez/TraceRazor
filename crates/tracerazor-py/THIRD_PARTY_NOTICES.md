@@ -8,8 +8,8 @@ project artwork. Third-party components remain subject to their own licenses.
 
 The TraceRazor 1.1 platform wheels bundle the native Rust auditor. The
 standalone archives and container images also contain compiled Rust
-dependencies, and the dashboard image contains compiled JavaScript
-dependencies. This notice accompanies those distributions. It records the
+dependencies. The embedded dashboard loads Alpine.js and Chart.js from a CDN
+in the browser; they are not bundled. This notice accompanies those distributions. It records the
 distribution boundary and license policy; it is not yet a dependency-specific
 attribution bundle containing every required copyright and license text.
 Generate and CI-check that merged attribution bundle before the next public
@@ -25,9 +25,8 @@ cargo deny check licenses
 cargo deny list --format json --layout crate
 ```
 
-The dashboard dependency graph and declared licenses are locked in
-`dashboard/package-lock.json`. Optional Python extras are installed separately
-by users and retain the licenses published by their respective distributions.
+Optional Python extras are installed separately by users and retain the
+licenses published by their respective distributions.
 
 Release assets include CycloneDX Python and Cargo component inventories. The
 release evidence generator adds resolved Cargo license expressions to the

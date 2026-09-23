@@ -4,6 +4,48 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+Repository cleanup: remove unused and duplicated code, and fix shipped features
+that did not work.
+
+### Fixed
+- The `mcp` extra now pins `mcp>=1.2,<2`. `mcp>=1.0` resolved to mcp 2.x,
+  which removed `mcp.server.fastmcp` and broke `tracerazor-mcp`. PR CI now
+  installs the extra.
+- The embedded dashboard at `/` works under its own Content-Security-Policy.
+  Its script moved to a same-origin `/dashboard.js` and it uses Alpine's CSP
+  build, so the policy needs neither `'unsafe-inline'` nor `'unsafe-eval'`.
+- `tracerazor export` checks the HTTP status of OTLP/webhook deliveries and
+  derives valid, non-zero OTLP trace/span IDs from the trace ID.
+- The MCP `explain_signal` catalog matches the Rust auditor's metric names and
+  fix types.
+- `calibration.sources.from_messages` folds OpenAI tool results into the call
+  that produced them instead of emitting extra, mis-named `tool_call` steps.
+  The committed tau-bench calibration numbers predate this fix and are marked
+  for a rerun.
+- Documentation: `score.passes_threshold` is documented as a comparison with
+  the built-in default of 70 unless `--threshold` is given, not a gate. The
+  example efficiency-gate workflow gates on regressions against a baseline
+  instead of an absolute TAS floor. The PyPI release docs say v1.1.0 was
+  published through the API-token fallback, not trusted publishing.
+
+### Removed
+- `tracerazor optimize` and `tracerazor replay`. The LLM prompt optimizer
+  reported a projected gain that did not depend on the prompt it produced, and
+  the Rust TRICE port had drifted from the tested Python implementation. Use
+  `tracerazor-trice`.
+- The React dashboard at `/app` (its bundle 404'd), the unused
+  `/api/export/{otel,webhook}` server endpoints, `core::graph`, the IAR module
+  (never computed; `report.iar` stays `null`), and the unused `petgraph` and
+  `tower` 0.4 dependencies.
+- Stale plans, session logs and self-assessments from `docs/`, plus orphaned
+  benchmark scripts and duplicate data files.
+
+### Deprecated
+- `tracerazor claude install/uninstall/convert` (now hidden from `--help`):
+  use `tracerazor agent install --host claude` and
+  `tracerazor import --from claude-code`.
+- `tracerazor.integrations.*`: use `tracerazor.runtime.auto_instrument`.
+
 ## [1.1.0] - 2026-07-10
 
 Agent-native surface: make TraceRazor discoverable and drivable by coding agents

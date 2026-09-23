@@ -36,8 +36,8 @@
 | protocol_lock | yes | `docs/trice_protocol_lock.json` | `3e71413180ad94f43be0b6a35717ced48359b75ea382035c524a9b91e5e8296e` |
 | design_card | yes | `docs/trice_design_card.json` | `dffa666fb9ba1deff7ba467da24b68b7dd4c19d5f0b0fa2e8c0f3cb45be74d39` |
 | reproduction_card | yes | `docs/trice_reproduction_card.json` | `74ec65592fa039648a1b78fd73f133b6abf8a528ceb848fab35416ca02436cfa` |
-| contract_card | yes | `docs/trice_contract_card.json` | `f4635c58f7f396076b119fbe1e1bae5e14385ec7493c4142fd4e66840ca733b3` |
-| install_card | yes | `docs/trice_install_card.json` | `d5528d855bd86026b9f6279e4f4eaa23605e92209b56ad6f3f3c6775ce5f0892` |
+| contract_card | yes | `docs/trice_contract_card.json` | `fa3e7141f169858f8bb9740dfe15b54b752bacf55b927cc555df74400e0f88ef` |
+| install_card | yes | `docs/trice_install_card.json` | `4983ece11e0ce39577d41d9d717eff299e621f018f500739c247da89c3219af1` |
 | research_card | yes | `docs/trice_research_card.json` | `c1753dfa8b6c68b9bb2a1ebda01a3e37bd022a6801d2b5e136b2e94e8d77b804` |
 | claim | yes | `docs/trice_claim_card.json` | `5bf4de6c6ae6c74b7bfcef12a924890ae633183ad8120d707f6531a9a1b8f9cf` |
 | remote_smoke_claim | yes | `docs/trice_remote_smoke_claim_card.json` | `e296651963ef02ccfde115ab59f0cc87e5d938548878ed63ef8f8660113da641` |
@@ -47,8 +47,8 @@
 | paper_result | yes | `benchmark/trice/results/v2-smoke/trice_v2_live_results.json` | `edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a` |
 | paper_tex | yes | `paper/trice_v3_research_paper.tex` | `d2b054232679cedf748ccf2a3b95c283e3a148a57e7c0cbaafbde0a3ef527709` |
 | paper_pdf | yes | `paper/trice_v3_research_paper.pdf` | `238219dcdb923f0e35ef1f24772b4bda13ae4f40ac453bf347eca24196c831ca` |
-| readme | yes | `README.md` | `15fb513d3f5452528ce3ccacf7e625369064165973382c658ab59b239efde629` |
-| library_doc | yes | `docs/trice_library.md` | `09b3e7346ec3df51769f1d7719174f6a9c5b075eb6cb51f7bb9715a426905d90` |
+| readme | yes | `README.md` | `a3f82d6b4b02b61905bcbd80d4f5ea9fe40a7f068b9cd3422257a6de6b4817fa` |
+| library_doc | yes | `docs/trice_library.md` | `598eb48d1b7d737102a93f5cb7b962e2ba4e575c1cf148c0a22a78135471c07f` |
 
 ## Next Actions
 
@@ -58,4 +58,4 @@
 
 ## Hash
 
-- artifact card: `112bcf35b63d187538fe2e6034035fec25e6a545315c312adfd08be42e0c22ae`
+- artifact card: `22ffdb9d5811ade958d31d42a7139c06e2ad5a348ea46428d573cc15775dfb06`

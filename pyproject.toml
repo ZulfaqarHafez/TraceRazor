@@ -59,7 +59,8 @@ http = ["requests>=2.28"]
 paper = ["reportlab>=4"]
 
 # stdio MCP server (tracerazor-mcp) — exposes the auditor to agent hosts.
-mcp = ["mcp>=1.0"]
+# FastMCP ships from mcp 1.2; mcp 2.x removed mcp.server.fastmcp.
+mcp = ["mcp>=1.2,<2"]
 
 # Weight calibration tool (calibration/) — fits TAS weights to recoverable waste.
 calibrate = ["numpy>=1.24", "scipy>=1.10"]
@@ -88,7 +89,7 @@ all = [
     "numpy>=1.24",
     "scipy>=1.10",
     "reportlab>=4",
-    "mcp>=1.0",
+    "mcp>=1.2,<2",
 ]
 
 # Development dependencies.
@@ -145,7 +146,6 @@ artifacts = ["tracerazor/bin/*"]
 "examples/trice_remote_smoke_patch.json" = "tracerazor/_trice/examples/trice_remote_smoke_patch.json"
 "examples/trice_remote_smoke_source.json" = "tracerazor/_trice/examples/trice_remote_smoke_source.json"
 "examples/trice_remote_smoke_suite.json" = "tracerazor/_trice/examples/trice_remote_smoke_suite.json"
-"skills/tracerazor/SKILL.md" = "tracerazor/_trice/skills/tracerazor/SKILL.md"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -14,18 +14,16 @@ use tracerazor_core::{
     types::MIN_TRACE_STEPS,
 };
 use tracerazor_ingest::{parse as ingest_parse, TraceFormat};
-use tracerazor_semantic::{default_similarity_fn, LlmConfig};
+use tracerazor_semantic::default_similarity_fn;
 use tracerazor_store::TraceStore;
 
 mod agent;
 mod commands;
-mod trice_cmd;
 
 use agent::{cmd_agent, AgentCommand};
 use commands::{
     cmd_apply, cmd_audit, cmd_audit_batch, cmd_bench, cmd_claude, cmd_compare, cmd_cost,
-    cmd_export, cmd_import, cmd_keygen, cmd_list, cmd_optimize, cmd_simulate, cmd_verify,
-    expand_trace_paths,
+    cmd_export, cmd_import, cmd_keygen, cmd_list, cmd_simulate, cmd_verify, expand_trace_paths,
 };
 
 /// Open the persistent file-backed store at `~/.tracerazor/store`.
@@ -146,7 +144,9 @@ enum Commands {
         command: AgentCommand,
     },
 
-    /// Install and run the Claude Code TraceRazor coach hooks.
+    /// Deprecated 1.x alias: use `agent install --host claude` and
+    /// `import --from claude-code`. Hidden from help; kept for existing hooks.
+    #[command(hide = true)]
     Claude {
         #[command(subcommand)]
         command: ClaudeCommand,
@@ -308,59 +308,6 @@ enum Commands {
         /// Optional fixes JSON from the baseline audit (for estimated-vs-actual).
         #[arg(long, value_name = "FIXES")]
         fixes: Option<PathBuf>,
-        /// Output format.
-        #[arg(short, long, default_value = "markdown")]
-        format: OutputFormat,
-    },
-
-    /// Optimize a trace with TRICE, or rewrite a system prompt with the legacy LLM optimizer.
-    ///
-    /// Audits the trace, identifies the top waste patterns, then iteratively
-    /// asks the configured LLM to produce a tighter system prompt.  After each
-    /// iteration the simulator projects the TAS improvement; the loop stops
-    /// early when the target is met or the iteration cap is reached.
-    ///
-    /// Requires LLM credentials - see `tracerazor-semantic` docs for env vars:
-    ///   OPENAI_API_KEY  /  ANTHROPIC_API_KEY  /  TRACERAZOR_LLM_*
-    Optimize {
-        /// Trace file to optimise (legacy positional form).
-        #[arg(value_name = "TRACE")]
-        file: Option<PathBuf>,
-        /// Trace file to optimize with TRICE's runtime compressor.
-        #[arg(long, value_name = "TRACE")]
-        trace: Option<PathBuf>,
-        /// Target input-token budget as a fraction of the original trace.
-        #[arg(long, default_value = "0.40")]
-        budget_ratio: f64,
-        /// Write the TRICE context policy JSON here.
-        #[arg(long, value_name = "FILE")]
-        out: Option<PathBuf>,
-        /// Existing system-prompt file to rewrite. If omitted a prompt is
-        /// generated from scratch based on the trace's detected issues.
-        #[arg(long, value_name = "FILE")]
-        system_prompt: Option<PathBuf>,
-        /// Write the optimised prompt to this file (stdout if omitted).
-        #[arg(long, value_name = "FILE")]
-        output: Option<PathBuf>,
-        /// Maximum optimisation iterations (each calls the LLM once).
-        #[arg(long, default_value = "3")]
-        iterations: u8,
-        /// Stop early once the projected TAS reaches this score.
-        #[arg(long, default_value = "85.0")]
-        target_tas: f64,
-        /// Output format.
-        #[arg(short, long, default_value = "markdown")]
-        format: OutputFormat,
-    },
-
-    /// Replay a TRICE context policy against a recorded trace.
-    Replay {
-        /// Trace file used to build or evaluate the policy.
-        #[arg(long, value_name = "TRACE")]
-        trace: PathBuf,
-        /// TRICE context policy JSON produced by `tracerazor optimize`.
-        #[arg(long, value_name = "POLICY")]
-        policy: PathBuf,
         /// Output format.
         #[arg(short, long, default_value = "markdown")]
         format: OutputFormat,
@@ -679,43 +626,6 @@ async fn run() -> Result<()> {
             format,
         } => {
             cmd_bench(before, after, fixes, format).await?;
-        }
-        Commands::Optimize {
-            file,
-            trace,
-            budget_ratio,
-            out,
-            system_prompt,
-            output,
-            iterations,
-            target_tas,
-            format,
-        } => {
-            if trace.is_some() || out.is_some() {
-                let trace_path = trace
-                    .or(file)
-                    .context("optimize needs --trace <TRACE> (or legacy positional TRACE)")?;
-                trice_cmd::cmd_trice_optimize(trace_path, budget_ratio, out.or(output), format)
-                    .await?;
-            } else {
-                let trace_path = file.context("legacy optimize needs a TRACE argument")?;
-                cmd_optimize(
-                    trace_path,
-                    system_prompt,
-                    output,
-                    iterations,
-                    target_tas,
-                    format,
-                )
-                .await?;
-            }
-        }
-        Commands::Replay {
-            trace,
-            policy,
-            format,
-        } => {
-            trice_cmd::cmd_trice_replay(trace, policy, format).await?;
         }
         Commands::Export {
             file,

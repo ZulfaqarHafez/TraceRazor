@@ -1,9 +1,10 @@
-//! Pluggable LLM backend for TraceRazor.
+//! Optional embedding backend for TraceRazor's semantic similarity.
 //!
 //! Supports three provider shapes:
-//!   - `openai`            — api.openai.com chat/completions + embeddings
-//!   - `anthropic`         — api.anthropic.com messages (no embeddings)
-//!   - `openai-compatible` — any endpoint that speaks the OpenAI chat/embeddings
+//!   - `openai`            — api.openai.com embeddings
+//!   - `anthropic`         — recognised for configuration, but it has no
+//!     embeddings API, so callers fall back to bag-of-words similarity
+//!   - `openai-compatible` — any endpoint that speaks the OpenAI embeddings
 //!     wire format (Ollama, vLLM, Groq, Together, OpenRouter, Azure OpenAI, LM Studio, …)
 //!
 //! Selection is env-driven:
@@ -178,18 +179,6 @@ impl LlmConfig {
         }
     }
 
-    /// Send a single chat/messages request and return the assistant text.
-    pub async fn complete(&self, system: &str, user: &str) -> Result<String> {
-        match self.provider {
-            Provider::Openai | Provider::OpenaiCompatible => {
-                complete_openai(&self.base_url, &self.api_key, &self.model, system, user).await
-            }
-            Provider::Anthropic => {
-                complete_anthropic(&self.base_url, &self.api_key, &self.model, system, user).await
-            }
-        }
-    }
-
     /// Fetch embeddings for a batch of texts.
     ///
     /// Returns an error for Anthropic, which has no embeddings API — callers
@@ -204,173 +193,6 @@ impl LlmConfig {
             }
         }
     }
-}
-
-// ── OpenAI-shaped chat ────────────────────────────────────────────────────────
-
-#[derive(Serialize)]
-struct OpenaiChatRequest<'a> {
-    model: &'a str,
-    messages: Vec<OpenaiMessage<'a>>,
-    temperature: f32,
-    max_tokens: u32,
-}
-
-#[derive(Serialize)]
-struct OpenaiMessage<'a> {
-    role: &'a str,
-    content: &'a str,
-}
-
-#[derive(Deserialize)]
-struct OpenaiChatResponse {
-    choices: Vec<OpenaiChoice>,
-}
-
-#[derive(Deserialize)]
-struct OpenaiChoice {
-    message: OpenaiChoiceMessage,
-}
-
-#[derive(Deserialize)]
-struct OpenaiChoiceMessage {
-    #[serde(default)]
-    content: String,
-}
-
-async fn complete_openai(
-    base_url: &str,
-    api_key: &str,
-    model: &str,
-    system: &str,
-    user: &str,
-) -> Result<String> {
-    let client = reqwest::Client::new();
-    let body = OpenaiChatRequest {
-        model,
-        messages: vec![
-            OpenaiMessage {
-                role: "system",
-                content: system,
-            },
-            OpenaiMessage {
-                role: "user",
-                content: user,
-            },
-        ],
-        temperature: 0.0,
-        max_tokens: 256,
-    };
-
-    let url = format!("{}/chat/completions", base_url);
-    let mut req = client.post(&url).json(&body);
-    if !api_key.is_empty() {
-        req = req.bearer_auth(api_key);
-    }
-    let response = req
-        .send()
-        .await
-        .with_context(|| format!("chat request to {url} failed"))?;
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let txt = response.text().await.unwrap_or_default();
-        bail!("LLM API error {status}: {}", truncate_error_body(&txt));
-    }
-
-    let chat: OpenaiChatResponse = response
-        .json()
-        .await
-        .context("failed to parse OpenAI-shaped chat response")?;
-    Ok(chat
-        .choices
-        .into_iter()
-        .next()
-        .map(|c| c.message.content)
-        .unwrap_or_default())
-}
-
-// ── Anthropic messages ────────────────────────────────────────────────────────
-
-#[derive(Serialize)]
-struct AnthropicRequest<'a> {
-    model: &'a str,
-    max_tokens: u32,
-    system: &'a str,
-    messages: Vec<AnthropicMessage<'a>>,
-    temperature: f32,
-}
-
-#[derive(Serialize)]
-struct AnthropicMessage<'a> {
-    role: &'a str,
-    content: &'a str,
-}
-
-#[derive(Deserialize)]
-struct AnthropicResponse {
-    #[serde(default)]
-    content: Vec<AnthropicBlock>,
-}
-
-#[derive(Deserialize)]
-struct AnthropicBlock {
-    #[serde(rename = "type")]
-    block_type: String,
-    #[serde(default)]
-    text: String,
-}
-
-async fn complete_anthropic(
-    base_url: &str,
-    api_key: &str,
-    model: &str,
-    system: &str,
-    user: &str,
-) -> Result<String> {
-    let client = reqwest::Client::new();
-    let body = AnthropicRequest {
-        model,
-        max_tokens: 256,
-        system,
-        messages: vec![AnthropicMessage {
-            role: "user",
-            content: user,
-        }],
-        temperature: 0.0,
-    };
-
-    let url = format!("{}/messages", base_url);
-    let response = client
-        .post(&url)
-        .header("x-api-key", api_key)
-        .header("anthropic-version", "2023-06-01")
-        .json(&body)
-        .send()
-        .await
-        .with_context(|| format!("messages request to {url} failed"))?;
-
-    if !response.status().is_success() {
-        let status = response.status();
-        let txt = response.text().await.unwrap_or_default();
-        bail!(
-            "Anthropic API error {status}: {}",
-            truncate_error_body(&txt)
-        );
-    }
-
-    let parsed: AnthropicResponse = response
-        .json()
-        .await
-        .context("failed to parse Anthropic messages response")?;
-    let text = parsed
-        .content
-        .into_iter()
-        .filter(|b| b.block_type == "text")
-        .map(|b| b.text)
-        .collect::<Vec<_>>()
-        .join("");
-    Ok(text)
 }
 
 // ── OpenAI-shaped embeddings ──────────────────────────────────────────────────
@@ -435,7 +257,7 @@ async fn embed_openai(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use wiremock::matchers::{body_partial_json, header, method, path};
+    use wiremock::matchers::{method, path};
     use wiremock::{Mock, MockServer, ResponseTemplate};
 
     // ── env-map resolution ────────────────────────────────────────────────
@@ -560,71 +382,6 @@ mod tests {
     // ── HTTP wire format (mocked) ────────────────────────────────────────
 
     #[tokio::test]
-    async fn complete_openai_hits_chat_completions() {
-        let server = MockServer::start().await;
-        Mock::given(method("POST"))
-            .and(path("/chat/completions"))
-            .and(header("authorization", "Bearer sk-test"))
-            .and(body_partial_json(
-                serde_json::json!({"model": "gpt-4o-mini"}),
-            ))
-            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
-                "choices": [{"message": {"role": "assistant", "content": "hello from openai"}}]
-            })))
-            .mount(&server)
-            .await;
-
-        let cfg = LlmConfig::new(Provider::Openai, server.uri(), "gpt-4o-mini", "sk-test");
-        let out = cfg.complete("be terse", "hi").await.unwrap();
-        assert_eq!(out, "hello from openai");
-    }
-
-    #[tokio::test]
-    async fn complete_anthropic_hits_messages() {
-        let server = MockServer::start().await;
-        Mock::given(method("POST"))
-            .and(path("/messages"))
-            .and(header("x-api-key", "sk-ant-test"))
-            .and(header("anthropic-version", "2023-06-01"))
-            .and(body_partial_json(
-                serde_json::json!({"model": "claude-haiku-4-5-20251001"}),
-            ))
-            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
-                "content": [
-                    {"type": "text", "text": "hello from "},
-                    {"type": "text", "text": "claude"}
-                ]
-            })))
-            .mount(&server)
-            .await;
-
-        let cfg = LlmConfig::new(
-            Provider::Anthropic,
-            server.uri(),
-            "claude-haiku-4-5-20251001",
-            "sk-ant-test",
-        );
-        let out = cfg.complete("be terse", "hi").await.unwrap();
-        assert_eq!(out, "hello from claude");
-    }
-
-    #[tokio::test]
-    async fn complete_openai_compatible_works_without_api_key() {
-        let server = MockServer::start().await;
-        Mock::given(method("POST"))
-            .and(path("/chat/completions"))
-            .respond_with(ResponseTemplate::new(200).set_body_json(serde_json::json!({
-                "choices": [{"message": {"role": "assistant", "content": "local llama reply"}}]
-            })))
-            .mount(&server)
-            .await;
-
-        let cfg = LlmConfig::new(Provider::OpenaiCompatible, server.uri(), "llama3.1", "");
-        let out = cfg.complete("sys", "usr").await.unwrap();
-        assert_eq!(out, "local llama reply");
-    }
-
-    #[tokio::test]
     async fn embed_hits_embeddings_endpoint() {
         let server = MockServer::start().await;
         Mock::given(method("POST"))
@@ -664,19 +421,5 @@ mod tests {
             .await
             .unwrap_err();
         assert!(err.to_string().contains("Anthropic"));
-    }
-
-    #[tokio::test]
-    async fn complete_surfaces_http_errors() {
-        let server = MockServer::start().await;
-        Mock::given(method("POST"))
-            .and(path("/chat/completions"))
-            .respond_with(ResponseTemplate::new(401).set_body_string("nope"))
-            .mount(&server)
-            .await;
-
-        let cfg = LlmConfig::new(Provider::Openai, server.uri(), "gpt-4o-mini", "bad-key");
-        let err = cfg.complete("s", "u").await.unwrap_err();
-        assert!(err.to_string().contains("401"));
     }
 }

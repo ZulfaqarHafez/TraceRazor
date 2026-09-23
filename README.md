@@ -250,7 +250,8 @@ tracerazor agent verify-receipt .tracerazor/runs/<run-id>/run-receipt.json \
 ```
 
 The canonical agent workflow is in
-[`.agents/skills/tracerazor/SKILL.md`](.agents/skills/tracerazor/SKILL.md).
+[`skills/tracerazor/SKILL.md`](skills/tracerazor/SKILL.md); the host-specific
+copies are byte-identical mirrors kept in sync by `scripts/sync_skill.py`.
 Packaged surfaces are available for
 [Codex](plugins/tracerazor),
 [Claude Code](extensions/claude-code/tracerazor), and

@@ -17,7 +17,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{net::SocketAddr, path::PathBuf, time::Duration};
+use std::path::PathBuf;
 use tracerazor_core::report::Anomaly;
 use tracerazor_core::{analyse, scoring::ScoringConfig, types::Trace};
 use tracerazor_ingest::{parse, TraceFormat};
@@ -43,9 +43,6 @@ pub fn router() -> Router<AppState> {
         // Known-Good-Paths knowledge base
         .route("/kb", get(list_kb))
         .route("/kb/:id", get(get_kb_entry).delete(delete_kb_entry))
-        // Observability export (E-07)
-        .route("/export/otel", post(export_otel))
-        .route("/export/webhook", post(export_webhook))
 }
 
 async fn index() -> impl IntoResponse {
@@ -491,109 +488,6 @@ impl IntoResponse for AppError {
     }
 }
 
-// ── SSRF protection for outbound export targets ────────────────────────────────
-
-/// Validate a user-supplied export URL before the server makes an outbound
-/// request to it. Rejects non-http(s) schemes and any host that resolves to a
-/// private, loopback, link-local, or otherwise internal address — preventing
-/// the export endpoints from being abused to reach cloud metadata services
-/// (169.254.169.254) or internal infrastructure (SSRF).
-/// The returned target pins the request client to the validated addresses and
-/// disables redirects, so the network destination cannot drift after preflight.
-#[derive(Clone)]
-struct ValidatedExportTarget {
-    url: reqwest::Url,
-    host: String,
-    addrs: Vec<SocketAddr>,
-}
-
-fn validate_export_url(raw: &str) -> Result<ValidatedExportTarget, AppError> {
-    use std::net::ToSocketAddrs;
-
-    let url =
-        reqwest::Url::parse(raw).map_err(|e| AppError::bad_request(format!("Invalid URL: {e}")))?;
-
-    match url.scheme() {
-        "http" | "https" => {}
-        other => {
-            return Err(AppError::bad_request(format!(
-                "Unsupported URL scheme '{other}' (only http/https allowed)"
-            )))
-        }
-    }
-
-    let host = url
-        .host_str()
-        .ok_or_else(|| AppError::bad_request("Export URL has no host"))?;
-
-    let lowered = host.to_ascii_lowercase();
-    if lowered == "localhost" || lowered.ends_with(".localhost") || lowered.ends_with(".internal") {
-        return Err(AppError::bad_request(
-            "Refusing to export to an internal host (SSRF protection)",
-        ));
-    }
-
-    let port = url.port_or_known_default().unwrap_or(80);
-    let addrs: Vec<SocketAddr> = (host, port)
-        .to_socket_addrs()
-        .map_err(|e| AppError::bad_request(format!("Cannot resolve host '{host}': {e}")))?
-        .collect();
-
-    if addrs.is_empty() {
-        return Err(AppError::bad_request(format!(
-            "Host '{host}' did not resolve"
-        )));
-    }
-
-    for addr in &addrs {
-        if is_disallowed_ip(&addr.ip()) {
-            return Err(AppError::bad_request(
-                "Refusing to export to a private, loopback, or link-local address (SSRF protection)",
-            ));
-        }
-    }
-
-    let host = host.to_string();
-    Ok(ValidatedExportTarget { url, host, addrs })
-}
-
-fn export_client(target: &ValidatedExportTarget) -> Result<reqwest::Client, AppError> {
-    reqwest::Client::builder()
-        .redirect(reqwest::redirect::Policy::none())
-        .connect_timeout(Duration::from_secs(5))
-        .timeout(Duration::from_secs(10))
-        .resolve_to_addrs(&target.host, &target.addrs)
-        .build()
-        .map_err(AppError::internal)
-}
-
-/// Returns true for IPs that must never be the target of a server-initiated
-/// export request (loopback, private ranges, link-local incl. cloud metadata,
-/// CGNAT, unique-local IPv6, etc.).
-fn is_disallowed_ip(ip: &std::net::IpAddr) -> bool {
-    match ip {
-        std::net::IpAddr::V4(v4) => {
-            v4.is_private()
-                || v4.is_loopback()
-                || v4.is_link_local()
-                || v4.is_unspecified()
-                || v4.is_broadcast()
-                || v4.is_documentation()
-                // 100.64.0.0/10 (CGNAT / shared address space)
-                || (v4.octets()[0] == 100 && (v4.octets()[1] & 0xc0) == 64)
-        }
-        std::net::IpAddr::V6(v6) => {
-            v6.is_loopback()
-                || v6.is_unspecified()
-                || (v6.segments()[0] & 0xfe00) == 0xfc00 // unique-local fc00::/7
-                || (v6.segments()[0] & 0xffc0) == 0xfe80 // link-local fe80::/10
-                || v6
-                    .to_ipv4_mapped()
-                    .is_some_and(|m| is_disallowed_ip(&std::net::IpAddr::V4(m)))
-        }
-    }
-}
-
 // ── Known-Good-Paths KB ───────────────────────────────────────────────────────
 
 /// GET /api/kb
@@ -767,225 +661,6 @@ async fn metrics(State(state): State<AppState>) -> impl IntoResponse {
         )],
         out,
     )
-}
-
-// ── Observability Export (E-07) ───────────────────────────────────────────────
-
-#[derive(Deserialize)]
-pub struct ExportOtelRequest {
-    /// Trace ID to export (must already be stored).
-    pub trace_id: String,
-    /// OTEL collector endpoint (e.g. "http://localhost:4318").
-    pub endpoint: String,
-}
-
-#[derive(Deserialize)]
-pub struct ExportWebhookRequest {
-    /// Trace ID to export.
-    pub trace_id: String,
-    /// Webhook URL to POST the summary JSON to.
-    pub webhook_url: String,
-}
-
-#[derive(Serialize)]
-pub struct ExportResponse {
-    pub trace_id: String,
-    pub destination: String,
-    pub success: bool,
-    pub message: String,
-}
-
-/// POST /api/export/otel — send a stored trace to an OpenTelemetry collector.
-async fn export_otel(
-    State(state): State<AppState>,
-    Json(req): Json<ExportOtelRequest>,
-) -> Result<impl IntoResponse, AppError> {
-    let endpoint_url = format!("{}/v1/traces", req.endpoint.trim_end_matches('/'));
-    let export_target = validate_export_url(&endpoint_url)?;
-
-    let stored = state
-        .store
-        .get_trace(&req.trace_id)
-        .await
-        .map_err(AppError::internal)?
-        .ok_or_else(|| AppError::not_found(format!("Trace '{}' not found", req.trace_id)))?;
-
-    let report = stored
-        .report
-        .as_ref()
-        .ok_or_else(|| AppError::bad_request("Trace has no report — audit it first"))?;
-
-    let trace = &stored.trace;
-
-    // Build OTEL HTTP/JSON payload (ResourceSpans format).
-    let spans: Vec<serde_json::Value> = trace
-        .steps
-        .iter()
-        .enumerate()
-        .map(|(i, step)| {
-            let span_id = format!("{:016x}", i as u64 + 1);
-            let parent_span_id = if i == 0 {
-                serde_json::Value::Null
-            } else {
-                serde_json::Value::String(format!("{:016x}", i as u64))
-            };
-            json!({
-                "traceId": format!("{:032x}", trace.trace_id.len() as u128),
-                "spanId": span_id,
-                "parentSpanId": parent_span_id,
-                "name": step.tool_name.as_deref().unwrap_or(&step.step_type.to_string()),
-                "kind": 1,
-                "startTimeUnixNano": (i as u64) * 1_000_000_000u64,
-                "endTimeUnixNano": (i as u64 + 1) * 1_000_000_000u64,
-                "attributes": [
-                    {"key": "tracerazor.step_id", "value": {"intValue": step.id}},
-                    {"key": "tracerazor.step_type", "value": {"stringValue": step.step_type.to_string()}},
-                    {"key": "tracerazor.tokens", "value": {"intValue": step.tokens}},
-                    {"key": "tracerazor.tool_success", "value": {"boolValue": step.tool_success.unwrap_or(true)}},
-                    {"key": "tracerazor.agent_name", "value": {"stringValue": trace.agent_name.clone()}},
-                    {"key": "tracerazor.framework", "value": {"stringValue": trace.framework.clone()}},
-                ],
-                "status": {"code": if step.tool_success.unwrap_or(true) { 1 } else { 2 }}
-            })
-        })
-        .collect();
-
-    let root_span = json!({
-        "traceId": format!("{:032x}", trace.trace_id.len() as u128),
-        "spanId": "0000000000000000",
-        "name": format!("tracerazor.audit/{}", trace.trace_id),
-        "kind": 1,
-        "startTimeUnixNano": 0u64,
-        "endTimeUnixNano": (trace.steps.len() as u64) * 1_000_000_000u64,
-        "attributes": [
-            {"key": "tracerazor.trace_id", "value": {"stringValue": trace.trace_id.clone()}},
-            {"key": "tracerazor.agent_name", "value": {"stringValue": trace.agent_name.clone()}},
-            {"key": "tracerazor.framework", "value": {"stringValue": trace.framework.clone()}},
-            {"key": "tracerazor.tas_score", "value": {"doubleValue": report.score.score}},
-            {"key": "tracerazor.grade", "value": {"stringValue": report.score.grade.to_string()}},
-            {"key": "tracerazor.total_tokens", "value": {"intValue": report.total_tokens}},
-            {"key": "tracerazor.tokens_saved", "value": {"intValue": report.savings.tokens_saved}},
-        ],
-        "status": {"code": 1}
-    });
-
-    let mut all_spans = vec![root_span];
-    all_spans.extend(spans);
-
-    let payload = json!({
-        "resourceSpans": [{
-            "resource": {
-                "attributes": [
-                    {"key": "service.name", "value": {"stringValue": "tracerazor"}},
-                    {"key": "service.version", "value": {"stringValue": env!("CARGO_PKG_VERSION")}}
-                ]
-            },
-            "scopeSpans": [{
-                "scope": {"name": "tracerazor", "version": env!("CARGO_PKG_VERSION")},
-                "spans": all_spans
-            }]
-        }]
-    });
-
-    let client = export_client(&export_target)?;
-    let result = client
-        .post(export_target.url.clone())
-        .header("Content-Type", "application/json")
-        .json(&payload)
-        .send()
-        .await;
-
-    match result {
-        Ok(resp) if resp.status().is_success() => Ok(Json(ExportResponse {
-            trace_id: req.trace_id,
-            destination: export_target.url.to_string(),
-            success: true,
-            message: format!("Exported {} spans to OTEL collector", all_spans.len()),
-        })),
-        Ok(resp) => {
-            let status = resp.status().as_u16();
-            Ok(Json(ExportResponse {
-                trace_id: req.trace_id,
-                destination: export_target.url.to_string(),
-                success: false,
-                message: format!("Collector returned HTTP {status}"),
-            }))
-        }
-        Err(e) => Ok(Json(ExportResponse {
-            trace_id: req.trace_id,
-            destination: export_target.url.to_string(),
-            success: false,
-            message: format!("Export failed: {e}"),
-        })),
-    }
-}
-
-/// POST /api/export/webhook — POST a trace summary JSON to a webhook URL.
-async fn export_webhook(
-    State(state): State<AppState>,
-    Json(req): Json<ExportWebhookRequest>,
-) -> Result<impl IntoResponse, AppError> {
-    let export_target = validate_export_url(&req.webhook_url)?;
-
-    let stored = state
-        .store
-        .get_trace(&req.trace_id)
-        .await
-        .map_err(AppError::internal)?
-        .ok_or_else(|| AppError::not_found(format!("Trace '{}' not found", req.trace_id)))?;
-
-    let report = stored
-        .report
-        .as_ref()
-        .ok_or_else(|| AppError::bad_request("Trace has no report — audit it first"))?;
-
-    let trace = &stored.trace;
-    let summary = json!({
-        "trace_id": trace.trace_id,
-        "agent_name": trace.agent_name,
-        "framework": trace.framework,
-        "total_steps": trace.steps.len(),
-        "total_tokens": report.total_tokens,
-        "tas_score": report.score.score,
-        "grade": report.score.grade.to_string(),
-        "tokens_saved": report.savings.tokens_saved,
-        "cost_saved_per_run_usd": report.savings.cost_saved_per_run_usd,
-        "summary": report.summary,
-        "anomalies": report.anomalies.len(),
-        "source": "tracerazor"
-    });
-
-    let client = export_client(&export_target)?;
-    let result = client
-        .post(export_target.url.clone())
-        .header("Content-Type", "application/json")
-        .json(&summary)
-        .send()
-        .await;
-
-    match result {
-        Ok(resp) if resp.status().is_success() => Ok(Json(ExportResponse {
-            trace_id: req.trace_id,
-            destination: export_target.url.to_string(),
-            success: true,
-            message: "Webhook delivered successfully".into(),
-        })),
-        Ok(resp) => {
-            let status = resp.status().as_u16();
-            Ok(Json(ExportResponse {
-                trace_id: req.trace_id,
-                destination: export_target.url.to_string(),
-                success: false,
-                message: format!("Webhook returned HTTP {status}"),
-            }))
-        }
-        Err(e) => Ok(Json(ExportResponse {
-            trace_id: req.trace_id,
-            destination: export_target.url.to_string(),
-            success: false,
-            message: format!("Webhook delivery failed: {e}"),
-        })),
-    }
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -1276,36 +951,6 @@ mod tests {
     }
 
     #[test]
-    fn test_validate_export_url_rejects_ssrf_targets() {
-        // Non-http schemes
-        assert!(validate_export_url("file:///etc/passwd").is_err());
-        assert!(validate_export_url("ftp://example.com").is_err());
-        // Internal hostnames
-        assert!(validate_export_url("http://localhost:4318").is_err());
-        assert!(validate_export_url("http://foo.internal/v1/traces").is_err());
-        // Loopback / private / link-local (cloud metadata) literals
-        assert!(validate_export_url("http://127.0.0.1:4318").is_err());
-        assert!(validate_export_url("http://10.0.0.5/hook").is_err());
-        assert!(validate_export_url("http://192.168.1.10/hook").is_err());
-        assert!(validate_export_url("http://169.254.169.254/latest/meta-data").is_err());
-        assert!(validate_export_url("http://[::1]:4318").is_err());
-        // Garbage
-        assert!(validate_export_url("not a url").is_err());
-    }
-
-    #[test]
-    fn test_validate_export_url_returns_pinned_target_for_public_literal() {
-        let target = validate_export_url("http://93.184.216.34/hook").unwrap();
-        assert_eq!(target.host, "93.184.216.34");
-        assert_eq!(target.url.as_str(), "http://93.184.216.34/hook");
-        assert!(!target.addrs.is_empty());
-        assert!(target
-            .addrs
-            .iter()
-            .all(|addr| !is_disallowed_ip(&addr.ip())));
-    }
-
-    #[test]
     fn test_trace_budget_is_shared_for_import_and_audit() {
         use std::collections::HashMap;
         use tracerazor_core::types::{StepType, TraceStep};
@@ -1338,22 +983,6 @@ mod tests {
         assert!(validate_trace_budget(&trace).is_err());
         trace.steps.truncate(MAX_TRACE_STEPS);
         assert!(validate_trace_budget(&trace).is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_export_otel_rejects_internal_endpoint() {
-        let server = test_app().await;
-        server
-            .post("/api/audit")
-            .json(&json!({"trace": sample_trace()}))
-            .await
-            .assert_status_ok();
-
-        let resp = server
-            .post("/api/export/otel")
-            .json(&json!({"trace_id": "integ-001", "endpoint": "http://169.254.169.254"}))
-            .await;
-        resp.assert_status(StatusCode::BAD_REQUEST);
     }
 
     #[tokio::test]

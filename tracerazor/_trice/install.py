@@ -462,10 +462,6 @@ def _scrub_json_value(value: Any, scrub_roots: list[Path]) -> Any:
     return value
 
 
-def _stdout_has(row: dict[str, Any], text: str) -> bool:
-    return text in str(row.get("stdout_excerpt") or "")
-
-
 def _check(name: str, passed: bool, observed: Any, required: Any) -> dict[str, Any]:
     return {"name": name, "passed": bool(passed), "observed": observed, "required": required}
 

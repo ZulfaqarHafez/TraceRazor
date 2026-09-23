@@ -191,3 +191,37 @@ def test_ids_are_sequential_from_one(tmp_path):
     assert [s["id"] for s in trace["steps"]] == list(
         range(1, len(trace["steps"]) + 1)
     )
+
+
+def test_matches_the_shipped_rust_claude_code_ingest(tmp_path):
+    """This benchmark converter duplicates the shipped Rust ingest
+    (`tracerazor import --from claude-code`). The committed case-study traces
+    were produced by it, so it stays, but the two must not drift: same step
+    structure and total tokens, with per-step splits within rounding."""
+    import os
+    import shutil
+    import subprocess
+
+    import pytest
+
+    from tracerazor._launcher import find_binary
+
+    binary = os.environ.get("TRACERAZOR_BIN") or find_binary() or shutil.which("tracerazor")
+    if not binary or not os.path.isfile(binary):
+        pytest.skip("tracerazor binary not built")
+    transcript = _write_transcript(tmp_path, _basic_entries())
+    py = convert(transcript)
+    out = subprocess.run(
+        [binary, "import", str(transcript), "--from", "claude-code"],
+        capture_output=True, text=True, check=True,
+    )
+    rs = json.loads(out.stdout)
+
+    def shape(trace):
+        return [(s.get("type"), s.get("tool_name")) for s in trace["steps"]]
+
+    assert shape(py) == shape(rs)
+    py_tokens = [s["tokens"] for s in py["steps"]]
+    rs_tokens = [s["tokens"] for s in rs["steps"]]
+    assert sum(py_tokens) == sum(rs_tokens)
+    assert all(abs(a - b) <= 1 for a, b in zip(py_tokens, rs_tokens))

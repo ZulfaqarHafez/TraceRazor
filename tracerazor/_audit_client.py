@@ -17,12 +17,12 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
+from ._launcher import resolve_binary
 from .errors import AuditError, BelowMinStepsError, BinaryNotFoundError
 
 
@@ -345,45 +345,9 @@ class TraceRazorClient:
 
     @staticmethod
     def _find_binary() -> str:
-        # Platform wheels bundle the CLI inside the package; prefer it.
-        here_pkg = os.path.dirname(os.path.abspath(__file__))
-        for name in ("tracerazor", "tracerazor.exe"):
-            bundled = os.path.join(here_pkg, "bin", name)
-            if os.path.isfile(bundled) and os.access(bundled, os.X_OK):
-                return bundled
-
-        env_path = os.environ.get("TRACERAZOR_BIN")
-        if env_path:
-            if os.path.isfile(env_path):
-                return env_path
+        try:
+            return resolve_binary()
+        except BinaryNotFoundError as exc:
             raise BinaryNotFoundError(
-                "TRACERAZOR_BIN is set but does not point to a file:\n"
-                f"  {env_path}\n"
-                "Set it to an existing tracerazor binary or unset it to use auto-discovery."
-            )
-
-        found = shutil.which("tracerazor") or shutil.which("tracerazor.exe")
-        if found:
-            return found
-
-        here = os.path.dirname(os.path.abspath(__file__))
-        # This file lives at <repo>/tracerazor/_audit_client.py, so a source
-        # checkout's `cargo build` output is exactly one level up.
-        for rel in [
-            "../target/release/tracerazor.exe",
-            "../target/release/tracerazor",
-            "../target/debug/tracerazor.exe",
-            "../target/debug/tracerazor",
-        ]:
-            candidate = os.path.normpath(os.path.join(here, rel))
-            if os.path.isfile(candidate):
-                return candidate
-
-        raise BinaryNotFoundError(
-            "tracerazor binary not found.\n"
-            "Options:\n"
-            "  1. Set TRACERAZOR_BIN=/path/to/tracerazor\n"
-            "  2. Build from source: cargo build --release -p tracerazor\n"
-            "  3. Install a platform wheel (bundles the binary): pip install tracerazor\n"
-            "  4. Use HTTP mode: TraceRazorClient(server='http://localhost:8080')"
-        )
+                f"{exc}  Or use HTTP mode: TraceRazorClient(server='http://localhost:8080')\n"
+            ) from None

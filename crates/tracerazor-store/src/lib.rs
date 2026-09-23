@@ -80,18 +80,6 @@ pub struct TasTrendPoint {
     pub tokens: u32,
 }
 
-/// Rolling baseline statistics for an agent, used for anomaly detection (E-04).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AgentBaseline {
-    pub agent_name: String,
-    /// Rolling mean TAS score.
-    pub mean_tas: f64,
-    /// Rolling standard deviation of TAS scores.
-    pub std_dev_tas: f64,
-    /// Number of traces used to compute this baseline.
-    pub sample_count: usize,
-}
-
 /// The TraceRazor store — a thin async wrapper around SQLite.
 ///
 /// `Connection` from `tokio-rusqlite` runs all SQL on a single dedicated
@@ -462,58 +450,6 @@ impl TraceStore {
         Ok(anomalies)
     }
 
-    /// Compute the rolling baseline for an agent's TAS score.
-    ///
-    /// Returns `None` if fewer than 5 traces exist (insufficient for statistics).
-    pub async fn agent_baseline(&self, agent_name: &str) -> Result<Option<AgentBaseline>> {
-        let summaries = self.list_traces().await?;
-        let scores: Vec<f64> = summaries
-            .iter()
-            .filter(|s| s.agent_name == agent_name)
-            .filter_map(|s| s.tas_score)
-            .collect();
-
-        if scores.len() < 5 {
-            return Ok(None);
-        }
-
-        let mean = scores.iter().sum::<f64>() / scores.len() as f64;
-        let variance = scores.iter().map(|s| (s - mean).powi(2)).sum::<f64>() / scores.len() as f64;
-        let std_dev = variance.sqrt();
-
-        Ok(Some(AgentBaseline {
-            agent_name: agent_name.to_string(),
-            mean_tas: (mean * 10.0).round() / 10.0,
-            std_dev_tas: (std_dev * 10.0).round() / 10.0,
-            sample_count: scores.len(),
-        }))
-    }
-
-    /// Detect anomalies for a newly computed TAS score against the agent's baseline.
-    ///
-    /// Returns anomaly entries if the score deviates by more than 2 standard
-    /// deviations from the rolling mean. Pass the result into `report.anomalies`.
-    pub async fn detect_anomalies(&self, agent_name: &str, tas_score: f64) -> Result<Vec<Anomaly>> {
-        let Some(baseline) = self.agent_baseline(agent_name).await? else {
-            return Ok(vec![]);
-        };
-
-        let std_dev = baseline.std_dev_tas.max(1.0); // floor to avoid division by tiny σ
-        let z_score = (tas_score - baseline.mean_tas) / std_dev;
-
-        if z_score.abs() > 2.0 {
-            Ok(vec![Anomaly {
-                metric: "tas_score".into(),
-                value: tas_score,
-                z_score: (z_score * 100.0).round() / 100.0,
-                baseline_mean: baseline.mean_tas,
-                baseline_std: baseline.std_dev_tas,
-            }])
-        } else {
-            Ok(vec![])
-        }
-    }
-
     // ── Helpers ────────────────────────────────────────────────────────────
 
     fn to_summary(st: StoredTrace) -> TraceSummary {
@@ -657,22 +593,6 @@ mod tests {
         let store = TraceStore::connect_mem().await.unwrap();
         let sequences = store.historical_sequences("agent-a").await.unwrap();
         assert!(sequences.is_empty());
-    }
-
-    #[tokio::test]
-    async fn test_anomaly_detection_insufficient_data() {
-        let store = TraceStore::connect_mem().await.unwrap();
-        // Only 2 traces — below the 5-trace minimum.
-        store
-            .save_trace(&dummy_trace("t1", "agent-a"), None)
-            .await
-            .unwrap();
-        store
-            .save_trace(&dummy_trace("t2", "agent-a"), None)
-            .await
-            .unwrap();
-        let anomalies = store.detect_anomalies("agent-a", 30.0).await.unwrap();
-        assert!(anomalies.is_empty());
     }
 
     #[tokio::test]

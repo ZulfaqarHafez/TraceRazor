@@ -31,7 +31,6 @@ use serde_json::json;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use tower_http::cors::{AllowOrigin, CorsLayer};
-use tower_http::services::ServeDir;
 
 use state::AppState;
 
@@ -43,6 +42,20 @@ pub(crate) const MAX_BODY_BYTES: usize = 16 * 1024 * 1024;
 /// Lightweight Alpine.js + Chart.js dashboard — embedded in the binary,
 /// no build step required. Served at `/`.
 static DASHBOARD_HTML: &str = include_str!("dashboard.html");
+
+/// The dashboard's component script, served same-origin so the page CSP can
+/// forbid inline scripts and `eval` (it uses Alpine's CSP build).
+static DASHBOARD_JS: &str = include_str!("dashboard.js");
+
+async fn dashboard_js_handler() -> impl IntoResponse {
+    (
+        [(
+            header::CONTENT_TYPE,
+            "application/javascript; charset=utf-8",
+        )],
+        DASHBOARD_JS,
+    )
+}
 
 async fn dashboard_handler() -> impl IntoResponse {
     (
@@ -187,17 +200,9 @@ async fn require_bearer(State(expected): State<ApiToken>, req: Request, next: Ne
     }
 }
 
-/// Build the Axum application router, reading the bearer token from the
-/// `TRACERAZOR_API_TOKEN` environment variable.
-pub fn build_app(state: AppState) -> Router {
-    let token = std::env::var("TRACERAZOR_API_TOKEN")
-        .ok()
-        .filter(|t| !t.is_empty());
-    build_app_with_token(state, token)
-}
-
 /// Build the Axum application router with an explicit bearer token
-/// (`None` = unauthenticated). Extracted for testability.
+/// (`None` = unauthenticated). [`run_server`] reads the token from
+/// `TRACERAZOR_API_TOKEN`.
 pub fn build_app_with_token(state: AppState, api_token: Option<String>) -> Router {
     // Restrict to the methods/headers the API actually uses rather than `Any`,
     // shrinking the cross-origin attack surface.
@@ -226,8 +231,7 @@ pub fn build_app_with_token(state: AppState, api_token: Option<String>) -> Route
         .route("/readyz", get(readyz))
         // Lightweight dashboard embedded in binary (always available).
         .route("/", axum::routing::get(dashboard_handler))
-        // React build served at /app (optional — run `npm run build` in dashboard/).
-        .nest_service("/app", ServeDir::new("dashboard/dist"))
+        .route("/dashboard.js", axum::routing::get(dashboard_js_handler))
         .layer(cors)
         .layer(DefaultBodyLimit::max(MAX_BODY_BYTES))
         .with_state(state)
@@ -337,11 +341,7 @@ pub async fn run_server(opts: ServeOptions) -> Result<()> {
             "TLS terminated by trusted reverse proxy (asserted by TRACERAZOR_TLS_TERMINATED=true)"
         }
     );
-    println!("Dashboard (Alpine): http://localhost:{}/", opts.port);
-    println!(
-        "Dashboard (React):  http://localhost:{}/app  (requires: cd dashboard && npm run build)",
-        opts.port
-    );
+    println!("Dashboard:          http://localhost:{}/", opts.port);
     println!(
         "Metrics:            http://localhost:{}/api/metrics",
         opts.port
@@ -461,5 +461,47 @@ mod auth_tests {
         assert!(validate_bind_security("192.168.1.25", true, false).is_err());
         assert!(validate_bind_security("0.0.0.0", false, true).is_err());
         assert!(validate_bind_security("0.0.0.0", true, true).is_ok());
+    }
+
+    /// The page CSP forbids inline scripts and eval, so the dashboard must load
+    /// its component from `/dashboard.js` and use Alpine's CSP build.
+    #[tokio::test]
+    async fn dashboard_works_under_its_own_csp() {
+        let server = server_with_token(None).await;
+        let page = server.get("/").await;
+        page.assert_status_ok();
+        let csp = page
+            .headers()
+            .get(header::CONTENT_SECURITY_POLICY)
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string();
+        let script_src = csp
+            .split(';')
+            .map(str::trim)
+            .find(|d| d.starts_with("script-src"))
+            .unwrap();
+        assert!(!script_src.contains("unsafe-inline") && !script_src.contains("unsafe-eval"));
+        let html = page.text();
+        for tag in html.split("<script").skip(1) {
+            let open = tag.split('>').next().unwrap_or_default();
+            assert!(
+                open.contains("src="),
+                "inline <script> blocked by CSP: {open}"
+            );
+        }
+        assert!(
+            html.contains("@alpinejs/csp@"),
+            "standard Alpine needs 'unsafe-eval'"
+        );
+        assert!(
+            !html.contains("x-html"),
+            "x-html is prohibited in Alpine's CSP build"
+        );
+
+        let js = server.get("/dashboard.js").await;
+        js.assert_status_ok();
+        assert!(js.text().contains("Alpine.data('app', app)"));
     }
 }

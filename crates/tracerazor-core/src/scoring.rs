@@ -200,7 +200,9 @@ pub struct TasScore {
     pub grade: Grade,
     /// Value-Adjusted Efficiency score.
     pub vae: f64,
-    /// Whether TAS meets the configured threshold.
+    /// Whether TAS meets `ScoringConfig::threshold`. Without an explicit
+    /// `--threshold` that is the built-in default (70), which the CLI does not
+    /// gate on; TAS is ordinal, so this is not a quality verdict.
     pub passes_threshold: bool,
     /// Aggregate Verbosity Score (0.0–1.0). Higher = more verbose waste.
     /// AVS > 0.40 triggers a VERBOSITY ALERT in the report.

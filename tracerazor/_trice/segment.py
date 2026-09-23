@@ -13,7 +13,6 @@ import json
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
 from typing import Any
 
 
@@ -86,10 +85,6 @@ class Segment:
             "rehydrate_pointer": self.rehydrate_pointer,
             "rationale": self.rationale,
         }
-
-
-def load_trace(path: str | Path) -> dict[str, Any]:
-    return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
 def segments_from_trace(trace: dict[str, Any]) -> list[Segment]:

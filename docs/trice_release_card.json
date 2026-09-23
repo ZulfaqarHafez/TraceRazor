@@ -8,7 +8,7 @@
     },
     {
       "name": "bundled_cli",
-      "observed": "on-path: C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.1.0",
+      "observed": "bundled: /home/user/TraceRazor/tracerazor/bin/tracerazor; binary=1.1.0",
       "passed": true,
       "required": "CLI binary is bundled or source-build reachable"
     },
@@ -56,7 +56,7 @@
     },
     {
       "name": "piwheels",
-      "observed": "missing: files=0 local=1.1.0",
+      "observed": "unknown: <urlopen error Tunnel connection failed: 403 Forbidden>",
       "passed": false,
       "required": "piwheels exposes the local version file"
     },
@@ -68,7 +68,7 @@
     },
     {
       "name": "github_tag",
-      "observed": "pending: head=a97eb122463e local_tag=False remote_tag=True",
+      "observed": "pending: head=9ca945772fe9 local_tag=False remote_tag=True",
       "passed": false,
       "required": "local version tag points at current commit locally and remotely"
     },
@@ -80,7 +80,7 @@
     },
     {
       "name": "openssf_scorecard",
-      "observed": "below-threshold: score=3.8 minimum=7.0 date=2026-07-10T15:06:50Z commit=a97eb122463e",
+      "observed": "unknown: <urlopen error Tunnel connection failed: 403 Forbidden>",
       "passed": false,
       "required": "OpenSSF Scorecard is published with score >= 7.0"
     },
@@ -148,9 +148,9 @@
   "doctor_snapshot": {
     "checks": {
       "bundled_cli": {
-        "detail": "C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.1.0",
+        "detail": "/home/user/TraceRazor/tracerazor/bin/tracerazor; binary=1.1.0",
         "ok": true,
-        "status": "on-path"
+        "status": "bundled"
       },
       "crates_io": {
         "detail": "crate tracerazor is not published",
@@ -165,7 +165,7 @@
         "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
       },
       "github_tag": {
-        "detail": "head=a97eb122463e local_tag=False remote_tag=True",
+        "detail": "head=9ca945772fe9 local_tag=False remote_tag=True",
         "ok": false,
         "status": "pending"
       },
@@ -175,15 +175,15 @@
         "status": "installed"
       },
       "openssf_scorecard": {
-        "detail": "score=3.8 minimum=7.0 date=2026-07-10T15:06:50Z commit=a97eb122463e",
-        "ok": false,
-        "status": "below-threshold",
+        "detail": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+        "ok": null,
+        "status": "unknown",
         "url": "https://api.scorecard.dev/projects/github.com/ZulfaqarHafez/TraceRazor"
       },
       "piwheels": {
-        "detail": "files=0 local=1.1.0",
-        "ok": false,
-        "status": "missing",
+        "detail": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+        "ok": null,
+        "status": "unknown",
         "url": "https://www.piwheels.org/project/tracerazor/json"
       },
       "pypi": {
@@ -201,63 +201,64 @@
     "local_version": "1.1.0",
     "offline": false,
     "package": "tracerazor",
-    "platform": "Windows-10-10.0.26200-SP0",
-    "python": "3.11.6",
+    "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+    "python": "3.11.15",
     "schema_version": "trice-doctor/v1",
     "summary": {
       "failed": [
-        "piwheels",
         "crates_io",
-        "github_tag",
-        "openssf_scorecard"
+        "github_tag"
       ],
       "ok": false,
-      "unknown": []
+      "unknown": [
+        "piwheels",
+        "openssf_scorecard"
+      ]
     }
   },
-  "doctor_snapshot_sha256": "98a2ad9d1baed6f717d98ea0a137fdbe616324c354c9854aa895dd03dcd0b1b5",
+  "doctor_snapshot_sha256": "c0d3dacc42f6799d0fdbffb060c2401c76df301fb3f4d352383ae3b861f50bbe",
   "inputs": {
     "artifact_card": {
       "bytes": 16185,
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "dbf86de28860a8a23d59e049ad43122a65dfc338cea423e715502461fb7b42df"
+      "sha256": "97764cb844e2715f61507d19d249facfa0432a4401245d2633f78856792f192d"
     },
     "contract_card": {
       "bytes": 19194,
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "f4635c58f7f396076b119fbe1e1bae5e14385ec7493c4142fd4e66840ca733b3"
+      "sha256": "fa3e7141f169858f8bb9740dfe15b54b752bacf55b927cc555df74400e0f88ef"
     },
     "install_card": {
-      "bytes": 14035,
+      "bytes": 13925,
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "d5528d855bd86026b9f6279e4f4eaa23605e92209b56ad6f3f3c6775ce5f0892"
+      "sha256": "4983ece11e0ce39577d41d9d717eff299e621f018f500739c247da89c3219af1"
     },
     "public_trust_matrix": {
-      "bytes": 11320,
+      "bytes": 11414,
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "70351f0f99481ead09ad85200a11dbce0e21f536d1b9731c47499ae30845a4e3"
+      "sha256": "42f28d2beae0f8c64da05de002c131d64ae7de9ecd3943d6d3acc4a513765ed0"
     },
     "pyproject": {
-      "bytes": 7355,
+      "bytes": 7349,
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "4be7a3b566399a326c20039ffb391cff133d1ad0ac9b1f475f97095dc3f042c5"
+      "sha256": "030eef8eb857fcaefb79dc5f71b5280b3bd6f1b92a5c6f231a762a242a068b36"
     },
     "readme": {
-      "bytes": 20271,
+      "bytes": 20348,
       "path": "README.md",
       "present": true,
-      "sha256": "15fb513d3f5452528ce3ccacf7e625369064165973382c658ab59b239efde629"
+      "sha256": "a3f82d6b4b02b61905bcbd80d4f5ea9fe40a7f068b9cd3422257a6de6b4817fa"
     },
     "release_checklist": {
-      "bytes": 8626,
+      "bytes": 8855,
       "path": "docs/release_checklist.md",
       "present": true,
-      "sha256": "417ec51643916e57c669d88494cd1eec9cd4e81a9e2e4bc01743411426c61a3b"
+      "sha256": "29a30511836d787f2d380070511f0537f96fa46a35b0969dfaae7f232c939578"
     },
     "reproduction_card": {
       "bytes": 7294,
@@ -276,11 +277,11 @@
     "local_version": "1.1.0",
     "name": "tracerazor",
     "offline": false,
-    "platform": "Windows-10-10.0.26200-SP0",
-    "python": "3.11.6"
+    "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+    "python": "3.11.15"
   },
   "public_release_ready": false,
-  "release_card_sha256": "c4e6701823735792ed9de60e7edf3ac3a17ac424b40ec7079db01a325ae5747a",
+  "release_card_sha256": "ac412e95b5edbc148e90a38e42f8ae74600ef8688c07a94a630fa79d62fed1aa",
   "release_level": "local_release_candidate",
   "release_score": 90,
   "research_basis": [
