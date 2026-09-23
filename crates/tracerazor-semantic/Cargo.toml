@@ -1,6 +1,6 @@
 [package]
 name = "tracerazor-semantic"
-description = "Semantic similarity engine for TraceRazor (TF cosine similarity, ONNX embedding upgrade path)"
+description = "Semantic similarity engine for TraceRazor (TF cosine similarity, optional HTTP embeddings)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -13,9 +13,7 @@ categories.workspace = true
 
 [dependencies]
 serde = { workspace = true }
-serde_json = { workspace = true }
 anyhow = { workspace = true }
-tokio = { workspace = true }
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
 
 [dev-dependencies]

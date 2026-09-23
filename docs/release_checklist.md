@@ -106,8 +106,11 @@ artifacts are:
 Existing release assets are immutable. A rerun may skip a byte-identical asset,
 but must fail if an asset with the same name has different bytes.
 
-PyPI trusted publishing uses GitHub OIDC and fails if the version already exists; it never
-silently accepts an existing file without proving byte identity. Release
+PyPI publishing is designed for trusted publishing via GitHub OIDC. Until the
+PyPI trusted publisher is registered, the workflow falls back to the
+`PYPI_API_TOKEN` secret and publishes without PyPI attestations; v1.1.0 was
+published through that token fallback. Either path fails if the version already
+exists; it never silently accepts an existing file without proving byte identity. Release
 evidence extracts its CLI subject from the downloaded standalone archive built
 by the binary matrix, rather than compiling a replacement in the evidence job.
 The composite GitHub Action defaults to the

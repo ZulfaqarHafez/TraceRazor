@@ -1,10 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" x-data="app()" x-init="boot()" :class="dark ? 'dark' : 'light'">
+<html lang="en" x-data="app" x-init="boot()" :class="dark ? 'dark' : 'light'">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TraceRazor</title>
-  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js" integrity="sha384-l8f0VcPi/M1iHPv8egOnY/15TDwqgbOR1anMIJWvU6nLRgZVLTLSaNqi/TOoT5Fh" crossorigin="anonymous" defer></script>
+  <!-- Served same-origin so the page CSP needs neither 'unsafe-inline' nor 'unsafe-eval'.
+       It must load before Alpine so its alpine:init listener registers the component. -->
+  <script src="/dashboard.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@alpinejs/csp@3.17.4/dist/cdn.min.js" integrity="sha384-DQd2BgbtOQrdt/JbxcM+wSb8poOHwsG5W2jbbXskj85r7SWPwqpBFgGGR1devM/D" crossorigin="anonymous" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" integrity="sha384-Sse/HDqcypGpyTDpvZOJNnG0TT3feGQUkF9H+mnRvic+LjR+K1NhTt8f51KIQ3v3" crossorigin="anonymous"></script>
   <style>
     :root {
@@ -131,12 +134,12 @@
           </div>
           <div class="stat-card">
             <div class="stat-label">Avg TAS</div>
-            <div class="stat-value" x-text="(dashboard.avg_tas ?? 0).toFixed(1) + ' / 100'"></div>
+            <div class="stat-value" x-text="(dashboard.avg_tas || 0).toFixed(1) + ' / 100'"></div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Tokens Saved</div>
             <div class="stat-value" x-text="fmtNum(dashboard.total_tokens_saved)"></div>
-            <div class="stat-sub" x-text="'$' + (dashboard.total_cost_saved_usd ?? 0).toFixed(2) + ' saved'"></div>
+            <div class="stat-sub" x-text="'$' + (dashboard.total_cost_saved_usd || 0).toFixed(2) + ' saved'"></div>
           </div>
         </div>
 
@@ -162,9 +165,9 @@
                     <tr>
                       <td x-text="a.agent_name"></td>
                       <td x-text="a.trace_count"></td>
-                      <td x-text="(a.avg_tas ?? 0).toFixed(1)"></td>
-                      <td x-text="(a.min_tas ?? 0).toFixed(1)"></td>
-                      <td x-text="(a.max_tas ?? 0).toFixed(1)"></td>
+                      <td x-text="(a.avg_tas || 0).toFixed(1)"></td>
+                      <td x-text="(a.min_tas || 0).toFixed(1)"></td>
+                      <td x-text="(a.max_tas || 0).toFixed(1)"></td>
                       <td x-text="fmtNum(a.total_tokens_saved)"></td>
                     </tr>
                   </template>
@@ -177,8 +180,25 @@
         <template x-if="dashboard.recent_traces && dashboard.recent_traces.length > 0">
           <div>
             <h2>Recent Traces</h2>
-            <div x-data="" x-init="">
-              <div class="table-wrap" x-html="tracesTable(dashboard.recent_traces)"></div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>Trace ID</th><th>Agent</th><th>Steps</th><th>Tokens</th><th>TAS</th><th>Grade</th><th>Stored</th></tr>
+                </thead>
+                <tbody>
+                  <template x-for="t in dashboard.recent_traces" :key="t.trace_id">
+                    <tr class="clickable" @click="openTrace(t.trace_id)">
+                      <td class="mono" x-text="t.trace_id"></td>
+                      <td x-text="t.agent_name"></td>
+                      <td x-text="t.total_steps"></td>
+                      <td x-text="fmtNum(t.total_tokens)"></td>
+                      <td x-text="t.tas_score != null ? t.tas_score.toFixed(1) : '—'"></td>
+                      <td><span x-show="t.grade" class="badge" :class="'badge-' + t.grade" x-text="t.grade"></span></td>
+                      <td x-text="(t.stored_at || '').slice(0,10)"></td>
+                    </tr>
+                  </template>
+                </tbody>
+              </table>
             </div>
           </div>
         </template>
@@ -234,12 +254,12 @@
           <div class="stat-card"><div class="stat-label">Agent</div><div class="stat-value" style="font-size:16px" x-text="selectedTrace.trace.agent_name"></div></div>
           <div class="stat-card"><div class="stat-label">Framework</div><div class="stat-value" style="font-size:16px" x-text="selectedTrace.trace.framework"></div></div>
           <div class="stat-card"><div class="stat-label">Steps</div><div class="stat-value" x-text="selectedTrace.trace.steps && selectedTrace.trace.steps.length"></div></div>
-          <div class="stat-card"><div class="stat-label">Total Tokens</div><div class="stat-value" x-text="fmtNum(selectedTrace.trace.total_tokens)"></div></div>
+          <div class="stat-card"><div class="stat-label">Total Tokens</div><div class="stat-value" x-text="fmtNum(selectedTraceTokens())"></div></div>
           <template x-if="selectedTrace.report">
             <div class="stat-card"><div class="stat-label">TAS Score</div><div class="stat-value" x-text="(selectedTrace.report.score.score || 0).toFixed(1) + ' / 100'"></div></div>
           </template>
         </div>
-        <pre x-text="JSON.stringify(selectedTrace, null, 2)"></pre>
+        <pre x-text="selectedTraceJson()"></pre>
       </div>
     </template>
   </div>
@@ -419,7 +439,7 @@
           <div class="stat-card">
             <div class="stat-label">Tokens in Optimal Path</div>
             <div class="stat-value" x-text="fmtNum(kbSelected.optimal_tokens)"></div>
-            <div class="stat-sub" x-text="Math.round((1 - kbSelected.optimal_tokens/kbSelected.total_tokens)*100) + '% reduction'"></div>
+            <div class="stat-sub" x-text="kbReductionLabel()"></div>
           </div>
           <div class="stat-card">
             <div class="stat-label">Captured</div>
@@ -479,206 +499,5 @@
 
 </main>
 
-<script>
-function app() {
-  return {
-    dark: localStorage.getItem('tr-theme') !== 'light',
-    tab: 'dashboard',
-    tabs: [
-      {id:'dashboard', label:'Dashboard'},
-      {id:'traces',    label:'Traces'},
-      {id:'audit',     label:'Audit'},
-      {id:'compare',   label:'Compare'},
-      {id:'kb',        label:'KB'},
-      {id:'live',      label:'Live'},
-    ],
-    dashboard: null,
-    traces: [],
-    kbEntries: [],
-    kbSelected: null,
-    selectedTrace: null,
-    liveEvents: [],
-    auditInput: '',
-    auditResult: null,
-    auditError: null,
-    auditLoading: false,
-    compareA: '',
-    compareB: '',
-    compareResult: null,
-    compareError: null,
-    compareLoading: false,
-    _chart: null,
-    _ws: null,
-
-    async boot() {
-      await this.reload()
-      this.connectWs()
-    },
-
-    toggleTheme() {
-      this.dark = !this.dark
-      localStorage.setItem('tr-theme', this.dark ? 'dark' : 'light')
-      this.$nextTick(() => this.drawChart())
-    },
-
-    async reload() {
-      try {
-        const [d, t, kb] = await Promise.all([
-          fetch('/api/dashboard').then(r => r.json()),
-          fetch('/api/traces').then(r => r.json()),
-          fetch('/api/kb').then(r => r.json()),
-        ])
-        this.dashboard = d
-        this.traces = t
-        this.kbEntries = kb
-        this.$nextTick(() => this.drawChart())
-      } catch(e) { console.error(e) }
-    },
-
-    drawChart() {
-      const trend = this.dashboard?.tas_trend
-      if (!trend || trend.length === 0) return
-      const canvas = document.getElementById('trendChart')
-      if (!canvas) return
-      if (this._chart) { this._chart.destroy(); this._chart = null }
-      const isDark = this.dark
-      const gridColor  = isDark ? '#1e293b' : '#e2e8f0'
-      const tickColor  = isDark ? '#64748b' : '#94a3b8'
-      this._chart = new Chart(canvas, {
-        type: 'line',
-        data: {
-          labels: trend.map(p => (p.timestamp || '').slice(0,10)),
-          datasets: [{
-            label: 'TAS Score',
-            data: trend.map(p => p.tas_score),
-            borderColor: '#3b82f6',
-            backgroundColor: 'rgba(59,130,246,0.08)',
-            borderWidth: 2,
-            pointRadius: 3,
-            tension: 0.3,
-            fill: true,
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
-          scales: {
-            x: { grid: { color: gridColor }, ticks: { color: tickColor, maxTicksLimit: 10 } },
-            y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: tickColor } },
-          }
-        }
-      })
-    },
-
-    async openTrace(id) {
-      try {
-        this.selectedTrace = await fetch(`/api/traces/${id}`).then(r => r.json())
-        this.tab = 'detail'
-      } catch(e) { alert(e.message) }
-    },
-
-    async deleteKb(id) {
-      if (!confirm(`Remove KB entry ${id}?`)) return
-      await fetch(`/api/kb/${id}`, {method:'DELETE'})
-      if (this.kbSelected?.id === id) this.kbSelected = null
-      await this.reload()
-    },
-
-    async doDelete(id) {
-      if (!confirm(`Delete trace ${id}?`)) return
-      await fetch(`/api/traces/${id}`, {method:'DELETE'})
-      if (this.selectedTrace?.trace?.trace_id === id) { this.selectedTrace = null; this.tab = 'traces' }
-      await this.reload()
-    },
-
-    async doAudit() {
-      this.auditResult = null; this.auditError = null; this.auditLoading = true
-      try {
-        const trace = JSON.parse(this.auditInput)
-        const r = await fetch('/api/audit', {
-          method: 'POST',
-          headers: {'Content-Type':'application/json'},
-          body: JSON.stringify({trace}),
-        })
-        if (!r.ok) { const e = await r.json().catch(()=>({error:r.statusText})); throw new Error(e.error) }
-        this.auditResult = await r.json()
-        await this.reload()
-      } catch(e) { this.auditError = e.message }
-      finally { this.auditLoading = false }
-    },
-
-    async doCompare() {
-      this.compareResult = null; this.compareError = null; this.compareLoading = true
-      try {
-        const r = await fetch(`/api/compare?a=${encodeURIComponent(this.compareA)}&b=${encodeURIComponent(this.compareB)}`)
-        if (!r.ok) { const e = await r.json().catch(()=>({error:r.statusText})); throw new Error(e.error) }
-        this.compareResult = await r.json()
-      } catch(e) { this.compareError = e.message }
-      finally { this.compareLoading = false }
-    },
-
-    connectWs() {
-      const proto = location.protocol === 'https:' ? 'wss' : 'ws'
-      const ws = new WebSocket(`${proto}://${location.host}/ws`)
-      ws.onmessage = (e) => {
-        try {
-          const ev = JSON.parse(e.data)
-          this.liveEvents = [ev, ...this.liveEvents].slice(0, 30)
-          if (ev.type === 'trace_analysed') this.reload()
-        } catch(_) {}
-      }
-      ws.onclose = () => setTimeout(() => this.connectWs(), 3000) // auto-reconnect
-      this._ws = ws
-    },
-
-    tracesTable(rows) {
-      // Lightweight table HTML for the dashboard recent traces section.
-      // All trace-derived values are HTML-escaped — trace_id / agent_name are
-      // attacker-controlled (any caller can POST /api/audit) so unescaped
-      // interpolation here would be a stored-XSS sink.
-      const esc = this.esc
-      const ths = ['Trace ID','Agent','Steps','Tokens','TAS','Grade','Stored']
-        .map(h => `<th>${esc(h)}</th>`).join('')
-      const trs = rows.map(t => {
-        const badge = t.grade ? `<span class="badge badge-${esc(t.grade)}">${esc(t.grade)}</span>` : '—'
-        return `<tr class="clickable" data-trace-id="${esc(t.trace_id)}">
-          <td class="mono">${esc(t.trace_id)}</td>
-          <td>${esc(t.agent_name)}</td>
-          <td>${t.total_steps}</td>
-          <td>${this.fmtNum(t.total_tokens)}</td>
-          <td>${t.tas_score != null ? t.tas_score.toFixed(1) : '—'}</td>
-          <td>${badge}</td>
-          <td>${esc((t.stored_at||'').slice(0,10))}</td>
-        </tr>`
-      }).join('')
-      return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`
-    },
-
-    // HTML-escape a value for safe interpolation into markup (text or
-    // double-quoted attribute context).
-    esc(s) {
-      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-      }[c]))
-    },
-
-    fmtNum: n => Number(n||0).toLocaleString(),
-  }
-}
-
-// Delegated click for trace rows → open trace detail. Using a data-attribute +
-// delegation (instead of an inline onclick built from trace data) keeps
-// attacker-controlled trace_ids out of any executable context.
-document.addEventListener('click', e => {
-  const row = e.target.closest('tr.clickable[data-trace-id]')
-  if (!row) return
-  const root = document.querySelector('[x-data]')
-  if (root && root._x_dataStack) {
-    const data = root._x_dataStack[0]
-    data.openTrace && data.openTrace(row.getAttribute('data-trace-id'))
-  }
-})
-</script>
 </body>
 </html>

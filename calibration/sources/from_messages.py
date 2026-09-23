@@ -60,7 +60,8 @@ def _norm_messages(rec: Dict[str, Any], field: str) -> List[Dict[str, Any]]:
             continue
         if "role" in m:  # OpenAI format
             out.append({"role": m.get("role", ""), "content": m.get("content") or "",
-                        "tool_calls": m.get("tool_calls")})
+                        "tool_calls": m.get("tool_calls"),
+                        "tool_call_id": m.get("tool_call_id")})
         elif "from" in m:  # ShareGPT format
             role = {"gpt": "assistant", "human": "user", "system": "system",
                     "tool": "tool", "observation": "tool"}.get(m.get("from", ""), m.get("from", ""))
@@ -77,6 +78,11 @@ def _tool_name(content: str) -> Optional[str]:
 def messages_to_trace(rec: Dict[str, Any], args) -> Optional[Dict[str, Any]]:
     msgs = _norm_messages(rec, args.messages_field)
     steps: List[Dict[str, Any]] = []
+    # Structured tool calls still waiting for their result message. A role:tool
+    # message answers one of these (by tool_call_id, else first-in-first-out);
+    # it must not become a separate tool_call step of its own.
+    unanswered: List[Dict[str, Any]] = []
+    by_call_id: Dict[str, Dict[str, Any]] = {}
     sid = 1
     for m in msgs:
         role, content = m["role"], (m["content"] or "").strip()
@@ -87,9 +93,13 @@ def messages_to_trace(rec: Dict[str, Any], args) -> Optional[Dict[str, Any]]:
                     name = fn.get("name") or "tool"
                     cargs = fn.get("arguments") or ""
                     text = f"{name} {cargs}".strip()
-                    steps.append({"id": sid, "step_type": "tool_call", "content": text,
-                                  "tokens": _ntokens(text), "tool_name": name,
-                                  "tool_success": True})
+                    step = {"id": sid, "step_type": "tool_call", "content": text,
+                            "tokens": _ntokens(text), "tool_name": name,
+                            "tool_success": True}
+                    steps.append(step)
+                    unanswered.append(step)
+                    if isinstance(tc, dict) and tc.get("id"):
+                        by_call_id[tc["id"]] = step
                     sid += 1
                 if content:
                     steps.append({"id": sid, "step_type": "reasoning", "content": content,
@@ -100,12 +110,24 @@ def messages_to_trace(rec: Dict[str, Any], args) -> Optional[Dict[str, Any]]:
                               "tokens": _ntokens(content)})
                 sid += 1
         elif role == "tool":
-            # A tool result; attach as a tool_call step marking success/failure.
             ok = not re.search(r"\b(error|traceback|exception|failed)\b", content, re.I)
-            steps.append({"id": sid, "step_type": "tool_call",
-                          "content": content[:500], "tokens": _ntokens(content),
-                          "tool_name": _tool_name(content) or "tool", "tool_success": bool(ok)})
-            sid += 1
+            call = by_call_id.pop(m.get("tool_call_id") or "", None)
+            if call is None and unanswered:
+                call = unanswered[0]
+            if call is not None:
+                # Fold the result into the call that produced it.
+                unanswered[:] = [s for s in unanswered if s is not call]
+                call["tokens"] += _ntokens(content)
+                call["output"] = content[:500]
+                call["tool_success"] = bool(ok)
+            else:
+                # Unstructured (ShareGPT-style) observation with no recorded
+                # call: keep it as its own tool_call step.
+                steps.append({"id": sid, "step_type": "tool_call",
+                              "content": content[:500], "tokens": _ntokens(content),
+                              "tool_name": _tool_name(content) or "tool",
+                              "tool_success": bool(ok)})
+                sid += 1
         # system/user messages are context, not agent work; skipped.
     if len(steps) < 5:
         return None

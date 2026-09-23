@@ -151,6 +151,23 @@ def test_run_detaches_stdin(monkeypatch):
     assert seen.get("stdin") == subprocess.DEVNULL
 
 
+def test_signal_catalog_matches_the_rust_auditor():
+    """SIGNALS mirrors the Rust catalog; this catches drift in names and fix types."""
+    import re
+
+    signals = _mod().SIGNALS
+    report_rs = (REPO / "crates/tracerazor-core/src/report.rs").read_text(encoding="utf-8")
+    fixes_rs = (REPO / "crates/tracerazor-core/src/fixes.rs").read_text(encoding="utf-8")
+    rust_fix_types = set(re.findall(r'FixType::\w+ => write!\(f, "(\w+)"\)', fixes_rs))
+    assert rust_fix_types, "could not parse FixType display names"
+    for code, entry in signals.items():
+        # The terminal table abbreviates long names to fit ("Context Carry-over Eff.").
+        m = re.search(rf'"{code.upper()}",\s*\n\s*"([^"]+)",', report_rs)
+        assert m, f"{code} missing from the Rust report table"
+        assert entry["name"].startswith(m.group(1).rstrip(".")), (code, m.group(1))
+        assert set(entry["fixes"]) <= rust_fix_types, (code, entry["fixes"])
+
+
 # ── SDK-dependent: server construction ───────────────────────────────────────
 
 

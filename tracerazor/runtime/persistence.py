@@ -411,7 +411,7 @@ def report_for_persistence(
     return result
 
 
-def _is_link_or_reparse(path: Path) -> bool:
+def is_link_or_reparse(path: Path) -> bool:
     try:
         info = path.lstat()
     except FileNotFoundError:
@@ -429,7 +429,7 @@ def reject_link_components(path: str | os.PathLike[str]) -> None:
     components = [candidate]
     components.extend(candidate.parents)
     for component in reversed(components):
-        if _is_link_or_reparse(component):
+        if is_link_or_reparse(component):
             raise ValueError(f"runtime artifact path contains a symlink or junction: {component}")
 
 
@@ -636,7 +636,7 @@ class DiskSpoolReceiver:
             return []
         result: list[dict[str, Any]] = []
         for path in sorted(directory.glob("*.json")):
-            if not _RECEIPT_NAME_RE.fullmatch(path.name) or _is_link_or_reparse(path):
+            if not _RECEIPT_NAME_RE.fullmatch(path.name) or is_link_or_reparse(path):
                 raise ValueError(f"unsafe run receipt path: {path}")
             value = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(value, dict):

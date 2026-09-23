@@ -10,7 +10,7 @@
 | Check | Passed | Observed | Required |
 |---|---:|---|---|
 | local_package | yes | installed: version 1.1.0 | local package imports with version |
-| bundled_cli | yes | on-path: C:\Users\zulfa\AppData\Local\Programs\Python\Python311\Scripts\tracerazor.exe; binary=1.1.0 | CLI binary is bundled or source-build reachable |
+| bundled_cli | yes | bundled: /home/user/TraceRazor/tracerazor/bin/tracerazor; binary=1.1.0 | CLI binary is bundled or source-build reachable |
 | schemas | yes | available: 19 schemas | all public contract schemas are shipped |
 | artifact_card_verifies | yes | review_ready_smoke | artifact card verifies |
 | reproduction_card_verifies | yes | reviewer_replay_ready_smoke | reproduction card verifies |
@@ -18,11 +18,11 @@
 | install_card_verifies | yes | full_cli_install_ready | clean-wheel installability card verifies |
 | release_docs_present | yes | 8/8 | README, trust matrix, release checklist, pyproject, contract card, and install card present |
 | pypi | yes | matched: latest=1.1.0 local=1.1.0 | PyPI latest version matches local version |
-| piwheels | no | missing: files=0 local=1.1.0 | piwheels exposes the local version file |
+| piwheels | no | unknown: <urlopen error Tunnel connection failed: 403 Forbidden> | piwheels exposes the local version file |
 | crates_io | no | missing: crate tracerazor is not published | crates.io package is published |
-| github_tag | no | pending: head=a97eb122463e local_tag=False remote_tag=True | local version tag points at current commit locally and remotely |
+| github_tag | no | pending: head=9ca945772fe9 local_tag=False remote_tag=True | local version tag points at current commit locally and remotely |
 | github_actions | yes | green: Agent Efficiency Gate=completed/success; Release=completed/success; TraceRazor CI=completed/success | required public workflows are green |
-| openssf_scorecard | no | below-threshold: score=3.8 minimum=7.0 date=2026-07-10T15:06:50Z commit=a97eb122463e | OpenSSF Scorecard is published with score >= 7.0 |
+| openssf_scorecard | no | unknown: <urlopen error Tunnel connection failed: 403 Forbidden> | OpenSSF Scorecard is published with score >= 7.0 |
 | provenance_plan_documented | yes | trusted publishing/OIDC | trusted publishing and OIDC documented |
 | attestation_plan_documented | yes | GitHub artifact attestations | GitHub release artifact attestation documented |
 | sbom_plan_documented | yes | CycloneDX/SHA-256 | SBOM and checksum release assets documented |
@@ -36,4 +36,4 @@
 
 ## Hash
 
-- release card: `c4e6701823735792ed9de60e7edf3ac3a17ac424b40ec7079db01a325ae5747a`
+- release card: `ac412e95b5edbc148e90a38e42f8ae74600ef8688c07a94a630fa79d62fed1aa`

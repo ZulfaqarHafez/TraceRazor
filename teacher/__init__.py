@@ -15,7 +15,7 @@ Quickstart (offline, no API keys):
     print(result.total_token_saving_pct)      # tokens cut, success preserved
 
 See ``examples/demo_teacher_offline.py`` for an end-to-end demo, and
-``docs/v2_improvement_plan.md`` for the full production roadmap.
+``teacher/README.md`` for the prototype's layers and how to run them.
 """
 from .adapters import FrameworkAdapter, LangGraphAdapter, RunRecorder
 from .diagnose import Diagnoser

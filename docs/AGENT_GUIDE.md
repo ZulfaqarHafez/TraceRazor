@@ -61,7 +61,7 @@ Sessions are stored as JSONL at:
 `-` (e.g. `-Users-me-proj`). Audit the JSONL directly (auto-detected) or convert it:
 
 ```bash
-tracerazor claude convert ~/.claude/projects/-Users-me-proj/<session-id>.jsonl --out trace.json
+tracerazor import ~/.claude/projects/-Users-me-proj/<session-id>.jsonl --from claude-code --out trace.json
 tracerazor audit trace.json --hermetic --format json
 ```
 
@@ -164,7 +164,10 @@ Top level:
   Good ≥ 70 / Fair ≥ 50 / Poor.
 - `score.raw_tas` — the pre-task-value score before the `task_value_score` ceiling.
 - `score.task_value_score` — the task-quality multiplier carried from the trace.
-- `score.passes_threshold` — whether the run met the configured `--threshold`.
+- `score.passes_threshold` — `score >= manifest.threshold`. Without `--threshold`
+  the manifest records the built-in default of 70, which is **not** a gate (the
+  exit code stays 0) and not a quality bar: TAS is ordinal. Only read this field
+  when you passed `--threshold` yourself.
 - `score.avs`, `score.vae` — verbosity/anti-value diagnostics.
 - `score.metric_normalised` — the per-metric 0–1 map (**1.0 = clean, lower = more
   waste**). Keys: `srr` (step redundancy), `ldi` (tool-call loops), `tca` (tool-call
@@ -197,7 +200,7 @@ params …, retried at step 5"). `tokens_suggested` is the post-fix estimate.
 Other blocks: `path_entropy` (`focus_score`, `path_entropy`, `advances/stalls/regresses`
 — the "staying on the path" signal), `features` (raw scalar features), `agf` (action-
 grounding factuality), `anomalies`, `per_agent` (populated when ≥ 2 distinct `agent_id`s
-exist), `mvtg`, `iar`.
+exist), `mvtg`. `iar` is reserved and always `null` in 1.x.
 
 `manifest` — provenance and reproducibility. Check these before trusting a score:
 
@@ -294,18 +297,20 @@ bag-of-words runs metric-by-metric. The guarantee depends on signing:
 
 ## 8. Claude Code coach artifacts
 
-Install the SessionEnd hook once; every session is then converted, audited hermetically,
-and written to disk:
+Install the Claude Code hooks once (preview with `--dry-run` first); every session is
+then converted, audited hermetically, and written to the run store described in
+[agent-native.md](agent-native.md):
 
 ```bash
-tracerazor claude install --scope local --mode coach
+tracerazor agent install --host claude --scope project --mode coach
 ```
 
-- `--scope` — `local` (per-project, default) / `project` / `user`.
-- `--mode` — `coach` (writes advice) / `passive`. Coach mode **never** auto-edits
+- `--scope` — `project` (default) / `user` / `image`.
+- `--mode` — `coach` (writes advice) / `passive` / `off`. Coach mode **never** auto-edits
   prompts, settings, tools, or files.
 
-Per session, under `.tracerazor/claude-code/<session-id>/`:
+The legacy `tracerazor claude install` hook is a deprecated 1.x alias. It writes the
+older per-session layout under `.tracerazor/claude-code/<session-id>/`:
 
 - `trace.json` — the converted trace.
 - `report.json` — the full hermetic audit (same shape as §3).

@@ -1,6 +1,6 @@
 [package]
 name = "tracerazor-core"
-description = "Core graph engine, metrics, and scoring for TraceRazor"
+description = "Core metrics, scoring, and provenance for TraceRazor"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -17,7 +17,6 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 anyhow = { workspace = true }
-petgraph = { workspace = true }
 chrono = { workspace = true }
 flate2 = { workspace = true }
 sha2 = { workspace = true }

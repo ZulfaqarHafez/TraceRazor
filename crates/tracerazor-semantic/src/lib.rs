@@ -1,9 +1,8 @@
 //! Semantic similarity engine for TraceRazor.
 //!
-//! Phase 1: Term-frequency bag-of-words cosine similarity (fully offline, no API key).
-//! Phase 2: Dense sentence embeddings via a pluggable LLM backend — OpenAI,
-//!          Anthropic (chat only), or any OpenAI-compatible endpoint (Ollama,
-//!          vLLM, Azure OpenAI, OpenRouter, Groq, Together, LM Studio, …).
+//! Default: term-frequency bag-of-words cosine similarity (fully offline, no API key).
+//! Optional: dense embeddings from OpenAI or any OpenAI-compatible endpoint
+//! (Ollama, vLLM, Azure OpenAI, OpenRouter, Groq, Together, LM Studio, …).
 //!
 //! Backend selection is controlled by `tracerazor_semantic::llm::LlmConfig`,
 //! which reads `TRACERAZOR_LLM_PROVIDER` / `TRACERAZOR_LLM_BASE_URL` /
@@ -12,7 +11,6 @@
 
 pub mod bow;
 pub mod llm;
-pub mod openai;
 
 pub use bow::BowSimilarity;
 pub use llm::{LlmConfig, Provider};
@@ -120,9 +118,7 @@ pub async fn embedding_similarity_fn_with_identity(
             let f: BoxedSimilarityFn =
                 Box::new(
                     move |a: &str, b: &str| match (text_index.get(a), text_index.get(b)) {
-                        (Some(&i), Some(&j)) => {
-                            openai::cosine_similarity(&embeddings[i], &embeddings[j])
-                        }
+                        (Some(&i), Some(&j)) => cosine_similarity(&embeddings[i], &embeddings[j]),
                         _ => bow.similarity(a, b),
                     },
                 );
@@ -135,14 +131,20 @@ pub async fn embedding_similarity_fn_with_identity(
     }
 }
 
-/// Backward-compatible alias for the old OpenAI-only helper.
-/// Prefer [`embedding_similarity_fn`] in new code.
-#[deprecated(note = "Renamed to `embedding_similarity_fn` now that other backends are supported")]
-pub async fn openai_similarity_fn(
-    texts: Vec<String>,
-) -> Box<dyn Fn(&str, &str) -> f64 + Send + Sync> {
-    embedding_similarity_fn(texts).await
+/// Cosine similarity between two embedding vectors.
+fn cosine_similarity(a: &[f32], b: &[f32]) -> f64 {
+    if a.len() != b.len() || a.is_empty() {
+        return 0.0;
+    }
+    let dot: f32 = a.iter().zip(b).map(|(x, y)| x * y).sum();
+    let mag_a: f32 = a.iter().map(|x| x * x).sum::<f32>().sqrt();
+    let mag_b: f32 = b.iter().map(|x| x * x).sum::<f32>().sqrt();
+    if mag_a == 0.0 || mag_b == 0.0 {
+        return 0.0;
+    }
+    (dot / (mag_a * mag_b)) as f64
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;

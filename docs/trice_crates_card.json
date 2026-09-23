@@ -134,15 +134,15 @@
     }
   ],
   "crates_card_level": "publish_plan_locked",
-  "crates_card_sha256": "3a483eabe56934916f6c06b704a601c0cee601a14a31aacabfc386385ac0d358",
+  "crates_card_sha256": "d422b5ac5c0246c8b0a2fa6c1060835d2df35583531fb1c0bfe88edacc610003",
   "crates_publish_score": 80,
   "inputs": {
     "readme": {
-      "bytes": 20271,
+      "bytes": 20348,
       "name": "README.md",
       "path": "README.md",
       "present": true,
-      "sha256": "15fb513d3f5452528ce3ccacf7e625369064165973382c658ab59b239efde629"
+      "sha256": "a3f82d6b4b02b61905bcbd80d4f5ea9fe40a7f068b9cd3422257a6de6b4817fa"
     },
     "tracerazor": {
       "bytes": 1245,
@@ -152,46 +152,46 @@
       "sha256": "a0e63eab67f6173294e67a6947c5576269618dc3c13780b26dff2838d9795db9"
     },
     "tracerazor-core": {
-      "bytes": 823,
+      "bytes": 789,
       "name": "Cargo.toml",
       "path": "crates/tracerazor-core/Cargo.toml",
       "present": true,
-      "sha256": "0e5390a699e23a83b50a4ca2b593e15e57c7ac0f571f07acd75f764e88bbc3e1"
+      "sha256": "31f51c6f7abde2d04a34b6cd3d80498f80d40bb53efb906f36271a72f921a322"
     },
     "tracerazor-ingest": {
-      "bytes": 719,
+      "bytes": 689,
       "name": "Cargo.toml",
       "path": "crates/tracerazor-ingest/Cargo.toml",
       "present": true,
-      "sha256": "906a6caf1dd45c310e7f9fd3e0d44e01926304f9a2e2e827793c6bb7a430c786"
+      "sha256": "cac5206fb98e7f55bbf0f79a1b65e4c1746f175c37f71fefd7fb2f43d0e6e206"
     },
     "tracerazor-semantic": {
-      "bytes": 708,
+      "bytes": 642,
       "name": "Cargo.toml",
       "path": "crates/tracerazor-semantic/Cargo.toml",
       "present": true,
-      "sha256": "755372b6d7b470cca15dcb2bfd78c6287c955d8ef8d290ada02e7a356345e634"
+      "sha256": "c7d1d80cd6509151725fca0d8cfc219e26cf1abd0f57b6674a3d2782130dc267"
     },
     "tracerazor-server": {
-      "bytes": 1307,
+      "bytes": 1272,
       "name": "Cargo.toml",
       "path": "crates/tracerazor-server/Cargo.toml",
       "present": true,
-      "sha256": "e300556730dfff3db36d43d24e4c6384ce05704e5050503903c6433c56e07716"
+      "sha256": "ac5165cfa69a38fb8f60f97be24407db7bcb23293893014214df76b2ef88ee54"
     },
     "tracerazor-store": {
       "bytes": 933,
       "name": "Cargo.toml",
       "path": "crates/tracerazor-store/Cargo.toml",
       "present": true,
-      "sha256": "d4acc7cd9406aad6308b385ed185ffebbddfc4fdf7f69242585e125d69ffcafb"
+      "sha256": "a95fbcdcd0f2fbc1aa12819b3f980950856c383358d40d0d9f42392da3257b09"
     },
     "workspace": {
-      "bytes": 1494,
+      "bytes": 1419,
       "name": "Cargo.toml",
       "path": "Cargo.toml",
       "present": true,
-      "sha256": "d2d642cd2318be32d92e26b67e4f07a41342a2720090471e1079527c5509e076"
+      "sha256": "a8e7fff63889f2c22bd2d1b8a89306be49777d8c42bfd80f1eca12ec71e6966c"
     }
   },
   "local_publish_plan_locked": true,
@@ -206,18 +206,18 @@
       "local_dependencies": [],
       "local_dependency_specs": [],
       "manifest": {
-        "bytes": 823,
+        "bytes": 789,
         "name": "Cargo.toml",
         "path": "crates/tracerazor-core/Cargo.toml",
         "present": true,
-        "sha256": "0e5390a699e23a83b50a4ca2b593e15e57c7ac0f571f07acd75f764e88bbc3e1"
+        "sha256": "31f51c6f7abde2d04a34b6cd3d80498f80d40bb53efb906f36271a72f921a322"
       },
       "metadata": {
         "categories": [
           "development-tools::profiling",
           "command-line-utilities"
         ],
-        "description": "Core graph engine, metrics, and scoring for TraceRazor",
+        "description": "Core metrics, scoring, and provenance for TraceRazor",
         "homepage": "https://github.com/ZulfaqarHafez/tracerazor",
         "keywords": [
           "llm",
@@ -248,18 +248,18 @@
       "local_dependencies": [],
       "local_dependency_specs": [],
       "manifest": {
-        "bytes": 708,
+        "bytes": 642,
         "name": "Cargo.toml",
         "path": "crates/tracerazor-semantic/Cargo.toml",
         "present": true,
-        "sha256": "755372b6d7b470cca15dcb2bfd78c6287c955d8ef8d290ada02e7a356345e634"
+        "sha256": "c7d1d80cd6509151725fca0d8cfc219e26cf1abd0f57b6674a3d2782130dc267"
       },
       "metadata": {
         "categories": [
           "development-tools::profiling",
           "command-line-utilities"
         ],
-        "description": "Semantic similarity engine for TraceRazor (TF cosine similarity, ONNX embedding upgrade path)",
+        "description": "Semantic similarity engine for TraceRazor (TF cosine similarity, optional HTTP embeddings)",
         "homepage": "https://github.com/ZulfaqarHafez/tracerazor",
         "keywords": [
           "llm",
@@ -298,11 +298,11 @@
         }
       ],
       "manifest": {
-        "bytes": 719,
+        "bytes": 689,
         "name": "Cargo.toml",
         "path": "crates/tracerazor-ingest/Cargo.toml",
         "present": true,
-        "sha256": "906a6caf1dd45c310e7f9fd3e0d44e01926304f9a2e2e827793c6bb7a430c786"
+        "sha256": "cac5206fb98e7f55bbf0f79a1b65e4c1746f175c37f71fefd7fb2f43d0e6e206"
       },
       "metadata": {
         "categories": [
@@ -352,7 +352,7 @@
         "name": "Cargo.toml",
         "path": "crates/tracerazor-store/Cargo.toml",
         "present": true,
-        "sha256": "d4acc7cd9406aad6308b385ed185ffebbddfc4fdf7f69242585e125d69ffcafb"
+        "sha256": "a95fbcdcd0f2fbc1aa12819b3f980950856c383358d40d0d9f42392da3257b09"
       },
       "metadata": {
         "categories": [
@@ -416,11 +416,11 @@
         }
       ],
       "manifest": {
-        "bytes": 1307,
+        "bytes": 1272,
         "name": "Cargo.toml",
         "path": "crates/tracerazor-server/Cargo.toml",
         "present": true,
-        "sha256": "e300556730dfff3db36d43d24e4c6384ce05704e5050503903c6433c56e07716"
+        "sha256": "ac5165cfa69a38fb8f60f97be24407db7bcb23293893014214df76b2ef88ee54"
       },
       "metadata": {
         "categories": [

@@ -12,10 +12,6 @@ tracerazor/bin/tracerazor.exe
 .pytest_cache/
 .tracerazor/
 
-# Node dependencies and build output
-dashboard/node_modules/
-dashboard/dist/
-
 # Secrets — never bake into image
 .env
 

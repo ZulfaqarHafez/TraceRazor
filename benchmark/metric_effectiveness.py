@@ -41,6 +41,14 @@ SD_MIN = 0.05      # C1
 MAX_MIN = 0.80     # C2
 COLLINEAR = 0.85   # C3
 
+#: Demotions made on logical grounds rather than by C1-C3. Encoded here so a
+#: regeneration reproduces the decision instead of silently reverting it.
+LOGICAL_DEMOTIONS = {
+    "tur": 'logical grounds: "useful tokens" defined as tokens not already '
+           "flagged by SRR/LDI/TCA (circular, double-counts their signal); "
+           "0.70 divisor uncalibrated",
+}
+
 #: Trace sources: every real agent trace committed to the repository.
 SOURCES = [
     ("tau-bench", "traces/external/tau_bench/*.json"),
@@ -119,6 +127,8 @@ def evaluate(codes, series, raw_tas):
             fails[c].append(f"C1: sd {stats[c]['sd']:.3f} < {SD_MIN}")
         if stats[c]["max"] < MAX_MIN:
             fails[c].append(f"C2: max {stats[c]['max']:.2f} < {MAX_MIN}")
+        if c in LOGICAL_DEMOTIONS:
+            fails[c].append(LOGICAL_DEMOTIONS[c])
     for c in sorted(codes, key=lambda c: -stats[c]["sd"]):
         if fails[c]:
             continue

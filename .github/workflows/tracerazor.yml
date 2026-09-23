@@ -21,7 +21,7 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: clippy
+          components: rustfmt, clippy
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -34,38 +34,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: cargo check
-        run: cargo check --workspace
+      - name: cargo fmt
+        run: cargo fmt --all -- --check
 
       - name: cargo test
         run: cargo test --workspace
-        # No OPENAI_API_KEY — Phase 2 metrics are skipped gracefully
+        # No OPENAI_API_KEY — embedding similarity falls back to bag-of-words
 
       - name: cargo clippy
-        run: cargo clippy --workspace -- -D warnings
-
-  # ── Dashboard: build ─────────────────────────────────────────────────────────
-  dashboard:
-    name: Dashboard (build)
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: dashboard
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: dashboard/package-lock.json
-
-      - name: npm install
-        run: npm ci
-
-      - name: npm build
-        run: npm run build
+        # Same gate as the release `quality` job, so lint failures surface on PRs.
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
   # ── Python: build CLI, install package, run pytest + integration smoke ───────
   python:
@@ -99,10 +77,11 @@ jobs:
           python-version: '3.11'
 
       - name: Install package + test deps
-        # dev = pytest/pytest-asyncio; langgraph = langchain-core and agents =
-        # openai-agents for the real-framework integration tests; http = requests
-        # for HTTP-mode tests; calibrate = numpy/scipy for the calibration tool.
-        run: pip install -e ".[dev,langgraph,agents,http,calibrate]"
+        # dev = pytest/pytest-asyncio; mcp = the MCP server's SDK (pinned <2);
+        # langgraph = langchain-core and agents = openai-agents for the
+        # real-framework integration tests; http = requests for HTTP-mode tests;
+        # calibrate = numpy/scipy for the calibration tool.
+        run: pip install -e ".[dev,mcp,langgraph,agents,http,calibrate]"
 
       - name: Run pytest
         run: pytest -q
@@ -137,38 +116,6 @@ jobs:
             --weights /tmp/weights.json --format json > /dev/null
           echo "calibration smoke OK"
 
-  # ── TAS gate: run sample trace and fail if score < 60 ────────────────────────
-  tas-gate:
-    name: TAS Gate (sample trace)
-    runs-on: ubuntu-latest
-    needs: rust
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-
-      - name: Build CLI
-        run: cargo build -p tracerazor --release
-
-      - name: Run TAS gate on sample trace
-        run: |
-          ./target/release/tracerazor audit \
-            traces/support-agent-run-2847.json \
-            --threshold 60
-        # Exit code 1 if TAS < threshold — fails the build
-
   # ── Paper: compile the LaTeX technical report to a PDF artifact ───────────────
   paper:
     name: Paper (build PDF)
@@ -189,7 +136,7 @@ jobs:
           path: paper/tracerazor.pdf
           if-no-files-found: error
 
-  # ── Supply-chain: cargo-audit, cargo-deny, pip-audit ─────────────────────────
+  # ── Supply-chain: cargo-deny (advisories, bans, licenses), pip-audit ─────────
   supply-chain:
     name: Supply-chain audit
     runs-on: ubuntu-latest
@@ -197,18 +144,22 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
-      - name: cargo audit
-        run: |
-          cargo install cargo-audit --locked --quiet
-          cargo audit
       - name: cargo deny
+        # `cargo deny check` includes the RustSec advisories check, so a
+        # separate cargo-audit run would only repeat it.
         run: |
           cargo install cargo-deny --locked --quiet
           cargo deny check
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: pip-audit
+        # Audit TraceRazor's own dependency set (same gate as the release
+        # workflow), not the runner's preinstalled packages.
         run: |
-          pip install pip-audit --quiet
-          pip-audit || true   # advisory only until baseline is clean
+          python -m pip install --upgrade pip pip-audit --quiet
+          python -m pip_audit --progress-spinner off .
 
   trice-integrity:
     name: TRICE integrity gate
@@ -270,23 +221,5 @@ jobs:
             --out /tmp/trice_integrity_card.json \
             --format tex
           python -m tracerazor.trice verify-integrity /tmp/trice_integrity_card.json
-
-  # ── Version consistency: Cargo.toml vs pyproject.toml vs README ──────────────
-  version-consistency:
-    name: Version consistency
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check versions match
-        run: |
-          CARGO_VER=$(grep '^version' Cargo.toml | head -1 | sed 's/.*= "//;s/".*//')
-          PY_VER=$(grep '^version' pyproject.toml | head -1 | sed 's/.*= "//;s/".*//' || echo "not-found")
-          echo "Cargo version: $CARGO_VER"
-          echo "pyproject version: $PY_VER"
-          if [ "$PY_VER" != "not-found" ] && [ "$CARGO_VER" != "$PY_VER" ]; then
-            echo "ERROR: Version mismatch Cargo=$CARGO_VER vs pyproject=$PY_VER"
-            exit 1
-          fi
-          README_VER=$(grep -oP '(?<=tracerazor v)[0-9]+\.[0-9]+\.[0-9]+' README.md | head -1 || echo "not-found")
-          echo "README version: $README_VER"
-          echo "All versions consistent."
+# Version consistency (Cargo.toml vs pyproject.toml vs README) is enforced by
+# tests/test_readme_claims.py::test_one_version_everywhere in the python job.

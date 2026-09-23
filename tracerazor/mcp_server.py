@@ -21,12 +21,7 @@ import sys
 import tempfile
 from typing import Any
 
-try:  # Python 3.11+
-    import tomllib
-except ModuleNotFoundError:  # pragma: no cover - Python 3.10 fallback below
-    tomllib = None  # type: ignore[assignment]
-
-from tracerazor._launcher import find_binary, recovery_message
+from tracerazor._launcher import find_binary, resolve_binary
 from tracerazor.errors import BinaryNotFoundError
 
 
@@ -63,14 +58,8 @@ class McpToolError(Exception):
 
 
 def _resolve_binary() -> str:
-    """Return the auditor binary path or raise the existing teaching error."""
-    env = os.environ.get("TRACERAZOR_BIN")
-    if env and not os.path.isfile(env):
-        raise BinaryNotFoundError(recovery_message())
-    binary = find_binary()
-    if binary is None:
-        raise BinaryNotFoundError(recovery_message())
-    return binary
+    """Return the auditor binary path or raise the shared teaching error."""
+    return resolve_binary()
 
 
 def _run(args: list[str]) -> subprocess.CompletedProcess:
@@ -297,10 +286,11 @@ def _legacy_result(
 
 
 def _is_link(path: Path) -> bool:
-    if path.is_symlink():
-        return True
-    is_junction = getattr(path, "is_junction", None)
-    return bool(is_junction and is_junction())
+    # Shared with the runtime writer. It checks the reparse-point attribute, so
+    # Windows junctions are caught on Python 3.10/3.11 (no Path.is_junction).
+    from tracerazor.runtime.persistence import is_link_or_reparse
+
+    return is_link_or_reparse(path)
 
 
 def _reject_link_components(path: Path) -> None:
@@ -788,13 +778,9 @@ def doctor(cwd: str = ".") -> dict[str, Any]:
         policy_path = _safe_path(policy_path, root, must_exist=False, kind="file")
         if policy_path.is_file():
             try:
-                if tomllib is not None:
-                    with policy_path.open("rb") as handle:
-                        policy = tomllib.load(handle)
-                else:
-                    from tracerazor.runtime import AuditPolicy
+                from tracerazor.runtime import AuditPolicy
 
-                    policy = AuditPolicy.load(policy_path).to_dict()
+                policy = AuditPolicy.load(policy_path).to_dict()
                 policy_data = {
                     "status": "ready",
                     "path": _evidence_ref(policy_path, root),
@@ -1014,21 +1000,26 @@ def compare_runs(
         return _error_envelope(exc)
 
 
+# Mirrors the Rust auditor: names from the report renderer
+# (crates/tracerazor-core/src/report.rs) and `fixes` from the fix generator
+# (crates/tracerazor-core/src/fixes.rs), which only emits remediations for the
+# metrics listed with a non-empty `fixes`. tests/test_mcp_server.py checks the
+# fix types against the Rust FixType set.
 SIGNALS: dict[str, dict[str, Any]] = {
-    "srr": {"name": "Step Redundancy Rate", "diagnoses": "near-duplicate reasoning steps", "direction": "higher is cleaner", "fixes": ["reformulation_guard"]},
+    "srr": {"name": "Step Redundancy Rate", "diagnoses": "near-duplicate reasoning steps", "direction": "higher is cleaner", "fixes": []},
     "ldi": {"name": "Loop Detection Index", "diagnoses": "repeated or parametric tool-call loops", "direction": "higher is cleaner", "fixes": ["termination_guard"]},
     "tca": {"name": "Tool Call Accuracy", "diagnoses": "failed calls followed by retries", "direction": "higher is cleaner", "fixes": ["tool_schema"]},
     "tur": {"name": "Token Utilisation Ratio", "diagnoses": "tokens already attributed to low-value steps", "direction": "higher is cleaner", "fixes": []},
-    "cce": {"name": "Context Efficiency", "diagnoses": "duplicated context carried across steps", "direction": "higher is cleaner", "fixes": ["context_compression"]},
-    "rda": {"name": "Reasoning Depth Appropriateness", "diagnoses": "reasoning deeper than the task requires", "direction": "higher is cleaner", "fixes": ["verbosity_reduction"]},
-    "isr": {"name": "Information Sufficiency Rate", "diagnoses": "steps that add little new information", "direction": "higher is cleaner", "fixes": ["verbosity_reduction"]},
-    "dbo": {"name": "Decision Branch Optimality", "diagnoses": "sub-optimal tool sequences and branch thrashing", "direction": "higher is cleaner", "fixes": ["termination_guard"]},
-    "vdi": {"name": "Verbosity Density", "diagnoses": "verbose prose relative to useful content", "direction": "higher is cleaner", "fixes": ["verbosity_reduction"]},
-    "shl": {"name": "Sycophancy and Hedging Level", "diagnoses": "hedging and sycophantic phrasing", "direction": "higher is cleaner", "fixes": ["hedge_reduction"]},
-    "ccr": {"name": "Compressibility", "diagnoses": "content that can be compressed without losing task value", "direction": "higher is cleaner", "fixes": ["context_compression"]},
-    "gar": {"name": "Goal Advancement Rate", "diagnoses": "steps that do not advance the declared task", "direction": "higher is cleaner", "fixes": ["goal_anchor"]},
-    "csd": {"name": "Context Semantic Drift", "diagnoses": "drift away from the task context", "direction": "higher is cleaner", "fixes": ["goal_anchor"]},
-    "obs": {"name": "Observation Token Share", "diagnoses": "tool-output accumulation relative to recoverable reasoning", "direction": "higher is cleaner", "fixes": ["context_compression"]},
+    "cce": {"name": "Context Carry-over Efficiency", "diagnoses": "duplicated context carried across steps", "direction": "higher is cleaner", "fixes": ["context_compression"]},
+    "rda": {"name": "Reasoning Depth Appropriateness", "diagnoses": "reasoning deeper than the task requires", "direction": "higher is cleaner", "fixes": ["prompt_insert"]},
+    "isr": {"name": "Info Sufficiency Rate", "diagnoses": "steps that add little new information", "direction": "higher is cleaner", "fixes": []},
+    "dbo": {"name": "Decision Branch Optimality", "diagnoses": "sub-optimal tool sequences and branch thrashing", "direction": "higher is cleaner", "fixes": []},
+    "vdi": {"name": "Verbosity Density Index", "diagnoses": "verbose prose relative to useful content", "direction": "higher is cleaner", "fixes": ["verbosity_reduction"]},
+    "shl": {"name": "Sycophancy/Hedging Level", "diagnoses": "hedging and sycophantic phrasing", "direction": "higher is cleaner", "fixes": ["hedge_reduction"]},
+    "ccr": {"name": "Caveman Compression Ratio", "diagnoses": "content that can be compressed without losing task value", "direction": "higher is cleaner", "fixes": ["caveman_prompt_insert"]},
+    "gar": {"name": "Goal Advancement Ratio", "diagnoses": "steps that do not advance the declared task", "direction": "higher is cleaner", "fixes": ["goal_anchor"]},
+    "csd": {"name": "Cross-Step Semantic Drift", "diagnoses": "drift away from the task context", "direction": "higher is cleaner", "fixes": []},
+    "obs": {"name": "Observation Token Share", "diagnoses": "tool-output accumulation relative to recoverable reasoning", "direction": "higher is cleaner", "fixes": []},
 }
 
 
@@ -1326,15 +1317,11 @@ def check_policy(run_id: str | None = None, cwd: str = ".") -> dict[str, Any]:
         warnings: list[str] = []
         if policy_path.is_file():
             try:
-                if tomllib is not None:
-                    with policy_path.open("rb") as handle:
-                        policy = tomllib.load(handle)
-                else:
-                    # Reuse the dependency-free, fail-closed Python 3.10
-                    # policy parser from the public runtime package.
-                    from tracerazor.runtime import AuditPolicy
+                # The runtime's validated loader, so every Python version
+                # accepts and rejects the same policies.
+                from tracerazor.runtime import AuditPolicy
 
-                    policy = AuditPolicy.load(policy_path).to_dict()
+                policy = AuditPolicy.load(policy_path).to_dict()
             except (OSError, ValueError) as exc:
                 raise McpToolError("invalid_policy", str(exc)) from exc
             policy_source = "project"

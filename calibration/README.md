@@ -134,11 +134,18 @@ python -m calibration.calibrate --dataset manifest.json \
   --cv 5 --prior default --l2 0.1 --features
 ```
 
-On the tau-bench pairs the calibrated cross-validated `R^2` is about `+0.08`
+On the tau-bench pairs the calibrated cross-validated `R^2` was about `+0.08`
 against recoverable waste (default-weights baseline negative), and the
 `--features` flag shows the observation-accumulation signals that drove the
 improvement (see the paper and `config/calibration_report.md`). Swap in your own
 measured before/after pairs to calibrate for production.
+
+> **Converter fix pending a rerun.** Those committed numbers (and
+> `config/tas_weights.calibrated.json`) were produced before a fix to
+> `from_messages`: it used to turn every OpenAI `role: "tool"` result into its
+> own `tool_call` step, named after the first identifier in the result text
+> (`order_id`, `Error`, …). Results are now folded into the call that produced
+> them. Rerun the commands above before quoting the tau-bench fit.
 
 ## Why real before/after pairs (not synthetic)
 

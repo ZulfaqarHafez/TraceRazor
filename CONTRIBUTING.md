@@ -5,7 +5,6 @@ Thank you for considering contributing. This guide covers everything you need to
 ## Prerequisites
 
 - **Rust 1.82+** (`rustup update stable`)
-- **Node 20+** (optional, only for the React dashboard build)
 - **Python 3.10+** (optional, only for integration adapters)
 
 ## Setup

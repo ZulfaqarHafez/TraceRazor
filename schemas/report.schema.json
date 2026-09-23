@@ -71,7 +71,7 @@
       "description": "Trajectory Path Entropy: an information-theoretic 'staying on the path' diagnostic. Reported alongside TAS but NOT folded into the composite score."
     },
     "iar": {
-      "description": "Instruction Adherence Rate; populated only when comparing before/after reports, else null.",
+      "description": "Reserved for Instruction Adherence Rate. Not computed in 1.x; always null.",
       "type": ["object", "null"],
       "additionalProperties": true
     },
@@ -113,7 +113,10 @@
         "task_value_score": { "type": "number", "minimum": 0.0, "maximum": 1.0, "description": "Task-completion quality; gates the TAS ceiling." },
         "grade": { "type": "string", "enum": ["Excellent", "Good", "Fair", "Poor"] },
         "vae": { "type": "number" },
-        "passes_threshold": { "type": "boolean" },
+        "passes_threshold": {
+          "type": "boolean",
+          "description": "score >= manifest.threshold. Without an explicit --threshold this compares against the built-in default (70), which is not a gate and not a quality bar; TAS is ordinal."
+        },
         "avs": { "type": "number", "description": "Aggregate Verbosity Share." },
         "metric_normalised": {
           "type": "object",

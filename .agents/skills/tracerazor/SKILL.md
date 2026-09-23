@@ -57,7 +57,7 @@ tracerazor agent run -- <agent-command>
 Prefer the newest completed artifact under `.tracerazor/runs/<run-id>/trace.json`.
 Otherwise use:
 
-- Claude Code JSONL via `tracerazor claude convert <file> --out trace.json`.
+- Claude Code JSONL via `tracerazor import <file> --from claude-code --out trace.json`.
 - LangSmith, Langfuse, Phoenix, or OpenTelemetry export via
   `tracerazor import <file> --from auto --out trace.json --audit`.
 - Native JSON conforming to `schemas/trace.schema.json`.

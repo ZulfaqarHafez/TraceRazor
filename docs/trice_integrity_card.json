@@ -2,7 +2,7 @@
   "checks": [
     {
       "name": "offline_doctor_core",
-      "observed": "local_package=installed; bundled_cli=on-path; schemas=available",
+      "observed": "local_package=installed; bundled_cli=bundled; schemas=available",
       "passed": true,
       "required": "local package, CLI, and schemas pass offline doctor"
     },
@@ -33,7 +33,7 @@
     {
       "name": "release_evidence_verifies",
       "observed": "release_evidence_ready",
-      "passed": true,
+      "passed": false,
       "required": "release evidence packet verifies"
     },
     {
@@ -82,9 +82,9 @@
   "doctor_snapshot": {
     "checks": {
       "bundled_cli": {
-        "detail": "C:\\Users\\zulfa\\AppData\\Local\\Programs\\Python\\Python311\\Scripts\\tracerazor.exe; binary=1.1.0",
+        "detail": "/home/user/TraceRazor/tracerazor/bin/tracerazor; binary=1.1.0",
         "ok": true,
-        "status": "on-path"
+        "status": "bundled"
       },
       "crates_io": {
         "detail": "offline mode",
@@ -97,7 +97,7 @@
         "status": "skipped"
       },
       "github_tag": {
-        "detail": "head=a97eb122463e local_tag=False remote_tag=True",
+        "detail": "head=9ca945772fe9 local_tag=False remote_tag=True",
         "ok": false,
         "status": "pending"
       },
@@ -130,8 +130,8 @@
     "local_version": "1.1.0",
     "offline": true,
     "package": "tracerazor",
-    "platform": "Windows-10-10.0.26200-SP0",
-    "python": "3.11.6",
+    "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
+    "python": "3.11.15",
     "schema_version": "trice-doctor/v1",
     "summary": {
       "failed": [
@@ -147,35 +147,35 @@
       ]
     }
   },
-  "doctor_snapshot_sha256": "24cce392b8188e13f557ece7034dace993855357f715dd4a162cbf04df838ae4",
+  "doctor_snapshot_sha256": "35eb57422b883fb8d0db28a3bd801ba4e1a9f34af54f90381b5836b0ea499fc8",
   "inputs": {
     "artifact_card": {
       "bytes": 16185,
       "name": "trice_artifact_card.json",
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "dbf86de28860a8a23d59e049ad43122a65dfc338cea423e715502461fb7b42df"
+      "sha256": "97764cb844e2715f61507d19d249facfa0432a4401245d2633f78856792f192d"
     },
     "contract_card": {
       "bytes": 19194,
       "name": "trice_contract_card.json",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "f4635c58f7f396076b119fbe1e1bae5e14385ec7493c4142fd4e66840ca733b3"
+      "sha256": "fa3e7141f169858f8bb9740dfe15b54b752bacf55b927cc555df74400e0f88ef"
     },
     "crates_card": {
-      "bytes": 21475,
+      "bytes": 21470,
       "name": "trice_crates_card.json",
       "path": "docs/trice_crates_card.json",
       "present": true,
-      "sha256": "b18bbabb2e7d04a380ba68cdd8d99b96c0208fadff9942371d05d294c4a77d75"
+      "sha256": "d2bc3924fc1bf11953ef4a07e41f70d53e48bc92e7790209b99fb2ac5c471033"
     },
     "install_card": {
-      "bytes": 14035,
+      "bytes": 13925,
       "name": "trice_install_card.json",
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "d5528d855bd86026b9f6279e4f4eaa23605e92209b56ad6f3f3c6775ce5f0892"
+      "sha256": "4983ece11e0ce39577d41d9d717eff299e621f018f500739c247da89c3219af1"
     },
     "paper_manifest": {
       "bytes": 7364,
@@ -192,11 +192,11 @@
       "sha256": "edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a"
     },
     "release_card": {
-      "bytes": 11482,
+      "bytes": 11476,
       "name": "trice_release_card.json",
       "path": "docs/trice_release_card.json",
       "present": true,
-      "sha256": "673a016bbe8d987c3168b47b8350bccb1e743ffdb7c5f7afad2c8a8f4919ca93"
+      "sha256": "67e970bbccc8585058fd432f98e8a3de244de4b94a2e1fa58d934036fb000640"
     },
     "release_evidence": {
       "bytes": 195107,
@@ -220,13 +220,11 @@
       "sha256": "c1753dfa8b6c68b9bb2a1ebda01a3e37bd022a6801d2b5e136b2e94e8d77b804"
     }
   },
-  "integrity_card_sha256": "df4a757d49224b357e00a87bb1d5cad99055badcfbdbcec5eb997a6cc946ae2e",
-  "integrity_level": "proof_graph_integrity_locked",
-  "integrity_score": 100,
+  "integrity_card_sha256": "be758f946ce781c7dc5c97e240b50476e7883c9aa0f17bc624d00897939ecf87",
+  "integrity_level": "partial_integrity",
+  "integrity_score": 90,
   "next_actions": [
-    "Run this card in CI after building release artifacts.",
-    "Regenerate the integrity card after changing proof cards, schemas, workflows, README, paper, or release evidence.",
-    "Keep S-tier wording blocked until the held-out remote claim card passes."
+    "Regenerate release evidence from current dist and CLI artifacts."
   ],
   "research_basis": [
     "SLSA and in-toto make provenance useful only when the resulting subjects and predicates are inspected by a verifier.",
@@ -412,8 +410,19 @@
       "release_score": 90
     },
     "release_evidence": {
-      "errors": [],
-      "ok": true,
+      "errors": [
+        "artifact missing: target/release/tracerazor.exe",
+        "artifact byte count mismatch: LICENSE",
+        "artifact sha256 mismatch: LICENSE",
+        "artifact byte count mismatch: THIRD_PARTY_NOTICES.md",
+        "artifact sha256 mismatch: THIRD_PARTY_NOTICES.md",
+        "artifact sha256 mismatch: docs/trice_artifact_card.json",
+        "artifact sha256 mismatch: docs/trice_contract_card.json",
+        "artifact byte count mismatch: docs/trice_crates_card.json",
+        "artifact sha256 mismatch: docs/trice_crates_card.json",
+        "artifact byte count mismatch: docs/trice_install_card.json"
+      ],
+      "ok": false,
       "release_evidence_level": "release_evidence_ready",
       "release_evidence_score": 100
     },
@@ -433,7 +442,7 @@
   },
   "workflows": [
     {
-      "bytes": 35874,
+      "bytes": 36008,
       "markers_present": true,
       "name": "release_workflow",
       "path": ".github/workflows/release.yml",
@@ -446,10 +455,10 @@
         "trice_research_card",
         "pypa/gh-action-pypi-publish"
       ],
-      "sha256": "a0016bd16203b009af8f886c15443574ffd54065bb1aad6ffb76ba7b114b332c"
+      "sha256": "ae75b4aaf5cc907e27ee3892f3f13cbd5ff3a028f91f8e9fd943a4cfd867b597"
     },
     {
-      "bytes": 10411,
+      "bytes": 8162,
       "markers_present": true,
       "name": "ci_workflow",
       "path": ".github/workflows/tracerazor.yml",
@@ -459,7 +468,7 @@
         "tracerazor.trice integrity",
         "tracerazor.trice verify-integrity"
       ],
-      "sha256": "59f39c1cc734df45add182967b9336d1ce28f583aa8884a48c733d3c68938ceb"
+      "sha256": "2284f4df35dfbc5e66f7eb4dbe90a4da81dcf824b991d9db72b6865e88e9e620"
     },
     {
       "bytes": 788,

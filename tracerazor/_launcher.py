@@ -102,6 +102,25 @@ def recovery_message() -> str:
     )
 
 
+def resolve_binary() -> str:
+    """Like :func:`find_binary`, but raise ``BinaryNotFoundError`` with the
+    recovery steps instead of returning ``None``. A ``TRACERAZOR_BIN`` that
+    points at nothing is an error, not a silent fall-through. Shared by the
+    Python client and the MCP server so both resolve the binary identically.
+    """
+    from tracerazor.errors import BinaryNotFoundError
+
+    env = os.environ.get("TRACERAZOR_BIN")
+    if env and not os.path.isfile(env):
+        raise BinaryNotFoundError(
+            f"TRACERAZOR_BIN is set but does not point to a file: {env}\n" + recovery_message()
+        )
+    binary = find_binary()
+    if binary is None:
+        raise BinaryNotFoundError(recovery_message())
+    return binary
+
+
 def main() -> int:
     binary = find_binary()
     if binary is None:

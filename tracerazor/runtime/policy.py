@@ -3,81 +3,26 @@
 from __future__ import annotations
 
 import os
-import json
-import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Mapping
 
 try:  # Python 3.11+
     import tomllib
-except ModuleNotFoundError:  # pragma: no cover - package requires 3.10
-    tomllib = None  # type: ignore[assignment]
+except ModuleNotFoundError:  # Python 3.10: the declared `tomli` dependency
+    import tomli as tomllib  # type: ignore[no-redef]
 
 from .models import PrivacyMode, RuntimeEvent, TaskResult
 
 
 _MODES = {"off", "passive", "coach", "enforce"}
 _CAPTURE_MODES = {"auto", "manual", "off"}
-_TOML_KEY_RE = re.compile(r"^[A-Za-z0-9_-]+$")
 
 
 def _bool_field(value: Any, name: str) -> bool:
     if not isinstance(value, bool):
         raise ValueError(f"policy.{name} must be a boolean")
     return value
-
-
-def _minimal_toml_load(payload: bytes) -> dict[str, Any]:
-    """Parse the small policy subset on Python 3.10 without a dependency.
-
-    The policy format needs tables plus string, boolean, and integer scalars;
-    unsupported TOML features fail closed instead of being guessed.
-    """
-
-    root: dict[str, Any] = {}
-    current = root
-    for line_number, raw_line in enumerate(payload.decode("utf-8").splitlines(), start=1):
-        line = raw_line.strip()
-        if not line or line.startswith("#"):
-            continue
-        if line.startswith("[") and line.endswith("]"):
-            section = line[1:-1].strip()
-            if not section:
-                raise ValueError(f"empty TOML table at line {line_number}")
-            current = root
-            for component in section.split("."):
-                if not _TOML_KEY_RE.fullmatch(component):
-                    raise ValueError(f"unsupported TOML table at line {line_number}")
-                child = current.setdefault(component, {})
-                if not isinstance(child, dict):
-                    raise ValueError(f"TOML table conflicts with a value at line {line_number}")
-                current = child
-            continue
-        if "=" not in line:
-            raise ValueError(f"invalid TOML policy line {line_number}")
-        key, raw_value = (part.strip() for part in line.split("=", 1))
-        if not _TOML_KEY_RE.fullmatch(key):
-            raise ValueError(f"unsupported TOML key at line {line_number}")
-        # Policy strings do not need inline '#'; reject ambiguous unquoted use.
-        if raw_value.startswith('"'):
-            try:
-                value: Any = json.loads(raw_value)
-            except json.JSONDecodeError as exc:
-                raise ValueError(f"invalid TOML string at line {line_number}") from exc
-        elif raw_value.startswith("'") and raw_value.endswith("'"):
-            value = raw_value[1:-1]
-        elif raw_value == "true":
-            value = True
-        elif raw_value == "false":
-            value = False
-        else:
-            try:
-                value = int(raw_value)
-            except ValueError as exc:
-                raise ValueError(f"unsupported TOML value at line {line_number}") from exc
-        current[key] = value
-    return root
 
 
 @dataclass(frozen=True)
@@ -199,10 +144,8 @@ class AuditPolicy:
             payload = policy_path.read_bytes()
         except OSError as exc:
             raise ValueError(f"could not read TraceRazor policy {policy_path}: {exc}") from exc
-        if tomllib is None:  # pragma: no cover - exercised on Python 3.10
-            value = _minimal_toml_load(payload)
-        else:
-            value = tomllib.loads(payload.decode("utf-8"))
+        # TOMLDecodeError and UnicodeDecodeError are both ValueErrors.
+        value = tomllib.loads(payload.decode("utf-8"))
         if "tracerazor" in value:
             section = value["tracerazor"]
             if not isinstance(section, Mapping):

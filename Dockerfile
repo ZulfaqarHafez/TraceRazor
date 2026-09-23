@@ -1,12 +1,5 @@
-# ── Stage 1: Build React dashboard ───────────────────────────────────────────
-FROM node:20-alpine AS dashboard
-WORKDIR /build/dashboard
-COPY dashboard/package*.json ./
-RUN npm ci --silent
-COPY dashboard/ ./
-RUN npm run build
-
-# ── Stage 2: Build Rust binaries ─────────────────────────────────────────────
+# ── Stage 1: Build Rust binaries ─────────────────────────────────────────────
+# The dashboard is embedded in the server binary, so no Node stage is needed.
 FROM rust:1.88-bookworm@sha256:af306cfa71d987911a781c37b59d7d67d934f49684058f96cf72079c3626bfe0 AS builder
 
 # Pre-fetch dependencies using a stub workspace (layer cache trick).
@@ -34,7 +27,7 @@ RUN cargo fetch
 COPY crates/ crates/
 RUN cargo build --release -p tracerazor-server -p tracerazor
 
-# ── Stage 3: Minimal runtime image ───────────────────────────────────────────
+# ── Stage 2: Minimal runtime image ───────────────────────────────────────────
 FROM debian:bookworm-slim
 
 # ca-certificates needed for HTTPS calls to OpenAI API.
@@ -46,7 +39,6 @@ WORKDIR /app
 
 COPY --from=builder /build/target/release/tracerazor-server ./
 COPY --from=builder /build/target/release/tracerazor ./
-COPY --from=dashboard /build/dashboard/dist ./dashboard/dist
 COPY LICENSE THIRD_PARTY_NOTICES.md ./licenses/
 # Only the project-owned support trace is a runtime asset. External research
 # corpora remain source-tree inputs and are not redistributed in the image.

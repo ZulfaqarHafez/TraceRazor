@@ -1,5 +1,5 @@
 {
-  "artifact_card_sha256": "112bcf35b63d187538fe2e6034035fec25e6a545315c312adfd08be42e0c22ae",
+  "artifact_card_sha256": "22ffdb9d5811ade958d31d42a7139c06e2ad5a348ea46428d573cc15775dfb06",
   "artifact_level": "review_ready_smoke",
   "artifact_review_score": 100,
   "availability": [
@@ -36,14 +36,14 @@
       "name": "contract_card",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "f4635c58f7f396076b119fbe1e1bae5e14385ec7493c4142fd4e66840ca733b3"
+      "sha256": "fa3e7141f169858f8bb9740dfe15b54b752bacf55b927cc555df74400e0f88ef"
     },
     {
-      "bytes": 14035,
+      "bytes": 13925,
       "name": "install_card",
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "d5528d855bd86026b9f6279e4f4eaa23605e92209b56ad6f3f3c6775ce5f0892"
+      "sha256": "4983ece11e0ce39577d41d9d717eff299e621f018f500739c247da89c3219af1"
     },
     {
       "bytes": 69703,
@@ -109,18 +109,18 @@
       "sha256": "238219dcdb923f0e35ef1f24772b4bda13ae4f40ac453bf347eca24196c831ca"
     },
     {
-      "bytes": 20271,
+      "bytes": 20348,
       "name": "readme",
       "path": "README.md",
       "present": true,
-      "sha256": "15fb513d3f5452528ce3ccacf7e625369064165973382c658ab59b239efde629"
+      "sha256": "a3f82d6b4b02b61905bcbd80d4f5ea9fe40a7f068b9cd3422257a6de6b4817fa"
     },
     {
-      "bytes": 24319,
+      "bytes": 25039,
       "name": "library_doc",
       "path": "docs/trice_library.md",
       "present": true,
-      "sha256": "09b3e7346ec3df51769f1d7719174f6a9c5b075eb6cb51f7bb9715a426905d90"
+      "sha256": "598eb48d1b7d737102a93f5cb7b962e2ba4e575c1cf148c0a22a78135471c07f"
     }
   ],
   "checks": [
@@ -230,18 +230,18 @@
   "claim_allowed": false,
   "input_sha256": {
     "claim": "5bf4de6c6ae6c74b7bfcef12a924890ae633183ad8120d707f6531a9a1b8f9cf",
-    "contract_card": "f4635c58f7f396076b119fbe1e1bae5e14385ec7493c4142fd4e66840ca733b3",
+    "contract_card": "fa3e7141f169858f8bb9740dfe15b54b752bacf55b927cc555df74400e0f88ef",
     "design_card": "dffa666fb9ba1deff7ba467da24b68b7dd4c19d5f0b0fa2e8c0f3cb45be74d39",
     "evidence_bundle": "08ee5538891932f64e5c4e80ac63833257802b533d5b4a5a50adbe860b65a37c",
-    "install_card": "d5528d855bd86026b9f6279e4f4eaa23605e92209b56ad6f3f3c6775ce5f0892",
-    "library_doc": "09b3e7346ec3df51769f1d7719174f6a9c5b075eb6cb51f7bb9715a426905d90",
+    "install_card": "4983ece11e0ce39577d41d9d717eff299e621f018f500739c247da89c3219af1",
+    "library_doc": "598eb48d1b7d737102a93f5cb7b962e2ba4e575c1cf148c0a22a78135471c07f",
     "paper_manifest": "4ca9de56f71c5498f84fdda4fdbc955bd5b0adcc45f7bb64869aa032010fb60a",
     "paper_pdf": "238219dcdb923f0e35ef1f24772b4bda13ae4f40ac453bf347eca24196c831ca",
     "paper_result": "edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a",
     "paper_tex": "d2b054232679cedf748ccf2a3b95c283e3a148a57e7c0cbaafbde0a3ef527709",
     "protocol_lock": "3e71413180ad94f43be0b6a35717ced48359b75ea382035c524a9b91e5e8296e",
     "readiness": "f98e2481ce47a262e618f0adee5481ee7227347e900613bfc68115cc420be1d7",
-    "readme": "15fb513d3f5452528ce3ccacf7e625369064165973382c658ab59b239efde629",
+    "readme": "a3f82d6b4b02b61905bcbd80d4f5ea9fe40a7f068b9cd3422257a6de6b4817fa",
     "remote_smoke_bundle": "93f31fc51b6c75279b1dc8a637a46e51c7fd9f2aa3ea0ef45fe9d581ffef493d",
     "remote_smoke_claim": "e296651963ef02ccfde115ab59f0cc87e5d938548878ed63ef8f8660113da641",
     "reproduction_card": "74ec65592fa039648a1b78fd73f133b6abf8a528ceb848fab35416ca02436cfa",

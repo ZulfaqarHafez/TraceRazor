@@ -1,6 +1,8 @@
 """Guard rails for the canonical cross-agent TraceRazor Agent Skill.
 
-Verifies the two SKILL.md copies stay byte-identical, that the frontmatter
+Verifies the seven SKILL.md copies (the canonical ``skills/tracerazor/SKILL.md``
+and the six mirrors maintained by ``scripts/sync_skill.py``) stay
+byte-identical, that the frontmatter
 parses and stays within the host trigger-surface budget, that the body stays
 small enough to remain self-contained, and that every `tracerazor <subcommand>`
 the skill instructs an agent to run actually exists in the CLI's clap

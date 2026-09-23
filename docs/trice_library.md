@@ -18,6 +18,18 @@ The product contract is deliberately narrow:
 
 Replay is useful as preflight evidence; it is not final proof.
 
+## What the savings number is (and is not)
+
+`measured_input_savings` is an estimate: TRICE counts tokens as
+`words × 1.35` over the full and the compressed context, not with a model
+tokenizer. In the bundled smoke runs, the decision trace also contains
+deliberately injected `REDUNDANT` filler steps (a repeated verifier log and a
+"stale hypothesis scratchpad"), and the deterministic/patch adapters ignore the
+compressed context entirely. Savings, pass preservation, and evidence recall in
+those runs therefore hold by construction; they show the pipeline works, not
+that compression helps a real agent. Only a real `CommandRepairAdapter` run
+against a model that actually reads the compressed context can test that.
+
 ## Determinism Rules
 
 TRICE records objective verifier output, but strips clock noise such as
