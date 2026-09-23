@@ -81,6 +81,7 @@ Traces need **≥ 5 steps** to audit unless you pass `--min-steps N` (clamped �
 | `agent install` | Preview or install a trusted host adapter | `--host auto` `--scope project\|user\|image` `--mode coach` `--dry-run` |
 | `agent status` / `agent uninstall` | Inspect or remove only TraceRazor-owned integration files | `--format json` `--host` `--scope` |
 | `agent run -- <cmd>` | Launch an agent with W3C and TraceRazor parent/run context | command after `--` |
+| `agent write-receipt --run-dir <dir> …` | Bind an audited run's `trace.json`/`report.json` into `run-receipt.json` (the Python runtime calls this; signs with `TRACERAZOR_SIGNING_KEY`) | `--run-id` `--audit-trace-sha256` `--privacy` `--format json` |
 | `agent verify-receipt <path>` | Verify an offline run receipt, its Ed25519 envelope, signer, and available sibling artifacts | `--verify-key <hex>` `--format json` |
 | `apply <fixes> --to <file>` | Append safe fix patches to a prompt file | `--dry-run` `--all` `--force` |
 | `bench --before A --after B` | **Measured** token/TAS delta after re-running the agent | `--fixes <json>` `--format json` |

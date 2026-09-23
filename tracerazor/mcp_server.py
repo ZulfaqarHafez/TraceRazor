@@ -1135,6 +1135,52 @@ def preview_fix(
         return _error_envelope(exc, run_id=run_id)
 
 
+def _prior_audit_facts(run_dir: Path, root: Path) -> dict[str, Any]:
+    """Audit fields for a new validation record, from the run's own artifacts.
+
+    Prefers the existing validation.json, then the manifest's ``audit`` block;
+    a run with neither is recorded as ``unknown`` and enforcement-ineligible.
+    """
+
+    facts: dict[str, Any] = {
+        "audit_status": "unknown",
+        "audit_issues": [],
+        "enforcement_eligible": False,
+        "ineligible_reasons": ["task_outcome_not_verified"],
+    }
+    for name in ("validation.json", "manifest.json"):
+        path = run_dir / name
+        if not path.is_file() or _is_link(path):
+            continue
+        try:
+            artifact = _read_json(_safe_path(path, root, must_exist=True, kind="file"))
+        except McpToolError:
+            continue
+        if not isinstance(artifact, dict):
+            continue
+        if name == "validation.json":
+            source = artifact
+            reasons = artifact.get("ineligible_reasons")
+        else:
+            audit = artifact.get("audit")
+            source = {
+                "audit_status": audit.get("status") if isinstance(audit, dict) else None,
+                "audit_issues": audit.get("issues") if isinstance(audit, dict) else None,
+                "enforcement_eligible": artifact.get("enforcement_eligible"),
+            }
+            reasons = artifact.get("enforcement_ineligible_reasons")
+        if not isinstance(source.get("audit_status"), str):
+            continue
+        facts["audit_status"] = source["audit_status"]
+        issues = source.get("audit_issues")
+        facts["audit_issues"] = [i for i in issues if isinstance(i, str)] if isinstance(issues, list) else []
+        facts["enforcement_eligible"] = source.get("enforcement_eligible") is True
+        if isinstance(reasons, list):
+            facts["ineligible_reasons"] = [r for r in reasons if isinstance(r, str)]
+        return facts
+    return facts
+
+
 def record_validation(
     run_id: str, validation: dict[str, Any], cwd: str = "."
 ) -> dict[str, Any]:
@@ -1231,22 +1277,32 @@ def record_validation(
         except (OSError, ValueError) as exc:
             raise McpToolError("invalid_policy", str(exc)) from exc
 
-        # Keep only the versioned validation contract.  Free-form evidence and
-        # metadata are privacy-filtered before the atomic write.
+        # Keep only the versioned validation contract (the same field set the
+        # runtime and lifecycle hook write). Free-form evidence and metadata
+        # are privacy-filtered before the atomic write. Audit facts recorded
+        # by the run are carried forward rather than dropped.
+        prior = _prior_audit_facts(run_dir, root)
         payload: dict[str, Any] = {
+            "schema_version": VALIDATION_SCHEMA_VERSION,
+            "run_id": selected,
+            "status": outcome,
+            "trust_level": "untrusted_mcp_record",
             "task": {
                 "outcome": outcome,
                 "verifier": verifier,
                 "score": score,
                 "evidence": evidence,
             },
+            "task_quality_verified": False,
+            "verifier": verifier,
+            "enforcement": {
+                "enabled": persistence_policy.enforcement_enabled,
+                "executed": False,
+            },
+            **prior,
             "metadata": metadata,
-            "trust_level": "untrusted_mcp_record",
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
         }
-        payload["status"] = outcome
-        payload["schema_version"] = VALIDATION_SCHEMA_VERSION
-        payload["run_id"] = selected
-        payload["recorded_at"] = datetime.now(timezone.utc).isoformat()
         encoded = json.dumps(payload, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
         if len(encoded.encode("utf-8")) > 1_048_576:
             raise McpToolError("validation_too_large", "validation exceeds the 1 MiB limit")

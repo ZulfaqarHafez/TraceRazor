@@ -444,7 +444,8 @@ def test_child_only_spools_and_parent_aggregates_without_overwrite(tmp_path):
             tokens=TokenUsage(input=1, provenance="provider_reported"),
         )
     receipt = child.finalize()
-    assert receipt["schema_version"] == "tracerazor-run-receipt/v1"
+    # A child's completion receipt is its own document, not the audit receipt.
+    assert receipt["schema_version"] == "tracerazor-child-receipt/v1"
     assert receipt["agent_id"] == "worker"
     assert receipt["parent_agent_id"] == "parent"
     assert receipt["audit_status"] == "deferred_to_parent"
