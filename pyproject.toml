@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tracerazor"
-version = "1.1.0"
+version = "1.2.0"
 description = "Local-first efficiency supervision, regression testing, and verified before/after evaluation for AI agents"
 readme = "README.md"
 license = "MIT"

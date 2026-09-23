@@ -25,7 +25,7 @@
   <img src="https://raw.githubusercontent.com/ZulfaqarHafez/TraceRazor/main/docs/assets/tracerazor-hero.webp" alt="Noisy agent traces passing through an analysis plane and becoming one verified path" width="100%">
 </p>
 
-TraceRazor v1.1.0 is the efficiency layer between agent tracing and deployment.
+TraceRazor v1.2.0 is the efficiency layer between agent tracing and deployment.
 It turns reasoning traces into named waste findings, risk-tagged fixes,
 same-workload regression checks, and evidence that can be re-scored or signed.
 The stable audit path runs locally, needs no model API key, and sends no trace
@@ -42,11 +42,11 @@ what to change, and whether the changed agent still completes the same task.
 
 ## 60-second start
 
-TraceRazor 1.1 ships five platform wheels. Each wheel bundles the native Rust
+TraceRazor 1.2 ships five platform wheels. Each wheel bundles the native Rust
 auditor, so a normal install does not require a Rust toolchain.
 
 ```bash
-python -m pip install "tracerazor[mcp]>=1.1,<2"
+python -m pip install "tracerazor[mcp]>=1.2,<2"
 
 tracerazor --version
 tracerazor agent doctor --format json
@@ -64,7 +64,7 @@ Phoenix, OpenTelemetry, and Claude Code exports.
 
 ### What the sample reports
 
-The bundled support-agent trace currently produces this shape under 1.1.0:
+The bundled support-agent trace currently produces this shape under 1.2.0:
 
 ```text
 trace       customer-support-v3 / langgraph
@@ -119,7 +119,7 @@ TraceRazor when you need efficiency diagnosis and a before/after gate.
 
 See [COMPARISON.md](COMPARISON.md) for the longer market and product boundary.
 
-## What ships in 1.1
+## What ships in 1.2
 
 ### Offline auditor
 
@@ -273,7 +273,7 @@ steps:
     with:
       name: agent-eval-traces
       path: artifacts
-  - uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v1.1.0
+  - uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v1.2.0
     with:
       trace-file: artifacts/candidate.json
       baseline-trace: artifacts/baseline.json
@@ -356,7 +356,7 @@ TraceRazor publishes the material needed to challenge its claims:
   remained weighted and which were demoted to diagnostics.
 - The [public trust matrix](docs/public_trust_matrix.md) separates local proof,
   public release proof, and unmet project targets.
-- The [v1.1.0 release](https://github.com/ZulfaqarHafez/TraceRazor/releases/tag/v1.1.0)
+- The [v1.2.0 release](https://github.com/ZulfaqarHafez/TraceRazor/releases/tag/v1.2.0)
   publishes five wheels, five standalone archives, checksums, SBOMs,
   provenance-shaped evidence, and proof cards.
 - Hermetic audit output records the exact weights and configuration required
@@ -383,7 +383,7 @@ cards deliberately keep broad claim permission false. Start with
 
 ## Distribution
 
-| Distribution | Supported in 1.1 |
+| Distribution | Supported in 1.2 |
 |---|---|
 | PyPI wheel | Windows x64, macOS x64/ARM64, Linux x64/ARM64 |
 | Standalone archive | Same five native targets on GitHub Releases |
@@ -391,7 +391,7 @@ cards deliberately keep broad claim permission false. Start with
 | Source build | Rust toolchain, `cargo build --release -p tracerazor` |
 
 Linux wheel floors are glibc 2.35 on x64 and glibc 2.39 on ARM64.
-Alpine/musl is not supported in 1.1. Source distributions are intentionally not
+Alpine/musl is not supported in 1.2. Source distributions are intentionally not
 published because they cannot guarantee a bundled auditor. There is no stable
 crates.io installation contract yet. Build the CLI from source instead of
 installing it from the Cargo registry.

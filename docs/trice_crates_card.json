@@ -17,14 +17,14 @@
       "name": "version_alignment",
       "observed": {
         "packages": {
-          "tracerazor": "1.1.0",
-          "tracerazor-core": "1.1.0",
-          "tracerazor-ingest": "1.1.0",
-          "tracerazor-semantic": "1.1.0",
-          "tracerazor-server": "1.1.0",
-          "tracerazor-store": "1.1.0"
+          "tracerazor": "1.2.0",
+          "tracerazor-core": "1.2.0",
+          "tracerazor-ingest": "1.2.0",
+          "tracerazor-semantic": "1.2.0",
+          "tracerazor-server": "1.2.0",
+          "tracerazor-store": "1.2.0"
         },
-        "workspace": "1.1.0"
+        "workspace": "1.2.0"
       },
       "passed": true,
       "required": "workspace and crate package versions match"
@@ -61,25 +61,25 @@
       "name": "dependency_versions_pinned",
       "observed": {
         "tracerazor": {
-          "tracerazor-core": "1.1.0",
-          "tracerazor-ingest": "1.1.0",
-          "tracerazor-semantic": "1.1.0",
-          "tracerazor-server": "1.1.0",
-          "tracerazor-store": "1.1.0"
+          "tracerazor-core": "1.2.0",
+          "tracerazor-ingest": "1.2.0",
+          "tracerazor-semantic": "1.2.0",
+          "tracerazor-server": "1.2.0",
+          "tracerazor-store": "1.2.0"
         },
         "tracerazor-core": {},
         "tracerazor-ingest": {
-          "tracerazor-core": "1.1.0"
+          "tracerazor-core": "1.2.0"
         },
         "tracerazor-semantic": {},
         "tracerazor-server": {
-          "tracerazor-core": "1.1.0",
-          "tracerazor-ingest": "1.1.0",
-          "tracerazor-semantic": "1.1.0",
-          "tracerazor-store": "1.1.0"
+          "tracerazor-core": "1.2.0",
+          "tracerazor-ingest": "1.2.0",
+          "tracerazor-semantic": "1.2.0",
+          "tracerazor-store": "1.2.0"
         },
         "tracerazor-store": {
-          "tracerazor-core": "1.1.0"
+          "tracerazor-core": "1.2.0"
         }
       },
       "passed": true,
@@ -109,7 +109,7 @@
     },
     {
       "name": "readme_install_honesty",
-      "observed": "contains_cargo_install=False; missing: target=1.1.0 latest=none",
+      "observed": "contains_cargo_install=False; missing: target=1.2.0 latest=none",
       "passed": true,
       "required": "README does not claim cargo install until tracerazor is live on crates.io"
     },
@@ -128,13 +128,13 @@
     },
     {
       "name": "cargo_install_truth",
-      "observed": "missing: target=1.1.0 latest=none",
+      "observed": "missing: target=1.2.0 latest=none",
       "passed": false,
       "required": "cargo install tracerazor is true for the local version"
     }
   ],
   "crates_card_level": "publish_plan_locked",
-  "crates_card_sha256": "d422b5ac5c0246c8b0a2fa6c1060835d2df35583531fb1c0bfe88edacc610003",
+  "crates_card_sha256": "c372817de273e201691c8f56a39da79e46110fa6aedbdb3b8f33f7f928facb9f",
   "crates_publish_score": 80,
   "inputs": {
     "readme": {
@@ -142,14 +142,14 @@
       "name": "README.md",
       "path": "README.md",
       "present": true,
-      "sha256": "a3f82d6b4b02b61905bcbd80d4f5ea9fe40a7f068b9cd3422257a6de6b4817fa"
+      "sha256": "5ac3568a3ecc4dfcd38f4944882d1137e42b667c3517c3d9b5ebe57430f43741"
     },
     "tracerazor": {
       "bytes": 1245,
       "name": "Cargo.toml",
       "path": "crates/tracerazor-cli/Cargo.toml",
       "present": true,
-      "sha256": "a0e63eab67f6173294e67a6947c5576269618dc3c13780b26dff2838d9795db9"
+      "sha256": "841ca969caa9f47998281a03dd8ea8c8e827cf71eda019b233183ad9b183e413"
     },
     "tracerazor-core": {
       "bytes": 789,
@@ -163,7 +163,7 @@
       "name": "Cargo.toml",
       "path": "crates/tracerazor-ingest/Cargo.toml",
       "present": true,
-      "sha256": "cac5206fb98e7f55bbf0f79a1b65e4c1746f175c37f71fefd7fb2f43d0e6e206"
+      "sha256": "15b2dc9b2dd1007b8157ad5688e00f607f23c3d40326924018e1495a0b4ed70a"
     },
     "tracerazor-semantic": {
       "bytes": 642,
@@ -177,26 +177,26 @@
       "name": "Cargo.toml",
       "path": "crates/tracerazor-server/Cargo.toml",
       "present": true,
-      "sha256": "ac5165cfa69a38fb8f60f97be24407db7bcb23293893014214df76b2ef88ee54"
+      "sha256": "9b9b25b3d6e8f92646b1085e19f50452caf57b5f7cc0ac83c6cd032ca2c99c78"
     },
     "tracerazor-store": {
       "bytes": 933,
       "name": "Cargo.toml",
       "path": "crates/tracerazor-store/Cargo.toml",
       "present": true,
-      "sha256": "a95fbcdcd0f2fbc1aa12819b3f980950856c383358d40d0d9f42392da3257b09"
+      "sha256": "1f6505cc2e42935edf33559933dcb1538d6931d2b0e3b4726166591c4423de31"
     },
     "workspace": {
       "bytes": 1419,
       "name": "Cargo.toml",
       "path": "Cargo.toml",
       "present": true,
-      "sha256": "a8e7fff63889f2c22bd2d1b8a89306be49777d8c42bfd80f1eca12ec71e6966c"
+      "sha256": "133682b9fa5a7d25cc86b2678430d98a8a9ffe2166c091c946b56e45197c0199"
     }
   },
   "local_publish_plan_locked": true,
   "next_actions": [
-    "Publish stage-ready crates for 1.1.0: tracerazor-core, tracerazor-semantic.",
+    "Publish stage-ready crates for 1.2.0: tracerazor-core, tracerazor-semantic.",
     "Regenerate this crates card after crates.io indexes each published crate.",
     "Continue stage by stage until the final `tracerazor` crate is live, then verify `cargo install tracerazor --locked`."
   ],
@@ -236,12 +236,12 @@
         "latest_version": null,
         "published": false,
         "status": "missing",
-        "target_version": "1.1.0",
+        "target_version": "1.2.0",
         "url": "https://crates.io/api/v1/crates/tracerazor-core",
         "version_published": false
       },
       "stage": 1,
-      "version": "1.1.0"
+      "version": "1.2.0"
     },
     {
       "currently_publishable": true,
@@ -278,12 +278,12 @@
         "latest_version": null,
         "published": false,
         "status": "missing",
-        "target_version": "1.1.0",
+        "target_version": "1.2.0",
         "url": "https://crates.io/api/v1/crates/tracerazor-semantic",
         "version_published": false
       },
       "stage": 1,
-      "version": "1.1.0"
+      "version": "1.2.0"
     },
     {
       "currently_publishable": false,
@@ -294,7 +294,7 @@
         {
           "name": "tracerazor-core",
           "path": "../tracerazor-core",
-          "version": "1.1.0"
+          "version": "1.2.0"
         }
       ],
       "manifest": {
@@ -302,7 +302,7 @@
         "name": "Cargo.toml",
         "path": "crates/tracerazor-ingest/Cargo.toml",
         "present": true,
-        "sha256": "cac5206fb98e7f55bbf0f79a1b65e4c1746f175c37f71fefd7fb2f43d0e6e206"
+        "sha256": "15b2dc9b2dd1007b8157ad5688e00f607f23c3d40326924018e1495a0b4ed70a"
       },
       "metadata": {
         "categories": [
@@ -328,12 +328,12 @@
         "latest_version": null,
         "published": false,
         "status": "missing",
-        "target_version": "1.1.0",
+        "target_version": "1.2.0",
         "url": "https://crates.io/api/v1/crates/tracerazor-ingest",
         "version_published": false
       },
       "stage": 2,
-      "version": "1.1.0"
+      "version": "1.2.0"
     },
     {
       "currently_publishable": false,
@@ -344,7 +344,7 @@
         {
           "name": "tracerazor-core",
           "path": "../tracerazor-core",
-          "version": "1.1.0"
+          "version": "1.2.0"
         }
       ],
       "manifest": {
@@ -352,7 +352,7 @@
         "name": "Cargo.toml",
         "path": "crates/tracerazor-store/Cargo.toml",
         "present": true,
-        "sha256": "a95fbcdcd0f2fbc1aa12819b3f980950856c383358d40d0d9f42392da3257b09"
+        "sha256": "1f6505cc2e42935edf33559933dcb1538d6931d2b0e3b4726166591c4423de31"
       },
       "metadata": {
         "categories": [
@@ -378,12 +378,12 @@
         "latest_version": null,
         "published": false,
         "status": "missing",
-        "target_version": "1.1.0",
+        "target_version": "1.2.0",
         "url": "https://crates.io/api/v1/crates/tracerazor-store",
         "version_published": false
       },
       "stage": 2,
-      "version": "1.1.0"
+      "version": "1.2.0"
     },
     {
       "currently_publishable": false,
@@ -397,22 +397,22 @@
         {
           "name": "tracerazor-core",
           "path": "../tracerazor-core",
-          "version": "1.1.0"
+          "version": "1.2.0"
         },
         {
           "name": "tracerazor-ingest",
           "path": "../tracerazor-ingest",
-          "version": "1.1.0"
+          "version": "1.2.0"
         },
         {
           "name": "tracerazor-semantic",
           "path": "../tracerazor-semantic",
-          "version": "1.1.0"
+          "version": "1.2.0"
         },
         {
           "name": "tracerazor-store",
           "path": "../tracerazor-store",
-          "version": "1.1.0"
+          "version": "1.2.0"
         }
       ],
       "manifest": {
@@ -420,7 +420,7 @@
         "name": "Cargo.toml",
         "path": "crates/tracerazor-server/Cargo.toml",
         "present": true,
-        "sha256": "ac5165cfa69a38fb8f60f97be24407db7bcb23293893014214df76b2ef88ee54"
+        "sha256": "9b9b25b3d6e8f92646b1085e19f50452caf57b5f7cc0ac83c6cd032ca2c99c78"
       },
       "metadata": {
         "categories": [
@@ -446,12 +446,12 @@
         "latest_version": null,
         "published": false,
         "status": "missing",
-        "target_version": "1.1.0",
+        "target_version": "1.2.0",
         "url": "https://crates.io/api/v1/crates/tracerazor-server",
         "version_published": false
       },
       "stage": 3,
-      "version": "1.1.0"
+      "version": "1.2.0"
     },
     {
       "currently_publishable": false,
@@ -466,27 +466,27 @@
         {
           "name": "tracerazor-core",
           "path": "../tracerazor-core",
-          "version": "1.1.0"
+          "version": "1.2.0"
         },
         {
           "name": "tracerazor-ingest",
           "path": "../tracerazor-ingest",
-          "version": "1.1.0"
+          "version": "1.2.0"
         },
         {
           "name": "tracerazor-semantic",
           "path": "../tracerazor-semantic",
-          "version": "1.1.0"
+          "version": "1.2.0"
         },
         {
           "name": "tracerazor-server",
           "path": "../tracerazor-server",
-          "version": "1.1.0"
+          "version": "1.2.0"
         },
         {
           "name": "tracerazor-store",
           "path": "../tracerazor-store",
-          "version": "1.1.0"
+          "version": "1.2.0"
         }
       ],
       "manifest": {
@@ -494,7 +494,7 @@
         "name": "Cargo.toml",
         "path": "crates/tracerazor-cli/Cargo.toml",
         "present": true,
-        "sha256": "a0e63eab67f6173294e67a6947c5576269618dc3c13780b26dff2838d9795db9"
+        "sha256": "841ca969caa9f47998281a03dd8ea8c8e827cf71eda019b233183ad9b183e413"
       },
       "metadata": {
         "categories": [
@@ -520,12 +520,12 @@
         "latest_version": null,
         "published": false,
         "status": "missing",
-        "target_version": "1.1.0",
+        "target_version": "1.2.0",
         "url": "https://crates.io/api/v1/crates/tracerazor",
         "version_published": false
       },
       "stage": 4,
-      "version": "1.1.0"
+      "version": "1.2.0"
     }
   ],
   "public_crates_live": false,
@@ -673,5 +673,5 @@
     "url_template": "https://crates.io/api/v1/crates/{name}"
   },
   "status_snapshot_sha256": "b08d76128939208912273727e29700ef18ebfad596824d1a26359a30c67d2338",
-  "workspace_version": "1.1.0"
+  "workspace_version": "1.2.0"
 }

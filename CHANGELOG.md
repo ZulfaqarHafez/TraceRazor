@@ -4,8 +4,18 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-09-23
+
 Repository cleanup: remove unused and duplicated code, and fix shipped features
-that did not work.
+that did not work. The audit, report and receipt contracts are unchanged, so the
+documented `tracerazor>=1.1,<2` range picks this release up; install docs now
+recommend `>=1.2,<2` because 1.1.0's `mcp` extra resolves to a broken mcp 2.x.
+
+### Security
+- Bump `h2` to 0.4.19 (RUSTSEC-2026-0258: unbounded queueing of empty DATA
+  frames) and `rustls` to 0.23.45 with `rustls-webpki` 0.103.15
+  (RUSTSEC-2026-0285: TLS 1.3 handshake messages accepted across
+  encryption-level boundaries). Lockfile only; `cargo deny check` passes.
 
 ### Fixed
 - One run-artifact contract. `manifest.json` (`tracerazor-run/v1`) and

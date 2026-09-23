@@ -36,8 +36,8 @@
 | protocol_lock | yes | `docs/trice_protocol_lock.json` | `3e71413180ad94f43be0b6a35717ced48359b75ea382035c524a9b91e5e8296e` |
 | design_card | yes | `docs/trice_design_card.json` | `dffa666fb9ba1deff7ba467da24b68b7dd4c19d5f0b0fa2e8c0f3cb45be74d39` |
 | reproduction_card | yes | `docs/trice_reproduction_card.json` | `74ec65592fa039648a1b78fd73f133b6abf8a528ceb848fab35416ca02436cfa` |
-| contract_card | yes | `docs/trice_contract_card.json` | `fa3e7141f169858f8bb9740dfe15b54b752bacf55b927cc555df74400e0f88ef` |
-| install_card | yes | `docs/trice_install_card.json` | `4983ece11e0ce39577d41d9d717eff299e621f018f500739c247da89c3219af1` |
+| contract_card | yes | `docs/trice_contract_card.json` | `ced41a779dff9e8c3c17752a78fb505b09115d09a745e2c2db0293a12753d233` |
+| install_card | yes | `docs/trice_install_card.json` | `a901c24a391d869c77362552666b10fbf3d048b7c10b20cce317d4397f038e45` |
 | research_card | yes | `docs/trice_research_card.json` | `c1753dfa8b6c68b9bb2a1ebda01a3e37bd022a6801d2b5e136b2e94e8d77b804` |
 | claim | yes | `docs/trice_claim_card.json` | `5bf4de6c6ae6c74b7bfcef12a924890ae633183ad8120d707f6531a9a1b8f9cf` |
 | remote_smoke_claim | yes | `docs/trice_remote_smoke_claim_card.json` | `e296651963ef02ccfde115ab59f0cc87e5d938548878ed63ef8f8660113da641` |
@@ -47,7 +47,7 @@
 | paper_result | yes | `benchmark/trice/results/v2-smoke/trice_v2_live_results.json` | `edf72f856f37e2c773ffefc31c2ae0b06cab67cc6e456044df3ff03911b58d8a` |
 | paper_tex | yes | `paper/trice_v3_research_paper.tex` | `d2b054232679cedf748ccf2a3b95c283e3a148a57e7c0cbaafbde0a3ef527709` |
 | paper_pdf | yes | `paper/trice_v3_research_paper.pdf` | `238219dcdb923f0e35ef1f24772b4bda13ae4f40ac453bf347eca24196c831ca` |
-| readme | yes | `README.md` | `a3f82d6b4b02b61905bcbd80d4f5ea9fe40a7f068b9cd3422257a6de6b4817fa` |
+| readme | yes | `README.md` | `5ac3568a3ecc4dfcd38f4944882d1137e42b667c3517c3d9b5ebe57430f43741` |
 | library_doc | yes | `docs/trice_library.md` | `598eb48d1b7d737102a93f5cb7b962e2ba4e575c1cf148c0a22a78135471c07f` |
 
 ## Next Actions
@@ -58,4 +58,4 @@
 
 ## Hash
 
-- artifact card: `22ffdb9d5811ade958d31d42a7139c06e2ad5a348ea46428d573cc15775dfb06`
+- artifact card: `b877c86da4a3d523fe7eb7a52e1cd4ff6e167de1cf4fed0a248f561febb24ab9`

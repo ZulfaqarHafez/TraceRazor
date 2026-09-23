@@ -31,7 +31,7 @@ inputs:
   version:
     description: Immutable release tag to download, or explicit "latest" opt-in.
     required: false
-    default: "v1.1.0"
+    default: "v1.2.0"
   release-repo:
     description: GitHub repository hosting the release binaries.
     required: false

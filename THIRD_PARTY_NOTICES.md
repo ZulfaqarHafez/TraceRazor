@@ -6,7 +6,7 @@ project artwork. Third-party components remain subject to their own licenses.
 
 ## Distribution boundary
 
-The TraceRazor 1.1 platform wheels bundle the native Rust auditor. The
+The TraceRazor 1.2 platform wheels bundle the native Rust auditor. The
 standalone archives and container images also contain compiled Rust
 dependencies. The embedded dashboard loads Alpine.js and Chart.js from a CDN
 in the browser; they are not bundled. This notice accompanies those distributions. It records the
@@ -42,7 +42,7 @@ summary.
 ## Research data
 
 External research traces and the vendored AgentInstruct sample are source-tree
-research inputs, not TraceRazor product assets. The 1.1 wheels, standalone
+research inputs, not TraceRazor product assets. The 1.2 wheels, standalone
 archives, and runtime container images exclude them. The public source tree and
 legacy 1.0.3 source distribution still contain the derived fixtures, and the
 AgentInstruct redistribution license remains unconfirmed. The project MIT

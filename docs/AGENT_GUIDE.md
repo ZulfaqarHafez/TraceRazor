@@ -3,7 +3,7 @@
 The single machine-oriented walkthrough for driving TraceRazor from an agent: get
 the tool, get a trace, audit it, read every field of the report, act on the fixes,
 and (only then) claim savings. Every command here was run against the shipped binary
-(`tracerazor 1.1.0`). Numbers shift between scorer versions — the field *shape* is the
+(`tracerazor 1.2.0`). Numbers shift between scorer versions — the field *shape* is the
 contract, not the exact value.
 
 For the short convention see [../AGENTS.md](../AGENTS.md); for the Claude Code skill
@@ -23,7 +23,7 @@ see [../skills/tracerazor/SKILL.md](../skills/tracerazor/SKILL.md).
 ## 0. Resolve the binary
 
 ```bash
-tracerazor --version            # -> "tracerazor 1.1.0" if the native binary is present
+tracerazor --version            # -> "tracerazor 1.2.0" if the native binary is present
 ```
 
 If that errors, or `audit` exits 2 with a missing-binary message, the wheel shipped

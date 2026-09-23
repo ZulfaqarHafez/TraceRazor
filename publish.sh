@@ -56,7 +56,7 @@ fi
 if [[ "$PYTHON" == "1" ]]; then
     echo "==> Building Python artifacts (PyPI)"
     rm -rf dist build *.egg-info
-    # TraceRazor 1.1 is platform-wheel only. A source distribution cannot
+    # TraceRazor 1.2 is platform-wheel only. A source distribution cannot
     # satisfy the bundled-auditor contract and must not be uploaded.
     bash scripts/build_platform_wheel.sh
     echo "NOTE: this builds only THIS machine's platform wheel; the"

@@ -2846,7 +2846,7 @@ checksum = "8df9b6e13f2d32c91b9bd719c00d1958837bc7dec474d94952798cc8e69eeec3"
 
 [[package]]
 name = "tracerazor"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2873,7 +2873,7 @@ dependencies = [
 
 [[package]]
 name = "tracerazor-core"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2888,7 +2888,7 @@ dependencies = [
 
 [[package]]
 name = "tracerazor-ingest"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "opentelemetry-proto",
@@ -2900,7 +2900,7 @@ dependencies = [
 
 [[package]]
 name = "tracerazor-semantic"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "reqwest",
@@ -2912,7 +2912,7 @@ dependencies = [
 
 [[package]]
 name = "tracerazor-server"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "axum",
@@ -2937,7 +2937,7 @@ dependencies = [
 
 [[package]]
 name = "tracerazor-store"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
  "anyhow",
  "chrono",

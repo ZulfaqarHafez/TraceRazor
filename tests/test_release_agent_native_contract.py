@@ -43,7 +43,7 @@ def test_action_has_no_default_absolute_gate_and_verifies_release_checksum():
     threshold = action.split("  threshold:\n", 1)[1].split("  baseline-trace:\n", 1)[0]
     version = action.split("  version:\n", 1)[1].split("  release-repo:\n", 1)[0]
     assert 'default: ""' in threshold
-    assert 'default: "v1.1.0"' in version
+    assert 'default: "v1.2.0"' in version
     assert "SHA256SUMS" in resolver
     assert "checksum mismatch" in resolver
     assert 'VERSION="${VERSION:-}"' in resolver

@@ -1,5 +1,5 @@
 """
-TraceRazor 1.1.0
+TraceRazor 1.2.0
 
 TraceRazor is a local-first efficiency supervisor for production AI agents.
 Its stable core audits runs, diagnoses structural token waste, and verifies
@@ -108,7 +108,7 @@ from ._self_consistency import SCResult, SelfConsistencyBaseline
 # LLM adapters
 from ._adapters import anthropic_llm, mock_llm, openai_llm
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __author__ = "Zulfaqar Hafez"
 
 __all__ = [

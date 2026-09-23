@@ -3,7 +3,7 @@ services:
     build: .
     # Pin to an explicit version rather than :latest so deployments are
     # reproducible and don't silently pick up an unvetted rebuild.
-    image: tracerazor:1.1.0
+    image: tracerazor:1.2.0
     # The backend is reachable only by the TLS gateway on this Compose network.
     # No backend port is published to the host.
     expose:
