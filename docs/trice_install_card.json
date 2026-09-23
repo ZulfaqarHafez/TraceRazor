@@ -2,7 +2,7 @@
   "checks": [
     {
       "name": "wheel_present",
-      "observed": "dist/tracerazor-1.1.0-py3-none-manylinux_2_39_x86_64.whl",
+      "observed": "dist/tracerazor-1.2.0-py3-none-manylinux_2_39_x86_64.whl",
       "passed": true,
       "required": "built wheel exists"
     },
@@ -20,9 +20,9 @@
     },
     {
       "name": "version_matches",
-      "observed": "1.1.0",
+      "observed": "1.2.0",
       "passed": true,
-      "required": "1.1.0"
+      "required": "1.2.0"
     },
     {
       "name": "schemas_importable",
@@ -95,7 +95,7 @@
     },
     {
       "name": "rust_cli_bundled",
-      "observed": "exit=0; tracerazor 1.1.0\n",
+      "observed": "exit=0; tracerazor 1.2.0\n",
       "passed": true,
       "required": "tracerazor console script can find a bundled Rust auditor binary"
     },
@@ -133,7 +133,7 @@
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "stdout_excerpt": "{\n  \"auto_host\": \"generic\",\n  \"command\": \"doctor\",\n  \"executable\": \"<tmp>/venv/lib/python3.11/site-packages/tracerazor/bin/tracerazor\",\n  \"hosts\": [\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"codex\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"claude\",\n      \"project_config\": false\n    },\n    {\n      \"detected\": false,\n      \"executable\": null,\n      \"host\": \"gemini\",\n      \"project_config\": false\n    }",
-      "stdout_sha256": "d52a2d70010830c196700f2092d0c4528a9923e18aa2a1daaec1263d675a7095"
+      "stdout_sha256": "68ab738f66c7e1066b1bc1abce78d6e4b131db5a16c91ece76037ae40320f05f"
     },
     "create_venv": {
       "command_sha256": "53e9d989c84be56bd5819808c97c8f12a23ea2ffaf5a4ba0418974877f6c94c8",
@@ -153,17 +153,17 @@
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
       "stdout_excerpt": "{\"agent_policy\": true, \"binary_inside_package\": true, \"build_crates_card\": true, \"build_install_card\": true, \"build_research_card\": true, \"claude_plugin\": true, \"codex_plugin\": true, \"crates_schema_title\": \"TRICE crates publish card\", \"event_schema\": \"TraceRazor runtime event v1\", \"gemini_extension\": true, \"install_schema_title\": \"TRICE installability card\", \"mcp_tools\": [\"audit_current_run\", \"audit_trace\", \"check_policy\", \"compare_runs\", \"convert_transcript\", \"doctor\", \"explain_signal\", \"latest",
-      "stdout_sha256": "b32dc14eac29675e4d7a84346e680fd75472bf23fcfef2037801ef93f4a32885"
+      "stdout_sha256": "57fc3fd0d5683cf2d4a762717678a06afc0211f91b1c5c7e85d16e8e3ed7d02d"
     },
     "install_wheel": {
-      "command_sha256": "388947739a9d0f24b3c9e9633300bac4a6b4133e3706c4572d0850e24c4505e8",
+      "command_sha256": "5de32c9fa45e7364e03bf82355dc2f3eb509faca600b33c8a91bd41e9f1cdc5c",
       "exit_code": 0,
       "ok": true,
       "status": "ok",
       "stderr_excerpt": "\n[notice] A new release of pip is available: 24.0 -> 26.2.1\n[notice] To update, run: python -m pip install --upgrade pip\n",
       "stderr_sha256": "f5002e0ae828482de28eb696b7453f3a4e4fe09949c72d107e30542b16cc1b8c",
-      "stdout_excerpt": "Processing <repo>/dist/tracerazor-1.1.0-py3-none-manylinux_2_39_x86_64.whl (from tracerazor==1.1.0)\nCollecting mcp<2,>=1.2 (from tracerazor==1.1.0->tracerazor==1.1.0)\n  Downloading mcp-1.30.0-py3-none-any.whl.metadata (9.3 kB)\nCollecting anyio>=4.5 (from mcp<2,>=1.2->tracerazor==1.1.0->tracerazor==1.1.0)\n  Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)\nCollecting httpx-sse>=0.4 (from mcp<2,>=1.2->tracerazor==1.1.0->tracerazor==1.1.0)\n  Downloading httpx_sse-0.4.3-py3-none-any.whl.me",
-      "stdout_sha256": "3d50ff2755222badb43eb2073e08acc91a8e4bb68b2f5f31ef691f1fc8a8caf0"
+      "stdout_excerpt": "Processing <repo>/dist/tracerazor-1.2.0-py3-none-manylinux_2_39_x86_64.whl (from tracerazor==1.2.0)\nCollecting mcp<2,>=1.2 (from tracerazor==1.2.0->tracerazor==1.2.0)\n  Using cached mcp-1.30.0-py3-none-any.whl.metadata (9.3 kB)\nCollecting anyio>=4.5 (from mcp<2,>=1.2->tracerazor==1.2.0->tracerazor==1.2.0)\n  Using cached anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)\nCollecting httpx-sse>=0.4 (from mcp<2,>=1.2->tracerazor==1.2.0->tracerazor==1.2.0)\n  Using cached httpx_sse-0.4.3-py3-none-any.whl",
+      "stdout_sha256": "5a770b8e6cf5063ce7012b18a64d9403c4eba540ca4f0c97d796fac7250c4bc8"
     },
     "mcp_selftest": {
       "command_sha256": "414450d53786a897b5d9b45ae1aacd2cc3bde7d8c1bae31a4143b0d552dc1f5b",
@@ -182,8 +182,8 @@
       "status": "ok",
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_excerpt": "tracerazor 1.1.0\n",
-      "stdout_sha256": "3b8cd16359cecbb3650939dd01e498a7347f88f5a4541954a8c58bd42cb7aaa7"
+      "stdout_excerpt": "tracerazor 1.2.0\n",
+      "stdout_sha256": "9f9fb816e3ae4a618f532bc646b33b2a2c7feb0e29e607f06cec3f67a490ce86"
     },
     "sample_audit": {
       "command_sha256": "1108c4a9831b0066839d6144025d6ab4e0797dbed419541206ceacc8ab59a2ef",
@@ -192,8 +192,8 @@
       "status": "ok",
       "stderr_excerpt": "",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_excerpt": "{\n  \"schema_version\": \"tracerazor-report/v1\",\n  \"trace_id\": \"support-agent-run-2847\",\n  \"agent_name\": \"customer-support-v3\",\n  \"framework\": \"langgraph\",\n  \"total_steps\": 11,\n  \"total_tokens\": 14280,\n  \"analysis_duration_ms\": 1,\n  \"score\": {\n    \"score\": 83.1,\n    \"raw_tas\": 85.7,\n    \"task_value_score\": 0.9,\n    \"grade\": \"Good\",\n    \"vae\": 0.77,\n    \"passes_threshold\": true,\n    \"avs\": 0.263,\n    \"metric_normalised\": {\n      \"cce\": 0.613,\n      \"ccr\": 0.6162790697674418,\n      \"csd\": 0.438,\n    ",
-      "stdout_sha256": "e28f5501cd78707d045dab1e2323c6e26e19479b0db4f206831c2723abd18fce"
+      "stdout_excerpt": "{\n  \"schema_version\": \"tracerazor-report/v1\",\n  \"trace_id\": \"support-agent-run-2847\",\n  \"agent_name\": \"customer-support-v3\",\n  \"framework\": \"langgraph\",\n  \"total_steps\": 11,\n  \"total_tokens\": 14280,\n  \"analysis_duration_ms\": 2,\n  \"score\": {\n    \"score\": 83.1,\n    \"raw_tas\": 85.7,\n    \"task_value_score\": 0.9,\n    \"grade\": \"Good\",\n    \"vae\": 0.77,\n    \"passes_threshold\": true,\n    \"avs\": 0.263,\n    \"metric_normalised\": {\n      \"cce\": 0.613,\n      \"ccr\": 0.6162790697674418,\n      \"csd\": 0.438,\n    ",
+      "stdout_sha256": "a2d99ed063d7f21fd03da302556699bfdc325ff57527bdb8411d8090984de692"
     },
     "trice_console": {
       "command_sha256": "9432950afa99d0f4032e267e11fbb2d9d34c8a815ecb83fe08f7176f2f18291b",
@@ -206,7 +206,7 @@
       "stdout_sha256": "ce83b0525f48f45480c7bcf8ceb0de7cd49e5f4bfdfe60737aebe165278edc02"
     }
   },
-  "expected_version": "1.1.0",
+  "expected_version": "1.2.0",
   "inputs": {
     "dist_dir": {
       "kind": "directory",
@@ -220,10 +220,10 @@
       "name": "pyproject",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "030eef8eb857fcaefb79dc5f71b5280b3bd6f1b92a5c6f231a762a242a068b36"
+      "sha256": "37c5096fd853b81bd2589f5a6216bdba17d8bc22e77f7ef47542bcb5c7f33805"
     }
   },
-  "install_card_sha256": "870dc592c1ac3824213cfe062b8f27f9de5d0918516dfbd16bd472c51bd9a7ba",
+  "install_card_sha256": "2c1fd52f282175773377ae86424422349863e1cf2e2593bb90ff61a5328d0e0d",
   "install_level": "full_cli_install_ready",
   "install_score": 100,
   "next_actions": [
@@ -261,7 +261,7 @@
     "sample_trace": true,
     "verify_install_card_file": true,
     "verify_research_card_file": true,
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "python_executable": "python",
   "research_basis": [
@@ -275,11 +275,11 @@
   "schema_version": "trice-install-card/v1",
   "scope": "TraceRazor wheel installability",
   "wheel": {
-    "bytes": 7770882,
+    "bytes": 7805167,
     "kind": "file",
     "name": "wheel",
-    "path": "dist/tracerazor-1.1.0-py3-none-manylinux_2_39_x86_64.whl",
+    "path": "dist/tracerazor-1.2.0-py3-none-manylinux_2_39_x86_64.whl",
     "present": true,
-    "sha256": "4c1d9ccfc9561e4ec41192a271678a1292b3d7dda6663aaec7c7ca407d36ae8a"
+    "sha256": "518c2dbe2a5ceb1d1f3aab53467704821bd7aa22a20d41f769f4447ef0b47eaa"
   }
 }

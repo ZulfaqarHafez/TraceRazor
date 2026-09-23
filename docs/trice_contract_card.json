@@ -2,7 +2,7 @@
   "checks": [
     {
       "name": "semver_version",
-      "observed": "1.1.0",
+      "observed": "1.2.0",
       "passed": true,
       "required": "MAJOR.MINOR.PATCH"
     },
@@ -174,7 +174,7 @@
     "sha256": "9c6efa67e57069208d5436b7ae808188b412f49a71d3d9ef32800a3e384a18a1",
     "source": "tracerazor/trice/cli.py"
   },
-  "contract_card_sha256": "41a4de461c5b3fe7f331c48afd3bbd3166ade43b74abbcb67fe6cc18222bdcc7",
+  "contract_card_sha256": "5831ecbf4d5bece120d37291a676cdcec6706c612b4efc39ad78b7562317952d",
   "contract_level": "library_contract_locked",
   "contract_score": 100,
   "examples": [
@@ -262,14 +262,14 @@
       "name": "pyproject.toml",
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "030eef8eb857fcaefb79dc5f71b5280b3bd6f1b92a5c6f231a762a242a068b36"
+      "sha256": "37c5096fd853b81bd2589f5a6216bdba17d8bc22e77f7ef47542bcb5c7f33805"
     },
     "readme": {
       "bytes": 20348,
       "name": "README.md",
       "path": "README.md",
       "present": true,
-      "sha256": "a3f82d6b4b02b61905bcbd80d4f5ea9fe40a7f068b9cd3422257a6de6b4817fa"
+      "sha256": "5ac3568a3ecc4dfcd38f4944882d1137e42b667c3517c3d9b5ebe57430f43741"
     },
     "research_ledger": {
       "bytes": 35638,
@@ -614,8 +614,8 @@
   "scope": "TraceRazor/TRICE public library contract",
   "semver": {
     "major": 1,
-    "minor": 1,
+    "minor": 2,
     "patch": 0
   },
-  "version": "1.1.0"
+  "version": "1.2.0"
 }

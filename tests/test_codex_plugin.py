@@ -9,7 +9,7 @@ PLUGIN = ROOT / "plugins" / "tracerazor"
 def test_codex_plugin_manifest_and_components_are_consistent():
     manifest = json.loads((PLUGIN / ".codex-plugin" / "plugin.json").read_text())
     assert manifest["name"] == "tracerazor"
-    assert manifest["version"] == "1.1.0"
+    assert manifest["version"] == "1.2.0"
     assert manifest["skills"] == "./skills/"
     assert "mcpServers" not in manifest
     assert (PLUGIN / "skills" / "tracerazor" / "SKILL.md").is_file()
@@ -42,7 +42,7 @@ def test_claude_plugin_is_versioned_and_advisory():
     hooks = json.loads((plugin / "hooks" / "hooks.json").read_text())["hooks"]
     mcp = json.loads((plugin / ".mcp.json").read_text())
     assert manifest["name"] == "tracerazor"
-    assert manifest["version"] == "1.1.0"
+    assert manifest["version"] == "1.2.0"
     assert "SessionStart" in hooks and "SessionEnd" in hooks
     assert mcp["mcpServers"]["tracerazor"]["command"] == "tracerazor-mcp"
 
@@ -52,7 +52,7 @@ def test_gemini_extension_uses_json_hook_contract_and_local_mcp():
     manifest = json.loads((extension / "gemini-extension.json").read_text())
     hooks = json.loads((extension / "hooks" / "hooks.json").read_text())["hooks"]
     assert manifest["name"] == "tracerazor"
-    assert manifest["version"] == "1.1.0"
+    assert manifest["version"] == "1.2.0"
     assert manifest["mcpServers"]["tracerazor"]["command"] == "tracerazor-mcp"
     commands = [
         handler["command"]

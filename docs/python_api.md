@@ -17,7 +17,7 @@ Both features are independent. Use one, the other, or both.
 ## Install
 
 ```bash
-pip install "tracerazor[mcp]>=1.1,<2"
+pip install "tracerazor[mcp]>=1.2,<2"
 ```
 
 Install with optional dependencies as needed:

@@ -38,7 +38,7 @@ The dashboard `Dockerfile` intentionally leaves the server on its loopback
 default. Consequently, this does **not** expose the service:
 
 ```bash
-docker run --rm -p 8080:8080 tracerazor:1.1.0
+docker run --rm -p 8080:8080 tracerazor:1.2.0
 ```
 
 That behavior prevents an ordinary port publication from silently turning an

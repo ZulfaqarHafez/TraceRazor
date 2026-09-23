@@ -1,6 +1,6 @@
-# TraceRazor 1.1 release checklist
+# TraceRazor 1.2 release checklist
 
-TraceRazor 1.1 is a platform-wheel, standalone-binary, and OCI-image release.
+TraceRazor 1.2 is a platform-wheel, standalone-binary, and OCI-image release.
 Do not mutate an existing tag or reuse a published version.
 
 ## 1. Local quality gates
@@ -46,14 +46,14 @@ Build one native wheel on each supported runner:
 - macOS x86-64 and ARM64;
 - Windows x86-64.
 
-These are the actual 1.1 Linux compatibility floors, not aliases for older
+These are the actual 1.2 Linux compatibility floors, not aliases for older
 manylinux releases. The build fails if the runner's glibc changes or the ELF
 binary imports a GLIBC symbol above its declared floor, and the clean-machine
 smoke runs on that same oldest-supported native runner. Supporting older Linux
 distributions requires a future dedicated manylinux builder and smoke matrix.
-Alpine/musl is unsupported in 1.1. Do not publish a source distribution: a
+Alpine/musl is unsupported in 1.2. Do not publish a source distribution: a
 source-only install does not satisfy the bundled-auditor contract. crates.io is
-also outside the 1.1 GA contract until TraceRazor intentionally exposes a
+also outside the 1.2 GA contract until TraceRazor intentionally exposes a
 stable public Rust API.
 
 Each clean-machine wheel job must run outside the checkout with
@@ -114,7 +114,7 @@ exists; it never silently accepts an existing file without proving byte identity
 evidence extracts its CLI subject from the downloaded standalone archive built
 by the binary matrix, rather than compiling a replacement in the evidence job.
 The composite GitHub Action defaults to the
-immutable `v1.1.0` archive and verifies it against the release checksum. The
+immutable `v1.2.0` archive and verifies it against the release checksum. The
 mutable `latest` alias is an explicit caller opt-in.
 
 ### Agent OCI image gate

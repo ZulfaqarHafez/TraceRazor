@@ -11,7 +11,7 @@ control surface used by Codex, Claude Code, Gemini CLI, and other MCP hosts.
 ## Install and inspect
 
 ```sh
-pip install "tracerazor[mcp]>=1.1,<2"
+pip install "tracerazor[mcp]>=1.2,<2"
 python -m tracerazor.mcp_server --selftest
 ```
 

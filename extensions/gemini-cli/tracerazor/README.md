@@ -1,6 +1,6 @@
 # TraceRazor for Gemini CLI
 
-Install TraceRazor 1.1.0 or newer, then link this extension for development:
+Install TraceRazor 1.2.0 or newer, then link this extension for development:
 
 ```sh
 gemini extensions link ./extensions/gemini-cli/tracerazor

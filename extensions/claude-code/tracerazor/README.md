@@ -1,7 +1,7 @@
 # TraceRazor for Claude Code
 
 This plugin bundles the TraceRazor Agent Skill, local stdio MCP server, and
-advisory lifecycle hooks. Install TraceRazor 1.1.0 or newer first, then test
+advisory lifecycle hooks. Install TraceRazor 1.2.0 or newer first, then test
 the plugin without installing it:
 
 ```sh

@@ -32,18 +32,18 @@ observability tooling, not TraceRazor — see [COMPARISON.md](COMPARISON.md).
 ## Setup & build
 
 ```bash
-pip install "tracerazor[mcp]>=1.1,<2"
+pip install "tracerazor[mcp]>=1.2,<2"
 tracerazor --version            # confirms the native auditor binary is present
 tracerazor agent doctor --format json
 ```
 
-These commands describe the published 1.1 release contract. PyPI provides five
+These commands describe the published 1.2 release contract. PyPI provides five
 platform wheels with the native auditor; GitHub Releases provides the matching
 standalone archives. Use a source build and `TRACERAZOR_BIN` only for an
 unsupported platform or checkout development.
 
 Release platform wheels bundle the native Rust auditor. Source distributions are
-not published in 1.1. If `tracerazor --version` exits 2, reinstall a supported platform wheel or
+not published in 1.2. If `tracerazor --version` exits 2, reinstall a supported platform wheel or
 use one of these development/recovery paths:
 
 ```bash
@@ -53,7 +53,7 @@ export TRACERAZOR_BIN=/abs/path/to/tracerazor
 # or run the local HTTPS dashboard after provisioning .env as documented:
 docker compose up                           # https://localhost:8080
 # or use the pre-provisioned spawned-agent image:
-docker run --rm ghcr.io/zulfaqarhafez/tracerazor-agent:v1.1.0
+docker run --rm ghcr.io/zulfaqarhafez/tracerazor-agent:v1.2.0
 ```
 
 The Compose secret and local-CA setup is documented in
