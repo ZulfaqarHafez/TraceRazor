@@ -68,7 +68,7 @@
     },
     {
       "name": "github_tag",
-      "observed": "pending: head=792e8c649673 local_tag=False remote_tag=True",
+      "observed": "pending: head=a8e130f79e8a local_tag=False remote_tag=True",
       "passed": false,
       "required": "local version tag points at current commit locally and remotely"
     },
@@ -165,7 +165,7 @@
         "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
       },
       "github_tag": {
-        "detail": "head=792e8c649673 local_tag=False remote_tag=True",
+        "detail": "head=a8e130f79e8a local_tag=False remote_tag=True",
         "ok": false,
         "status": "pending"
       },
@@ -217,19 +217,19 @@
       "unknown": []
     }
   },
-  "doctor_snapshot_sha256": "ac7b4bbacc744ddae3a94f841ecacc8511c8c7bf85e808d39149b5f45c30152f",
+  "doctor_snapshot_sha256": "f8384f460d753c874c5913ebf104c8e51faadbd446962d6857c397ac7da9db57",
   "inputs": {
     "artifact_card": {
       "bytes": 16185,
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "15a3dd40041627ab7aaf20e1cee77b3bc822ed41cc93956c2eadaf7a30b1bd31"
+      "sha256": "9ff8999476deb4dd8170c04dad57e0794f39af1fb22534729473726e92dd3dbc"
     },
     "contract_card": {
       "bytes": 19194,
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "33dcb5fae26f4801592b19d8736897a854263c3d1e573d361d21b1b82a31f8ec"
+      "sha256": "71cfee43e56f2a54e649aca76f1df34ee833149b7d47dc5eb4746c2031d8b1f1"
     },
     "install_card": {
       "bytes": 13925,
@@ -238,10 +238,10 @@
       "sha256": "85c6a5b2bc0bf7dd446517f023b063116ce9b7e4065d18fc4f395798f3379d7f"
     },
     "public_trust_matrix": {
-      "bytes": 12740,
+      "bytes": 13645,
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "0fe7f0e15c294ac8567b962ff6f36cbff962735741caabcf342776d61fa9ff99"
+      "sha256": "d491770d1e62564ffd6ea17333d483039192332669d25bfd15df6377882fd607"
     },
     "pyproject": {
       "bytes": 7349,
@@ -284,7 +284,7 @@
     "python": "3.11.17"
   },
   "public_release_ready": false,
-  "release_card_sha256": "68f46fd76354c0d90232530bc10af571dfff652ec493eb38b92185e7f77444c0",
+  "release_card_sha256": "5fb356e90a38bddd7a62460efbd512b36c67a6c54e6a22b4ba4d00bae2cd6739",
   "release_level": "local_release_candidate",
   "release_score": 74,
   "research_basis": [

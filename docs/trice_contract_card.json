@@ -174,7 +174,7 @@
     "sha256": "9c6efa67e57069208d5436b7ae808188b412f49a71d3d9ef32800a3e384a18a1",
     "source": "tracerazor/trice/cli.py"
   },
-  "contract_card_sha256": "08d6cd6957c3d0bdbc59b26a33d3a95efc7ddb8d0a82fbbef8cf65a824c1b910",
+  "contract_card_sha256": "1bb428f23fa68a78dad2bd2010e7498b965a2635869796e8bf67cca5da4931be",
   "contract_level": "library_contract_locked",
   "contract_score": 100,
   "examples": [
@@ -251,11 +251,11 @@
       "sha256": "598eb48d1b7d737102a93f5cb7b962e2ba4e575c1cf148c0a22a78135471c07f"
     },
     "public_trust_matrix": {
-      "bytes": 12740,
+      "bytes": 13645,
       "name": "public_trust_matrix.md",
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "0fe7f0e15c294ac8567b962ff6f36cbff962735741caabcf342776d61fa9ff99"
+      "sha256": "d491770d1e62564ffd6ea17333d483039192332669d25bfd15df6377882fd607"
     },
     "pyproject": {
       "bytes": 7349,
