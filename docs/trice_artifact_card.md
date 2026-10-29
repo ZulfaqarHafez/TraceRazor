@@ -36,8 +36,8 @@
 | protocol_lock | yes | `docs/trice_protocol_lock.json` | `3e71413180ad94f43be0b6a35717ced48359b75ea382035c524a9b91e5e8296e` |
 | design_card | yes | `docs/trice_design_card.json` | `dffa666fb9ba1deff7ba467da24b68b7dd4c19d5f0b0fa2e8c0f3cb45be74d39` |
 | reproduction_card | yes | `docs/trice_reproduction_card.json` | `74ec65592fa039648a1b78fd73f133b6abf8a528ceb848fab35416ca02436cfa` |
-| contract_card | yes | `docs/trice_contract_card.json` | `ced41a779dff9e8c3c17752a78fb505b09115d09a745e2c2db0293a12753d233` |
-| install_card | yes | `docs/trice_install_card.json` | `a901c24a391d869c77362552666b10fbf3d048b7c10b20cce317d4397f038e45` |
+| contract_card | yes | `docs/trice_contract_card.json` | `33dcb5fae26f4801592b19d8736897a854263c3d1e573d361d21b1b82a31f8ec` |
+| install_card | yes | `docs/trice_install_card.json` | `85c6a5b2bc0bf7dd446517f023b063116ce9b7e4065d18fc4f395798f3379d7f` |
 | research_card | yes | `docs/trice_research_card.json` | `c1753dfa8b6c68b9bb2a1ebda01a3e37bd022a6801d2b5e136b2e94e8d77b804` |
 | claim | yes | `docs/trice_claim_card.json` | `5bf4de6c6ae6c74b7bfcef12a924890ae633183ad8120d707f6531a9a1b8f9cf` |
 | remote_smoke_claim | yes | `docs/trice_remote_smoke_claim_card.json` | `e296651963ef02ccfde115ab59f0cc87e5d938548878ed63ef8f8660113da641` |
@@ -58,4 +58,4 @@
 
 ## Hash
 
-- artifact card: `b877c86da4a3d523fe7eb7a52e1cd4ff6e167de1cf4fed0a248f561febb24ab9`
+- artifact card: `859610220e4ca6c48faa2c09296205132aff1de8a6b25271c1ada8e21e6d19d6`

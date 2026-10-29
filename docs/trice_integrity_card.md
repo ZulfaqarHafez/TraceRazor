@@ -8,7 +8,7 @@
 
 | Check | Passed | Observed | Required |
 |---|---:|---|---|
-| offline_doctor_core | yes | local_package=installed; bundled_cli=bundled; schemas=available | local package, CLI, and schemas pass offline doctor |
+| offline_doctor_core | yes | local_package=installed; bundled_cli=source-build; schemas=available | local package, CLI, and schemas pass offline doctor |
 | contract_card_verifies | yes | library_contract_locked | public API/CLI/schema contract verifies |
 | artifact_card_verifies | yes | review_ready_smoke | artifact-review packet verifies |
 | reproduction_card_verifies | yes | reviewer_replay_ready_smoke | reviewer reproduction packet verifies |
@@ -36,4 +36,4 @@
 
 ## Hash
 
-- integrity card: `44a1ceb2fc08bdba0d03469365c4539ff90dc490e447a420151fc50c3e181521`
+- integrity card: `0b4087b9ea0bba683a45aa2c281333b6c844b0a57e9aa096861874c99b6a65ca`

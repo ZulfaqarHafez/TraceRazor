@@ -8,7 +8,7 @@
     },
     {
       "name": "bundled_cli",
-      "observed": "bundled: /home/user/TraceRazor/tracerazor/bin/tracerazor; binary=1.2.0",
+      "observed": "source-build: /home/user/TraceRazor/target/release/tracerazor; binary=1.2.0",
       "passed": true,
       "required": "CLI binary is bundled or source-build reachable"
     },
@@ -56,7 +56,7 @@
     },
     {
       "name": "piwheels",
-      "observed": "unknown: <urlopen error Tunnel connection failed: 403 Forbidden>",
+      "observed": "missing: files=0 local=1.2.0",
       "passed": false,
       "required": "piwheels exposes the local version file"
     },
@@ -68,19 +68,19 @@
     },
     {
       "name": "github_tag",
-      "observed": "pending: head=1cab6f971602 local_tag=False remote_tag=False",
+      "observed": "pending: head=792e8c649673 local_tag=False remote_tag=True",
       "passed": false,
       "required": "local version tag points at current commit locally and remotely"
     },
     {
       "name": "github_actions",
-      "observed": "green: Agent Efficiency Gate=completed/success; Release=completed/success; TraceRazor CI=completed/success",
-      "passed": true,
+      "observed": "not-green: Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/success",
+      "passed": false,
       "required": "required public workflows are green"
     },
     {
       "name": "openssf_scorecard",
-      "observed": "unknown: <urlopen error Tunnel connection failed: 403 Forbidden>",
+      "observed": "below-threshold: score=3.8 minimum=7.0 date=2026-09-14T09:07:41Z commit=9ca945772fe9",
       "passed": false,
       "required": "OpenSSF Scorecard is published with score >= 7.0"
     },
@@ -148,9 +148,9 @@
   "doctor_snapshot": {
     "checks": {
       "bundled_cli": {
-        "detail": "/home/user/TraceRazor/tracerazor/bin/tracerazor; binary=1.2.0",
+        "detail": "/home/user/TraceRazor/target/release/tracerazor; binary=1.2.0",
         "ok": true,
-        "status": "bundled"
+        "status": "source-build"
       },
       "crates_io": {
         "detail": "crate tracerazor is not published",
@@ -159,13 +159,13 @@
         "url": "https://crates.io/api/v1/crates/tracerazor"
       },
       "github_actions": {
-        "detail": "Agent Efficiency Gate=completed/success; Release=completed/success; TraceRazor CI=completed/success",
-        "ok": true,
-        "status": "green",
+        "detail": "Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/success",
+        "ok": false,
+        "status": "not-green",
         "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
       },
       "github_tag": {
-        "detail": "head=1cab6f971602 local_tag=False remote_tag=False",
+        "detail": "head=792e8c649673 local_tag=False remote_tag=True",
         "ok": false,
         "status": "pending"
       },
@@ -175,15 +175,15 @@
         "status": "installed"
       },
       "openssf_scorecard": {
-        "detail": "<urlopen error Tunnel connection failed: 403 Forbidden>",
-        "ok": null,
-        "status": "unknown",
+        "detail": "score=3.8 minimum=7.0 date=2026-09-14T09:07:41Z commit=9ca945772fe9",
+        "ok": false,
+        "status": "below-threshold",
         "url": "https://api.scorecard.dev/projects/github.com/ZulfaqarHafez/TraceRazor"
       },
       "piwheels": {
-        "detail": "<urlopen error Tunnel connection failed: 403 Forbidden>",
-        "ok": null,
-        "status": "unknown",
+        "detail": "files=0 local=1.2.0",
+        "ok": false,
+        "status": "missing",
         "url": "https://www.piwheels.org/project/tracerazor/json"
       },
       "pypi": {
@@ -201,47 +201,47 @@
     "local_version": "1.2.0",
     "offline": false,
     "package": "tracerazor",
-    "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
-    "python": "3.11.15",
+    "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+    "python": "3.11.17",
     "schema_version": "trice-doctor/v1",
     "summary": {
       "failed": [
         "pypi",
+        "piwheels",
         "crates_io",
-        "github_tag"
+        "github_tag",
+        "github_actions",
+        "openssf_scorecard"
       ],
       "ok": false,
-      "unknown": [
-        "piwheels",
-        "openssf_scorecard"
-      ]
+      "unknown": []
     }
   },
-  "doctor_snapshot_sha256": "68655ee8cfdd3dca8dcd432f55888d60c7beedf7cc984d6ffc8074dcaf1b9d5c",
+  "doctor_snapshot_sha256": "ac7b4bbacc744ddae3a94f841ecacc8511c8c7bf85e808d39149b5f45c30152f",
   "inputs": {
     "artifact_card": {
       "bytes": 16185,
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "b35e4ad0fb2afc7d57f28f4b19e1b953acc65c4d1f5ef8fe66e9ba4ca494914a"
+      "sha256": "15a3dd40041627ab7aaf20e1cee77b3bc822ed41cc93956c2eadaf7a30b1bd31"
     },
     "contract_card": {
       "bytes": 19194,
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "ced41a779dff9e8c3c17752a78fb505b09115d09a745e2c2db0293a12753d233"
+      "sha256": "33dcb5fae26f4801592b19d8736897a854263c3d1e573d361d21b1b82a31f8ec"
     },
     "install_card": {
       "bytes": 13925,
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "a901c24a391d869c77362552666b10fbf3d048b7c10b20cce317d4397f038e45"
+      "sha256": "85c6a5b2bc0bf7dd446517f023b063116ce9b7e4065d18fc4f395798f3379d7f"
     },
     "public_trust_matrix": {
-      "bytes": 11414,
+      "bytes": 12740,
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "42f28d2beae0f8c64da05de002c131d64ae7de9ecd3943d6d3acc4a513765ed0"
+      "sha256": "0fe7f0e15c294ac8567b962ff6f36cbff962735741caabcf342776d61fa9ff99"
     },
     "pyproject": {
       "bytes": 7349,
@@ -272,20 +272,21 @@
     "Publish 1.2.0 to PyPI only after local release gates pass.",
     "Informational only for 1.1: do not add an sdist solely for piwheels.",
     "Optional: publish Rust crates only after declaring a stable public Rust API; keep cargo-install claims out of the README meanwhile.",
-    "Create and push the v1.2.0 tag only after local gates pass.",
+    "The remote v1.2.0 tag already exists and must not be reused; fetch it for verification, or bump the version and create a new immutable tag for the next release.",
+    "Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.",
     "Run and publish OpenSSF Scorecard until the public score is at least 7.0."
   ],
   "package": {
     "local_version": "1.2.0",
     "name": "tracerazor",
     "offline": false,
-    "platform": "Linux-6.18.44-fc-v37-x86_64-with-glibc2.39",
-    "python": "3.11.15"
+    "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
+    "python": "3.11.17"
   },
   "public_release_ready": false,
-  "release_card_sha256": "be8efcbedd1af3813c0083a991a072672be398f9dcdef64e6d18e92bc1ea1eb3",
+  "release_card_sha256": "68f46fd76354c0d90232530bc10af571dfff652ec493eb38b92185e7f77444c0",
   "release_level": "local_release_candidate",
-  "release_score": 80,
+  "release_score": 74,
   "research_basis": [
     "SLSA frames provenance as a release property: consumers need to know what built an artifact, how, and from which inputs.",
     "OpenSSF Scorecard treats public project health as a set of automated checks rather than maintainer promises.",

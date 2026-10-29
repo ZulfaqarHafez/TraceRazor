@@ -45,4 +45,4 @@
 
 ## Hash
 
-- contract card: `5831ecbf4d5bece120d37291a676cdcec6706c612b4efc39ad78b7562317952d`
+- contract card: `08d6cd6957c3d0bdbc59b26a33d3a95efc7ddb8d0a82fbbef8cf65a824c1b910`
