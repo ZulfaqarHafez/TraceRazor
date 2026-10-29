@@ -7,12 +7,14 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 ### Changed
 - `docs/trice_release_evidence.*`, `docs/trice_install_card.*` and
   `docs/trice_crates_card.*` now hold the unmodified `release-evidence`
-  artifact of release run 35892178950 (tag `v1.2.0`) instead of a stale local
-  1.1.0 packet. The contract, artifact, release and integrity cards are
-  regenerated to match. That run failed at the PyPI upload, so 1.2.0 is not on
-  PyPI or GitHub Releases yet, and the packet does not verify in a checkout
-  because it binds the run's wheels and CLI binary (see
-  `docs/public_trust_matrix.md`).
+  artifact of release run 35892178950 (tag `v1.2.0`), replacing a stale local
+  1.1.0 release-evidence packet and locally generated 1.2.0 install and crates
+  cards. The contract, artifact, release and integrity cards are regenerated
+  to match. That run published the `tracerazor-agent:v1.2.0` image but failed
+  at PyPI trusted-publishing authentication (`invalid-publisher`), so 1.2.0 is
+  not on PyPI or GitHub Releases yet. The packet does not verify in a
+  checkout: it binds the run's wheels and CLI binary, and pins the artifact and
+  contract cards from the `v1.2.0` tag (see `docs/public_trust_matrix.md`).
 
 ## [1.2.0] - 2026-09-23
 
