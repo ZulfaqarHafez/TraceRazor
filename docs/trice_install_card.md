@@ -9,7 +9,7 @@
 
 | Check | Passed | Observed | Required |
 |---|---:|---|---|
-| wheel_present | yes | dist/tracerazor-1.2.0-py3-none-manylinux_2_39_x86_64.whl | built wheel exists |
+| wheel_present | yes | dist/tracerazor-1.2.0-py3-none-manylinux_2_35_x86_64.whl | built wheel exists |
 | venv_created | yes | 0 | clean virtual environment can be created |
 | wheel_installs | yes | 0 | wheel and MCP runtime dependencies install cleanly |
 | version_matches | yes | 1.2.0 | 1.2.0 |
@@ -64,4 +64,4 @@
 
 ## Hash
 
-- install card: `2c1fd52f282175773377ae86424422349863e1cf2e2593bb90ff61a5328d0e0d`
+- install card: `5a52de651106f0b5eec07d21ff979cd02619d88167a0d01ec462f16b7aa398a8`

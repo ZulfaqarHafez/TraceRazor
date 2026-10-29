@@ -8,9 +8,9 @@
         }
       ],
       "name": "tracerazor",
-      "purl": "pkg:pypi/tracerazor@1.1.0",
+      "purl": "pkg:pypi/tracerazor@1.2.0",
       "type": "application",
-      "version": "1.1.0"
+      "version": "1.2.0"
     },
     {
       "name": "anthropic",
@@ -82,7 +82,7 @@
       ],
       "purl": "pkg:pypi/mcp",
       "type": "library",
-      "version": ">=1.0"
+      "version": ">=1.2,<2"
     },
     {
       "name": "numpy",
@@ -227,7 +227,7 @@
     "component": {
       "name": "tracerazor",
       "type": "application",
-      "version": "1.1.0"
+      "version": "1.2.0"
     },
     "tools": [
       {
@@ -236,7 +236,7 @@
       }
     ]
   },
-  "serialNumber": "urn:uuid:021d70da-2487-2f87-8efd-fd6b27a9dd6e",
+  "serialNumber": "urn:uuid:498eb9b6-f35c-fc3b-865b-4a08131c4984",
   "specVersion": "1.6",
   "version": 1
 }
