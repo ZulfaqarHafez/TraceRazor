@@ -20,7 +20,7 @@
 | pypi | no | mismatch: latest=1.1.0 local=1.2.0 | PyPI latest version matches local version |
 | piwheels | no | missing: files=0 local=1.2.0 | piwheels exposes the local version file |
 | crates_io | no | missing: crate tracerazor is not published | crates.io package is published |
-| github_tag | no | pending: head=792e8c649673 local_tag=False remote_tag=True | local version tag points at current commit locally and remotely |
+| github_tag | no | pending: head=a8e130f79e8a local_tag=False remote_tag=True | local version tag points at current commit locally and remotely |
 | github_actions | no | not-green: Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/success | required public workflows are green |
 | openssf_scorecard | no | below-threshold: score=3.8 minimum=7.0 date=2026-09-14T09:07:41Z commit=9ca945772fe9 | OpenSSF Scorecard is published with score >= 7.0 |
 | provenance_plan_documented | yes | trusted publishing/OIDC | trusted publishing and OIDC documented |
@@ -38,4 +38,4 @@
 
 ## Hash
 
-- release card: `68f46fd76354c0d90232530bc10af571dfff652ec493eb38b92185e7f77444c0`
+- release card: `5fb356e90a38bddd7a62460efbd512b36c67a6c54e6a22b4ba4d00bae2cd6739`

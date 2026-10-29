@@ -97,7 +97,7 @@
         "status": "skipped"
       },
       "github_tag": {
-        "detail": "head=792e8c649673 local_tag=False remote_tag=True",
+        "detail": "head=a8e130f79e8a local_tag=False remote_tag=True",
         "ok": false,
         "status": "pending"
       },
@@ -147,21 +147,21 @@
       ]
     }
   },
-  "doctor_snapshot_sha256": "550f07e8b36b252747da18fc4e0f4d9e76f5fc7d9df67cb9449e21f30929cae7",
+  "doctor_snapshot_sha256": "84915dde477cfbbd8a76eead97da3213aa1c045f772dc146b04ea85ae7ab7e77",
   "inputs": {
     "artifact_card": {
       "bytes": 16185,
       "name": "trice_artifact_card.json",
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "15a3dd40041627ab7aaf20e1cee77b3bc822ed41cc93956c2eadaf7a30b1bd31"
+      "sha256": "9ff8999476deb4dd8170c04dad57e0794f39af1fb22534729473726e92dd3dbc"
     },
     "contract_card": {
       "bytes": 19194,
       "name": "trice_contract_card.json",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "33dcb5fae26f4801592b19d8736897a854263c3d1e573d361d21b1b82a31f8ec"
+      "sha256": "71cfee43e56f2a54e649aca76f1df34ee833149b7d47dc5eb4746c2031d8b1f1"
     },
     "crates_card": {
       "bytes": 20147,
@@ -196,7 +196,7 @@
       "name": "trice_release_card.json",
       "path": "docs/trice_release_card.json",
       "present": true,
-      "sha256": "ffe6c0ed5ec4ce56d7f479e80196bca1a4d64d7c60444192a43e464233dc6157"
+      "sha256": "6a2e3f4af67f4bbfd637afdd3e3c89cc41df280506c2f3e268101768f700014d"
     },
     "release_evidence": {
       "bytes": 195077,
@@ -220,7 +220,7 @@
       "sha256": "c1753dfa8b6c68b9bb2a1ebda01a3e37bd022a6801d2b5e136b2e94e8d77b804"
     }
   },
-  "integrity_card_sha256": "0b4087b9ea0bba683a45aa2c281333b6c844b0a57e9aa096861874c99b6a65ca",
+  "integrity_card_sha256": "a4582b1f088638520547d6f75bd606226f6f3d291d1a7b1d05da163f92c8c15c",
   "integrity_level": "partial_integrity",
   "integrity_score": 90,
   "next_actions": [
