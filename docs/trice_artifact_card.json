@@ -1,5 +1,5 @@
 {
-  "artifact_card_sha256": "b877c86da4a3d523fe7eb7a52e1cd4ff6e167de1cf4fed0a248f561febb24ab9",
+  "artifact_card_sha256": "859610220e4ca6c48faa2c09296205132aff1de8a6b25271c1ada8e21e6d19d6",
   "artifact_level": "review_ready_smoke",
   "artifact_review_score": 100,
   "availability": [
@@ -36,14 +36,14 @@
       "name": "contract_card",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "ced41a779dff9e8c3c17752a78fb505b09115d09a745e2c2db0293a12753d233"
+      "sha256": "33dcb5fae26f4801592b19d8736897a854263c3d1e573d361d21b1b82a31f8ec"
     },
     {
       "bytes": 13925,
       "name": "install_card",
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "a901c24a391d869c77362552666b10fbf3d048b7c10b20cce317d4397f038e45"
+      "sha256": "85c6a5b2bc0bf7dd446517f023b063116ce9b7e4065d18fc4f395798f3379d7f"
     },
     {
       "bytes": 69703,
@@ -230,10 +230,10 @@
   "claim_allowed": false,
   "input_sha256": {
     "claim": "5bf4de6c6ae6c74b7bfcef12a924890ae633183ad8120d707f6531a9a1b8f9cf",
-    "contract_card": "ced41a779dff9e8c3c17752a78fb505b09115d09a745e2c2db0293a12753d233",
+    "contract_card": "33dcb5fae26f4801592b19d8736897a854263c3d1e573d361d21b1b82a31f8ec",
     "design_card": "dffa666fb9ba1deff7ba467da24b68b7dd4c19d5f0b0fa2e8c0f3cb45be74d39",
     "evidence_bundle": "08ee5538891932f64e5c4e80ac63833257802b533d5b4a5a50adbe860b65a37c",
-    "install_card": "a901c24a391d869c77362552666b10fbf3d048b7c10b20cce317d4397f038e45",
+    "install_card": "85c6a5b2bc0bf7dd446517f023b063116ce9b7e4065d18fc4f395798f3379d7f",
     "library_doc": "598eb48d1b7d737102a93f5cb7b962e2ba4e575c1cf148c0a22a78135471c07f",
     "paper_manifest": "4ca9de56f71c5498f84fdda4fdbc955bd5b0adcc45f7bb64869aa032010fb60a",
     "paper_pdf": "238219dcdb923f0e35ef1f24772b4bda13ae4f40ac453bf347eca24196c831ca",
