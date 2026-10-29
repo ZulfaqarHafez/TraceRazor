@@ -109,32 +109,32 @@
     },
     {
       "name": "readme_install_honesty",
-      "observed": "contains_cargo_install=False; missing: target=1.2.0 latest=none",
+      "observed": "contains_cargo_install=False; skipped: target=1.2.0 latest=none",
       "passed": true,
       "required": "README does not claim cargo install until tracerazor is live on crates.io"
     },
     {
       "name": "public_crates_live",
       "observed": {
-        "tracerazor": "missing",
-        "tracerazor-core": "missing",
-        "tracerazor-ingest": "missing",
-        "tracerazor-semantic": "missing",
-        "tracerazor-server": "missing",
-        "tracerazor-store": "missing"
+        "tracerazor": "skipped",
+        "tracerazor-core": "skipped",
+        "tracerazor-ingest": "skipped",
+        "tracerazor-semantic": "skipped",
+        "tracerazor-server": "skipped",
+        "tracerazor-store": "skipped"
       },
       "passed": false,
       "required": "all six crates are published at the local version"
     },
     {
       "name": "cargo_install_truth",
-      "observed": "missing: target=1.2.0 latest=none",
+      "observed": "skipped: target=1.2.0 latest=none",
       "passed": false,
       "required": "cargo install tracerazor is true for the local version"
     }
   ],
   "crates_card_level": "publish_plan_locked",
-  "crates_card_sha256": "c372817de273e201691c8f56a39da79e46110fa6aedbdb3b8f33f7f928facb9f",
+  "crates_card_sha256": "b399ec2a3d27a979edb55025867985b0a22d475a665317b3d3c52cbb862aa417",
   "crates_publish_score": 80,
   "inputs": {
     "readme": {
@@ -232,12 +232,10 @@
       },
       "name": "tracerazor-core",
       "registry": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
         "target_version": "1.2.0",
-        "url": "https://crates.io/api/v1/crates/tracerazor-core",
         "version_published": false
       },
       "stage": 1,
@@ -274,12 +272,10 @@
       },
       "name": "tracerazor-semantic",
       "registry": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
         "target_version": "1.2.0",
-        "url": "https://crates.io/api/v1/crates/tracerazor-semantic",
         "version_published": false
       },
       "stage": 1,
@@ -324,12 +320,10 @@
       },
       "name": "tracerazor-ingest",
       "registry": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
         "target_version": "1.2.0",
-        "url": "https://crates.io/api/v1/crates/tracerazor-ingest",
         "version_published": false
       },
       "stage": 2,
@@ -374,12 +368,10 @@
       },
       "name": "tracerazor-store",
       "registry": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
         "target_version": "1.2.0",
-        "url": "https://crates.io/api/v1/crates/tracerazor-store",
         "version_published": false
       },
       "stage": 2,
@@ -442,12 +434,10 @@
       },
       "name": "tracerazor-server",
       "registry": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
         "target_version": "1.2.0",
-        "url": "https://crates.io/api/v1/crates/tracerazor-server",
         "version_published": false
       },
       "stage": 3,
@@ -516,12 +506,10 @@
       },
       "name": "tracerazor",
       "registry": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
         "target_version": "1.2.0",
-        "url": "https://crates.io/api/v1/crates/tracerazor",
         "version_published": false
       },
       "stage": 4,
@@ -620,58 +608,46 @@
   "status_snapshot": {
     "crates": {
       "tracerazor": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
-        "url": "https://crates.io/api/v1/crates/tracerazor",
-        "version_published": false
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
+        "version_published": null
       },
       "tracerazor-core": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
-        "url": "https://crates.io/api/v1/crates/tracerazor-core",
-        "version_published": false
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
+        "version_published": null
       },
       "tracerazor-ingest": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
-        "url": "https://crates.io/api/v1/crates/tracerazor-ingest",
-        "version_published": false
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
+        "version_published": null
       },
       "tracerazor-semantic": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
-        "url": "https://crates.io/api/v1/crates/tracerazor-semantic",
-        "version_published": false
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
+        "version_published": null
       },
       "tracerazor-server": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
-        "url": "https://crates.io/api/v1/crates/tracerazor-server",
-        "version_published": false
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
+        "version_published": null
       },
       "tracerazor-store": {
-        "detail": "crate is not published",
-        "latest_version": null,
-        "published": false,
-        "status": "missing",
-        "url": "https://crates.io/api/v1/crates/tracerazor-store",
-        "version_published": false
+        "detail": "offline mode",
+        "published": null,
+        "status": "skipped",
+        "version_published": null
       }
     },
-    "offline": false,
+    "offline": true,
     "source": "crates.io",
     "url_template": "https://crates.io/api/v1/crates/{name}"
   },
-  "status_snapshot_sha256": "b08d76128939208912273727e29700ef18ebfad596824d1a26359a30c67d2338",
+  "status_snapshot_sha256": "25e9359a809c77c4fab839e4d63468cda0a695b6610c55f00e3c09b718c047aa",
   "workspace_version": "1.2.0"
 }
