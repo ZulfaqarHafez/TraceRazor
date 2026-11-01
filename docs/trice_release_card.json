@@ -68,13 +68,13 @@
     },
     {
       "name": "github_tag",
-      "observed": "pending: head=a8e130f79e8a local_tag=False remote_tag=True",
+      "observed": "pending: head=448477b44974 local_tag=False remote_tag=True",
       "passed": false,
       "required": "local version tag points at current commit locally and remotely"
     },
     {
       "name": "github_actions",
-      "observed": "not-green: Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/success",
+      "observed": "not-green: Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/failure",
       "passed": false,
       "required": "required public workflows are green"
     },
@@ -159,13 +159,13 @@
         "url": "https://crates.io/api/v1/crates/tracerazor"
       },
       "github_actions": {
-        "detail": "Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/success",
+        "detail": "Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/failure",
         "ok": false,
         "status": "not-green",
         "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
       },
       "github_tag": {
-        "detail": "head=a8e130f79e8a local_tag=False remote_tag=True",
+        "detail": "head=448477b44974 local_tag=False remote_tag=True",
         "ok": false,
         "status": "pending"
       },
@@ -217,19 +217,19 @@
       "unknown": []
     }
   },
-  "doctor_snapshot_sha256": "f8384f460d753c874c5913ebf104c8e51faadbd446962d6857c397ac7da9db57",
+  "doctor_snapshot_sha256": "3f6f3556dc56b21480963ef91a6b7c9b0a4259d2d07d0f33384458c2acd18775",
   "inputs": {
     "artifact_card": {
       "bytes": 16185,
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "9ff8999476deb4dd8170c04dad57e0794f39af1fb22534729473726e92dd3dbc"
+      "sha256": "8b6114f5edf03216a3c00f6420ebba836f94ad00f554a35c54da0530e52d5dee"
     },
     "contract_card": {
       "bytes": 19194,
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "71cfee43e56f2a54e649aca76f1df34ee833149b7d47dc5eb4746c2031d8b1f1"
+      "sha256": "5edbc670d902fe6a2d5ae2d1c2ab73cd81259a12641f0be9c0d2b388dccfca88"
     },
     "install_card": {
       "bytes": 13925,
@@ -238,10 +238,10 @@
       "sha256": "85c6a5b2bc0bf7dd446517f023b063116ce9b7e4065d18fc4f395798f3379d7f"
     },
     "public_trust_matrix": {
-      "bytes": 13645,
+      "bytes": 13887,
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "d491770d1e62564ffd6ea17333d483039192332669d25bfd15df6377882fd607"
+      "sha256": "11ee076076dc44e215b9fb2e78918d2b150e8954f81ec7d4e8dc49c87b7d3cba"
     },
     "pyproject": {
       "bytes": 7349,
@@ -284,7 +284,7 @@
     "python": "3.11.17"
   },
   "public_release_ready": false,
-  "release_card_sha256": "5fb356e90a38bddd7a62460efbd512b36c67a6c54e6a22b4ba4d00bae2cd6739",
+  "release_card_sha256": "2a3df3dd2f8d6558276027da7c58477a8fe950cdde1dace400610f649e3720c3",
   "release_level": "local_release_candidate",
   "release_score": 74,
   "research_basis": [

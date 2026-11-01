@@ -1,5 +1,5 @@
 {
-  "artifact_card_sha256": "78b5e3438f90fb1ac7d0d06e04a064828d3fd9f237ae30559ad7c3a5db4fe64f",
+  "artifact_card_sha256": "945deeb9281d7f5d79687e3a5afcc7897edd97951ab841075c2eaea7a871df44",
   "artifact_level": "review_ready_smoke",
   "artifact_review_score": 100,
   "availability": [
@@ -36,7 +36,7 @@
       "name": "contract_card",
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "71cfee43e56f2a54e649aca76f1df34ee833149b7d47dc5eb4746c2031d8b1f1"
+      "sha256": "5edbc670d902fe6a2d5ae2d1c2ab73cd81259a12641f0be9c0d2b388dccfca88"
     },
     {
       "bytes": 13925,
@@ -230,7 +230,7 @@
   "claim_allowed": false,
   "input_sha256": {
     "claim": "5bf4de6c6ae6c74b7bfcef12a924890ae633183ad8120d707f6531a9a1b8f9cf",
-    "contract_card": "71cfee43e56f2a54e649aca76f1df34ee833149b7d47dc5eb4746c2031d8b1f1",
+    "contract_card": "5edbc670d902fe6a2d5ae2d1c2ab73cd81259a12641f0be9c0d2b388dccfca88",
     "design_card": "dffa666fb9ba1deff7ba467da24b68b7dd4c19d5f0b0fa2e8c0f3cb45be74d39",
     "evidence_bundle": "08ee5538891932f64e5c4e80ac63833257802b533d5b4a5a50adbe860b65a37c",
     "install_card": "85c6a5b2bc0bf7dd446517f023b063116ce9b7e4065d18fc4f395798f3379d7f",
