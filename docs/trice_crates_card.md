@@ -1,7 +1,7 @@
 # TRICE Crates Publish Card
 
 - Scope: `TraceRazor crates.io staged publication`
-- Workspace version: `1.2.0`
+- Workspace version: `1.2.1`
 - Crates level: `publish_plan_locked`
 - Publish score: **80/100**
 - Local publish plan locked: `true`
@@ -13,14 +13,14 @@
 |---|---:|---|---|
 | workspace_manifest_present | yes | Cargo.toml | workspace Cargo.toml is present |
 | crate_manifests_present | yes | 6/6 | all publish crate manifests are present |
-| version_alignment | yes | {"packages": {"tracerazor": "1.2.0", "tracerazor-core": "1.2.0", "tracerazor-ingest": "1.2.0", "tracerazor-semantic": "1.2.0", "tracerazor-server": "1.2.0", "tracerazor-store": "1.2.0"}, "workspace": "1.2.0"} | workspace and crate package versions match |
+| version_alignment | yes | {"packages": {"tracerazor": "1.2.1", "tracerazor-core": "1.2.1", "tracerazor-ingest": "1.2.1", "tracerazor-semantic": "1.2.1", "tracerazor-server": "1.2.1", "tracerazor-store": "1.2.1"}, "workspace": "1.2.1"} | workspace and crate package versions match |
 | publish_order_topological | yes | {"tracerazor": ["tracerazor-core", "tracerazor-ingest", "tracerazor-semantic", "tracerazor-server", "tracerazor-store"], "tracerazor-core": [], "tracerazor-ingest": ["tracerazor-core"], "tracerazor-semantic": [], "tracerazor-server": ["tracerazor-core", "tracerazor-ingest", "tracerazor-semantic", "tracerazor-store"], "tracerazor-store": ["tracerazor-core"]} | each local dependency appears earlier in the publish order |
-| dependency_versions_pinned | yes | {"tracerazor": {"tracerazor-core": "1.2.0", "tracerazor-ingest": "1.2.0", "tracerazor-semantic": "1.2.0", "tracerazor-server": "1.2.0", "tracerazor-store": "1.2.0"}, "tracerazor-core": {}, "tracerazor-ingest": {"tracerazor-core": "1.2.0"}, "tracerazor-semantic": {}, "tracerazor-server": {"tracerazor-core": "1.2.0", "tracerazor-ingest": "1.2.0", "tracerazor-semantic": "1.2.0", "tracerazor-store": "1.2.0"}, "tracerazor-store": {"tracerazor-core": "1.2.0"}} | all local crate dependencies pin the workspace version |
+| dependency_versions_pinned | yes | {"tracerazor": {"tracerazor-core": "1.2.1", "tracerazor-ingest": "1.2.1", "tracerazor-semantic": "1.2.1", "tracerazor-server": "1.2.1", "tracerazor-store": "1.2.1"}, "tracerazor-core": {}, "tracerazor-ingest": {"tracerazor-core": "1.2.1"}, "tracerazor-semantic": {}, "tracerazor-server": {"tracerazor-core": "1.2.1", "tracerazor-ingest": "1.2.1", "tracerazor-semantic": "1.2.1", "tracerazor-store": "1.2.1"}, "tracerazor-store": {"tracerazor-core": "1.2.1"}} | all local crate dependencies pin the workspace version |
 | metadata_complete | yes | {"tracerazor": [], "tracerazor-core": [], "tracerazor-ingest": [], "tracerazor-semantic": [], "tracerazor-server": [], "tracerazor-store": []} | description, license, repository, readme, keywords, and categories are present |
 | stage_one_publishable | yes | {"tracerazor-core": true, "tracerazor-semantic": true} | first-stage crates have no unpublished local dependencies |
-| readme_install_honesty | yes | contains_cargo_install=False; skipped: target=1.2.0 latest=none | README does not claim cargo install until tracerazor is live on crates.io |
+| readme_install_honesty | yes | contains_cargo_install=False; skipped: target=1.2.1 latest=none | README does not claim cargo install until tracerazor is live on crates.io |
 | public_crates_live | no | {"tracerazor": "skipped", "tracerazor-core": "skipped", "tracerazor-ingest": "skipped", "tracerazor-semantic": "skipped", "tracerazor-server": "skipped", "tracerazor-store": "skipped"} | all six crates are published at the local version |
-| cargo_install_truth | no | skipped: target=1.2.0 latest=none | cargo install tracerazor is true for the local version |
+| cargo_install_truth | no | skipped: target=1.2.1 latest=none | cargo install tracerazor is true for the local version |
 
 ## Publish Order
 
@@ -51,10 +51,10 @@
 
 ## Next Actions
 
-- Publish stage-ready crates for 1.2.0: tracerazor-core, tracerazor-semantic.
+- Publish stage-ready crates for 1.2.1: tracerazor-core, tracerazor-semantic.
 - Regenerate this crates card after crates.io indexes each published crate.
 - Continue stage by stage until the final `tracerazor` crate is live, then verify `cargo install tracerazor --locked`.
 
 ## Hash
 
-- crates card: `7c8cbdc4500d92c2fc9293472b9a7d4ccfe771edcf2f145b1a0d0b61bf487cfd`
+- crates card: `c94948c0b1cccee62b7670127f43c4b23db7e1cb4a91fc0b5409da993b2eda43`

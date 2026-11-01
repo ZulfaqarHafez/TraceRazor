@@ -31,10 +31,10 @@ sbom\_plan\_documented & yes & SBOM and checksum release assets documented \\
 
 \noindent Next actions:
 \begin{itemize}
-\item Publish 1.2.0 to PyPI only after local release gates pass.
+\item Publish 1.2.1 to PyPI only after local release gates pass.
 \item Informational only for 1.1: do not add an sdist solely for piwheels.
 \item Optional: publish Rust crates only after declaring a stable public Rust API; keep cargo-install claims out of the README meanwhile.
-\item The remote v1.2.0 tag already exists and must not be reused; fetch it for verification, or bump the version and create a new immutable tag for the next release.
+\item Create and push the v1.2.1 tag only after local gates pass.
 \item Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.
 \item Run and publish OpenSSF Scorecard until the public score is at least 7.0.
 \end{itemize}
