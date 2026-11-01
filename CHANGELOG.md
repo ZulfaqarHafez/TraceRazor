@@ -5,16 +5,37 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 ## [Unreleased]
 
 ### Changed
-- `docs/trice_release_evidence.*`, `docs/trice_install_card.*` and
-  `docs/trice_crates_card.*` now hold the unmodified `release-evidence`
-  artifact of release run 35892178950 (tag `v1.2.0`), replacing a stale local
-  1.1.0 release-evidence packet and locally generated 1.2.0 install and crates
-  cards. The contract, artifact, release and integrity cards are regenerated
-  to match. That run published the `tracerazor-agent:v1.2.0` image but failed
-  at PyPI trusted-publishing authentication (`invalid-publisher`), so 1.2.0 is
-  not on PyPI or GitHub Releases yet. The packet does not verify in a
-  checkout: it binds the run's wheels and CLI binary, and pins the artifact and
-  contract cards from the `v1.2.0` tag (see `docs/public_trust_matrix.md`).
+- `docs/trice_release_evidence.*` and `docs/trice_install_card.*` now hold the
+  unmodified `release-evidence` artifact of release run 35892178950 (tag
+  `v1.2.0`), replacing a stale local 1.1.0 release-evidence packet and a
+  locally generated 1.2.0 install card. The crates card is regenerated with
+  `--offline`, which reproduces that run's card byte for byte on the same tree.
+  The contract, artifact, release and integrity cards are regenerated to match.
+  That run published the `tracerazor-agent:v1.2.0` image but failed at PyPI
+  trusted-publishing authentication (`invalid-publisher`), so 1.2.0 is not on
+  PyPI or GitHub Releases. The packet does not verify in a checkout: it binds
+  the run's wheels and CLI binary, and pins cards from the `v1.2.0` tag (see
+  `docs/public_trust_matrix.md`).
+- `tracerazor export --bundle` uses `zip` 9 with Deflate only. Bundles are still
+  standard Deflate zips with fixed timestamps, and bundles written by earlier
+  versions still verify.
+
+### Fixed
+- The release workflow regenerates and verifies the artifact card after the
+  install and research cards, before `release-evidence` pins it, and ships it
+  with the evidence. Run 35892178950's packet pinned an artifact card that
+  bound the previous install card.
+
+### Security
+- Update `rustls` to 0.23.46 (RUSTSEC-2026-0346, 0347, 0348, 0349),
+  `rustls-webpki` to 0.103.16 (RUSTSEC-2026-0382), `webpki-roots` to 1.0.11
+  (RUSTSEC-2026-0381) and `tokio` to 1.54.1 (RUSTSEC-2026-0386).
+- Move the CLI from `zip` 0.6 to 9 (RUSTSEC-2026-0367, 0368, 0369). Without
+  default features it no longer pulls in `zstd-safe` and `zstd-sys`
+  (RUSTSEC-2026-0403, 0410).
+- Update `quinn-proto`, which is in `Cargo.lock` but not built, to 0.11.19
+  (RUSTSEC-2026-0338, 0339, 0340, 0341, 0342), so `cargo audit` in the release
+  workflow passes.
 
 ## [1.2.0] - 2026-09-23
 
