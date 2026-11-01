@@ -134,7 +134,7 @@
     }
   ],
   "crates_card_level": "publish_plan_locked",
-  "crates_card_sha256": "b399ec2a3d27a979edb55025867985b0a22d475a665317b3d3c52cbb862aa417",
+  "crates_card_sha256": "7c8cbdc4500d92c2fc9293472b9a7d4ccfe771edcf2f145b1a0d0b61bf487cfd",
   "crates_publish_score": 80,
   "inputs": {
     "readme": {
@@ -145,11 +145,11 @@
       "sha256": "5ac3568a3ecc4dfcd38f4944882d1137e42b667c3517c3d9b5ebe57430f43741"
     },
     "tracerazor": {
-      "bytes": 1245,
+      "bytes": 1307,
       "name": "Cargo.toml",
       "path": "crates/tracerazor-cli/Cargo.toml",
       "present": true,
-      "sha256": "841ca969caa9f47998281a03dd8ea8c8e827cf71eda019b233183ad9b183e413"
+      "sha256": "20326030a2030a94d09fc457fc7e4de491d67905658fb6ead25f97c46c51c969"
     },
     "tracerazor-core": {
       "bytes": 789,
@@ -480,11 +480,11 @@
         }
       ],
       "manifest": {
-        "bytes": 1245,
+        "bytes": 1307,
         "name": "Cargo.toml",
         "path": "crates/tracerazor-cli/Cargo.toml",
         "present": true,
-        "sha256": "841ca969caa9f47998281a03dd8ea8c8e827cf71eda019b233183ad9b183e413"
+        "sha256": "20326030a2030a94d09fc457fc7e4de491d67905658fb6ead25f97c46c51c969"
       },
       "metadata": {
         "categories": [
