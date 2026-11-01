@@ -1,7 +1,7 @@
 {
   "name": "tracerazor",
   "description": "Local-first efficiency coaching and verified token-waste analysis for Claude Code.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": {
     "name": "Zulfaqar Hafez",
     "email": "zulfaqarhafez@gmail.com"

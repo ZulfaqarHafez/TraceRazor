@@ -25,7 +25,7 @@
   <img src="https://raw.githubusercontent.com/ZulfaqarHafez/TraceRazor/main/docs/assets/tracerazor-hero.webp" alt="Noisy agent traces passing through an analysis plane and becoming one verified path" width="100%">
 </p>
 
-TraceRazor v1.2.0 is the efficiency layer between agent tracing and deployment.
+TraceRazor v1.2.1 is the efficiency layer between agent tracing and deployment.
 It turns reasoning traces into named waste findings, risk-tagged fixes,
 same-workload regression checks, and evidence that can be re-scored or signed.
 The stable audit path runs locally, needs no model API key, and sends no trace
@@ -64,7 +64,7 @@ Phoenix, OpenTelemetry, and Claude Code exports.
 
 ### What the sample reports
 
-The bundled support-agent trace currently produces this shape under 1.2.0:
+The bundled support-agent trace currently produces this shape under 1.2.1:
 
 ```text
 trace       customer-support-v3 / langgraph
@@ -273,7 +273,7 @@ steps:
     with:
       name: agent-eval-traces
       path: artifacts
-  - uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v1.2.0
+  - uses: ZulfaqarHafez/TraceRazor/.github/actions/tracerazor@v1.2.1
     with:
       trace-file: artifacts/candidate.json
       baseline-trace: artifacts/baseline.json
@@ -356,7 +356,7 @@ TraceRazor publishes the material needed to challenge its claims:
   remained weighted and which were demoted to diagnostics.
 - The [public trust matrix](docs/public_trust_matrix.md) separates local proof,
   public release proof, and unmet project targets.
-- The [v1.2.0 release](https://github.com/ZulfaqarHafez/TraceRazor/releases/tag/v1.2.0)
+- The [v1.2.1 release](https://github.com/ZulfaqarHafez/TraceRazor/releases/tag/v1.2.1)
   publishes five wheels, five standalone archives, checksums, SBOMs,
   provenance-shaped evidence, and proof cards.
 - Hermetic audit output records the exact weights and configuration required

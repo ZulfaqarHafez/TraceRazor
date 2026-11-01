@@ -4,6 +4,13 @@ All notable changes to TraceRazor are documented here. Format follows [Keep a Ch
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-11-01
+
+Security and release-pipeline fixes. 1.2.0 was tagged and its agent image
+published, but its PyPI upload failed, so it never reached PyPI or GitHub
+Releases. Its build bundles crates affected by the advisories below, so 1.2.1
+replaces it rather than finishing that release.
+
 ### Changed
 - `docs/trice_release_evidence.*` and `docs/trice_install_card.*` now hold the
   unmodified `release-evidence` artifact of release run 35892178950 (tag
