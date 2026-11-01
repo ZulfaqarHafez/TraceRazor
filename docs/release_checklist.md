@@ -114,7 +114,7 @@ exists; it never silently accepts an existing file without proving byte identity
 evidence extracts its CLI subject from the downloaded standalone archive built
 by the binary matrix, rather than compiling a replacement in the evidence job.
 The composite GitHub Action defaults to the
-immutable `v1.2.0` archive and verifies it against the release checksum. The
+immutable `v1.2.1` archive and verifies it against the release checksum. The
 mutable `latest` alias is an explicit caller opt-in.
 
 ### Agent OCI image gate

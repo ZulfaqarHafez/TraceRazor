@@ -53,7 +53,7 @@ export TRACERAZOR_BIN=/abs/path/to/tracerazor
 # or run the local HTTPS dashboard after provisioning .env as documented:
 docker compose up                           # https://localhost:8080
 # or use the pre-provisioned spawned-agent image:
-docker run --rm ghcr.io/zulfaqarhafez/tracerazor-agent:v1.2.0
+docker run --rm ghcr.io/zulfaqarhafez/tracerazor-agent:v1.2.1
 ```
 
 The Compose secret and local-CA setup is documented in
