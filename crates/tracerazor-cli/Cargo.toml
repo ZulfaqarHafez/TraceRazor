@@ -32,7 +32,7 @@ dotenvy = "0.15"
 chrono = { workspace = true }
 ed25519-dalek = { workspace = true }
 rand = { workspace = true }
-zip = "0.6"
+zip = { version = "9", default-features = false, features = ["deflate"] }
 toml = "0.8"
 
 [target.'cfg(unix)'.dependencies]
