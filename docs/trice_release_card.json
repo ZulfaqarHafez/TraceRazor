@@ -2,13 +2,13 @@
   "checks": [
     {
       "name": "local_package",
-      "observed": "installed: version 1.2.0",
+      "observed": "installed: version 1.2.1",
       "passed": true,
       "required": "local package imports with version"
     },
     {
       "name": "bundled_cli",
-      "observed": "source-build: /home/user/TraceRazor/target/release/tracerazor; binary=1.2.0",
+      "observed": "source-build: /home/user/TraceRazor/target/release/tracerazor; binary=1.2.1",
       "passed": true,
       "required": "CLI binary is bundled or source-build reachable"
     },
@@ -50,13 +50,13 @@
     },
     {
       "name": "pypi",
-      "observed": "mismatch: latest=1.1.0 local=1.2.0",
+      "observed": "mismatch: latest=1.1.0 local=1.2.1",
       "passed": false,
       "required": "PyPI latest version matches local version"
     },
     {
       "name": "piwheels",
-      "observed": "missing: files=0 local=1.2.0",
+      "observed": "missing: files=0 local=1.2.1",
       "passed": false,
       "required": "piwheels exposes the local version file"
     },
@@ -68,13 +68,13 @@
     },
     {
       "name": "github_tag",
-      "observed": "pending: head=448477b44974 local_tag=False remote_tag=True",
+      "observed": "pending: head=25b385d3bdf8 local_tag=False remote_tag=False",
       "passed": false,
       "required": "local version tag points at current commit locally and remotely"
     },
     {
       "name": "github_actions",
-      "observed": "not-green: Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/failure",
+      "observed": "not-green: Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/success",
       "passed": false,
       "required": "required public workflows are green"
     },
@@ -148,7 +148,7 @@
   "doctor_snapshot": {
     "checks": {
       "bundled_cli": {
-        "detail": "/home/user/TraceRazor/target/release/tracerazor; binary=1.2.0",
+        "detail": "/home/user/TraceRazor/target/release/tracerazor; binary=1.2.1",
         "ok": true,
         "status": "source-build"
       },
@@ -159,18 +159,18 @@
         "url": "https://crates.io/api/v1/crates/tracerazor"
       },
       "github_actions": {
-        "detail": "Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/failure",
+        "detail": "Agent Efficiency Gate=completed/success; Release=completed/failure; TraceRazor CI=completed/success",
         "ok": false,
         "status": "not-green",
         "url": "https://api.github.com/repos/ZulfaqarHafez/tracerazor/actions/runs?per_page=30"
       },
       "github_tag": {
-        "detail": "head=448477b44974 local_tag=False remote_tag=True",
+        "detail": "head=25b385d3bdf8 local_tag=False remote_tag=False",
         "ok": false,
         "status": "pending"
       },
       "local_package": {
-        "detail": "version 1.2.0",
+        "detail": "version 1.2.1",
         "ok": true,
         "status": "installed"
       },
@@ -181,13 +181,13 @@
         "url": "https://api.scorecard.dev/projects/github.com/ZulfaqarHafez/TraceRazor"
       },
       "piwheels": {
-        "detail": "files=0 local=1.2.0",
+        "detail": "files=0 local=1.2.1",
         "ok": false,
         "status": "missing",
         "url": "https://www.piwheels.org/project/tracerazor/json"
       },
       "pypi": {
-        "detail": "latest=1.1.0 local=1.2.0",
+        "detail": "latest=1.1.0 local=1.2.1",
         "ok": false,
         "status": "mismatch",
         "url": "https://pypi.org/pypi/tracerazor/json"
@@ -198,7 +198,7 @@
         "status": "available"
       }
     },
-    "local_version": "1.2.0",
+    "local_version": "1.2.1",
     "offline": false,
     "package": "tracerazor",
     "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
@@ -217,49 +217,49 @@
       "unknown": []
     }
   },
-  "doctor_snapshot_sha256": "3f6f3556dc56b21480963ef91a6b7c9b0a4259d2d07d0f33384458c2acd18775",
+  "doctor_snapshot_sha256": "8fd08e0bd97413a166e4af945b85d9442b994175dfad9a7e5e66d6fe76ecbf00",
   "inputs": {
     "artifact_card": {
       "bytes": 16185,
       "path": "docs/trice_artifact_card.json",
       "present": true,
-      "sha256": "8b6114f5edf03216a3c00f6420ebba836f94ad00f554a35c54da0530e52d5dee"
+      "sha256": "64a2b850cf6874e9b5f6ef753f8f88710f6178fc9223bedda7cc125b863a4b48"
     },
     "contract_card": {
       "bytes": 19194,
       "path": "docs/trice_contract_card.json",
       "present": true,
-      "sha256": "5edbc670d902fe6a2d5ae2d1c2ab73cd81259a12641f0be9c0d2b388dccfca88"
+      "sha256": "fc5a44d85fb51f43c37b482185d1db26fbc74cfc1a41f9de3fd447ddb884ff17"
     },
     "install_card": {
-      "bytes": 13925,
+      "bytes": 13940,
       "path": "docs/trice_install_card.json",
       "present": true,
-      "sha256": "85c6a5b2bc0bf7dd446517f023b063116ce9b7e4065d18fc4f395798f3379d7f"
+      "sha256": "7a198014cbdacab765128f41b8750753938a2d489ed8513cffb68466a0e139a4"
     },
     "public_trust_matrix": {
-      "bytes": 13887,
+      "bytes": 14126,
       "path": "docs/public_trust_matrix.md",
       "present": true,
-      "sha256": "11ee076076dc44e215b9fb2e78918d2b150e8954f81ec7d4e8dc49c87b7d3cba"
+      "sha256": "36500211473e8aefee769f5a1a9f96215c2dcd80547e704c99bc74d45eaca26c"
     },
     "pyproject": {
       "bytes": 7349,
       "path": "pyproject.toml",
       "present": true,
-      "sha256": "37c5096fd853b81bd2589f5a6216bdba17d8bc22e77f7ef47542bcb5c7f33805"
+      "sha256": "5395690156887cbd3e149f3213dfa50af5825aef96b7626ea3baedad8624e46a"
     },
     "readme": {
       "bytes": 20348,
       "path": "README.md",
       "present": true,
-      "sha256": "5ac3568a3ecc4dfcd38f4944882d1137e42b667c3517c3d9b5ebe57430f43741"
+      "sha256": "5e161d4c528d2572f969bdd76db168884c2c9b28518c58983a0ca6735831c0b3"
     },
     "release_checklist": {
       "bytes": 8855,
       "path": "docs/release_checklist.md",
       "present": true,
-      "sha256": "02c4135f9c44c5efeb99c9cc31222255f04637ef74f8b5a78d015489c894d120"
+      "sha256": "0edac25171170a07541afa2709f15e950bc31d40f46ba32fcf93a62c4791c5e5"
     },
     "reproduction_card": {
       "bytes": 7294,
@@ -269,22 +269,22 @@
     }
   },
   "next_actions": [
-    "Publish 1.2.0 to PyPI only after local release gates pass.",
+    "Publish 1.2.1 to PyPI only after local release gates pass.",
     "Informational only for 1.1: do not add an sdist solely for piwheels.",
     "Optional: publish Rust crates only after declaring a stable public Rust API; keep cargo-install claims out of the README meanwhile.",
-    "The remote v1.2.0 tag already exists and must not be reused; fetch it for verification, or bump the version and create a new immutable tag for the next release.",
+    "Create and push the v1.2.1 tag only after local gates pass.",
     "Re-run and fix GitHub Actions until CI, Agent Efficiency Gate, and Release are green.",
     "Run and publish OpenSSF Scorecard until the public score is at least 7.0."
   ],
   "package": {
-    "local_version": "1.2.0",
+    "local_version": "1.2.1",
     "name": "tracerazor",
     "offline": false,
     "platform": "Linux-6.18.44-fc-v185-x86_64-with-glibc2.39",
     "python": "3.11.17"
   },
   "public_release_ready": false,
-  "release_card_sha256": "2a3df3dd2f8d6558276027da7c58477a8fe950cdde1dace400610f649e3720c3",
+  "release_card_sha256": "2371b771b5ed6d5c2a01f6b57f944ca844c94ae590a90301b78aaf55c034724e",
   "release_level": "local_release_candidate",
   "release_score": 74,
   "research_basis": [
