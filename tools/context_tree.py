@@ -20,7 +20,9 @@ Honesty rules for every number this prints:
     message repeats a distinctive token that this line introduced. Content can be used
     without being quoted, so DEAD IS AN UPPER BOUND ON WASTE, never a measurement of it.
   * "carry" = characters x later model calls the block sat in context. It assumes blocks
-    stay until the session ends; hosts that clear old results make it an overestimate.
+    stay until the next compaction or the session end; hosts that quietly clear old
+    results make it an overestimate. Lines that introduce no new token (repeats, re-reads)
+    cannot be tracked for reuse and are reported separately as "untracked".
   * Token figures come from the transcript's usage fields when present, otherwise they are
     estimated as characters/4 and flagged "est".
   * Nothing here is a saving. A saving exists only after a measured before/after rerun.
@@ -61,15 +63,20 @@ def _flat(content) -> str:
         return ""
     if isinstance(content, str):
         return content
+    if isinstance(content, dict):
+        content = [content]
+    if not isinstance(content, list):
+        return str(content)
     out = []
     for b in content:
         if isinstance(b, str):
             out.append(b)
         elif isinstance(b, dict):
-            t = b.get("type")
-            if t == "text":
-                out.append(b.get("text") or "")
-            elif t == "tool_result":
+            if b.get("type") == "tool_result":
+                out.append(_flat(b.get("content")))
+            elif isinstance(b.get("text"), str):  # text blocks and search-result style items
+                out.append(" ".join(x for x in (b.get("title"), b.get("url"), b["text"]) if isinstance(x, str)))
+            elif "content" in b:
                 out.append(_flat(b.get("content")))
     return "\n".join(out)
 
@@ -83,9 +90,15 @@ def _ts(value):
         return None
 
 
-def load_claude_code(path):
+HARNESS_PREFIXES = ("<task-notification", "<system-reminder", "<command-", "<local-command", "Caveat:", "[Request interrupted")
+
+
+def load_claude_code(path, branch=False):
     """One Claude Code transcript (.jsonl) -> list of events. Usage is de-duplicated per
-    message id because the transcript repeats it on every content block of one message."""
+    message id because the transcript repeats it on every content block of one message.
+    Messages the harness injected (isMeta, notifications, reminders) are tagged so they
+    are not counted as something the user typed. Sidechain lines inside a main transcript
+    are skipped unless this file is itself a branch."""
     events, seen_usage = [], set()
     with open(path, encoding="utf-8", errors="replace") as fh:
         for line in fh:
@@ -95,10 +108,15 @@ def load_claude_code(path):
                 continue
             if not isinstance(e, dict):
                 continue
-            if e.get("subtype") == "compact_boundary" or e.get("isCompactSummary"):
+            if e.get("subtype") == "compact_boundary":
                 events.append({"role": "scar", "ts": _ts(e.get("timestamp"))})
+                continue
+            if e.get("isSidechain") and not branch:
+                continue
             m = e.get("message")
             if not isinstance(m, dict) or m.get("role") not in ("user", "assistant"):
+                continue
+            if m.get("model") == "<synthetic>":  # harness-made error text, not a model call
                 continue
             content = m.get("content")
             blocks = [{"type": "text", "text": content}] if isinstance(content, str) else [b for b in (content or []) if isinstance(b, dict)]
@@ -110,7 +128,10 @@ def load_claude_code(path):
                     usage = m["usage"]
                 events.append({"role": "assistant", "id": mid, "blocks": blocks, "usage": usage, "ts": _ts(e.get("timestamp"))})
             else:
-                events.append({"role": "user", "blocks": blocks, "ts": _ts(e.get("timestamp"))})
+                first = next((b.get("text") or "" for b in blocks if b.get("type") == "text"), "")
+                injected = bool(e.get("isMeta") or e.get("isCompactSummary")) or first.lstrip().startswith(HARNESS_PREFIXES)
+                events.append({"role": "user", "blocks": blocks, "ts": _ts(e.get("timestamp")),
+                               "injected": injected, "summary": bool(e.get("isCompactSummary"))})
     return events
 
 
@@ -123,9 +144,14 @@ def load_claude_ai_export(path):
         data = json.load(fh)
     if isinstance(data, dict):
         data = data.get("conversations") or [data]
-    out = {}
+    if not isinstance(data, list):
+        raise ValueError("not a conversation export")
+    out, foreign = {}, 0
     for i, conv in enumerate(data):
         if not isinstance(conv, dict):
+            continue
+        if isinstance(conv.get("mapping"), dict) and not (conv.get("chat_messages") or conv.get("messages")):
+            foreign += 1  # ChatGPT export shape: not supported, and never silently dropped
             continue
         events = []
         for msg in conv.get("chat_messages") or conv.get("messages") or []:
@@ -167,7 +193,30 @@ def load_claude_ai_export(path):
                 events.append({"role": "user", "blocks": blocks, "ts": ts})
         key = conv.get("uuid") or f"chat-{i}"
         out[key] = events
+    if foreign:
+        print(f"skipped {foreign} chats in {os.path.basename(path)}: ChatGPT 'mapping' export is not supported", file=sys.stderr)
     return out
+
+
+def _safe_export(path):
+    try:
+        return load_claude_ai_export(path)
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        print(f"skip {os.path.basename(path)}: not a readable claude.ai export ({type(exc).__name__})", file=sys.stderr)
+        return {}
+
+
+def _parent_session(path):
+    """Old Claude Code layout: a top-level agent-*.jsonl is a subagent of another session."""
+    try:
+        with open(path, encoding="utf-8", errors="replace") as fh:
+            for _ in range(5):
+                e = json.loads(fh.readline() or "{}")
+                if isinstance(e, dict) and e.get("isSidechain") and e.get("sessionId"):
+                    return e["sessionId"]
+    except (OSError, ValueError):
+        pass
+    return None
 
 
 def discover(root):
@@ -176,14 +225,14 @@ def discover(root):
         if root.endswith(".jsonl"):
             yield ("-", os.path.splitext(os.path.basename(root))[0], None, lambda p=root: load_claude_code(p))
         else:
-            for key, events in load_claude_ai_export(root).items():
+            for key, events in _safe_export(root).items():
                 yield ("claude.ai", key, None, lambda ev=events: ev)
         return
     for dirpath, _dirs, files in os.walk(root):
         for name in sorted(files):
             full = os.path.join(dirpath, name)
-            if name == "conversations.json":
-                for key, events in load_claude_ai_export(full).items():
+            if name.startswith("conversations") and name.endswith(".json"):
+                for key, events in _safe_export(full).items():
                     yield ("claude.ai", key, None, lambda ev=events: ev)
             elif name.endswith(".jsonl") and name != "journal.jsonl":
                 rel = os.path.relpath(full, root).split(os.sep)
@@ -192,10 +241,14 @@ def discover(root):
                     i = rel.index("subagents")
                     tree = rel[i - 1] if i >= 1 else stem
                     grove = rel[i - 2] if i >= 2 else "-"
-                    yield (grove, tree, stem, lambda p=full: load_claude_code(p))
+                    yield (grove, tree, stem, lambda p=full: load_claude_code(p, branch=True))
                 else:
                     grove = rel[-2] if len(rel) >= 2 else "-"
-                    yield (grove, stem, None, lambda p=full: load_claude_code(p))
+                    parent = _parent_session(full)
+                    if parent and parent != stem:
+                        yield (grove, parent, stem, lambda p=full: load_claude_code(p, branch=True))
+                    else:
+                        yield (grove, stem, None, lambda p=full: load_claude_code(p))
 
 
 # ---------------------------------------------------------------------------- analysis
@@ -223,7 +276,7 @@ def analyse(events):
             seen.update(TOK.findall(text))
             return
         idx = len(leaves)
-        leaves.append({"kind": kind, "chars": len(text), "created": call, "cells": 0})
+        leaves.append({"kind": kind, "chars": len(text), "created": call, "cells": 0, "end": None})
         local = set()
         for line in text.split("\n"):
             toks = set(TOK.findall(line))
@@ -245,7 +298,13 @@ def analyse(events):
 
     for e in events:
         if e["role"] == "scar":
+            # compaction: everything so far leaves context, so its carry stops here
             scars += 1
+            for leaf in leaves:
+                if leaf["end"] is None:
+                    leaf["end"] = call
+            owner.clear()
+            seen.clear()
             continue
         if e["role"] == "assistant":
             if e.get("id") != last_id or e.get("id") is None:
@@ -255,7 +314,7 @@ def analyse(events):
                 growth_est.append(pending_chars // 4)
                 pending_chars = 0
                 ctx.append(None)
-            if e.get("usage"):
+            if e.get("usage") and _context_size(e["usage"]) > 0:
                 usage_seen = True
                 ctx[-1] = _context_size(e["usage"])
                 out_tokens += int(e["usage"].get("output_tokens") or 0)
@@ -265,7 +324,8 @@ def analyse(events):
                     produced.append(b.get("text") or "")
                 elif b.get("type") == "tool_use":
                     name = b.get("name") or "tool"
-                    tool_names[b.get("id")] = name
+                    if b.get("id"):
+                        tool_names[b["id"]] = name
                     if name in FRUIT_TOOLS:
                         fruit += 1
                     produced.append(json.dumps(b.get("input"), default=str))
@@ -278,13 +338,12 @@ def analyse(events):
             if len(reply) >= MIN_LEAF_CHARS:  # a reply is itself a leaf carried on later turns
                 pending_chars -= len(reply)
                 add_leaf("reply", reply)
-            else:
-                seen.update(TOK.findall(text))
+            seen.update(TOK.findall(text))
         else:
             texts = []
             for b in e["blocks"]:
                 if b.get("type") == "tool_result":
-                    name = tool_names.get(b.get("tool_use_id"), "attachment" if b.get("tool_use_id") == "attachment" else "tool")
+                    name = tool_names.get(b.get("tool_use_id")) or ("attachment" if b.get("tool_use_id") == "attachment" else (b.get("name") or "tool"))
                     body = _flat(b.get("content"))
                     roots[name] += len(body)
                     add_leaf("tool:" + name, body)
@@ -292,17 +351,26 @@ def analyse(events):
                     texts.append(b.get("text") or "")
             prompt = "\n".join(texts)
             if prompt.strip():
-                prompts += 1
-                water_chars += len(prompt)
-                reference(prompt, call + 1)  # a user quoting earlier content keeps it alive
-                add_leaf("prompt", prompt)
+                if e.get("injected"):  # harness text: carried in context, but not typed by the user
+                    add_leaf("summary" if e.get("summary") else "injected", prompt)
+                else:
+                    prompts += 1
+                    water_chars += len(prompt)
+                    reference(prompt, call + 1)  # a user quoting earlier content keeps it alive
+                    add_leaf("prompt", prompt)
 
     total_calls = call
     for leaf in leaves:
-        leaf.update(window=total_calls - leaf["created"], live_chars=0, cell_chars=0, last_use=0, carry=0, dead_carry=0, stale_carry=0)
-    for chars, created, ages, idx in cells:
+        end = leaf["end"] if leaf["end"] is not None else total_calls
+        leaf.update(window=max(0, end - leaf["created"]), live_chars=0, cell_chars=0, last_use=0, dead_carry=0, stale_carry=0)
+        # carry covers the whole block; lines that introduce no new token (repeats, re-reads,
+        # blank lines) cannot be tracked for reuse and are reported as "untracked"
+        leaf["carry"] = leaf["chars"] * leaf["window"]
+    for cell in cells:
+        chars, created, ages, idx = cell
         leaf = leaves[idx]
-        window = total_calls - created
+        window = leaf["window"]
+        ages = cell[2] = {a for a in ages if a <= window}  # a reference no model call read does not count
         leaf["cell_chars"] += chars
         if ages:
             leaf["live_chars"] += chars
@@ -310,16 +378,18 @@ def analyse(events):
             leaf["stale_carry"] += chars * max(0, window - max(ages))
         else:
             leaf["dead_carry"] += chars * window
-        leaf["carry"] += chars * window
+    for leaf in leaves:
+        leaf["untracked_carry"] = max(0, leaf["chars"] - leaf["cell_chars"]) * leaf["window"]
     # growth ring per model call: tokens the context grew by before that call
     rings = []
-    prev = None
+    prev, est_since = None, 0
     for i in range(total_calls):
         if ctx[i] is not None:
-            rings.append(max(0, ctx[i] - prev) if prev is not None else 0)
-            prev = ctx[i]
+            rings.append(max(0, ctx[i] - prev - est_since) if prev is not None else 0)
+            prev, est_since = ctx[i], 0
         else:
             rings.append(growth_est[i])
+            est_since += growth_est[i]
     known = [c for c in ctx if c is not None]
     winters = sum(1 for a, b in zip(call_ts, call_ts[1:]) if a and b and b - a > WINTER_SECONDS)
     return {
@@ -327,7 +397,7 @@ def analyse(events):
         "soil_tokens": known[0] if known else None, "peak_context_tokens": max(known) if known else None,
         "sun_tokens": out_tokens, "tokens_estimated": not usage_seen,
         "roots": dict(roots), "fruit": fruit, "scars": scars, "winters": winters,
-        "rings": rings, "leaves": leaves, "cells": [(c, cr, sorted(a), i) for c, cr, a, i in cells],
+        "rings": rings, "leaves": leaves, "cells": [(c, leaves[i]["window"], sorted(a), i, cr) for c, cr, a, i in cells],
         "start": next((t for t in call_ts if t), None),
     }
 
@@ -358,6 +428,7 @@ def tree_summary(tree_id, grove, trunk, branches):
         "carry": carry,
         "dead_on_arrival_share": (dead / carry) if carry else None,
         "stale_share": (stale / carry) if carry else None,
+        "untracked_share": (sum(l["untracked_carry"] for l in leaves) / carry) if carry else None,
         "roots": dict(sum((Counter(p["roots"]) for p in parts), Counter())),
     }
 
@@ -374,7 +445,7 @@ def forest_summary(trees, parts_by_tree):
     """Pooled and per-tree statistics. Per-tree medians are the honest headline: pooled
     figures are dominated by the few largest trees."""
     leaves = [(l, t) for t, parts in parts_by_tree.items() for p in parts for l in p["leaves"]]
-    cells = [c for parts in parts_by_tree.values() for p in parts for c in [(ch, p["calls"] - cr, ages) for ch, cr, ages, _ in p["cells"]]]
+    cells = [(ch, window, ages) for parts in parts_by_tree.values() for p in parts for ch, window, ages, _i, _cr in p["cells"]]
     by_kind = defaultdict(list)
     for l, _ in leaves:
         kind = l["kind"] if not l["kind"].startswith("tool:") else l["kind"]
@@ -404,13 +475,15 @@ def forest_summary(trees, parts_by_tree):
             "share_of_all_carry": round(c / carry, 3) if carry else None,
             "dead_on_arrival_share": round(sum(l["dead_carry"] for l in ls) / c, 3) if c else None,
             "stale_share": round(sum(l["stale_carry"] for l in ls) / c, 3) if c else None,
+            "untracked_share": round(sum(l["untracked_carry"] for l in ls) / c, 3) if c else None,
             "survival_by_age_in_calls": survival(ls),
         }
     multi = [t for t in trees if t["calls"] >= 5 and t["carry"]]
     return {
         "caveats": [
             "live/dead is an exact-text proxy; dead is an upper bound on waste, not a measurement",
-            "carry assumes content stays in context until the session ends",
+            "carry assumes content stays in context until the next compaction or the session end",
+            "untracked = lines that introduce no new token (repeats, re-reads); their reuse cannot be told",
             "nothing here is a saving; savings need a measured before/after rerun",
         ],
         "trees": len(trees), "groves": len({t["grove"] for t in trees}),
@@ -427,6 +500,7 @@ def forest_summary(trees, parts_by_tree):
         "pooled": {
             "dead_on_arrival_share_of_carry": round(sum(l["dead_carry"] for l, _ in leaves) / carry, 3) if carry else None,
             "stale_share_of_carry": round(sum(l["stale_carry"] for l, _ in leaves) / carry, 3) if carry else None,
+            "untracked_share_of_carry": round(sum(l["untracked_carry"] for l, _ in leaves) / carry, 3) if carry else None,
             "top_5pct_of_leaves_share_of_dead_carry": round(sum(dead_sorted[:top]) / sum(dead_sorted), 3) if sum(dead_sorted) else None,
         },
         "survival_all_leaves_by_age_in_calls": survival([l for l, _ in leaves]),
@@ -455,9 +529,10 @@ def _leaf_svg(x, y, r, live_share, side, title):
 
 
 def render_tree(summary, trunk, branches, labels=False, top_n=24):
-    W, H, ground, cx = 980, 720, 560, 330
+    W, H, ground, cx = 980, 760, 560, 330
+    est = " (est)" if summary["tokens_estimated"] else ""
     calls = max(1, trunk["calls"])
-    px = (ground - 60) / calls
+    px = (ground - 150) / calls
     leaves = sorted(trunk["leaves"], key=lambda l: -l["carry"])
     big, small = leaves[:top_n], leaves[top_n:]
     max_chars = max([l["chars"] for l in leaves] or [1])
@@ -474,10 +549,11 @@ def render_tree(summary, trunk, branches, labels=False, top_n=24):
     s = [f'<svg viewBox="0 0 {W} {H}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif" font-size="11">',
          f'<rect width="{W}" height="{H}" fill="{PALETTE["paper"]}"/>']
     # soil band: thickness = standing context before the first call
-    soil = summary.get("soil_tokens") or 0
-    soil_h = 18 + min(90, 9 * math.log10(1 + soil))
-    s.append(f'<rect x="20" y="{ground}" width="620" height="{soil_h:.0f}" fill="{PALETTE["soil"]}" opacity="0.85"><title>soil: {soil:,} tokens of standing context at the first call</title></rect>')
-    s.append(f'<text x="28" y="{ground + 14}" fill="#e9dfd2">soil {soil:,} tok standing context</text>')
+    soil = summary.get("soil_tokens")
+    soil_txt = f"{soil:,} tok" if soil is not None else "unknown (no usage data)"
+    soil_h = 18 + min(90, 9 * math.log10(1 + (soil or 0)))
+    s.append(f'<rect x="20" y="{ground}" width="620" height="{soil_h:.0f}" fill="{PALETTE["soil"]}" opacity="0.85"><title>soil: {soil_txt} of standing context at the first call</title></rect>')
+    s.append(f'<text x="28" y="{ground + 14}" fill="#e9dfd2">soil: {soil_txt} standing context</text>')
     # roots: one per source, thickness by characters drawn in
     roots = sorted(summary["roots"].items(), key=lambda kv: -kv[1])[:7]
     rmax = max([v for _, v in roots] or [1])
@@ -486,7 +562,7 @@ def render_tree(summary, trunk, branches, labels=False, top_n=24):
         ex, ey = cx + 230 * math.cos(ang), ground + 20 + 95 * abs(math.sin(ang)) + 22
         s.append(f'<path d="M{cx},{ground} Q{cx},{ey:.0f} {ex:.0f},{ey:.0f}" fill="none" stroke="#8a6a4a" stroke-width="{1.5 + 9 * math.sqrt(chars / rmax):.1f}" stroke-linecap="round"><title>root {html.escape(name)}: {chars:,} chars drawn in</title></path>')
         short = name.split("__")[-1][:18]
-        s.append(f'<text x="{ex:.0f}" y="{ey + 14 + (i % 2) * 12:.0f}" text-anchor="middle" fill="{PALETTE["ink"]}">{html.escape(short)} {chars / 1000:.0f}k</text>')
+        s.append(f'<text x="{ex:.0f}" y="{ey + 14 + (i % 2) * 12:.0f}" text-anchor="middle" fill="{PALETTE["ink"]}">{html.escape(short)} {chars / 1000:.0f}k chars</text>')
     s.append(f'<polygon points="{left} {right}" fill="{PALETTE["trunk"]}"><title>trunk: {calls} model calls; width = content carried from that point on</title></polygon>')
     # leaves
     for n, l in enumerate(big):
@@ -502,6 +578,8 @@ def render_tree(summary, trunk, branches, labels=False, top_n=24):
         live = (l["live_chars"] / l["cell_chars"]) if l["cell_chars"] else 0
         s.append(f'<circle cx="{cx + side * (half(l["created"]) + 5):.1f}" cy="{y(l["created"]):.1f}" r="2" fill="{PALETTE["live"] if live >= 0.5 else PALETTE["dead"]}" opacity="0.7"/>')
     # branches (subagents): a stub with one leaf cluster each
+    if len(branches) > 14:
+        s.append(f'<text x="24" y="122" fill="{PALETTE["muted"]}">showing 14 of {len(branches)} branches</text>')
     for i, b in enumerate(branches[:14]):
         by = y(calls * (i + 1) / (min(len(branches), 14) + 1))
         side = -1 if i % 2 == 0 else 1
@@ -512,47 +590,53 @@ def render_tree(summary, trunk, branches, labels=False, top_n=24):
         s.append(f'<path d="M{cx},{by:.0f} Q{(cx + ex) / 2:.0f},{by - 26:.0f} {ex:.0f},{by - 34:.0f}" fill="none" stroke="{PALETTE["trunk"]}" stroke-width="{2 + min(6, b["calls"] / 8):.1f}"/>')
         s.append(_leaf_svg(ex, by - 34, 8 + 16 * math.sqrt(chars / max(max_chars, chars, 1)), live, side, f'branch (subagent): {b["calls"]} calls | {chars:,} chars in leaves | live cells {live:.0%}'))
     # water, sun, fruit, scars
-    s.append(f'<circle cx="590" cy="70" r="{14 + min(40, 4 * math.log10(1 + summary["sun_tokens"])):.0f}" fill="{PALETTE["sun"]}"><title>sun: {summary["sun_tokens"]:,} output tokens{" (est)" if summary["tokens_estimated"] else ""}</title></circle>')
-    s.append(f'<text x="590" y="74" text-anchor="middle" fill="#3a2a00">{summary["sun_tokens"] / 1000:.0f}k out</text>')
-    s.append(f'<text x="24" y="40" fill="{PALETTE["water"]}">water: {summary["prompts"]} prompts, {summary["water_chars"] / 1000:.1f}k chars</text>')
-    s.append(f'<text x="24" y="56" fill="{PALETTE["fruit"]}">fruit: {summary["fruit"]} file edits</text>')
-    s.append(f'<text x="24" y="72" fill="{PALETTE["muted"]}">scars (compactions): {summary["scars"]}   winters (idle &gt; 1h): {summary["winters"]}   branches: {summary["branches"]}</text>')
+    s.append(f'<circle cx="590" cy="150" r="{14 + min(40, 4 * math.log10(1 + summary["sun_tokens"])):.0f}" fill="{PALETTE["sun"]}"><title>sun: {summary["sun_tokens"]:,} output tokens{est}, trunk and branches</title></circle>')
+    s.append(f'<text x="590" y="154" text-anchor="middle" fill="#3a2a00">{summary["sun_tokens"] / 1000:.0f}k out{est}</text>')
+    s.append(f'<text x="24" y="58" fill="{PALETTE["water"]}">water: {summary["prompts"]} prompts, {summary["water_chars"] / 1000:.1f}k chars</text>')
+    s.append(f'<text x="24" y="74" fill="{PALETTE["fruit"]}">fruit: {summary["fruit"]} file edits</text>')
+    s.append(f'<text x="24" y="90" fill="{PALETTE["muted"]}">scars (compactions): {summary["scars"]}   winters (idle &gt; 1h): {summary["winters"]}</text>')
+    s.append(f'<text x="24" y="106" fill="{PALETTE["muted"]}">branches (subagents): {summary["branches"]}</text>')
     # cross-section: growth rings, one per call (binned to <= 36), width = context growth
     rings = trunk["rings"] or [0]
     bins = min(36, len(rings))
     step = len(rings) / bins
     widths = [sum(rings[int(i * step):max(int(i * step) + 1, int((i + 1) * step))]) for i in range(bins)]
     dead_by_call, all_by_call = Counter(), Counter()
-    for ch, cr, ages, _ in trunk["cells"]:
+    for ch, _window, ages, _i, cr in trunk["cells"]:
         all_by_call[cr] += ch
         if not ages:
             dead_by_call[cr] += ch
-    rx, ry, R = 810, 150, 110
+    rx, ry, R = 810, 190, 105
     total = sum(widths) or 1
     radius = R
-    s.append(f'<text x="{rx}" y="24" text-anchor="middle" fill="{PALETTE["ink"]}" font-size="12">growth rings (centre = first call)</text>')
+    s.append(f'<text x="{rx}" y="72" text-anchor="middle" fill="{PALETTE["ink"]}" font-size="12">growth rings (centre = first call)</text>')
     for i in range(bins - 1, -1, -1):  # outermost = newest
         lo, hi = int(i * step), max(int(i * step) + 1, int((i + 1) * step))
         a = sum(all_by_call[c] for c in range(lo, hi + 1)) or 1
         dead = sum(dead_by_call[c] for c in range(lo, hi + 1)) / a
         mix = lambda p, q: int(p + (q - p) * dead)
         col = f"rgb({mix(0x3f, 0xa8)},{mix(0x8f, 0x76)},{mix(0x4f, 0x3e)})"
-        s.append(f'<circle cx="{rx}" cy="{ry}" r="{max(radius, 1):.1f}" fill="{col}" stroke="{PALETTE["paper"]}" stroke-width="0.5"><title>calls {lo + 1}-{hi}: context grew {widths[i]:,} tokens; {dead:.0%} of new cells never reused</title></circle>')
+        s.append(f'<circle cx="{rx}" cy="{ry}" r="{max(radius, 1):.1f}" fill="{col}" stroke="{PALETTE["paper"]}" stroke-width="0.5"><title>calls {lo + 1}-{hi}: context grew {widths[i]:,} tokens{est}; {dead:.0%} of new cells never reused</title></circle>')
         radius -= R * widths[i] / total
     # ranked table: the precise view (length encodes carry; the tree is the overview)
-    s.append(f'<text x="670" y="300" fill="{PALETTE["ink"]}" font-size="12">heaviest leaves by carry (chars x calls carried)</text>')
+    s.append(f'<text x="670" y="326" fill="{PALETTE["ink"]}" font-size="12">heaviest leaves by carry (chars x calls carried)</text>')
     cmax = max([l["carry"] for l in big] or [1])
     for i, l in enumerate(big[:14]):
-        yy = 318 + i * 24
+        yy = 340 + i * 24
         live = (l["live_chars"] / l["cell_chars"]) if l["cell_chars"] else 0
         wbar = 280 * l["carry"] / cmax
         s.append(f'<rect x="670" y="{yy}" width="{wbar * live:.1f}" height="11" fill="{PALETTE["live"]}"/><rect x="{670 + wbar * live:.1f}" y="{yy}" width="{wbar * (1 - live):.1f}" height="11" fill="{PALETTE["dead"]}"/>')
         s.append(f'<text x="670" y="{yy + 21}" fill="{PALETTE["muted"]}" font-size="10">{html.escape(l["kind"])} · {l["chars"] / 1000:.1f}k chars · call {l["created"]} · carried {l["window"]} · live {live:.0%}</text>')
-    s.append(f'<rect x="670" y="676" width="12" height="10" fill="{PALETTE["live"]}"/><text x="688" y="685" fill="{PALETTE["ink"]}">live cells (reused later)</text>'
-             f'<rect x="820" y="676" width="12" height="10" fill="{PALETTE["dead"]}"/><text x="838" y="685" fill="{PALETTE["ink"]}">dead (never reused)</text>')
-    s.append(f'<text x="670" y="704" fill="{PALETTE["muted"]}" font-size="10">dead = upper bound on waste (exact-text proxy), not a saving</text>')
+    s.append(f'<rect x="670" y="706" width="12" height="10" fill="{PALETTE["live"]}"/><text x="688" y="715" fill="{PALETTE["ink"]}">live cells (reused later)</text>'
+             f'<rect x="820" y="706" width="12" height="10" fill="{PALETTE["dead"]}"/><text x="838" y="715" fill="{PALETTE["ink"]}">dead (never reused)</text>')
+    s.append(f'<text x="670" y="734" fill="{PALETTE["muted"]}" font-size="10">dead = upper bound on waste (exact-text proxy), not a saving</text>')
     title = summary["tree"][:10] if not labels else summary["tree"]
-    s.append(f'<text x="24" y="22" fill="{PALETTE["ink"]}" font-size="14" font-weight="600">tree {html.escape(title)} · {summary["calls"]} calls · live cells {(summary["live_cell_share"] or 0):.0%} · dead-on-arrival {(summary["dead_on_arrival_share"] or 0):.0%} of carry</text>')
+    tc = sum(l["cell_chars"] for l in trunk["leaves"]) or 1
+    tcarry = sum(l["carry"] for l in trunk["leaves"]) or 1
+    t_live = sum(l["live_chars"] for l in trunk["leaves"]) / tc
+    t_dead = sum(l["dead_carry"] for l in trunk["leaves"]) / tcarry
+    s.append(f'<text x="24" y="22" fill="{PALETTE["ink"]}" font-size="14" font-weight="600">tree {html.escape(title)} · trunk {trunk["calls"]} calls · {summary["branches"]} branches · {summary["calls"]} calls in all</text>')
+    s.append(f'<text x="24" y="40" fill="{PALETTE["ink"]}" font-size="12">trunk: live cells {t_live:.0%} · dead-on-arrival {t_dead:.0%} of carry (upper bound)</text>')
     s.append("</svg>")
     return "".join(s)
 
@@ -573,11 +657,18 @@ def render_forest(trees):
             base = y0 + (i // cols) * 112 + 104
             h = 6 + 9 * math.log2(1 + t["calls"])
             r = 2 + min(18, math.sqrt(t["leaf_chars"]) / 28)
-            live = t["live_cell_share"] or 0
-            out.append(f'<g><title>{t["calls"]} calls · {t["leaves"]} leaves · live cells {live:.0%} · dead-on-arrival {(t["dead_on_arrival_share"] or 0):.0%} of carry · {t["branches"]} branches</title>'
-                       f'<line x1="{x}" y1="{base}" x2="{x}" y2="{base - h:.1f}" stroke="{PALETTE["trunk"]}" stroke-width="{1.5 + min(4, t["branches"] / 3):.1f}"/>'
-                       f'<circle cx="{x}" cy="{base - h:.1f}" r="{r:.1f}" fill="{PALETTE["dead"]}"/>'
-                       f'<path d="M{x},{base - h:.1f} m{-r:.1f},0 a{r:.1f},{r:.1f} 0 0 1 {2 * r:.1f},0 z" fill="{PALETTE["live"]}" transform="rotate({-90 + 180 * (1 - live):.0f} {x} {base - h:.1f})" opacity="{0.25 + 0.75 * live:.2f}"/></g>')
+            live, cy = t["live_cell_share"], base - h
+            if live is None:
+                tip, canopy = "no leaves of 200+ chars", f'<circle cx="{x}" cy="{cy:.1f}" r="{r:.1f}" fill="none" stroke="{PALETTE["muted"]}"/>'
+            else:
+                tip = f'live cells {live:.0%} · dead-on-arrival {(t["dead_on_arrival_share"] or 0):.0%} of carry (upper bound)'
+                canopy = f'<circle cx="{x}" cy="{cy:.1f}" r="{r:.1f}" fill="{PALETTE["live"] if live >= 0.999 else PALETTE["dead"]}"/>'
+                if 0.001 < live < 0.999:  # pie wedge: green angle = live share
+                    a = 2 * math.pi * live
+                    canopy += (f'<path d="M{x},{cy:.1f} L{x},{cy - r:.1f} A{r:.1f},{r:.1f} 0 {1 if live > 0.5 else 0} 1 '
+                               f'{x + r * math.sin(a):.1f},{cy - r * math.cos(a):.1f} z" fill="{PALETTE["live"]}"/>')
+            out.append(f'<g><title>{t["calls"]} calls · {t["leaves"]} leaves · {tip} · {t["branches"]} branches</title>'
+                       f'<line x1="{x}" y1="{base}" x2="{x}" y2="{cy:.1f}" stroke="{PALETTE["trunk"]}" stroke-width="{1.5 + min(4, t["branches"] / 3):.1f}"/>{canopy}</g>')
         y0 += (math.ceil(len(ts) / cols)) * 112 + 34
     return (f'<svg viewBox="0 0 {14 + cols * cell + 14} {y0}" width="100%" xmlns="http://www.w3.org/2000/svg" font-family="system-ui,sans-serif">'
             f'<rect width="100%" height="100%" fill="{PALETTE["paper"]}"/>{"".join(out)}</svg>')
@@ -634,7 +725,9 @@ def main(argv=None):
     with open(os.path.join(args.out, "trees.json"), "w") as fh:
         json.dump(trees, fh, indent=1)
     body = [f"<h2>Forest: {len(trees)} trees in {forest['groves']} groves</h2>",
-            "<p>Each glyph is one chat. Height = model calls (log scale). Canopy size = content in leaves. Green share = live cells. Hover for numbers.</p>",
+            "<p>Each glyph is one chat. Height = model calls (log scale). Canopy size = content in leaves. Green wedge = share of live cells; brown = dead. Hover for numbers.</p>"
+            "<p style='color:#6b7280;font-size:13px'>Live/dead is an exact-text proxy, so dead is an upper bound on waste, not a measurement. "
+            "Carry assumes content stays in context until the next compaction or the session end. Nothing here is a saving.</p>",
             render_forest(trees)]
     ranked = sorted(range(len(ids)), key=lambda i: -(trees[i]["carry"]))[: max(0, args.render)]
     for i in ranked:
@@ -646,7 +739,7 @@ def main(argv=None):
     pt, pooled = forest["per_tree"], forest["pooled"]
     print(f"trees {forest['trees']} ({forest['trees_with_5plus_calls']} with 5+ calls) | groves {forest['groves']} | model calls {forest['model_calls']} | leaves {forest['leaves']}")
     print(f"per-tree median: live cells {pt['live_cell_share'] and pt['live_cell_share']['median']} | dead-on-arrival share of carry {pt['dead_on_arrival_share_of_carry'] and pt['dead_on_arrival_share_of_carry']['median']} | stale share {pt['stale_share_of_carry'] and pt['stale_share_of_carry']['median']}")
-    print(f"pooled: dead-on-arrival {pooled['dead_on_arrival_share_of_carry']} | stale {pooled['stale_share_of_carry']} | top 5% of leaves hold {pooled['top_5pct_of_leaves_share_of_dead_carry']} of dead carry")
+    print(f"pooled: dead-on-arrival {pooled['dead_on_arrival_share_of_carry']} | stale {pooled['stale_share_of_carry']} | untracked {pooled['untracked_share_of_carry']} | top 5% of leaves hold {pooled['top_5pct_of_leaves_share_of_dead_carry']} of dead carry")
     print("dead = upper bound on waste (exact-text proxy). Not a saving.")
     print(f"wrote {args.out}/forest_summary.json, trees.json, forest.html")
     return 0
